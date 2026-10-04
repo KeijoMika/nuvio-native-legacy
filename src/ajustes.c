@@ -4627,7 +4627,12 @@ static int definirValorDireto(int op, int novo) {
   if (op == AJ_IDIOMA) { idiomaEscolhido(); desc_repetir(); }
   if (op == AJ_FONTE_UI) txt_definir_fonte_interface((TxtFamilia)novo);
   if (op == AJ_ICONE_APP) iconeapp_aplicar_plataforma();
-  if (op == AJ_CW_FONTE || op == AJ_SALVOS_DEST) desc_repetir();
+  // The source rebuilds the ROW, not the catalogs (issue #244). It was on
+  // `desc_repetir`, which starts a full round and only applies the choice when it
+  // finishes - so switching source changed nothing on screen. Same pairing as
+  // Order/Percent/Hidden below.
+  if (op == AJ_CW_FONTE) desc_refazer_continuar();
+  if (op == AJ_SALVOS_DEST) desc_repetir();
   if (op == AJ_CW_ORDEM || op == AJ_CW_NAO_EXIBIDOS || op == AJ_CW_CONCLUIDO)
     desc_refazer_continuar();
   if (op == AJ_TEX_MB) tex_definir_orcamento_mb(ajustes_tex_mb());
