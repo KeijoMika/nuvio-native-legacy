@@ -3,6 +3,7 @@
 #include "ajustes.h"
 #include "artemetahub.h"
 #include "descoberta.h"
+#include "idbase.h"
 #include "jsw.h"
 #include "idioma.h"
 #include "rede.h"
@@ -1195,6 +1196,25 @@ int trakt_continuar(CatItem *saida, int max) {
   // documentacao descreve como o mapa completo por temporada; MEDIDO na TV com
   // 75 series, ela devolveu 90675 bytes com ZERO ocorrencias de "seasons" e
   // "number", mesmo com ?extended=full. Nao retentar sem medicao nova.
+
+  // One work, one card (issue #244). `/sync/playback` returns one record per
+  // paused resume and nothing guarantees one per work, so the same episode became
+  // several cards - and since the identity is the same, marking it watched acted
+  // on all the copies and the work never left the row.
+  //
+  // The list is already sorted newest first, so the first occurrence of each work
+  // is the one kept. Before the embellishing on purpose: otherwise the Cinemeta
+  // was queried once per record, for the same episode.
+  { int r, w = 0;
+    for (r = 0; r < n; r++) {
+      int dup = 0, k;
+      for (k = 0; k < w && !dup; k++)
+        dup = idbase_equal(saida[k].imdb, saida[r].imdb);   // same work: the BASE id
+      if (!dup) { if (w != r) saida[w] = saida[r]; w++; }
+    }
+    if (w != n)
+      printf("[trakt] playback: %d record(s) in %d work(s)\n", n, w);
+    n = w; }
 
   n = trakt_enfeitar_lote(saida, n);
 
