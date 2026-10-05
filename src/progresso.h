@@ -86,6 +86,14 @@ void prog_marcar_empurrados(const char *const *chaves, int n);
 
 void prog_remover(const char *chave);
 
+// The whole WORK leaves (issue #244): every resume record whose contentId is
+// the BASE id of `imdb`, plus the card's own key. The keys come back for the
+// account delete (syncprog_remover takes the whole list). `keys` may be NULL.
+// Returns how many keys were filled (0 without `keys`).
+#define PROG_WORK_MAX 16
+int  prog_remove_work(const char *imdb, int season, int episode,
+                      char keys[][48], int max);
+
 // "TIRADO DE CONTINUAR ASSISTINDO EM <instante>". prog_remover so APAGA a linha
 // local, e o Trakt/Simkl/conta so esquecem o item quando o DELETE deles chega:
 // uma refacao da fileira que le o remoto antes disso (fio de

@@ -239,6 +239,41 @@ static void limiteEscolheOsMaisNovos(void) {
   puts("ok  leitura limitada inclui os mais novos antes de truncar");
 }
 
+static void removeWholeWork(void) {
+  char keys[PROG_WORK_MAX][48];
+  ProgRegistro r[8];
+  int n, i, found2 = 0, found3 = 0;
+  zerar(NULL);
+  agora = 1757000300000LL;
+  assert(prog_gravar_local("tt7777777", 1, 2, 30, 1000));
+  assert(prog_gravar_local("tt7777777", 1, 3, 40, 1000));
+  assert(prog_gravar_local("tt8888888", 1, 2, 30, 1000));
+
+  // The card names an episode NO record has ("tt7777777:1:9" - the title pass
+  // re-points it): every record of the WORK goes, the neighbour stays, and the
+  // keys come back for the account DELETE: the records' and the card's own.
+  n = prog_remove_work("tt7777777:1:9", 1, 9, keys, PROG_WORK_MAX);
+  assert(n == 3);
+  assert(!strcmp(keys[0], "tt7777777_s1e9"));
+  for (i = 1; i < n; i++) {
+    if (!strcmp(keys[i], "tt7777777_s1e2")) found2 = 1;
+    if (!strcmp(keys[i], "tt7777777_s1e3")) found3 = 1;
+  }
+  assert(found2 && found3);
+  assert(prog_ler(r, 8) == 1 && !strcmp(r[0].contentId, "tt8888888"));
+
+  // Again: only the card key is left to name, nothing left to remove.
+  n = prog_remove_work("tt7777777:1:9", 1, 9, keys, PROG_WORK_MAX);
+  assert(n == 1 && !strcmp(keys[0], "tt7777777_s1e9"));
+
+  // Without keys (desc_tirar_continuar): the same removal.
+  assert(prog_gravar_local("tt7777777", 2, 5, 10, 500));
+  assert(prog_remove_work("tt7777777", 2, 5, NULL, 0) == 0);
+  assert(prog_ler(r, 8) == 1);
+
+  puts("ok  removeWholeWork: the work records go, the neighbour stays");
+}
+
 int main(void) {
   prog_definir_relogio(relogio);
   chaveIgualAoWeb();
@@ -250,6 +285,7 @@ int main(void) {
   sobreviveAoDisco();
   temposInvalidosNaoEntram();
   limiteEscolheOsMaisNovos();
+  removeWholeWork();
   puts("progresso: tudo ok");
   return 0;
 }

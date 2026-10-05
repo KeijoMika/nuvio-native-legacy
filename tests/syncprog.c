@@ -271,6 +271,32 @@ static void pullDoPerfilAnteriorNaoSeMistura(void) {
   puts("ok  pull do perfil anterior e descartado depois da troca de perfil");
 }
 
+static void deleteWorkOneRequest(void) {
+  char keys[PROG_WORK_MAX][48];
+  int n;
+  zerar();
+  agora = 1757000400000LL;
+  assert(prog_gravar_local("tt7777777", 1, 2, 30, 1000));
+  assert(prog_gravar_local("tt7777777", 1, 3, 40, 1000));
+  assert(prog_gravar_local("tt8888888", 1, 2, 30, 1000));
+
+  // The keys of the WORK leave in ONE request (issue #244): the records' and
+  // the card's own - the card can name an episode no record has. The neighbour
+  // work's key is not in the list.
+  n = prog_remove_work("tt7777777:1:9", 1, 9, keys, PROG_WORK_MAX);
+  assert(n == 3);
+  assert(syncprog_remover(keys, n) == 1);
+  assert(chamadas == 1 && !strcmp(ultimaFuncao, "sync_delete_watch_progress"));
+  assert(tem("\"p_keys\""));
+  assert(tem("tt7777777_s1e9") && tem("tt7777777_s1e2") && tem("tt7777777_s1e3"));
+  assert(!tem("tt8888888"));
+
+  // No keys, no request.
+  chamadas = 0;
+  assert(syncprog_remover(keys, 0) == 0 && chamadas == 0);
+  puts("ok  deleteWorkOneRequest: every key of the work in one request");
+}
+
 int main(void) {
   prog_definir_relogio(relogio);
   pushNoFormatoDoWeb();
@@ -281,6 +307,7 @@ int main(void) {
   confirmacaoPreservaEscritaNovaEPerfil();
   pullRecusaNumerosForaDaFaixa();
   pullDoPerfilAnteriorNaoSeMistura();
+  deleteWorkOneRequest();
   puts("syncprog: tudo ok");
   return 0;
 }

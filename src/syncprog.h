@@ -34,9 +34,10 @@ int  syncprog_aplicar(int *casaram);
 int  syncprog_puxadas(void);
 
 // Esvazia a caixa sem aplicar (logout).
-// Apaga uma entrada de progresso NA CONTA (sync_delete_watch_progress), pela
-// chave de prog_chave. Ver a nota longa em syncprog.c.
-int  syncprog_remover(const char *chave);
+// Apaga chaves de progresso NA CONTA (sync_delete_watch_progress), numa
+// requisicao so com a lista inteira — as chaves de uma OBRA (prog_remove_work,
+// issue #244). Ver a nota longa em syncprog.c.
+int  syncprog_remover(const char keys[][48], int n);
 // Marca (visto=1) ou desmarca (0) um lote de episodios NA CONTA, numa RPC so.
 // Push leva itens completos, delete leva chaves — formas diferentes, ver a nota
 // em syncprog.c. SINCRONO, como o resto deste modulo.

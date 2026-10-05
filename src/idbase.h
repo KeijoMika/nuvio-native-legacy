@@ -38,6 +38,12 @@ static inline size_t idbase_len(const char *id) {
   return n;
 }
 
+// Same work: the same BASE id ("tt1:2:5" and "tt1:7:9" are one work).
+static inline int idbase_equal(const char *a, const char *b) {
+  size_t la = idbase_len(a), lb = idbase_len(b);
+  return la > 0 && la == lb && !strncmp(a, b, la);
+}
+
 // O id base copiado para `dst`.
 static inline void idbase_copiar(const char *id, char *dst, size_t tam) {
   size_t n = idbase_len(id);

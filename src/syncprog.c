@@ -193,24 +193,24 @@ int syncprog_empurrar(void) {
 // `p_keys` e a chave de progresso (prog_chave), a mesma que o push manda em
 // `progress_key` — e nao o content_id. Mandar o id apagaria todos os episodios
 // da serie.
-int syncprog_remover(const char *chave) {
+int syncprog_remover(const char keys[][48], int n) {
   Jsw w;
   char *r;
-  int st = 0, ok;
-  if (!chave || !chave[0]) return 0;
+  int st = 0, ok, i;
+  if (!keys || n <= 0) return 0;
   jsw_iniciar(&w);
   jsw_obj_ini(&w);
   jsw_chave(&w, "p_keys");
   jsw_arr_ini(&w);
-  jsw_str(&w, chave);
+  for (i = 0; i < n; i++) jsw_str(&w, keys[i]);
   jsw_arr_fim(&w);
   jsw_obj_fim(&w);
   r = sessao_rpc("sync_delete_watch_progress", jsw_texto_final(&w), &st);
   jsw_livre(&w);
   ok = ok2xx(r, st);
   free(r);
-  printf("[sync] progresso removido da conta: %s -> %s (HTTP %d)\n",
-         chave, ok ? "ok" : "falhou", st);
+  printf("[sync] account progress removed: %d key(s) -> %s (HTTP %d)\n",
+         n, ok ? "ok" : "failed", st);
   fflush(stdout);
   return ok;
 }

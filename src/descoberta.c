@@ -2872,12 +2872,11 @@ int desc_montando(void) {
 }
 
 int desc_tirar_continuar(const char *imdb, int temporada, int episodio) {
-  char chave[192];
   if (!imdb || !imdb[0]) return 0;
-  // A chave e montada do mesmo jeito que progresso.c monta ao gravar — com
-  // temporada e episodio quando ha —, senao a linha apagada seria outra.
-  prog_chave(chave, sizeof chave, imdb, temporada, episodio);
-  prog_remover(chave);
+  // The whole WORK leaves locally (issue #244): the row is one card per work
+  // and the card can name another episode than its record. The remote DELETEs
+  // take the keys from prog_remove_work at the caller (ctxmenu.c).
+  prog_remove_work(imdb, temporada, episodio, NULL, 0);
   prog_marcar_removido(imdb);
   return cat_tirar_continuar(imdb);
 }

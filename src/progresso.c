@@ -350,6 +350,35 @@ void prog_remover(const char *chave) {
   DESTRANCAR();
 }
 
+// The whole WORK leaves (issue #244). The row is one card per work, and the
+// card can name another episode than the records behind it (the title pass
+// re-points it), so removing one episode key let the work come back. The card's
+// own key is always collected even with no record: the account may hold it
+// (the phone wrote it) while this device never stored it.
+int prog_remove_work(const char *imdb, int season, int episode,
+                     char keys[][48], int max) {
+  char workId[48], cardKey[48];
+  int i, k, profile = perfis_ativo(), n = 0, changed = 0;
+  prog_content_id(workId, sizeof workId, imdb, NULL, NULL);
+  prog_chave(cardKey, sizeof cardKey, imdb, season, episode);
+  if (!workId[0]) return 0;
+  if (keys && max > 0) snprintf(keys[n++], sizeof keys[0], "%s", cardKey);
+  TRANCAR();
+  carregar();
+  for (i = 0; i < nRegs; ) {
+    if (regs[i].perfil != profile || strcmp(regs[i].contentId, workId)) { i++; continue; }
+    if (keys) {
+      for (k = 0; k < n && strcmp(keys[k], regs[i].chave); k++) {}
+      if (k == n && n < max) snprintf(keys[n++], sizeof keys[0], "%s", regs[i].chave);
+    }
+    regs[i] = regs[--nRegs];
+    changed = 1;
+  }
+  if (changed) gravar();
+  DESTRANCAR();
+  return n;
+}
+
 // --- REMOCOES DE "CONTINUAR ASSISTINDO" ---------------------------------------
 //
 // SO EM MEMORIA, e de proposito. A janela que isto cobre e a do DELETE em voo

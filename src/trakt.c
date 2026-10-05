@@ -3,6 +3,7 @@
 #include "ajustes.h"
 #include "artemetahub.h"
 #include "descoberta.h"
+#include "idbase.h"
 #include "jsw.h"
 #include "idioma.h"
 #include "rede.h"
@@ -651,16 +652,22 @@ static struct { char chave[28]; long long id; } play[TK_PLAY_MAX];   // nPlay: v
 // Devolve 0 quando nao ha o que apagar: Trakt desligado, ou id desconhecido
 // porque a fileira veio do progresso da CONTA e nao do Trakt. Nao e erro; o
 // chamador tem a sua propria remocao a fazer de qualquer jeito.
+//
+// The match is idbase_equal - the whole WORK, never the composite identity.
+// The card can name another episode than the record that keeps the work in the
+// row (the progress pass re-points the card to the newest episode), and the
+// Salvos panel passes the bare title id. Matching the composite id left those
+// records alive and the work came back on the next launch.
 int trakt_playback_remover(const char *imdb) {
   const char *cab[4];
   char aut[200], chaveCab[140], url[96];
   char *r;
-  int i, st = 0, ok;
-  long long id = 0;
+  int i, st = 0, ok, tried = 0, deletedCount = 0;
+  long long id;
   if (!ligado || !imdb || !imdb[0]) return 0;
   for (i = 0; i < nPlay; i++)
-    if (!strcmp(play[i].chave, imdb)) { id = play[i].id; break; }
-  if (!id) {
+    if (idbase_equal(play[i].chave, imdb)) { tried++; }
+  if (!tried) {
     printf("[trakt] playback: sem id para %s (nao veio do Trakt)\n", imdb);
     fflush(stdout);
     return 0;
@@ -671,20 +678,31 @@ int trakt_playback_remover(const char *imdb) {
   cab[1] = "trakt-api-version: 2";
   cab[2] = chaveCab;
   cab[3] = NULL;
-  snprintf(url, sizeof url, "https://api.trakt.tv/sync/playback/%lld", id);
-  r = rede_apagar(url, 20, cab, &st);
-  ok = st >= 200 && st < 300;
-  free(r);
-  printf("[trakt] playback remover %s (id %lld) -> %s (HTTP %d)\n",
-         imdb, id, ok ? "ok" : "falhou", st);
-  fflush(stdout);
-  // SO ESQUECE O ID SE O SERVIDOR ACEITOU. Apagar a linha da tabela num 5xx
-  // faria a segunda tentativa dizer "sem id" e a pessoa nunca mais conseguiria
-  // remover aquele item sem reabrir o app.
-  if (ok)
-    for (i = 0; i < nPlay; i++)
-      if (!strcmp(play[i].chave, imdb)) { play[i].chave[0] = 0; break; }
-  return ok;
+  // Every record of the work, not just the first (issue #244). `/sync/playback`
+  // returns one record per paused resume, and there used to be a `break` on the
+  // first match - so the others survived and the card came back. Several can be
+  // of the same work and of DIFFERENT episodes; `chave` is the composite
+  // identity each record was read with, and idbase_equal covers them all.
+  for (i = 0; i < nPlay; i++) {
+    if (!idbase_equal(play[i].chave, imdb)) continue;
+    id = play[i].id;
+    if (!id) continue;
+    snprintf(url, sizeof url, "https://api.trakt.tv/sync/playback/%lld", id);
+    st = 0;
+    r = rede_apagar(url, 20, cab, &st);
+    ok = st >= 200 && st < 300;
+    free(r);
+    printf("[trakt] playback remover %s (id %lld) -> %s (HTTP %d)\n",
+           imdb, id, ok ? "ok" : "failed", st);
+    fflush(stdout);
+    // Only forget the id if the server accepted: on a 5xx the next attempt would
+    // report "no id" and the item could never be removed without reopening.
+    if (ok) { play[i].chave[0] = 0; play[i].id = 0; deletedCount++; }
+  }
+  if (tried > 1)
+    printf("[trakt] %s: %d playback record(s), %d deleted\n",
+           imdb, tried, deletedCount);
+  return deletedCount > 0;
 }
 
 // MARCA OU DESMARCA UM LOTE DE EPISODIOS NO TRAKT.

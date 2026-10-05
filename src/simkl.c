@@ -3,6 +3,7 @@
 // modelo de fios.
 #include "simkl.h"
 #include "simklauth.h"
+#include "idbase.h"
 #include "nuvem.h"
 #include "rede.h"
 #include "js.h"
@@ -747,19 +748,31 @@ static void *fioApagar(void *u) {
   return NULL;
 }
 
-int simkl_playback_remover(const char *imdb) {
-  long long *id;
-  pthread_t t;
-  int i;
-  if (!simkl_ativo() || !imdb || !imdb[0]) return 0;
-  id = (long long *)malloc(sizeof *id);
-  if (!id) return 0;
-  *id = 0;
+// The ids of every record of the WORK (issue #244): the match is the BASE id
+// (idbase.h) because the card can name another episode than the record behind
+// it (the progress pass re-points it), and one work can hold several records.
+static int playWorkIds(const char *imdb, long long *ids, int max) {
+  int i, n = 0;
   pthread_mutex_lock(&trava);
-  for (i = 0; i < nPlay; i++) if (!strcmp(play[i].chave, imdb)) { *id = play[i].id; break; }
+  for (i = 0; i < nPlay && n < max; i++)
+    if (idbase_equal(play[i].chave, imdb) && play[i].id > 0) ids[n++] = play[i].id;
   pthread_mutex_unlock(&trava);
-  if (!*id) { free(id); return 0; }   // nao veio do Simkl: nada a apagar la
-  if (pthread_create(&t, NULL, fioApagar, id) != 0) { free(id); return 0; }
-  pthread_detach(t);
-  return 1;
+  return n;
+}
+
+int simkl_playback_remover(const char *imdb) {
+  long long ids[16], *one;   // same cap as PROG_WORK_MAX (progresso.h)
+  int i, n, scheduled = 0;
+  if (!simkl_ativo() || !imdb || !imdb[0]) return 0;
+  n = playWorkIds(imdb, ids, (int)(sizeof ids / sizeof ids[0]));
+  for (i = 0; i < n; i++) {   // every record of the work, not just the first
+    pthread_t t;
+    one = (long long *)malloc(sizeof *one);
+    if (!one) continue;
+    *one = ids[i];
+    if (pthread_create(&t, NULL, fioApagar, one) != 0) { free(one); continue; }
+    pthread_detach(t);
+    scheduled++;
+  }
+  return scheduled > 0;
 }

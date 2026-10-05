@@ -231,11 +231,12 @@ static float prevT = 1.0f;
 // Os DELETE remotos de "Tirar de Continuar assistindo", fora do fio de
 // desenho. Nenhum dos dois e obrigatorio: sem Trakt nao ha id de playback, sem
 // conta nao ha RPC. Os dois dizem no log o que fizeram.
-typedef struct { char imdb[64]; char chave[192]; } TirarRemoto;
+typedef struct { char imdb[64]; int season, episode;
+                 char keys[PROG_WORK_MAX][48]; int nKeys; } TirarRemoto;
 static void *fioTirarRemoto(void *u) {
   TirarRemoto *tr = (TirarRemoto *)u;
   trakt_playback_remover(tr->imdb);
-  syncprog_remover(tr->chave);
+  syncprog_remover(tr->keys, tr->nKeys);
   free(tr);
   return NULL;
 }
@@ -478,16 +479,43 @@ static void espelharAssistido(int atual, const CatItem *ci, int intencao) {
   // retomar. So na direcao "assistido"; desmarcar nao inventa uma
   // posicao que ninguem gravou.
   if (intencao) {
-    char chave[192];
-    prog_chave(chave, sizeof chave, ci->imdb, ci->temporada, ci->episodio);
-    prog_remover(chave);
-    // As mesmas tres fontes de "Tirar de Continuar assistindo": quem
-    // marcou como visto tambem nao quer o card de retomada de volta
-    // no proximo ciclo.
-    trakt_playback_remover(ci->imdb);
-    simkl_playback_remover(ci->imdb);
-    syncprog_remover(chave);
+    // The whole WORK leaves every source (issue #244): the row is one card per
+    // work, so removing one episode key let the rest of the work come back.
+    // The keys go to the account DELETE as one list.
+    char imdb[64];
+    char keys[PROG_WORK_MAX][48];
+    int season = ci->temporada, episode = ci->episodio, nKeys;
+    TirarRemoto *tr;
+    pthread_t t;
+    snprintf(imdb, sizeof imdb, "%s", ci->imdb);
+    nKeys = prog_remove_work(imdb, season, episode, keys, PROG_WORK_MAX);
     cat_zerar_progresso(atual);
+    // The stamp is what makes the removal win (issue #244): without it the
+    // deletes only remove what exists, and the next cycle finds the record
+    // in /sync/playback again - the progress bar gone and the card still there.
+    // "Tirar de Continuar assistindo" already stamped; this path did not.
+    prog_marcar_removido(imdb);
+    // The remote DELETEs leave on a thread, the same door as "Tirar de
+    // Continuar assistindo" (fioTirarRemoto): they were synchronous here, on
+    // the drawing thread, and the Trakt side now loops every record of the
+    // work. The local effect above is already done and does not wait.
+    tr = (TirarRemoto *)calloc(1, sizeof *tr);
+    if (tr) {
+      snprintf(tr->imdb, sizeof tr->imdb, "%s", imdb);
+      tr->season = season; tr->episode = episode;
+      memcpy(tr->keys, keys, sizeof keys);
+      tr->nKeys = nKeys;
+      if (pthread_create(&t, NULL, fioTirarRemoto, tr) == 0) pthread_detach(t);
+      else fioTirarRemoto(tr);   // no thread: do it here, as before
+    } else {
+      trakt_playback_remover(imdb);
+      syncprog_remover(keys, nKeys);
+    }
+    simkl_playback_remover(imdb);   // spawns its own threads
+    // The card leaves the row NOW, like "Tirar de Continuar assistindo" - it
+    // used to sit there with an empty progress bar until the next publish.
+    // LAST: cat_tirar_continuar shifts the catalog block `ci` points into.
+    cat_tirar_continuar(imdb);
   }
 }
 
@@ -646,6 +674,14 @@ static void aplicar(void) {
       int temp = ci->temporada, ep = ci->episodio;
       pthread_t t;
       snprintf(imdb, sizeof imdb, "%s", ci->imdb);
+      // The keys are collected while the records still exist: the local wipe in
+      // desc_tirar_continuar takes them, and the thread deletes them on the
+      // account as one list (the whole WORK, issue #244).
+      if (tr) {
+        snprintf(tr->imdb, sizeof tr->imdb, "%s", imdb);
+        tr->season = temp; tr->episode = ep;
+        tr->nKeys = prog_remove_work(imdb, temp, ep, tr->keys, PROG_WORK_MAX);
+      }
       // Efeito local e imediato, ANTES da rede: zera o que a legenda desenha
       // neste indice (o card pode estar numa fileira de catalogo com barra) e
       // desc_tirar_continuar apaga o registro, carimba a remocao e tira o card
@@ -670,8 +706,6 @@ static void aplicar(void) {
       // importar: uma refacao que leia o Trakt antes do DELETE chegar recebe o
       // paused_at velho, e a remocao vence (prog_removido_vence).
       if (tr) {
-        snprintf(tr->imdb, sizeof tr->imdb, "%s", imdb);
-        prog_chave(tr->chave, sizeof tr->chave, imdb, temp, ep);
         if (pthread_create(&t, NULL, fioTirarRemoto, tr) == 0) pthread_detach(t);
         else fioTirarRemoto(tr);   // sem fio: faz aqui, como antes
       }
