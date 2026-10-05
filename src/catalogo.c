@@ -655,7 +655,11 @@ int ajustes_idioma(void);
 // com perfil 1 continua certo (era o dono daquele Trakt) e e aceito, para o
 // perfil 1 nao pagar um arranque sem cache por nada; o de qualquer outro
 // perfil e recusado e apagado.
-#define CACHE_VERSAO 6
+// VERSAO 7: CatItem.classificacao grew from 8 to 12 bytes (issue #243): the
+// real age rating is a word ("TV-Y7-FV" did not fit and was cut). Same
+// protocol as VERSAO 4 - the size guard would refuse anyway, the version
+// makes the refusal name the field.
+#define CACHE_VERSAO 7
 #define CACHE_VERSAO_SO_P1 5
 
 typedef struct {

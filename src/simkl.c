@@ -209,7 +209,8 @@ int simkl_ler_plantowatch(const char *json, int serie, CatItem *dst, int max) {
     arte_metahub_preencher(d);
     snprintf(d->genero, sizeof d->genero, "%s",
              i18n(serie ? "Programa de TV" : "Filme"));
-    snprintf(d->classificacao, sizeof d->classificacao, "14");
+    // No invented age rating (issue #243): same hard-coded "14" as trakt.c. The
+    // response carries no certification, so the field stays empty.
     n++;
   }
   return n;

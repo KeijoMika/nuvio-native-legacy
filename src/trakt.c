@@ -3,6 +3,7 @@
 #include "ajustes.h"
 #include "artemetahub.h"
 #include "descoberta.h"
+#include "idbase.h"
 #include "jsw.h"
 #include "idioma.h"
 #include "rede.h"
@@ -153,6 +154,9 @@ int trakt_recusada(void) { return estadoLer(&credRecusada); }
 // preenche). Os contadores ficam aqui porque trakt_esquecer os zera.
 static int nUlt, nProxIds, nPlay;
 
+// Defined with the table below; only trakt_esquecer needs it up here.
+static void ratingForget(void);
+
 void trakt_esquecer(void) {
   pthread_mutex_lock(&travaCred);
   if (!++credGeracao) ++credGeracao;
@@ -167,6 +171,8 @@ void trakt_esquecer(void) {
   // para os cards do perfil novo. Zerar contadores so encurta uma varredura que
   // o fio da descoberta esteja fazendo — nunca a faz passar do fim.
   nUlt = nProxIds = nPlay = 0;
+  // The ratings were that account's network session, not this one.
+  ratingForget();
   estadoEscrever(&credRecusada, 0);
   trakt_social_reavaliar();
   printf("[trakt] credencial esquecida\n");
@@ -338,7 +344,10 @@ static void doBlocoTrakt(CatItem *d, const char *bloco, const char *fim,
   // corrigiu a metade dele. Com o app em ingles a linha saia em portugues.
   snprintf(d->genero, sizeof d->genero, "%s",
            i18n((tipo && !strcmp(tipo, "series")) ? "Programa de TV" : "Filme"));
-  if (!d->classificacao[0]) snprintf(d->classificacao, sizeof d->classificacao, "14");
+  // The age rating the block actually sent ("TV-MA"), or empty. There used to be
+  // a hard-coded "14" here - a constant drawn as if it were data. Empty is
+  // honest, and the drawing side already guards on classificacao[0].
+  js_texto(bloco, fim, "certification", d->classificacao, sizeof d->classificacao);
 }
 
 // Arte e sinopse por id do IMDb. O Trakt devolve so identificadores e
@@ -371,6 +380,83 @@ static int episodioExiste(const char *corpo, const char *serie, int t, int e) {
   char chave[48];
   snprintf(chave, sizeof chave, "\"id\":\"%s:%d:%d\"", serie, t, e);
   return strstr(corpo, chave) != NULL;
+}
+
+// Ratings already fetched this session, by BASE id - the rating belongs to the
+// title, not the episode.
+//
+// Trakt's `?extended=full` has no `imdbRating`; the rating only exists in the
+// Cinemeta meta. Once the rating counts as a reason to fetch, a title whose
+// Cinemeta has none would pay a GET on every refill (montarContinuar rebuilds
+// the items from scratch each time). The VALUE is kept here, with or without a
+// rating, and `ratingApply` puts it back onto rebuilt items: the badge must
+// survive refills, and each title is asked once per session.
+//
+// A side table and not a CatItem field because sizeof(CatItem) is the on-disk
+// cache header: growing it invalidates every cache already written.
+#define TK_RATING_MAX 128
+static struct { char id[24]; int rating; } tkRating[TK_RATING_MAX];
+static unsigned nTkRating, proxTkRating;
+static pthread_mutex_t ratingTrava = PTHREAD_MUTEX_INITIALIZER;
+
+static void ratingRemember(const char *imdb, int rating) {
+  char id[24];
+  unsigned i;
+  if (!imdb || !imdb[0]) return;
+  snprintf(id, sizeof id, "%.*s", (int)idbase_len(imdb), imdb);
+  if (!id[0]) return;
+  pthread_mutex_lock(&ratingTrava);
+  for (i = 0; i < nTkRating; i++)
+    if (!strcmp(tkRating[i].id, id)) { pthread_mutex_unlock(&ratingTrava); return; }
+  i = nTkRating < TK_RATING_MAX ? nTkRating++ : proxTkRating++ % TK_RATING_MAX;
+  snprintf(tkRating[i].id, sizeof tkRating[i].id, "%s", id);
+  tkRating[i].rating = rating;
+  pthread_mutex_unlock(&ratingTrava);
+}
+
+// The remembered rating onto a rebuilt item (0 remembered = asked, none
+// published - then the item stays at 0 and no GET goes out).
+static void ratingApply(CatItem *d) {
+  char id[24];
+  unsigned i;
+  if (!d || d->nota > 0 || !d->imdb[0]) return;
+  snprintf(id, sizeof id, "%.*s", (int)idbase_len(d->imdb), d->imdb);
+  if (!id[0]) return;
+  pthread_mutex_lock(&ratingTrava);
+  for (i = 0; i < nTkRating; i++)
+    if (!strcmp(tkRating[i].id, id)) {
+      if (tkRating[i].rating > 0) d->nota = tkRating[i].rating;
+      break;
+    }
+  pthread_mutex_unlock(&ratingTrava);
+}
+
+static int ratingAsked(const char *imdb) {
+  char id[24];
+  unsigned i;
+  int found = 0;
+  if (!imdb || !imdb[0]) return 0;
+  snprintf(id, sizeof id, "%.*s", (int)idbase_len(imdb), imdb);
+  if (!id[0]) return 0;
+  pthread_mutex_lock(&ratingTrava);
+  for (i = 0; i < nTkRating; i++)
+    if (!strcmp(tkRating[i].id, id)) { found = 1; break; }
+  pthread_mutex_unlock(&ratingTrava);
+  return found;
+}
+
+// Account switch: those ratings were the previous session's.
+static void ratingForget(void) {
+  pthread_mutex_lock(&ratingTrava);
+  nTkRating = 0; proxTkRating = 0;
+  pthread_mutex_unlock(&ratingTrava);
+}
+
+// Complete for the row: art, synopsis, and the rating answered - read, or asked
+// and known absent. One rule for both shortcuts, which used to disagree.
+static int enfeitePronto(const CatItem *d) {
+  return d->poster[0] && d->backdrop[0] && d->sinopse[0] &&
+         (d->nota > 0 || ratingAsked(d->imdb));
 }
 
 static int enfeitar(CatItem *d, const char *tipo) {
@@ -406,10 +492,15 @@ static int enfeitar(CatItem *d, const char *tipo) {
   // Medido no Mac: 2,1 s no caso bom; com um item lento eram 20 s vazios.
   corpo = rede_baixar(url, 8);
   if (!corpo) {
+    // Do NOT mark the question on a failed GET: a network failure is transient,
+    // and marking it would deny the rating for the rest of the session.
+    //
     // "A seguir" sem meta: nao da para confirmar que o episodio existe.
     if (proximo) return 0;
     return d->poster[0] != 0;
   }
+  // Answer received, with or without a rating: ask at most once per session.
+  // (remembered at the end, with the value; failed GETs never reach it)
   // "A SEGUIR" SO ENTRA SE O EPISODIO EXISTE. Depois do ultimo da temporada o
   // proximo e o primeiro da seguinte; depois do ultimo da serie nao ha
   // proximo, e a serie nao entra — nao e "continuar", e "acabou".
@@ -553,14 +644,18 @@ static int enfeitar(CatItem *d, const char *tipo) {
     }
   }
   free(corpo);
+  // Answer received, with or without a rating: remember the VALUE for the next
+  // refill - montarContinuar rebuilds the items and would lose it otherwise.
+  ratingRemember(d->imdb, d->nota);
   return d->poster[0] != 0;
 }
 
 // ENFEITAR EM PARALELO.
 //
-// Arte vem do metahub (sem GET). O Cinemeta so entra quando falta sinopse/
-// runtime/nota ou para validar "a seguir". Ate 8 GETs em paralelo no pior
-// caso; quem ja veio do Trakt `extended=full` pula tudo.
+// Art comes from the metahub (no GET). The Cinemeta only enters when synopsis/
+// runtime/rating are missing or to validate "next up". Up to TK_FIOS GETs in
+// parallel; an item that came from `extended=full` saves the art and the synopsis
+// but NOT the rating - that block has no `imdbRating`.
 //
 // Cada `enfeitar` so escreve no seu proprio CatItem e nao toca estado
 // compartilhado, entao a paralelizacao e direta. A ordem do historico e
@@ -581,9 +676,9 @@ static void *fioEnfeitar(void *u) {
     meu = enfProx++;
     pthread_mutex_unlock(&enfTrava);
     { CatItem *d = enfTarefas[meu].d;
-      // Pronto = arte + sinopse. Arte so (metahub) ainda pode querer o
-      // Cinemeta para texto; `ok` 1 sobrevive a compactacao.
-      if (d->poster[0] && d->backdrop[0] && d->sinopse[0]) enfTarefas[meu].ok = 1;
+      // Was "art + synopsis" alone, which is exactly what an item from
+      // `extended=full` already has - so it escaped without reading the rating.
+      if (enfeitePronto(d)) enfTarefas[meu].ok = 1;
       else enfTarefas[meu].ok = enfeitar(d, enfTarefas[meu].tipo); }
   }
 }
@@ -603,9 +698,15 @@ int trakt_enfeitar_lote(CatItem *saida, int n) {
   // `?extended=full` chega com arte e sinopse (ver doBlocoTrakt); o item vindo
   // do progresso LOCAL chega zerado — metahub cobre a arte sem Cinemeta, e o
   // Cinemeta so e tentado para texto. Guarda por CONTEUDO, nao por origem.
-  for (q0 = 0; q0 < n; q0++)
-    if (saida[q0].poster[0] && saida[q0].backdrop[0] && saida[q0].sinopse[0])
+  //
+  // The remembered rating goes back FIRST: a refill rebuilds the items, and
+  // the table keeps the VALUE, not just the question (issue #243). Then the
+  // rating counts as a reason to fetch; see enfeitePronto and TK_RATING_MAX.
+  for (q0 = 0; q0 < n; q0++) {
+    ratingApply(&saida[q0]);
+    if (enfeitePronto(&saida[q0]))
       jaFeitos++;
+  }
   if (jaFeitos) { printf("[trakt] enfeite: %d de %d ja vieram prontos\n", jaFeitos, n);
                   fflush(stdout); }
   if (jaFeitos == n) return n;
@@ -631,7 +732,7 @@ int trakt_enfeitar_lote(CatItem *saida, int n) {
     // Sem memoria para a fila: em serie, no proprio fio.
     int r, w;
     for (r = 0, w = 0; r < n; r++)
-      if ((saida[r].poster[0] && saida[r].backdrop[0] && saida[r].sinopse[0]) ||
+      if (enfeitePronto(&saida[r]) ||
           enfeitar(&saida[r], saida[r].tipo)) { if (w != r) saida[w] = saida[r]; w++; }
     n = w;
   }
@@ -1523,7 +1624,9 @@ int trakt_lista(const char *qual, CatItem *saida, int max) {
           arte_metahub_preencher(d);
           snprintf(d->genero, sizeof d->genero, "%s",
                    i18n(passo ? "Programa de TV" : "Filme"));
-          snprintf(d->classificacao, sizeof d->classificacao, "14");
+          // No invented age rating: there used to be a hard-coded "14" here. This
+          // function has no `certification` in hand, so the field stays empty -
+          // which is honest, and the drawing side guards on classificacao[0].
           n++;
         }
       }

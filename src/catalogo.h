@@ -46,7 +46,7 @@ typedef struct {
   char titulo[160];
   char genero[160];    // "Programa de TV · Drama · Misterio"
   char meta[96];       // "2022 · 3 temporadas"
-  char classificacao[8];
+  char classificacao[12];
   char sinopse[900];
   // Elenco real: nome, papel e a foto (quando o TMDB tem). Sem isto a secao
   // "Elenco e equipe" fica com nomes inventados, e nomes inventados nao testam
