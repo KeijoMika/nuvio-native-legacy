@@ -1078,6 +1078,22 @@ static int normalizarIndice(int indice) {
   return ((indice % i) + i) % i;
 }
 
+// An id that already carries an episode has to keep carrying the SAME episode as
+// the fields. Otherwise the item has two identities: the id names one episode,
+// the fields another, and removing the card deletes one record while the remote
+// DELETE targets the other.
+static void updateIdEpisode(CatItem *c) {
+  char id[sizeof c->imdb];
+  size_t base;
+  if (!idbase_tem_episodio(c->imdb)) return;
+  if (!(c->temporada > 0 && c->episodio > 0)) return;   // never write ":0:e"
+  base = idbase_len(c->imdb);
+  if ((size_t)snprintf(id, sizeof id, "%.*s:%d:%d", (int)base, c->imdb,
+                       c->temporada, c->episodio) >= sizeof id) return;
+  if (!strcmp(id, c->imdb)) return;
+  snprintf(c->imdb, sizeof c->imdb, "%s", id);
+}
+
 void cat_apontar_episodio(int indice, int temporada, int episodio) {
   int e;
   indice = normalizarIndice(indice);
@@ -1086,6 +1102,7 @@ void cat_apontar_episodio(int indice, int temporada, int episodio) {
     itens[indice].nomeEpisodio[0] = 0;
   itens[indice].temporada = temporada;
   itens[indice].episodio  = episodio;
+  updateIdEpisode(&itens[indice]);
   mudou();
   for (e = 0; e < cat_n_episodios(indice); e++) {
     const CatEp *ep = cat_episodio(indice, e);
