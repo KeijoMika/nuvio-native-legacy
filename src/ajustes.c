@@ -3792,6 +3792,35 @@ static int somenteDesteAparelho(int op) {
   }
 }
 
+// O que descreve ESTA TV (hardware, rede, memoria, idioma da interface) ou ja
+// tem armazenamento proprio por perfil: igual para todos os perfis. Decisao do
+// dono (06/10/2026): vidro, fundo, tamanho da UI, relogio, destaque/trailer,
+// linhas do titulo e legenda 2 saem daqui e passam a ser por perfil; 4K,
+// memoria, rede e idioma da interface ficam. Segredos nunca estao em valor[].
+static int soNaTv(int op) {
+  switch (op) {
+    case AJ_ICONE_APP: case AJ_LOGO_APP: case AJ_ABERTURA:
+    case AJ_IDIOMA: case AJ_FONTE_UI: case AJ_ANIM:
+    case AJ_RESOLUCAO: case AJ_TEX_MB: case AJ_QUALIDADE_IMG: case AJ_GPU_EFEITOS:
+    case AJ_MEDIDOR: case AJ_ENVIO_AUTO: case AJ_AVANCADAS: case AJ_ITENS_FILEIRA:
+    case AJ_FIL_LIMITE: case AJ_FIL_ORDEM:
+    case AJ_ESMAECER: case AJ_BRILHO_PLAYER: case AJ_PROPORCAO_PADRAO: case AJ_MANTER_VIDEO:
+    case AJ_DESCANSO_ESTILO: case AJ_DESCANSO_FONTE:
+    case AJ_CACHE_SEEK: case AJ_TRAILER_ZOOM_TPK: case AJ_LEG_SYNC_AUDIO:
+    case AJ_LIVETV_RES: case AJ_LIVETV_FORMATO: case AJ_LIVETV_ESPERA:
+    case AJ_LIVETV_DIAG: case AJ_LIVETV_MODO: case AJ_LIVETV_PROXY:
+    case AJ_P2P_LIGADO: case AJ_JF_LIGADO: case AJ_POSTER_PROV: case AJ_EPG_PAIS:
+    case AJ_DET_SO_CINEMETA: case AJ_BUSCA_CINEMETA:
+    case AJ_FONTE_MANUAL: case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_FONTE_PRAZO:
+    case AJ_ADDONS_PRINCIPAL:
+    case AJ_SELOS_PACOTE: case AJ_SELOS_PACOTE_ADD: case AJ_SELOS_PACOTE_REM:
+    case AJ_PERFIL_PESQ: case AJ_PERFIL_EDITAR: case AJ_PERFIL_INFANTIL:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 // AJUSTES POR PERFIL NESTA TV. ajustes.txt e um so por aparelho; a conta guarda
 // um blob por perfil, mas um perfil que nunca salvou ajustes na conta nao tem
 // blob — e ai a troca de perfil nao trazia nada, ficava o que o perfil anterior
@@ -3801,63 +3830,96 @@ static int somenteDesteAparelho(int op) {
 // A copia por perfil guarda SO o que e do perfil: o que a conta tambem guarda
 // (o mesmo conjunto que ajustes_mesclar_blob considera). O que descreve esta
 // TV (somenteDesteAparelho, idioma, fonte da interface) nao muda com o perfil.
+static int soNaTv(int op);
+// 2.1: TRES ESCOPOS (plano ajustes-por-perfil). somenteDesteAparelho continua
+// decidindo so o que NUNCA entra no blob da conta; quem decide o que muda com o
+// perfil e escopoDe. Perfil-local = gosto da pessoa: fica em ajustes-p<N>.txt
+// desta TV e nunca sobe para a conta.
+typedef enum { ESC_NENHUM = 0, ESC_TV, ESC_PERFIL_CONTA, ESC_PERFIL_LOCAL } EscopoAj;
+static EscopoAj escopoDe(int op) {
+  if (op < 0 || op >= AJ_N) return ESC_NENHUM;
+  if (OPCOES[op].tipo == OP_LEITURA || OPCOES[op].tipo == OP_ACAO) return ESC_NENHUM;
+  if (!CHAVE[op] || CHAVE[op][0] == '-') return ESC_NENHUM;
+  if (soNaTv(op)) return ESC_TV;
+  return somenteDesteAparelho(op) ? ESC_PERFIL_LOCAL : ESC_PERFIL_CONTA;
+}
+int ajustes_escopo(int op) { return (int)escopoDe(op); }
 static int dePerfil(int i) {
-  if (OPCOES[i].tipo == OP_LEITURA || OPCOES[i].tipo == OP_ACAO) return 0;
-  if (!CHAVE[i] || CHAVE[i][0] == '-') return 0;
-  if (i == AJ_FONTE_UI || i == AJ_IDIOMA) return 0;
-  return !somenteDesteAparelho(i);
+  EscopoAj e = escopoDe(i);
+  return e == ESC_PERFIL_CONTA || e == ESC_PERFIL_LOCAL;
 }
 
 static void nomePerfil(char *dst, size_t tam, int perfil) {
   snprintf(dst, tam, "ajustes-p%d.txt", perfil);
 }
 
-void ajustes_perfil_guardar(int perfil) {
+// Grava o vetor `v` (um valor por opcao) como copia do perfil: so chaves
+// dePerfil, nunca um arquivo pela metade. 1 se gravou.
+static int perfilGravarVetor(int perfil, const int *v) {
   char nome[32], buf[AJ_N * 56];
   size_t p = 0;
   int i;
-  if (perfil <= 0) return;
+  if (perfil <= 0) return 0;
   buf[0] = 0;
   for (i = 0; i < AJ_N; i++) {
     int k;
     if (!dePerfil(i)) continue;
-    k = snprintf(buf + p, sizeof buf - p, "%s %d\n", CHAVE[i], valor[i]);
-    if (k < 0 || (size_t)k >= sizeof buf - p) return;   // nunca um arquivo pela metade
+    k = snprintf(buf + p, sizeof buf - p, "%s %d\n", CHAVE[i], v[i]);
+    if (k < 0 || (size_t)k >= sizeof buf - p) return 0;
     p += (size_t)k;
   }
   nomePerfil(nome, sizeof nome, perfil);
-  dados_gravar(nome, buf);
-  fonteregra_perfil_guardar(perfil);
+  return dados_gravar(nome, buf);
 }
 
-int ajustes_perfil_restaurar(int perfil) {
+// Le a copia do perfil: tem[i] = 1 para cada chave dePerfil presente e v[i] o
+// valor (limitado). Devolve 0 quando nao ha arquivo.
+static int perfilLerVetor(int perfil, int *v, char *tem) {
   char nome[32], *t, *l;
-  int mudou = 0;
+  memset(tem, 0, AJ_N);
   if (perfil <= 0) return 0;
-  // As listas e a regex do auto-play (#202) seguem o perfil do mesmo jeito.
-  fonteregra_perfil_restaurar(perfil);
   nomePerfil(nome, sizeof nome, perfil);
   t = dados_ler(nome);
   if (!t) return 0;
   for (l = t; l && *l; ) {
     char chave[64], *fim = strchr(l, '\n');
-    int v, i;
+    int x, i;
     if (fim) *fim = 0;
-    if (sscanf(l, "%63s %d", chave, &v) == 2)
+    if (sscanf(l, "%63s %d", chave, &x) == 2)
       for (i = 0; i < AJ_N; i++) {
         if (!dePerfil(i) || strcmp(CHAVE[i], chave)) continue;
-        v = limita(i, v);
-        if (v != valor[i]) { valor[i] = v; mudou++; }
+        v[i] = limita(i, x);
+        tem[i] = 1;
         break;
       }
     l = fim ? fim + 1 : NULL;
   }
   free(t);
+  return 1;
+}
+
+void ajustes_perfil_guardar(int perfil) {
+  if (perfil <= 0) return;
+  perfilGravarVetor(perfil, valor);
+  fonteregra_perfil_guardar(perfil);
+}
+
+int ajustes_perfil_restaurar(int perfil) {
+  int v[AJ_N], i, mudou = 0;
+  char tem[AJ_N];
+  if (perfil <= 0) return 0;
+  // As listas e a regex do auto-play (#202) seguem o perfil do mesmo jeito.
+  fonteregra_perfil_restaurar(perfil);
+  memcpy(v, valor, sizeof v);
+  if (!perfilLerVetor(perfil, v, tem)) return 0;
+  for (i = 0; i < AJ_N; i++)
+    if (tem[i] && v[i] != valor[i]) { valor[i] = v[i]; mudou++; }
   if (mudou) {
     gravar();
     aplicarIdioma(AJ_LEG_LINGUA);
     aplicarIdioma(AJ_LEG_LINGUA2);
     aplicarIdioma(AJ_AUD_LINGUA);
+    gfx_escala_ui_definir(ajustes_tamanho_ui());   // o tamanho da UI agora e do perfil
   }
   printf("[ajustes] ajustes do perfil %d restaurados desta TV (%d mudaram)\n",
          perfil, mudou);
@@ -3872,6 +3934,55 @@ void ajustes_perfil_esquecer(void) {
   // cobre com folga. Apagar arquivo que nao existe nao custa nada.
   for (i = 1; i <= 32; i++) { nomePerfil(nome, sizeof nome, i); dados_apagar(nome); }
   fonteregra_perfil_esquecer();
+  dados_apagar("ajustes-escopo.txt");
+  dados_apagar("ajustes.txt.pre21");
+  dados_apagar("admin-pin.txt");
+}
+
+// MIGRACAO 2.1 (uma vez). Ate a 2.0.x so ~60 chaves eram por perfil; as outras
+// (vidro, fundo, relogio, destaque...) viviam so no ajustes.txt da TV. Para
+// ninguem ver mudanca visual no upgrade: cada perfil conhecido parte do que a
+// TV usa hoje. Perfil sem copia ganha uma copia completa do valor[] atual;
+// perfil com copia antiga mantem o que tem e completa SO as chaves que faltam
+// (as que passaram a ser por perfil) com o valor atual. O perfil ativo e dono
+// de valor[], entao a copia dele e sempre completa. Backup unico do ajustes.txt
+// antes de qualquer coisa. Idempotente: o marcador so e gravado com perfis na
+// mao (sem perfis nao ha para quem copiar; roda de novo quando a lista chegar).
+int ajustes_migrar_escopo_para(const int *perfis, int n, int ativo) {
+  char *m, *bk;
+  int k;
+  if (n <= 0 || !perfis) return 0;
+  m = dados_ler("ajustes-escopo.txt");
+  if (m && atoi(m) >= 2) { free(m); return 0; }
+  free(m);
+  bk = dados_ler("ajustes.txt.pre21");
+  if (!bk) {
+    char *t = dados_ler("ajustes.txt");
+    if (t) { dados_gravar("ajustes.txt.pre21", t); free(t); }
+  } else free(bk);
+  for (k = 0; k < n; k++) {
+    int v[AJ_N], i;
+    char tem[AJ_N];
+    if (perfis[k] <= 0) continue;
+    memcpy(v, valor, sizeof v);
+    if (perfis[k] != ativo && perfilLerVetor(perfis[k], v, tem))
+      for (i = 0; i < AJ_N; i++) if (!tem[i]) v[i] = valor[i];
+      // (as chaves presentes ja vieram do arquivo em v[i])
+    perfilGravarVetor(perfis[k], v);
+  }
+  dados_gravar("ajustes-escopo.txt", "2\n");
+  printf("[ajustes] migracao 2.1: %d perfil(is) partem dos ajustes desta TV\n", n);
+  fflush(stdout);
+  return 1;
+}
+
+int ajustes_migrar_escopo(void) {
+  int ids[CONTA_PERFIL_MAX + 1], n = 0, i;
+  for (i = 0; i < perfis_n() && n < CONTA_PERFIL_MAX; i++) {
+    const ContaPerfil *p = perfis_item(i);
+    if (p && p->indice > 0) ids[n++] = p->indice;
+  }
+  return ajustes_migrar_escopo_para(ids, n, perfis_ativo());
 }
 
 // Onde esta o valor de `chave` dentro de [ini,fim): *vi aponta o primeiro

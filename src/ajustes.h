@@ -561,6 +561,12 @@ int ajustes_aplicar_blob(const char *json);
 void ajustes_perfil_guardar(int perfil);
 int  ajustes_perfil_restaurar(int perfil);
 void ajustes_perfil_esquecer(void);
+// 2.1: escopo de cada opcao: 0 nenhum (acao/leitura/estado em outro arquivo),
+// 1 desta TV, 2 do perfil e da conta (blob), 3 do perfil so nesta TV.
+int  ajustes_escopo(int op);
+// Migracao unica para o escopo por perfil (ver ajustes.c). Devolve 1 quando rodou.
+int  ajustes_migrar_escopo(void);
+int  ajustes_migrar_escopo_para(const int *perfis, int n, int ativo);
 
 // O CAMINHO DE VOLTA (#85): devolve em *saida uma copia do blob `base` (o mesmo
 // objeto `settings_json` que ajustes_aplicar_blob le) com os valores DESTA TV

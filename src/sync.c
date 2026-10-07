@@ -1868,6 +1868,7 @@ void sync_trocar_perfil(int antes) {
   char nome[40], *t;
   int pendente;
   if (antes <= 0 || antes == depois) { sync_reaplicar_ajustes(); return; }
+  ajustes_migrar_escopo();   // 2.1: no-op depois da primeira vez; antes de guardar o que sai
   // 1. O QUE SAI. Os valores na memoria ainda sao os dele: a troca acabou de
   //    acontecer e nada foi aplicado desde entao.
   ajustes_perfil_guardar(antes);
