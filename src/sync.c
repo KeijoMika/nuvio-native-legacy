@@ -1047,6 +1047,8 @@ static void empurrarAjustes(void) {
   Jsw w;
   int st = 0;
   if (!sujoAjustes) return;
+  // 2.1: valor[] e de outro perfil enquanto ele esta sendo editado: nada sobe.
+  if (ajustes_edicao_perfil()) return;
   if (jaAusente("sync_push_profile_settings_blob")) return;
   if (!ajustesBlob) {
     printf("[sync] ajustes locais pendentes, mas sem blob da conta para costurar: nada enviado\n");
@@ -1659,7 +1661,9 @@ void sync_passo(unsigned agoraMs) {
   else if (soAddons) desc_repetir_addons();
   else if (soFileiras) desc_remontar_fileiras();
   spMarcar(SP_REMONTAR); }
-  if (temAjustesBlob && ajustesBlob) {
+  // 2.1: durante a edicao dos ajustes de OUTRO perfil, valor[] e dele; o blob do
+  // ativo espera a edicao acabar (ajustes_edicao_encerrar chama sync_reaplicar_ajustes).
+  if (temAjustesBlob && ajustesBlob && !ajustes_edicao_perfil()) {
     ajustes_aplicar_blob(ajustesBlob);
     // O BLOB NAO E LIBERADO AQUI (mudou em #85): ele e a base da costura que
     // sobe no proximo ciclo. Quem o libera e o pull seguinte, que o substitui,
@@ -1854,6 +1858,17 @@ static void nomeLocaisPerfil(char *dst, size_t tam, int perfil) {
   snprintf(dst, tam, "ajustes-locais-p%d.txt", perfil);
 }
 
+// 2.1: uma copia de ajustes feita por outro perfil (admin) deixa a pendencia
+// escrita no perfil de destino. Nunca sobe agora: so quando ele for o ativo
+// (sync_trocar_perfil) e a costura tiver o blob dele.
+void sync_marcar_ajustes_pendentes_perfil(int perfil) {
+  char nome[40];
+  if (perfil <= 0) return;
+  if (perfil == perfis_ativo()) { sync_proteger_ajustes_locais(); return; }
+  nomeLocaisPerfil(nome, sizeof nome, perfil);
+  dados_gravar(nome, "1\n");
+}
+
 static int perfilPrincipal(void) {
   int i;
   for (i = 0; i < perfis_n(); i++) {
@@ -1867,6 +1882,7 @@ void sync_trocar_perfil(int antes) {
   int depois = perfis_ativo();
   char nome[40], *t;
   int pendente;
+  ajustes_edicao_encerrar();   // 2.1: nunca trocar de perfil com a edicao de outro em curso
   if (antes <= 0 || antes == depois) { sync_reaplicar_ajustes(); return; }
   ajustes_migrar_escopo();   // 2.1: no-op depois da primeira vez; antes de guardar o que sai
   // 1. O QUE SAI. Os valores na memoria ainda sao os dele: a troca acabou de
@@ -2016,7 +2032,7 @@ void sync_esquecer_usuario(void) {
     for (i = 1; i <= 32; i++) { nomeLocaisPerfil(nome, sizeof nome, i); dados_apagar(nome); } }
   perfilAplicado = 0;
   perfis_esquecer();
-  perfil_infantil_esquecer();
+  perfil_infantil_esquecer();   // tambem apaga as marcas de ajustes travados
   prog_esquecer_tudo();
   perfilcont_esquecer();
   psparede_esquecer();   // a parede de cada perfil (fundo "Filmes") e da conta que saiu

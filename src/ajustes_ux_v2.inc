@@ -103,7 +103,7 @@ static float aj2Ln = 58.0f, aj2Gap = 3.0f, aj2GtEx = 18.0f, aj2Fade = 70.0f;
 // Ambar, Violeta): o `fill` tinge o fundo e a `marca` (a versao clara do
 // matiz, feita para o escuro) pinta o icone. Nao dependem do acento escolhido.
 #define AJ2_CHIP_ICO 28.0f
-static const unsigned char AJ2_CHIP_TEMA[3] = { 2, 5, 3 };   // Oceano, Ambar, Violeta
+static const unsigned char AJ2_CHIP_TEMA[4] = { 2, 5, 3, 4 };   // Oceano, Ambar, Violeta, e o do perfil (2.1)
 static struct {
   float x[3], w[3];        // posicao (relativa ao miolo da ilha) e largura abertas
   int lin[3], linhas;      // a fileira de cada uma
@@ -566,7 +566,7 @@ static float aj2CorMedidas(float x, float y, float w, float fim, float a) {
 #define AJ2_G_VAO_V  16.0f   // entre cartoes
 #define AJ2_G_CAB    56.0f   // cabecalho do grupo
 #define AJ2_G_MAXH  172.0f
-static float aj2GF[AJ2_NMENU + 1];   // foco animado de cada alvo (o ultimo: Avancadas)
+static float aj2GF[AJ2_NMENU + 2];   // foco animado de cada alvo (os dois ultimos: Avancadas e Perfil)
 static GfxRect aj2GradeR(void) {
   float x = aj2X0();
   return (GfxRect){ x, AJ2_TOPO, NV_VTELA_W - AJ2_MARGEM - x, NV_VTELA_H - AJ2_TOPO - AJ2_MARGEM };
@@ -588,11 +588,11 @@ static GfxRect aj2GradeCartao(int s) {
 // O alvo em foco na grade: 0 Buscar, 1 Diferentes, 2.. categorias, AJ2_NMENU Avancadas.
 static int aj2GradeFoco(void) {
   if (!focoIndice) return -1;
-  return uxChipAv ? AJ2_NMENU : uxIndice;
+  return uxChipPerfil ? AJ2_NMENU + 1 : uxChipAv ? AJ2_NMENU : uxIndice;
 }
 static void aj2GradeAtualizar(float dt) {
   int j, f = aj2GradeFoco(), red = ajustes_animacoes_reduzidas();
-  for (j = 0; j <= AJ2_NMENU; j++) {
+  for (j = 0; j <= AJ2_NMENU + 1; j++) {
     float alvo = j == f ? 1.0f : 0.0f;
     aj2GF[j] = red ? alvo : aj2Rampa(aj2GF[j], alvo, dt, 140.0f);
   }
@@ -605,7 +605,7 @@ static void aj2GradePilula(GfxRect r, int c, float f, const char *rot, TxtEstilo
   float fr = ((cor->fill >> 16) & 255) / 255.0f, fg = ((cor->fill >> 8) & 255) / 255.0f, fb = (cor->fill & 255) / 255.0f;
   float mr = ((cor->marca >> 16) & 255) / 255.0f, mg = ((cor->marca >> 8) & 255) / 255.0f, mb = (cor->marca & 255) / 255.0f;
   float raio = r.h * 0.5f, ico = 34.0f, k = aj2Suave(f), cresce = 5.0f * k;
-  const char *ic = c == 0 ? "aj_search" : c == 1 ? "aj_rotate-ccw-clock" : ligAv ? "aj_eye" : "aj_eye-off";
+  const char *ic = c == 0 ? "aj_search" : c == 1 ? "aj_rotate-ccw-clock" : c == 3 ? "aj_user-round" : ligAv ? "aj_eye" : "aj_eye-off";
   TxtLinha t;
   r = (GfxRect){ r.x - cresce, r.y - cresce, r.w + 2 * cresce, r.h + 2 * cresce };
   if (k > 0.01f) gfx_rect((GfxRect){ r.x - 14, r.y - 2, r.w + 28, r.h + 34 }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f, fr, fg, fb, 0.40f * k);
@@ -686,13 +686,19 @@ static void aj2DesenharGrade(float a) {
   ajIlha(g, 40.0f, 1, 0);
   // A busca (a largura de uma coluna) e as duas pilulas, alinhadas as colunas.
   aj2GradePilula((GfxRect){ x, y, cw, AJ2_G_TOPO }, 0, aj2GF[0], aj2ChipRotulo(0), TXT_V2_MENU_B, 0);
-  { float px = x + cw + AJ2_G_VAO, livre = g.x + g.w - AJ2_G_PAD - px, w1, w2;
+  { float px = x + cw + AJ2_G_VAO, livre = g.x + g.w - AJ2_G_PAD - px, w1, w2, w3, tot;
     TxtEstilo e = TXT_V2_SEG;
+    char chip[160];
+    pfRotuloChip(chip, sizeof chip);
     w1 = 26 + 34 + 16 + (float)txt_largura(e, aj2ChipRotulo(1)) + 26 + 8;
     w2 = 26 + 34 + 16 + (float)txt_largura(e, aj2ChipRotulo(2)) + 26 + 64 + 18 + 8;
-    if (w1 + 16 + w2 > livre) { w1 = (livre - 16) * w1 / (w1 + w2); w2 = livre - 16 - w1; }
+    w3 = 26 + 34 + 16 + (float)txt_largura(e, chip) + 26 + 8;
+    if (w3 > 360.0f) w3 = 360.0f;
+    tot = w1 + w2 + w3 + 32;
+    if (tot > livre) { float k = (livre - 32) / (w1 + w2 + w3); w1 *= k; w2 *= k; w3 *= k; }
     aj2GradePilula((GfxRect){ px, y + 6, w1, AJ2_G_TOPO - 12 }, 1, aj2GF[1], aj2ChipRotulo(1), e, 0);
-    aj2GradePilula((GfxRect){ px + w1 + 16, y + 6, w2, AJ2_G_TOPO - 12 }, 2, aj2GF[AJ2_NMENU], aj2ChipRotulo(2), e, lig(AJ_AVANCADAS)); }
+    aj2GradePilula((GfxRect){ px + w1 + 16, y + 6, w2, AJ2_G_TOPO - 12 }, 2, aj2GF[AJ2_NMENU], aj2ChipRotulo(2), e, lig(AJ_AVANCADAS));
+    aj2GradePilula((GfxRect){ px + w1 + w2 + 32, y + 6, w3, AJ2_G_TOPO - 12 }, 3, aj2GF[AJ2_NMENU + 1], chip, e, 0); }
   // Os grupos: o nome em cima de cada coluna.
   for (gr = 0; gr < 3; gr++) {
     TxtLinha t = ajTxtC(TXT_V2_GRUPO, aj2GrupoNome(gr), cw);

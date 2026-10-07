@@ -194,16 +194,17 @@ static int uxEvento(SDL_Keycode k) {
     int ini[4] = { 0, nSecoes, nSecoes, nSecoes }, s_;
     for (s_ = nSecoes - 1; s_ >= 0; s_--) ini[aj2GrupoDe(s_)] = s_;
     if (ini[2] < ini[1]) ini[2] = ini[1];
-    if (uxChipAv || uxIndice < 2) {
-      int c = uxChipAv ? 2 : uxIndice;
+    if (uxChipAv || uxChipPerfil || uxIndice < 2) {
+      int c = uxChipPerfil ? 3 : uxChipAv ? 2 : uxIndice;
       if (k == SDLK_DOWN) {
-        int dest = ini[c] < nSecoes ? ini[c] : 0;
-        uxChipAv = 0; uxIndice = dest + 2; uxVeioBusca = 0; focarSecao(dest);
+        int dest = ini[c == 3 ? 2 : c] < nSecoes ? ini[c == 3 ? 2 : c] : 0;
+        uxChipAv = 0; uxChipPerfil = 0; uxIndice = dest + 2; uxVeioBusca = 0; focarSecao(dest);
         return 1;
       }
       if (uxOk(k)) {
         if (c == 0) { uxVeioBusca = 0; uxPediuBusca = 1; return 1; }
         if (c == 1) { focoIndice = 0; uxListarDiferencas(); return 1; }
+        if (c == 3) { pfAbrir(); return 1; }
         // Avancadas: liga/desliga as opcoes avancadas em TODAS as categorias.
         { int novo = valor[AJ_AVANCADAS] == 0 ? 1 : 0;
           if (definirValorDireto(AJ_AVANCADAS, novo)) uxNotificar("Ajuste salvo nesta TV.");
@@ -212,9 +213,9 @@ static int uxEvento(SDL_Keycode k) {
       }
       if (uxVoltar(k) || (k == SDLK_LEFT && c == 0)) { sair = 1; return 1; }
       if (k == SDLK_LEFT) c--;
-      else if (k == SDLK_RIGHT && c < 2) c++;
+      else if (k == SDLK_RIGHT && c < 3) c++;
       else return 1;
-      uxChipAv = c == 2; uxIndice = c == 2 ? 1 : c; uxVeioBusca = 0;
+      uxChipAv = c == 2; uxChipPerfil = c == 3; uxIndice = c >= 2 ? 1 : c; uxVeioBusca = 0;
       if (c == 1) uxListarDiferencas();
       return 1;
     }
@@ -223,7 +224,7 @@ static int uxEvento(SDL_Keycode k) {
       if (uxOk(k)) { focoIndice = 0; return 1; }
       if (k == SDLK_UP) {
         if (lin > 0) dest = sec - 1;
-        else { uxChipAv = g == 2; uxIndice = g == 2 ? 1 : g; uxVeioBusca = 0; if (g >= 1) uxListarDiferencas(); return 1; }
+        else { uxChipAv = g == 2; uxChipPerfil = 0; uxIndice = g == 2 ? 1 : g; uxVeioBusca = 0; if (g >= 1) uxListarDiferencas(); return 1; }
       }
       if (k == SDLK_DOWN && sec + 1 < ini[g + 1]) dest = sec + 1;
       if (k == SDLK_LEFT && g == 0) { sair = 1; return 1; }

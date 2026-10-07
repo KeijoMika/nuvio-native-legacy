@@ -185,7 +185,9 @@ int main(void) {
   { focoIndice = 1; uxChipAv = 0;
     uxIndice = 0; key(SDLK_RIGHT); assert(uxIndice == 1 && !uxChipAv);
     key(SDLK_RIGHT); assert(uxChipAv);
-    key(SDLK_RIGHT); assert(uxChipAv);                                          // last of the row
+    key(SDLK_RIGHT); assert(uxChipPerfil && !uxChipAv);                         // 2.1: the Perfil chip is last of the row
+    key(SDLK_RIGHT); assert(uxChipPerfil);
+    key(SDLK_LEFT); assert(uxChipAv && !uxChipPerfil);
     key(SDLK_LEFT); assert(!uxChipAv && uxIndice == 1);
     key(SDLK_LEFT); assert(uxIndice == 0);
     key(SDLK_DOWN); assert(uxIndice == 2 + AJS_HOME);                           // Buscar -> first card of Telas

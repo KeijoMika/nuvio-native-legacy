@@ -1570,6 +1570,32 @@ static void pstAtivar(int op);
 static void pstTesteRecolher(void);
 static const char *pstTexto(int op);
 static int gravar(void);
+static int dePerfil(int i);
+static int perfilGravarVetor(int perfil, const int *v);
+static int perfilLerVetor(int perfil, int *v, char *tem);
+static int limita(int op, int v);
+// 2.1: sessao de edicao dos ajustes de OUTRO perfil (ver ajustes_edicao_iniciar).
+static int edPerfil;
+static int edSalvo[AJ_N];   // os valores do perfil ativo enquanto valor[] e do outro
+// Durante a edicao, mudar ajuste nao e mudanca do perfil ativo: nada vai para a
+// pendencia dele (gravar() marca a do perfil editado).
+static void protegerLocais(void) { if (!edPerfil) sync_proteger_ajustes_locais(); }
+// ajustes_ux_perfil.inc: a folha do perfil, o administrador e o bloqueio.
+static void pfAbrir(void);
+static void pfEntrada(void);
+static void pfSaida(void);
+static void pfVigiar(void);
+static void pfPinCancelado(void);
+static int  pfDigitado(const char *pin);
+static int  pfTela;
+static void pfDesenhar(void);
+#ifdef AJUSTES_TESTE
+void perfis_teste_definir(const char *const *nomes, const int *pin, int quantos, int ativo);
+static void pfAbrirPin(const char *titulo, const char *dica);
+#endif
+static void pfFaixaEdicao(void);
+static void pfRotuloChip(char *dst, size_t n);
+static void reaplicarEfeitosPerfil(void);
 static void aplicarIdioma(int op);
 static int somenteDesteAparelho(int op);
 // Segundos restantes antes de refazer a busca de legendas. Declarada aqui, e
@@ -1686,6 +1712,7 @@ static int sair = 0;
 // Rascunho e navegação separados dos valores persistentes.
 static int uxIndice = 2;
 static int uxChipAv;   // foco no chip "Avancadas" do alto do indice (liga/desliga global)
+static int uxChipPerfil;   // foco no chip "Perfil: <nome>" (2.1): abre a folha do perfil
 // A fileira de cada pilula do alto (0 Buscar, 1 Diferentes, 2 Avancadas): quem
 // mede e o desenho (aj2ChipsMedir, pelo texto traduzido); a navegacao so le.
 static int uxChipLinha[3];
@@ -3035,8 +3062,13 @@ void ajustes_dir(const char *dir) {
 static int gravar(void) {
   char caminho[600], tmp[600];
   FILE *f;
-  int i;
+  int i, vv[AJ_N];
   if (!dirAjustes[0]) return 0;
+  // 2.1: com a edicao de outro perfil em curso, o arquivo da TV leva os valores
+  // do perfil ATIVO (edSalvo) nas chaves do perfil: se o app cair no meio, o
+  // proximo arranque nao herda o visual do perfil que estava sendo editado.
+  memcpy(vv, valor, sizeof vv);
+  if (edPerfil) for (i = 0; i < AJ_N; i++) if (dePerfil(i)) vv[i] = edSalvo[i];
   snprintf(caminho, sizeof caminho, "%s/ajustes.txt", dirAjustes);
   snprintf(tmp, sizeof tmp, "%s/ajustes.tmp", dirAjustes);
   f = fopen(tmp, "w");
@@ -3054,7 +3086,7 @@ static int gravar(void) {
       fprintf(f, "idiomaFonteLocal %d\n", idiomaFonteGravada);
       continue;
     }
-    fprintf(f, "%s %d\n", CHAVE[i], valor[i]);
+    fprintf(f, "%s %d\n", CHAVE[i], vv[i]);
   }
   { int erro = ferror(f);
     if (fclose(f)) erro = 1;
@@ -3066,6 +3098,15 @@ static int gravar(void) {
   // destaque, fonte ao reproduzir) sobrevivia so ate a proxima descarga que
   // OUTRO modulo pedisse — e num app que so navegou, ate o proximo arranque,
   // onde voltava ao padrao. Na LG o disco e real e nada disto acontecia.
+    if (edPerfil) {   // o perfil editado leva os valores atuais; a parte da conta fica pendente dele
+    int antes[AJ_N], k, mudouConta = 0;
+    char tem[AJ_N];
+    memcpy(antes, valorPadrao, sizeof antes);
+    perfilLerVetor(edPerfil, antes, tem);
+    for (k = 0; k < AJ_N; k++) if (dePerfil(k) && ajustes_escopo(k) == 2 && antes[k] != valor[k]) mudouConta = 1;
+    perfilGravarVetor(edPerfil, valor);
+    if (mudouConta) sync_marcar_ajustes_pendentes_perfil(edPerfil);
+  }
   dados_marcar_sujo(0);
   // Provedor de poster ou idioma da interface mudaram? So reconfigura se a
   // configuracao final for outra (reconfigurar zera a memoria de falhas).
@@ -3561,7 +3602,7 @@ static void idiomasDoBlob(const char *json, const char *fim) {
 int ajustes_aplicar_blob(const char *json) {
   const char *fim;
   int i, mudou = 0, reconhecidas = 0;
-  if (!json || !*json) return 0;
+  if (!json || !*json || edPerfil) return 0;
   // Os pacotes de selos da conta (features.stream_badge_settings) vivem em
   // selospacote.c, que guarda por perfil; nao sao uma opcao desta tabela.
   selospacote_conta_do_blob(json);
@@ -3899,7 +3940,7 @@ static int perfilLerVetor(int perfil, int *v, char *tem) {
 }
 
 void ajustes_perfil_guardar(int perfil) {
-  if (perfil <= 0) return;
+  if (perfil <= 0 || edPerfil) return;   // com a edicao de outro perfil em curso valor[] nao e do ativo
   perfilGravarVetor(perfil, valor);
   fonteregra_perfil_guardar(perfil);
 }
@@ -3983,6 +4024,114 @@ int ajustes_migrar_escopo(void) {
     if (p && p->indice > 0) ids[n++] = p->indice;
   }
   return ajustes_migrar_escopo_para(ids, n, perfis_ativo());
+}
+
+// Efeitos que o valor[] do perfil dispara fora desta tabela (idiomas de
+// legenda/audio e o tamanho da UI). Chamado depois de trocar o valor[] inteiro.
+static void reaplicarEfeitosPerfil(void) {
+  aplicarIdioma(AJ_LEG_LINGUA);
+  aplicarIdioma(AJ_LEG_LINGUA2);
+  aplicarIdioma(AJ_AUD_LINGUA);
+  gfx_escala_ui_definir(ajustes_tamanho_ui());
+}
+
+// Poe em valor[] (perfil ATIVO) as chaves do perfil de `v` e grava.
+static void aplicarVetorAtivo(const int *v, const char *tem) {
+  int i;
+  for (i = 0; i < AJ_N; i++) if (dePerfil(i) && (!tem || tem[i])) valor[i] = v[i];
+  gravar();
+  reaplicarEfeitosPerfil();
+}
+
+// Leva as chaves DO PERFIL de src[] (so as marcadas em tem[], ou todas) para o
+// perfil `destino`. Devolve quantas mudaram, -1 em falha. Ver ajustes.h.
+static int levarParaPerfil(const int *src, const char *tem, int destino) {
+  int dst[AJ_N], i, mudou = 0, mudouConta = 0;
+  char tdst[AJ_N];
+  const int ativo = destino == perfis_ativo();
+  if (edPerfil || destino <= 0) return -1;
+  memcpy(dst, valorPadrao, sizeof dst);
+  if (ativo) memcpy(dst, valor, sizeof dst);
+  else perfilLerVetor(destino, dst, tdst);
+  for (i = 0; i < AJ_N; i++) {
+    if (!dePerfil(i) || (tem && !tem[i]) || dst[i] == src[i]) continue;
+    dst[i] = src[i];
+    mudou++;
+    if (escopoDe(i) == ESC_PERFIL_CONTA) mudouConta++;
+  }
+  if (ativo) aplicarVetorAtivo(dst, NULL);
+  else if (!perfilGravarVetor(destino, dst)) return -1;
+  if (mudouConta) sync_marcar_ajustes_pendentes_perfil(destino);
+  printf("[ajustes] ajustes levados ao perfil %d: %d mudaram (%d da conta, pendentes)\n", destino, mudou, mudouConta);
+  fflush(stdout);
+  return mudou;
+}
+
+int ajustes_copiar_perfil(int origem, int destino) {
+  int src[AJ_N];
+  char tem[AJ_N];
+  if (origem <= 0 || destino <= 0 || origem == destino || edPerfil) return -1;
+  memcpy(src, valorPadrao, sizeof src);
+  if (origem == perfis_ativo()) { memcpy(src, valor, sizeof src); memset(tem, 1, sizeof tem); }
+  else if (!perfilLerVetor(origem, src, tem)) return -1;
+  return levarParaPerfil(src, tem, destino);
+}
+
+int ajustes_restaurar_padrao_perfil(int perfil) {
+  if (perfil <= 0 || edPerfil) return -1;
+  return levarParaPerfil(valorPadrao, NULL, perfil);
+}
+
+int ajustes_edicao_perfil(void) { return edPerfil; }
+
+int ajustes_edicao_iniciar(int perfil) {
+  int v[AJ_N], i;
+  char tem[AJ_N];
+  if (edPerfil || perfil <= 0 || perfil == perfis_ativo()) return 0;
+  perfilGravarVetor(perfis_ativo(), valor);   // a verdade do ativo fica em disco antes de valor[] mudar
+  memcpy(edSalvo, valor, sizeof edSalvo);
+  memcpy(v, valor, sizeof v);                 // o que o perfil nao tem partiu do que a TV usa
+  perfilLerVetor(perfil, v, tem);
+  edPerfil = perfil;
+  for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = v[i];
+  reaplicarEfeitosPerfil();
+  printf("[ajustes] editando os ajustes do perfil %d (ativo: %d)\n", perfil, perfis_ativo());
+  fflush(stdout);
+  return 1;
+}
+
+void ajustes_edicao_encerrar(void) {
+  int i, alvo = edPerfil;
+  if (!alvo) return;
+  perfilGravarVetor(alvo, valor);
+  edPerfil = 0;
+  for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = edSalvo[i];
+  gravar();
+  reaplicarEfeitosPerfil();
+  printf("[ajustes] edicao do perfil %d encerrada\n", alvo);
+  fflush(stdout);
+}
+
+// Padroes seguros de perfil infantil: sem enquetes nem Seekr, sem as notas de
+// terceiros no titulo, classificacao indicativa no player. V_LIGA: 0 = Ligado.
+void ajustes_padroes_infantis(int perfil) {
+  static const struct { int op, v; } P[] = {
+    { AJ_ENQUETES, 1 }, { AJ_SEEKR_LIGADO, 1 }, { AJ_PLR_CLASSIF, 0 },
+    { AJ_NT_IMDB, 1 }, { AJ_NT_TOMATES, 1 }, { AJ_NT_AUDIENCIA, 1 }, { AJ_NT_META, 1 }, { AJ_NT_METAUSER, 1 },
+  };
+  int v[AJ_N], i;
+  char tem[AJ_N];
+  if (perfil <= 0 || edPerfil) return;
+  if (perfil == perfis_ativo()) {
+    for (i = 0; i < (int)(sizeof P / sizeof *P); i++) valor[P[i].op] = P[i].v;
+    gravar();
+    return;
+  }
+  memcpy(v, valorPadrao, sizeof v);
+  perfilLerVetor(perfil, v, tem);
+  for (i = 0; i < AJ_N; i++) if (!tem[i]) v[i] = valor[i];
+  for (i = 0; i < (int)(sizeof P / sizeof *P); i++) v[P[i].op] = P[i].v;
+  perfilGravarVetor(perfil, v);
 }
 
 // Onde esta o valor de `chave` dentro de [ini,fim): *vi aponta o primeiro
@@ -4207,6 +4356,7 @@ static void conferirPadroes(void) {
 
 static void ajMovReiniciar(void);
 int ajustes_iniciar(void) {
+  pfEntrada();
   ajMovReiniciar();
   uxVeioBusca = uxAbrirOp >= 0;
   montarTela();
@@ -4235,7 +4385,7 @@ int ajustes_iniciar(void) {
   scrollY = 0.0f; velY = 0.0f; sair = 0; sairArmado = 0;
   // Reabre na categoria em que estava, com o foco no indice (ver focoIndice).
   if (secAtual < 0 || secAtual >= nSecoes) secAtual = 0;
-  focoIndice = 1; uxChipAv = 0;
+  focoIndice = 1; uxChipAv = 0; uxChipPerfil = 0;
   focarSecao(secAtual);
   // "Experimentar a cor viva" (cartao de novidades): abre em Aparencia com o
   // foco JA na linha da cor, e nao no indice — quem apertou o botao quer
@@ -4262,7 +4412,7 @@ int ajustes_iniciar(void) {
   rotulosDeIdioma();
   return 1;
 }
-void ajustes_encerrar(void) { uxCancelar(); uxRetornarOp = -1; guiaFechar(); }
+void ajustes_encerrar(void) { uxCancelar(); uxRetornarOp = -1; guiaFechar(); pfSaida(); }
 int ajustes_quer_sair(void) { return sair; }
 
 // Valor das linhas so de leitura. O espaco em disco NAO e um numero inventado:
@@ -4796,7 +4946,7 @@ static void focar(int i) {
   focoItem = i;
   focoOp = TELA[i].tipo == IT_OPC ? TELA[i].op : -1;
   secAtual = secDoItem[i];
-  uxIndice = secAtual + 2; uxChipAv = 0;
+  uxIndice = secAtual + 2; uxChipAv = 0; uxChipPerfil = 0;
   uxUltimoItem[secAtual] = i;
   emEdicao = 0;
   sairArmado = 0;
@@ -5878,7 +6028,7 @@ static void frEvento(SDL_Keycode k) {
     if (frFoco == 0) fonteregra_limpar(plugin);
     else fonteregra_alternar(plugin, frNome[frFoco - 1]);
     // Sobe para a conta como os outros ajustes do perfil (#85).
-    sync_proteger_ajustes_locais();
+    protegerLocais();
     uxNotificar("Ajuste salvo nesta TV.");
   }
 }
@@ -6013,7 +6163,7 @@ static int definirValorDireto(int op, int novo) {
   // Modelo de regex (#202): escolher um troca o padrao; "Personalizado" so
   // deixa o padrao como esta.
   if (op == AJ_FONTE_REGEX_MODELO && novo > 0) fonteregra_definir_regex(fonteregra_modelo(novo));
-  sync_proteger_ajustes_locais();
+  protegerLocais();
   return 1;
 }
 static void mudarValorDireto(int op, int dir) {
@@ -6040,6 +6190,7 @@ static int ehInterruptor(int op) {
 
 #include "ajustes_ux_dados.inc"
 #include "ajustes_ux_interacao.inc"
+#include "ajustes_ux_perfil.inc"
 
 static const char *uxCaminho(int op);
 static const char *uxBloco(int op);
@@ -6089,6 +6240,7 @@ static void eventoTela(const SDL_Event *e) {
       return;
     } }
   // A folha de aviso de memoria (mais fileiras/itens) e modal e vem antes de tudo.
+  if (pfTela) { pfEvento(k); return; }
   if (riscoFolha) { riscoFolhaEvento(k); return; }
   if (frAberta) { frEvento(k); return; }
   // A folha de fileiras e modal, como a do vinculo acima.
@@ -6278,6 +6430,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
   valor[AJ_FONTE_REGEX_MODELO] = fonteregra_modelo_atual();   // espelho do padrao (#202)
   valor[AJ_PERFIL_INFANTIL] = perfil_infantil_ativo() ? 0 : 1;
   kidRecolher();
+  pfVigiar();
   p2pTesteRecolher();
   pstTesteRecolher();
   adTesteRecolher();
@@ -6298,13 +6451,14 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       else if (stCampo == AJ_XTREAM_USUARIO)  xtream_definir_usuario(teclado_texto());
       else if (stCampo == AJ_XTREAM_SENHA)    xtream_definir_senha(teclado_texto());
       else if (stCampo == AJ_PERFIL_INFANTIL) { kidDigitado(teclado_texto()); teclado_esquecer(); }
+      else if (stCampo == PF_CAMPO) { if (pfDigitado(teclado_texto())) r = TECLADO_NADA; }
       else if (stCampo == AJ_FANART_CHAVE)    fanartDefinir(teclado_texto());
       else if (stCampo == AJ_SEEKR_CHAVE)     { seekrDefinir(teclado_texto()); atomic_store_explicit(&skTeste, 0, memory_order_release); }
       else if (stCampo == AJ_SELOS_PACOTE_ADD) spAdicionar(teclado_texto());
       else if (stCampo == AJ_P2P_URL)         ajustes_definir_p2p_url(teclado_texto());
       else if (stCampo == AJ_FONTE_REGEX_PADRAO) {
         int e = fonteregra_definir_regex(teclado_texto());
-        sync_proteger_ajustes_locais();
+        protegerLocais();
         uxNotificar(e < 0 ? "Regex inválida: ignorada" : "Ajuste salvo nesta TV.");
       }
       else if (stCampo == AJ_JF_SERVIDOR)     jellyfin_definir_servidor(teclado_texto());
@@ -6332,6 +6486,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       else if (stCampo != AJ_JF_ENTRAR && stCampo != AJ_EM_ENTRAR) stalker_definir_portal(teclado_texto());
       if (r == TECLADO_PRONTO) stCampo = 0;
     } else if (r == TECLADO_CANCELOU) {
+      if (stCampo == PF_CAMPO) pfPinCancelado();
       if (stCampo == AJ_JF_ENTRAR || stCampo == AJ_EM_ENTRAR) { teclado_esquecer(); memset(jfUsuario, 0, sizeof jfUsuario); }
       stCampo = 0;
     } }
@@ -6953,6 +7108,7 @@ static AjPreview familiaPreviaOpcao(int op) {
 }
 
 #include "ajustes_ux_desenho.inc"
+#include "ajustes_ux_perfil_desenho.inc"
 
 #ifdef AJUSTES_TESTE
 void teclado_teste_texto(const char *t);
@@ -6984,6 +7140,8 @@ static void ajDesenharTudo(Uint32 agora) {
   // atropelam. Ela ja ocupa a tela toda em 100%.
   if (filAberta) { ESCALA_REAL_INI(); desenhaFileiras(); ESCALA_REAL_FIM(); }
   if (riscoFolha) desenhaRiscoFolha();
+  if (pfTela) pfDesenhar();
+  else pfFaixaEdicao();
   if (frAberta) desenhaFolhaPermitidos();
 
   // Por cima de tudo: enquanto um vinculo esta em andamento, ele e a pergunta
@@ -7055,6 +7213,19 @@ void ajustes_teste_ux_captura(int cenario) {
   if (cenario == 7) { focarOpcao(AJ_LARGURA_DP); uxAbrirEditor(AJ_LARGURA_DP); uxEvento(SDLK_DOWN); }
   if (cenario == 8) { focarSecao(0); uxIndice = 1; focoIndice = 1; uxChipAv = 1; }
   if (cenario == 9) { valor[AJ_IDIOMA] = IDIOMA_EN + 1; focarOpcao(AJ_HOME_LAYOUT); uxAbrirEditor(AJ_HOME_LAYOUT); }
+  if (cenario >= 30 && cenario <= 36) {   // 2.1: ajustes por perfil
+    static const char *const NOMES[3] = { "Henrique", "Ana", "Davi" };
+    perfis_teste_definir(NOMES, NULL, 3, cenario == 35 ? 3 : 1);
+    edPerfil = 0;
+    pfEntrada();
+    if (cenario == 35) { perfil_infantil_definir(3, 1); perfil_ajustes_travar(3, 1); pfEntrada(); pfVigiar(); }
+    if (cenario == 30) { focoIndice = 1; uxIndice = 1; uxChipAv = 0; uxChipPerfil = 1; }
+    if (cenario == 31) { focarOpcao(AJ_VIDRO); focoIndice = 0; }
+    if (cenario == 32) { focoIndice = 1; uxIndice = 1; uxChipPerfil = 1; pfAbrir(); }
+    if (cenario == 33) { focoIndice = 1; uxIndice = 1; uxChipPerfil = 1; pfAbrir(); pfTela = PF_COPIAR; pfMarca[0] = 1; pfFoco = 2; }
+    if (cenario == 34) { focoIndice = 1; uxIndice = 1; uxChipPerfil = 1; pfAbrir(); pfTela = PF_EDITAR; pfPend = PA_EDITAR; pfFase = 3; pfAbrirPin("Crie o PIN de administrador", "De 4 a 8 números. Vale só nesta TV e protege os ajustes dos outros perfis."); }
+    if (cenario == 36) { ajustes_edicao_iniciar(2); focarOpcao(AJ_VIDRO); focoIndice = 0; }
+  }
   if (cenario == 21) focarOpcao(AJ_FOCO_TRAILER);
   if (cenario == 22) { focarOpcao(AJ_FOCO_TRAILER); uxAbrirEditor(AJ_FOCO_TRAILER); }
   if (cenario >= 10 && cenario < 21) { focarSecao(cenario - 10); focoIndice = 1; }

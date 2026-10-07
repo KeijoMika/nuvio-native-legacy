@@ -1025,8 +1025,16 @@ static void ajDesenharLinha(int item, float y, float f, float a) {
     }
     if (uxAvancada(op)) {
       float w = ajCaps(TXT_G16B, "Avançado", 1.9f, -1, 0, 0);
-      if (rx + 14 + w < tx + maxW) ajCaps(TXT_G16B, "Avançado", 1.9f, rx + 14, tyc - 10, 0.38f * aT);
+      if (rx + 14 + w < tx + maxW) { ajCaps(TXT_G16B, "Avançado", 1.9f, rx + 14, tyc - 10, 0.38f * aT); rx += 14 + w; }
     }
+    // 2.1: selo de escopo, discreto: "Este perfil" (muda com o perfil) ou "Esta TV"
+    // (igual para todos). Evita a duvida "isto muda para todos?".
+    { EscopoAj es = escopoDe(op);
+      const char *sel = es == ESC_TV ? "Esta TV" : (es == ESC_PERFIL_CONTA || es == ESC_PERFIL_LOCAL) ? "Este perfil" : NULL;
+      if (sel) {
+        float w = ajCaps(TXT_G16B, sel, 1.9f, -1, 0, 0);
+        if (rx + 14 + w < tx + maxW) ajCaps(TXT_G16B, sel, 1.9f, rx + 14, tyc - 10, (es == ESC_TV ? 0.26f : 0.42f) * aT);
+      } }
   }
   // O QUE VEM EMBAIXO numa linha que abre.
   if (abre) {
