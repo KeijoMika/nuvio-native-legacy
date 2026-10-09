@@ -106,6 +106,18 @@ int main(void) {
     caso(&v[4], 0, 0, "frase CJK antes de FHD");
     caso(&v[5], 0, 0, "palavra cirilica antes de FHD");
     caso(&v[6], 1080, 1, "emoji de 4 bytes + FHD");
+    free(v);
+    // Revisao 4: E2 xx xx vai ate U+2FFF, e de U+2C00 em diante ha letras
+    // (Georgiano U+2D00.., Glagolitico U+2C00..); so U+2000..U+2BFF e simbolo.
+    n = stream_extrair("{\"streams\":["
+      "{\"url\":\"https://example.invalid/q\",\"name\":\"\xE2\xB4\x8B\xE2\xB4\x84 FHD\"},"
+      "{\"url\":\"https://example.invalid/r\",\"name\":\"\xE2\xB0\x80 FHD\"},"
+      "{\"url\":\"https://example.invalid/s\",\"name\":\"\xE2\xAD\x90 FHD\"}"
+      "]}", "fixture", &v);
+    if (n != 3) { printf("FAIL contagem revisao 4: %d\n", n); return 1; }
+    caso(&v[0], 0, 0, "letras georgianas antes de FHD");
+    caso(&v[1], 0, 0, "letra glagolitica antes de FHD");
+    caso(&v[2], 1080, 1, "estrela U+2B50 + FHD");
     free(v); }
   if (falhas) { printf("FAIL #402: %d caso(s)\n", falhas); return 1; }
   puts("PASS #402: FHD/Full HD agrupam como 1080p.");
