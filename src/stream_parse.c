@@ -89,8 +89,9 @@ static int ehSepFhd(const char *a, const char *ini, int antes) {
          (u[0] == 0xE2 && u[1] == 0x80 && u[2] == 0xA2) || (u[0] == 0xC2 && u[1] == 0xB7);
 }
 // Prefixo da linha feito so de SIMBOLO/emoji e espaco, e curto (ate 2 simbolos):
-// "\u23f3 FHD", "\u26a1 FHD". So os blocos de simbolo do UTF-8 contam — E2 xx xx
-// (U+2000..U+2FFF: setas, relogios, raios) e F0 9F xx xx (emoji), com EF B8 8F
+// "\u23f3 FHD", "\u26a1 FHD". So os blocos de simbolo do UTF-8 contam — E2 80..AF xx
+// (U+2000..U+2BFF: setas, relogios, raios, estrelas; de U+2C00 em diante ha letras,
+// Glagolitico e Georgiano) e F0 9F xx xx (emoji), com EF B8 8F
 // (seletor de variacao) junto. Letra de outro alfabeto (Cirilico D0/D1, CJK
 // E3..E9) e palavra, nao rotulo: "Фильм FHD" e "我的 FHD" continuam frase.
 static int prefixoSoSimbolos(const char *ini, const char *fim) {
@@ -99,7 +100,7 @@ static int prefixoSoSimbolos(const char *ini, const char *fim) {
   while (u < f) {
     if (*u == ' ' || *u == '\t') { u++; continue; }
     if (f - u >= 3 && u[0] == 0xEF && u[1] == 0xB8 && u[2] == 0x8F) { u += 3; continue; }
-    if (f - u >= 3 && u[0] == 0xE2 && (u[1] & 0xC0) == 0x80 && (u[2] & 0xC0) == 0x80) u += 3;
+    if (f - u >= 3 && u[0] == 0xE2 && u[1] >= 0x80 && u[1] <= 0xAF && (u[2] & 0xC0) == 0x80) u += 3;
     else if (f - u >= 4 && u[0] == 0xF0 && u[1] == 0x9F && (u[2] & 0xC0) == 0x80 &&
              (u[3] & 0xC0) == 0x80) u += 4;
     else return 0;
