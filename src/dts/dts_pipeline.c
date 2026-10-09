@@ -51,16 +51,41 @@ fail:
   fprintf(stderr, "[dts] adapter unavailable: %s (ABI or firmware probe failed)\n", path);
   *api = NULL; dlclose(library); return NULL;
 }
-/* A resposta vale para o processo inteiro: o firmware nao muda com o app
- * aberto e nenhum ajuste muda o que a TV carrega. Antes cada video sondava de
- * novo, e no webOS 3 isso era um dlopen do webos4 que sempre falha
- * (GLIBCXX_3.4.21) mais o do webos3 e o da libplayerAPIs. Uma posicao por
- * pedido (0 = automatico, 3, 4+); -1 = ainda nao sondado. A trava cobre o
- * caso de dois fios perguntarem ao mesmo tempo: o segundo espera a resposta
- * do primeiro em vez de sondar junto. */
+/* O SIM vale para o processo inteiro: o firmware nao muda com o app aberto e
+ * nenhum ajuste muda o que a TV carrega. Antes cada video sondava de novo, e
+ * no webOS 3 isso era um dlopen do webos4 que sempre falha (GLIBCXX_3.4.21)
+ * mais o do webos3 e o da libplayerAPIs.
+ * O NAO so fica guardado no webOS 3 ou anterior, onde nao ha conversao a
+ * perder. No webOS 4+ (e com versao desconhecida) um nao pode ser passageiro
+ * e guarda-lo desligaria o DTS ate reabrir o app: la cada video sonda de novo,
+ * como sempre foi.
+ * Uma posicao por pedido (0 = automatico, 3, 4+); -1 = sem resposta guardada.
+ * A trava cobre dois fios perguntando juntos: o segundo espera o primeiro. */
 static pthread_mutex_t sondaTrava = PTHREAD_MUTEX_INITIALIZER;
 static int sondaResposta[3] = {-1, -1, -1};
 static int sondaPosicao(int major) { return major == 0 ? 0 : major == 3 ? 1 : 2; }
+/* webOS da TV pelo nyx (o /etc/starfish-release falta nas TVs de 2017, e o
+ * video.c cai no 4 nelas). 0 = nao deu para saber. NUVIO_DTS_WEBOS_MAJOR e
+ * dos testes. Chamada com a trava. */
+static int sondaWebos(void) {
+  static int v = -1;
+  const char *forcado = getenv("NUVIO_DTS_WEBOS_MAJOR");
+  char buf[4096];
+  const char *p;
+  FILE *f;
+  size_t n;
+  if (forcado && *forcado) return atoi(forcado);
+  if (v >= 0) return v;
+  v = 0;
+  f = fopen("/var/run/nyx/os_info.json", "rb");
+  if (!f) return v;
+  n = fread(buf, 1, sizeof buf - 1, f); buf[n] = 0;
+  fclose(f);
+  p = strstr(buf, "\"webos_release\"");
+  if (p && (p = strchr(p + 15, ':')) && (p = strchr(p, '"'))) v = atoi(p + 1);
+  if (v < 0) v = 0;
+  return v;
+}
 static int sondar(int major) {
   const DtsAdapter *api;
   void *lib = open_adapter(major, &api);
@@ -73,8 +98,12 @@ int dts_pipeline_available(int major) {
   if (major != 0 && major < 3) return 0;
   i = sondaPosicao(major);
   pthread_mutex_lock(&sondaTrava);
-  if (sondaResposta[i] < 0) sondaResposta[i] = sondar(major);
   r = sondaResposta[i];
+  if (r < 0) {
+    int webos = sondaWebos();
+    r = sondar(major);
+    if (r || (webos > 0 && webos < 4)) sondaResposta[i] = r;
+  }
   pthread_mutex_unlock(&sondaTrava);
   return r;
 }
