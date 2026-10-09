@@ -127,6 +127,19 @@ int main(int argc, char **argv) {
     grava(dir, "{\"webos_release\":\"3.9.3\"}");
     CHECK(nv_webos_major() == 3);        // sem nv_webos_testar: tentou de novo
   }
+  { // Copilot no #408: o nyx valido nao pode ser descartado por erro de E/S no
+    // starfish (fonte de menor prioridade); senao o video.c guarda o palpite 4/5.
+    char nyx[300], star[300];
+    snprintf(nyx, sizeof nyx, "%s/os_info.json", d);
+    snprintf(star, sizeof star, "%s/starfish-release", d);
+    remove(nyx); remove(star);
+    grava(nyx, "{\"webos_release\":\"3.9.3\"}");
+    mkdir(star, 0700);
+    nv_webos_testar(nyx, star);
+    CHECK(nv_webos_major() == 3);
+    CHECK(!strcmp(nv_webos_fonte(), "nyx"));
+    rmdir(star);
+  }
   if (!fails) puts("webosver ok");
   return fails != 0;
 }
