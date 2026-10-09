@@ -778,7 +778,30 @@ unsigned fil_perfil_geracao(void) {
 
 // Perfil cuja conta mandou a lista de addons de agora (addons.c). Fraca para os
 // testes que compilam este arquivo sem addons.c: la vale 0 (pacote), que passa.
-__attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }
+__attribute__((weak)) int addons_perfil_em_uso(void) { return 0; }
+
+// Com o mutex: a lista (tag) e a geracao pertencem a este perfil das fileiras.
+static int listaValidaLocked(int perfilLista) {
+  return perfilLista <= 0 || perfilLista == perfil;
+}
+
+FilPassada fil_passada_ler(void) {
+  FilPassada p;
+  pthread_mutex_lock(&trava);
+  p.geracao = perfilGeracao;
+  pthread_mutex_unlock(&trava);
+  p.perfilLista = addons_perfil_em_uso();
+  return p;
+}
+
+int fil_passada_valida(const FilPassada *p) {
+  int r;
+  pthread_mutex_lock(&trava);
+  r = p->geracao == perfilGeracao && listaValidaLocked(p->perfilLista) &&
+      listaValidaLocked(addons_perfil_em_uso());
+  pthread_mutex_unlock(&trava);
+  return r;
+}
 
 int fil_lista_e_deste_perfil(int perfilDaLista) {
   int r;
@@ -817,9 +840,9 @@ static int achar(const char *chave) {
   return -1;
 }
 
-static void registrar(const char *chave, const char *titulo,
-                      const char *addon, const char *conteudo, int itens,
-                      int podeDespejar) {
+static void registrar(const FilPassada *passada, const char *chave,
+                      const char *titulo, const char *addon,
+                      const char *conteudo, int itens, int podeDespejar) {
   int i, grava = 0;
   if (!chave || !chave[0]) return;
   pthread_mutex_lock(&trava);
@@ -834,7 +857,9 @@ static void registrar(const char *chave, const char *titulo,
   if (i < 0) {
     int o = fil_origem_de(chave);
     if (o != FIL_ORIGEM_APP && o != FIL_ORIGEM_COLECAO &&
-        !(addons_perfil_da_lista() <= 0 || addons_perfil_da_lista() == perfil)) {
+        (!listaValidaLocked(addons_perfil_em_uso()) ||
+         (passada && (passada->geracao != perfilGeracao ||
+                      !listaValidaLocked(passada->perfilLista))))) {
       pthread_mutex_unlock(&trava);
       return;
     }
@@ -999,12 +1024,21 @@ static void registrar(const char *chave, const char *titulo,
 
 void fil_registrar(const char *chave, const char *titulo,
                    const char *addon, const char *conteudo, int itens) {
-  registrar(chave, titulo, addon, conteudo, itens, 1);
+  registrar(NULL, chave, titulo, addon, conteudo, itens, 1);
+}
+void fil_registrar_de(const FilPassada *p, const char *chave, const char *titulo,
+                      const char *addon, const char *conteudo, int itens) {
+  registrar(p, chave, titulo, addon, conteudo, itens, 1);
+}
+void fil_registrar_se_couber_de(const FilPassada *p, const char *chave,
+                                const char *titulo, const char *addon,
+                                const char *conteudo) {
+  registrar(p, chave, titulo, addon, conteudo, -1, 0);
 }
 
 void fil_registrar_se_couber(const char *chave, const char *titulo,
                              const char *addon, const char *conteudo) {
-  registrar(chave, titulo, addon, conteudo, -1, 0);
+  registrar(NULL, chave, titulo, addon, conteudo, -1, 0);
 }
 
 int fil_escolhida(const char *chave) {
@@ -1382,6 +1416,11 @@ void fil_espelhar_ordem(const char *const *chaves,
     int v;
     if (!chaves[i] || !strcmp(chaves[i], "last_session") ||
         achar(chaves[i]) >= 0) continue;
+    // #392: chave NOVA de catalogo nao entra (nem despeja) com a lista de outro
+    // perfil; app e colecao nao dependem dela.
+    { int o = fil_origem_de(chaves[i]);
+      if (o != FIL_ORIGEM_APP && o != FIL_ORIGEM_COLECAO &&
+          !listaValidaLocked(addons_perfil_em_uso())) continue; }
     if (nLinhas < FIL_MAX) {
       v = nLinhas++;
     } else {

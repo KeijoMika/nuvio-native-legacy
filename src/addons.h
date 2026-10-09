@@ -45,6 +45,12 @@ int  addons_definir_lista(const AddonRemoto *lista, int n);
 // escolhas do perfil sobre os addons que so a conta dele tem.
 void addons_marcar_da_conta(int perfil);
 int  addons_perfil_da_lista(void);
+// #392: perfil para o qual a lista em memoria esta EM USO. Difere de
+// addons_perfil_da_lista so quando a conta respondeu vazio e a lista local foi
+// mantida: o sync marca aqui, e a poda (que exige lista da conta) continua
+// adiada.
+void addons_marcar_em_uso(int perfil);
+int  addons_perfil_em_uso(void);
 
 // Lista atual, para o sync poder empurrar de volta o que este aparelho tem.
 int  addons_exportar(AddonRemoto *saida, int max);

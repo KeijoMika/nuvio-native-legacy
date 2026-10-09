@@ -34,7 +34,7 @@ static void guardar(void) {
   for (int i = 0; i < nAntes; i++) snprintf(antes[i], sizeof antes[i], "%s", fil_chave(i));
 }
 static int tagLista;   // what addons_marcar_da_conta would have recorded
-int addons_perfil_da_lista(void) { return tagLista; }
+int addons_perfil_em_uso(void) { return tagLista; }
 // Writers of the real path: the discovery pass, the home drawer and the
 // beyond-quota listing all end in these two functions.
 static void passada(const char *prefixo) {
@@ -84,6 +84,34 @@ int main(void) {
   int achou = 0;
   for (int i = 0; i < fil_n(); i++) if (strstr(fil_chave(i), "addonA2_")) achou = 1;
   assert(achou);
+  // P2: a pass validated under profile A is refused atomically after the
+  // switch to B even though the tag now equals the profile (reasoned, not run
+  // concurrently: this is the sequential form of the race).
+  FilPassada velha = fil_passada_ler();
+  assert(fil_passada_valida(&velha));
+  fil_definir_perfil(2); tagLista = 2;
+  assert(!fil_passada_valida(&velha));
+  fil_registrar_de(&velha, "addonA_movie_stale", "s", "Addon", "movie", -1);
+  fil_registrar_se_couber_de(&velha, "addonA_movie_stale2", "s", "Addon", "movie");
+  for (int i = 0; i < fil_n(); i++) assert(!strstr(fil_chave(i), "_stale"));
+  FilPassada nova = fil_passada_ler();
+  fil_registrar_de(&nova, "addonB_movie_fresh", "f", "Addon", "movie", -1);
+  { int ok = 0; for (int i = 0; i < fil_n(); i++) if (!strcmp(fil_chave(i), "addonB_movie_fresh")) ok = 1; assert(ok); }
+
+  // P2 empty answer: profile B just entered, tag still A, the account answered
+  // empty and sync marks the kept list "in use" for B: catalogs register.
+  fil_definir_perfil(3); tagLista = 2;   // list tagged for another profile
+  for (int i = 0; i < 40; i++) {
+    char k[96]; snprintf(k, sizeof k, "addonK_movie_m%d", i);
+    fil_registrar_se_couber(k, k, "Addon", "movie");
+  }
+  assert(fil_n() == 0);
+  tagLista = 3;                          // addons_marcar_em_uso(3)
+  for (int i = 0; i < 40; i++) {
+    char k[96]; snprintf(k, sizeof k, "addonK_movie_m%d", i);
+    fil_registrar_se_couber(k, k, "Addon", "movie");
+  }
+  assert(fil_n() == 40);
   printf("ordemperfil ok\n");
   return 0;
 }

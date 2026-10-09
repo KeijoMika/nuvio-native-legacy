@@ -1721,7 +1721,13 @@ void sync_passo(unsigned agoraMs) {
         if (nAddonsRem > 0) addons_marcar_da_conta(perfilDoCiclo);
         // #392: lista identica de outro perfil para este: refaz o registro.
         if (mudou || (nAddonsRem > 0 && antes > 0 && antes != perfilDoCiclo))
-          desc_repetir_addons(); }
+          desc_repetir_addons();
+        else if (nAddonsRem <= 0 && addons_perfil_em_uso() != perfilDoCiclo) {
+          // #392: a conta DESTE perfil respondeu vazio e addons_definir_lista
+          // manteve a lista local: por decisao, e a que o perfil usa.
+          addons_marcar_em_uso(perfilDoCiclo);
+          desc_repetir_addons();
+        } }
       temAddonsRem = 0;
     }
   }
@@ -1791,6 +1797,11 @@ void sync_passo(unsigned agoraMs) {
       addons_marcar_da_conta(perfilDoCiclo);
       // #392: lista identica, mas marcada ate aqui de outro perfil.
       if (antes > 0 && antes != perfilDoCiclo) soAddons = 1;
+    } else if (addons_perfil_em_uso() != perfilDoCiclo) {
+      // #392: resposta VAZIA da conta deste perfil (so chega aqui com
+      // temAddonsRem: erro de rede nao passa) e a lista local mantida.
+      addons_marcar_em_uso(perfilDoCiclo);
+      soAddons = 1;
     }
   }
   // O pull precede o push: depois dele a caixa antiga nao vale como confirmacao.
