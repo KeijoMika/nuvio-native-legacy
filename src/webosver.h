@@ -25,7 +25,9 @@ int nv_webos_parse_starfish(const char *texto, char *linha, size_t cap);
 #define NV_WEBOS_LEITURA 4096
 // So para teste (nao ha idioma de "codigo so de teste" neste repo): troca os
 // caminhos (copiados; NULL = os de verdade) e esquece o valor.
+#ifdef AJUSTES_TESTE
 void nv_webos_testar(const char *nyx, const char *starfish);
+#endif
 #ifdef __cplusplus
 }
 #endif

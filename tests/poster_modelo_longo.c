@@ -59,6 +59,11 @@ int main(void) {
     aviso = ajustes_teste_poster_modelo(m, lido, sizeof lido);
     printf("aviso 40x{imdb}=%d\n", aviso);
     OK(aviso != 0, "400 caracteres com 40 x {imdb} (montado > 512) e recusado ao salvar");
+    // Copilot no #408: recusado por TAMANHO, nao pela sintaxe. O aviso de
+    // sintaxe ("use http(s):// e {imdb}...") mandaria corrigir o que esta certo.
+    { int sintaxe = ajustes_teste_poster_modelo("https://meu.servidor.invalid/x.jpg", lido, sizeof lido);
+      printf("aviso sintaxe=%d tamanho=%d\n", sintaxe, aviso);
+      OK(sintaxe != 0 && aviso != sintaxe, "longo demais tem aviso proprio, diferente do de sintaxe"); }
     // 400 com um {imdb} so continua valendo e monta.
     j = snprintf(m, sizeof m, "https://posters.exemplo.invalid/FAKEKEY/{imdb}/");
     while (j < 400) m[j++] = 'b';

@@ -196,7 +196,10 @@ static int resolver(void) {
     v = nv_webos_parse_starfish(buf, linhaStarfish, sizeof linhaStarfish);
     if (!major && v) { major = v; fonte = "starfish"; }
   }
-  if (erro) { major = 0; fonte = "-"; return 0; }
+  // O nyx manda: com ele lido, um erro no starfish (fonte de reserva) so perde
+  // a linha do log. Sem versao e com erro, nada e guardado e a proxima
+  // pergunta tenta de novo.
+  if (erro && !(major && !strcmp(fonte, "nyx"))) { major = 0; fonte = "-"; return 0; }
   lido = 1;
   return 1;
 }
@@ -225,6 +228,7 @@ void nv_webos_starfish_linha(char *out, size_t cap) {
   pthread_mutex_unlock(&trava);
 }
 
+#ifdef AJUSTES_TESTE
 void nv_webos_testar(const char *nyx, const char *starfish) {
   pthread_mutex_lock(&trava);
 #ifdef NV_WEBOS
@@ -237,3 +241,4 @@ void nv_webos_testar(const char *nyx, const char *starfish) {
   lido = 0;
   pthread_mutex_unlock(&trava);
 }
+#endif

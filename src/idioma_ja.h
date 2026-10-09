@@ -5031,6 +5031,7 @@
   T("mistério", "ミステリー"),
   T("mitologia", "神話"),
   T("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}", "無効なテンプレート: http(s):// と {imdb}、{tmdb}、{type}、{tipo_tmdb} のいずれかを使ってください"),
+  T("modelo longo demais: o endereço pronto passa de 512 caracteres", "テンプレートが長すぎます：完成したアドレスが512文字を超えます"),
   T("monstros", "モンスター"),
   T("mostrar", "表示"),
   T("motor desta TV · versão %s", "このテレビのエンジン · バージョン %s"),

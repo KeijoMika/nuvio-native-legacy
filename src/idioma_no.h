@@ -5031,6 +5031,7 @@
   T("mistério", "mysterium"),
   T("mitologia", "mytologi"),
   T("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}", "ugyldig mal: bruk http(s):// og {imdb}, {tmdb}, {type} eller {tipo_tmdb}"),
+  T("modelo longo demais: o endereço pronto passa de 512 caracteres", "malen er for lang: den ferdige adressen er over 512 tegn"),
   T("monstros", "monster"),
   T("mostrar", "vis"),
   T("motor desta TV · versão %s", "denne TV-ens motor · versjon %s"),

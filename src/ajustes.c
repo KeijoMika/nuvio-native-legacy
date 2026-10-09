@@ -3317,7 +3317,8 @@ static int gravar(void) {
 static char pstInst[PP_INSTANCIA_MAX], pstToken[PP_TOKEN_MAX + 1], pstExtra[PP_EXTRA_MAX + 1];
 static char pstChave[PP_CHAVE_MAX], pstModelo[PP_MODELO_MAX];
 // Ultima recusa de um campo digitado (0 = nenhuma); aparece na linha "Testar".
-enum { PST_OK = 0, PST_TOKEN_RUIM, PST_INST_RUIM, PST_EXTRA_RUIM, PST_CHAVE_RUIM, PST_MODELO_RUIM };
+enum { PST_OK = 0, PST_TOKEN_RUIM, PST_INST_RUIM, PST_EXTRA_RUIM, PST_CHAVE_RUIM, PST_MODELO_RUIM,
+       PST_MODELO_LONGO };
 static int pstAviso;
 
 static const char *pstCodigoLingua(void) {
@@ -3411,7 +3412,12 @@ static void pstDefinir(int op, const char *texto) {
       pstCopia(pstChave, sizeof pstChave, b);
       break; }
     case AJ_POSTER_MODELO:
-      if (b[0] && !posterprov_modelo_cabe(b)) { pstAviso = PST_MODELO_RUIM; return; }
+      // Sintaxe certa mas endereco pronto acima de PP_URL_MAX: aviso de tamanho,
+      // nao o de sintaxe (que mandaria corrigir o que esta certo).
+      if (b[0] && !posterprov_modelo_cabe(b)) {
+        pstAviso = posterprov_modelo_valido(b) ? PST_MODELO_LONGO : PST_MODELO_RUIM;
+        return;
+      }
       pstCopia(pstModelo, sizeof pstModelo, b);
       break;
   }
@@ -3499,6 +3505,7 @@ static const char *pstTexto(int op) {
     case PST_EXTRA_RUIM:  return i18n("parâmetros inválidos (fmt, format, config e c não valem)");
     case PST_CHAVE_RUIM:  return i18n("chave inválida");
     case PST_MODELO_RUIM: return i18n("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}");
+    case PST_MODELO_LONGO: return i18n("modelo longo demais: o endereço pronto passa de 512 caracteres");
     default: break;
   }
   { int e = atomic_load_explicit(&pstTeste, memory_order_acquire);
