@@ -45,9 +45,29 @@ static char pedidosCanal[200];
 // timeout do AIOStreams frio); as seguintes respondem com uma fonte.
 static int pedidosDesligado, pedidosLigado;
 static int falhasLento, chamadasLento, prazoLento[2], prazoCanal;
+// legenda.test imita o OpenSubtitles v3 vindo da conta (TCL do dono, 09/10):
+// instalado sem capacidades (nasce "fonte"), o manifesto diz so "subtitles" e
+// /stream/ responde 404.
+static int pedidosLegendaStream, pedidosLegendaManifesto, idxLegenda = -1;
 const char *rede_ultimo_erro(void) { return ""; }
 char *rede_baixar(const char *url, int s) {
   const char *r;
+  if (strstr(url, "legenda.test")) {
+    if (strstr(url, "/manifest.json")) {
+      pedidosLegendaManifesto++;
+      return strdup("{\"id\":\"org.stremio.opensubtitlesv3\",\"name\":\"OpenSubtitles v3\","
+                    "\"resources\":[\"subtitles\"],\"types\":[\"movie\",\"series\"]}");
+    }
+    if (strstr(url, "/stream/")) {
+      // A sonda (sondar, outro fio) termina DURANTE a busca, como na TCL: o
+      // manifesto chega depois de a lista de baldes ser montada.
+      if (!pedidosLegendaStream++ && idxLegenda >= 0)
+        addons_manifesto_lido(idxLegenda,
+          "{\"id\":\"org.stremio.opensubtitlesv3\",\"name\":\"OpenSubtitles v3\","
+          "\"resources\":[\"subtitles\"],\"types\":[\"movie\",\"series\"]}");
+    }
+    return NULL;
+  }
   if (strstr(url, "desligado.test")) pedidosDesligado++;
   if (strstr(url, "ligado.test") && !strstr(url, "desligado.test")) pedidosLigado++;
   if (strstr(url, "lento.test")) {
@@ -286,6 +306,32 @@ int main(void) {
       while (addons_estado() == ADD_BUSCANDO) usleep(1000);
       conferir("addon morto: requisicoes da consulta", chamadasLento - antes, esperado[k]);
     } }
+
+  // ---- add-on so de legenda vindo da conta (TCL, 09/10): ele nasce com
+  // fonte=1 ate o manifesto ser lido; a busca de fontes nao pode pedir
+  // /stream/ a ele nem chama-lo de "sem resposta".
+  conferir("so legenda entrou", addons_adicionar("OpenSubtitles v3", "https://legenda.test/manifest.json"), 1);
+  idxLegenda = addons_n() - 1;
+  pedidosLegendaStream = 0;
+  addons_definir_origem("https://legenda.test");
+  addons_buscar("tt0000013", "movie");
+  addons_definir_origem(NULL);
+  while (addons_estado() == ADD_BUSCANDO) usleep(1000);
+  printf("legenda.test: %d pedido(s) de manifesto, %d de stream\n", pedidosLegendaManifesto, pedidosLegendaStream);
+  // O 1o pedido saiu antes de a sonda terminar (inevitavel); depois dela, nada
+  // de segunda chance, e a folha nao culpa o add-on de legenda.
+  conferir("so de legenda: um pedido de stream, sem segunda chance", pedidosLegendaStream, 1);
+  { char m[200];
+    if (!addons_motivo_vazio(m, sizeof m)) m[0] = 0;
+    printf("motivo: %s\n", m);
+    conferir("so de legenda nao vira \"sem resposta\"", strstr(m, "OpenSubtitles") != NULL, 0); }
+  // Busca seguinte, com o manifesto lido: nenhum pedido de stream.
+  pedidosLegendaStream = 0;
+  addons_definir_origem("https://legenda.test");
+  addons_buscar("tt0000014", "movie");
+  addons_definir_origem(NULL);
+  while (addons_estado() == ADD_BUSCANDO) usleep(1000);
+  conferir("so de legenda com manifesto lido: nenhum pedido de stream", pedidosLegendaStream, 0);
 
   // RESOURCE "meta" (#174/#175), num addon proprio no fim para nao mexer nos
   // nomes e capacidades que as verificacoes acima leem. Duas formas do

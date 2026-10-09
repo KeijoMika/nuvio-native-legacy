@@ -1639,10 +1639,14 @@ static void capacidadesDoManifesto(int i, const char *corpo) {
       free(trecho); } }
   lerDeclaracaoMeta(i, corpo, r);
   addon[i].catalogo = cat;
-  addon[i].fonte    = str;
+  // Atomico: a descoberta pode republicar o manifesto (addons_manifesto_lido)
+  // enquanto um fio da busca le fonte em semStreamSondado.
+  __atomic_store_n(&addon[i].fonte, str, __ATOMIC_RELAXED);
   addon[i].legenda  = leg;
   addon[i].meta     = met;
-  addon[i].sondado  = 1;
+  // Publica DEPOIS das capacidades: quem le sondado com acquire (semStreamSondado,
+  // nos fios da busca) ve o fonte certo.
+  __atomic_store_n(&addon[i].sondado, 1, __ATOMIC_RELEASE);
   printf("[addons] %s: catalogo=%d stream=%d legenda=%d meta=%d\n",
          addon[i].nome, cat, str, leg, met);
   fflush(stdout);
@@ -1855,6 +1859,17 @@ typedef struct {
   unsigned ms;                // do disparo da consulta ate a resposta (addonstats)
 } BaldeFonte;
 
+// SO DE LEGENDA (ou catalogo) SEGUNDO A SONDA (TCL do dono, 09/10). Quem vem da
+// conta entra com fonte=1 ate sondar() ler o manifesto, que pode chegar com a
+// busca ja no ar: o OpenSubtitles v3 recebia /stream/ na 1a rodada e na
+// segunda chance, tomava 404 e a folha dizia que ele "nao respondeu". So
+// LEITURA dos campos que a sonda publica: o balde dele sai da segunda chance e
+// do resumo (nao conta como consultado, mudo nem vazio).
+static int semStreamSondado(int i) {
+  return __atomic_load_n(&addon[i].sondado, __ATOMIC_ACQUIRE) &&
+         !__atomic_load_n(&addon[i].fonte, __ATOMIC_RELAXED);
+}
+
 // O QUE A ULTIMA BUSCA REAL VIU, para a folha de fontes vazia dizer a causa
 // (B6/#107 e D5). A folha so dizia "Nenhuma fonte direta disponivel", e tres
 // situacoes diferentes davam essa mesma frase:
@@ -1948,6 +1963,7 @@ static void *fioFontes(void *u) {
     if (c->cancelado && c->cancelado(c->ctx)) continue;
     i = c->baldes[meu].idx;
     if (!addon[i].ativo) continue;   // desligado na conta: nunca consultado
+    if (semStreamSondado(i)) continue;   // a sonda terminou depois dos baldes
     // Id codificado como o Nuvio web (nv_addon_id): "tt123:1:2" sai igual.
     if (!nv_addon_id(idUrl, sizeof idUrl, c->id)) idUrl[0] = 0;
     // O NOME QUE O MANIFESTO DECLARA VAI PRIMEIRO (issue #112). Ver
@@ -2100,7 +2116,7 @@ static void segundaChance(Consulta *c, int fios) {
   if (!orig || !c2.baldes) { free(orig); free(c2.baldes); return; }
   for (q = 0; q < c->nBaldes; q++) {
     int i = c->baldes[q].idx;
-    if (c->baldes[q].respondeu) continue;
+    if (c->baldes[q].respondeu || semStreamSondado(i)) continue;
     if (semSegunda(i)) { pulados++; continue; }
     c2.baldes[m].idx = i; orig[m++] = q;
   }
@@ -2355,6 +2371,15 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
     // Junta NA ORDEM DOS ADDONS, que e a ordem em que o dono os instalou.
     for (q = 0; q < c.nBaldes; q++) {
       int k = c.baldes[q].n;
+      // Tambem quem respondeu 200 vazio: sem recurso stream, "veio vazio" nao
+      // diz nada. Limite que fica: a sonda terminando DEPOIS deste resumo.
+      if (k <= 0 && semStreamSondado(c.baldes[q].idx)) {
+        printf("[addons] %s: o manifesto nao declara stream; fora do resumo da busca\n",
+               addon[c.baldes[q].idx].nome);
+        if (c.progresso && c.baldes[q].idx < ADD_MAX) progMarcar(c.baldes[q].idx, NULL, 0, 0);
+        free(c.baldes[q].achados);
+        continue;
+      }
       // A LATENCIA DESTA BUSCA fica na memoria desta TV (addonstats.h): so a
       // busca real e nao cancelada — prefetch e busca interrompida nao provam
       // nada sobre o add-on.
