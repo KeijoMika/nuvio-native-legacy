@@ -231,6 +231,7 @@ static void rota(const char *trecho, const char *resp) {
   rotas[nRotas].trecho = trecho; rotas[nRotas].resp = resp; nRotas++;
 }
 
+static void (*caudaB)(void);
 char *rede_baixar(const char *u, int t) {
   int r;
   (void)t;
@@ -250,6 +251,9 @@ char *rede_baixar(const char *u, int t) {
   if (strstr(u, "addon.test/SEGREDO/meta/") && addonResp &&
       strstr(u, addonTipo)) return strdup(addonResp);
   // TMDB (#176): so o que o teste liga em `tmdbResp*`.
+  // Caso 31: a cauda de enriquecimento do fio A pede o /find; nesse meio o
+  // fio B (mesmo titulo, reaberto) publica 72 episodios em 3 temporadas.
+  if (strstr(u, "themoviedb.org/3/find/tt0000373") && caudaB) caudaB();
   if (strstr(u, "themoviedb.org/3/find/")) return tmdbFind ? strdup(tmdbFind) : NULL;
   if (strstr(u, "themoviedb.org/3/tv/555/season/1?") && tmdbTemp1) return strdup(tmdbTemp1);
   if (strstr(u, "themoviedb.org/3/tv/555/season/")) return strdup("{\"episodes\":[]}");
@@ -286,6 +290,22 @@ static void corpoSerie(char *b, size_t n, const char *tt, const int *cont, int n
                             "\"name\":\"E%d\"}", prim ? "" : ",", tt, t + 1, e, t + 1, e, e);
   if (k < n) snprintf(b + k, n - k, "]}}");
   assert(k + 4 < n);
+}
+
+// O fio B do caso 31: publica a lista e as abas T1-T3 do mesmo titulo, como
+// buscarEps faria (cat_definir_episodios e cat_atualizar_item).
+static void publicaB(void) {
+  static CatEp eps[72];
+  CatItem it;
+  int i;
+  for (i = 0; i < 72; i++) {
+    memset(&eps[i], 0, sizeof eps[i]);
+    eps[i].temporada = i / 24 + 1; eps[i].episodio = i % 24 + 1;
+  }
+  cat_definir_episodios(0, eps, 72);
+  assert(cat_copiar_item(0, &it));
+  it.nTemporadas = 3; it.temporadas[0] = 1; it.temporadas[1] = 2; it.temporadas[2] = 3;
+  cat_atualizar_item(0, &it);
 }
 
 static void catalogoCom(const char *imdb, const char *tipo, const char *titulo) {
@@ -1199,6 +1219,26 @@ int main(void) {
     assert(s2 == 24);
     puts("ok  #372: abas de temporada da lista publicada (addon 3 temporadas sobre Nuvio 1)");
     addonMeta = 0; addonResp = NULL; nRotas = 0; limparCacheMeta(); }
+
+  // 31) Codex P2 (#372): A CAUDA DO FIO VELHO NAO DEVOLVE AS ABAS VELHAS. O fio
+  //   A publica T1 e solta fioEpVivo para enfeitar (elenco, /find); o titulo
+  //   reaberto (fio B) publica T1-T3; a cauda de A republicava o `edit` inteiro
+  //   salvo antes e o item voltava a 1 aba com 72 episodios: T2/T3 escondidos.
+  { static char nuvio60b[16384];
+    corpoSerie(nuvio60b, sizeof nuvio60b, "tt0000373", (const int[]){60}, 1);
+    limparCacheMeta(); nRotas = 0; nFake = 0; metaprov_zerar_pausa();
+    rota("catalog.nuvio.tv", nuvio60b);
+    rota("v3-cinemeta", NULL);
+    addonMeta = 0;
+    catalogoCom("tt0000373", "series", "Fio Velho");
+    caudaB = publicaB;
+    abrir();
+    caudaB = NULL;
+    assert(cat_n_episodios(0) == 72);
+    assert(cat_item(0)->nTemporadas == 3);
+    assert(cat_item(0)->temporadas[2] == 3);
+    puts("ok  #372: cauda do fio velho nao repoe as abas que o fio novo trocou");
+    nRotas = 0; limparCacheMeta(); }
 
   puts("detalheanime: tudo ok");
   return 0;
