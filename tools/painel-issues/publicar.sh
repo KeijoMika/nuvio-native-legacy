@@ -21,6 +21,13 @@ done
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# Respostas do dono: sem a API implantada o ssh/cat falha, e publicar continua.
+if [ "$DRY" = 1 ]; then
+  echo "[dry-run] faria: respostas.sh baixar $REPO (tolerando falha)"
+elif ! "$AQUI/respostas.sh" baixar "$REPO"; then
+  echo "AVISO: nao consegui baixar as respostas do dono (API ainda nao implantada?); publicando sem elas" >&2
+fi
+
 python3 "$AQUI/gerar.py" --repo "$REPO" --out "$TMP"
 
 if [ "$DRY" = 1 ]; then

@@ -9175,6 +9175,7 @@
  ],
  "decisoes": [
   {
+   "id": "dec-256-proximo-episodio",
    "pergunta": "Próximo episódio automático após 5 s: entra na 2.0.5 junto da contagem do #331, ligado por padrão ou desligado?",
    "recomendacao": "2.0.5, desligado por padrão, valor configurável. O #256 ainda pede que o card volte depois de dispensado; isso fica fora.",
    "issues": [
@@ -9183,6 +9184,7 @@
    ]
   },
   {
+   "id": "dec-360-botao-sincronizar",
    "pergunta": "#360 (botão Sincronizar addons) fica em 2.0.5 mesmo com a mescla do sync já na 2.0.3?",
    "recomendacao": "Sim, 2.0.5; corrigir a resposta que perguntou \"on 2.0.3?\" dizendo que a mescla vem agora e o botão depois.",
    "issues": [
@@ -9190,6 +9192,7 @@
    ]
   },
   {
+   "id": "dec-334-p2p-limite",
    "pergunta": "#334 sai como 2.0.3 só com o limite de P2P e a limpeza, e a janela de streaming (armazenamento rotativo, agente/203-334-janela) fica para a 2.0.5?",
    "recomendacao": "Sim: limite e limpeza já estão em 2.0.3; a janela muda o motor de P2P e a 2.0.3 está congelada. Avisar na issue que o rotativo vem na 2.0.5.",
    "issues": [
@@ -9197,6 +9200,7 @@
    ]
   },
   {
+   "id": "dec-326-promessas-next-build",
    "pergunta": "#326 e #338 foram prometidos para \"próxima atualização/next build\" e o código só está em branches de 2.0.5. Responder já avisando 2.0.5?",
    "recomendacao": "Sim, corrigir a promessa agora.",
    "issues": [
@@ -9205,6 +9209,7 @@
    ]
   },
   {
+   "id": "dec-bugs-sem-log",
    "pergunta": "Bugs sem log (#288, #315, #316, #344-346, #353, #357, #367, #372, #373, #378, #379) ficam todos em 2.0.5?",
    "recomendacao": "Sim como alvo de triagem, mas sem prometer: pedir log primeiro; os que não chegarem com log em 30 dias viram \"precisa-log\" e saem do alvo.",
    "issues": [
@@ -9224,6 +9229,7 @@
    ]
   },
   {
+   "id": "dec-354-nao-vamos-fazer",
    "pergunta": "\"nao vamos fazer\": #354 (PC), #307 (.ipa iOS), #324 (relatório de logs), #292 (aviso 4K Android). Confirma?",
    "recomendacao": "Confirmar #354 e #307 (fora de escopo, já classificados fora-do-escopo). #324 e #292 não são pedidos de recurso: fechar como informativos em vez de \"não vamos fazer\".",
    "issues": [
@@ -9234,6 +9240,7 @@
    ]
   },
   {
+   "id": "dec-304-pedidos-interface",
    "pergunta": "Pedidos de interface (#304 serviços na barra lateral, #347 microfone, #348 pontos do carrossel/botão Reproduzir, #342 botão Pular cena) ficam em \"futuro\" ou \"nao vamos fazer\"?",
    "recomendacao": "Futuro para #304, #348 e #347. #342 (conteúdo explícito) depende de base de dados de terceiros que não existe: recomendo nao vamos fazer.",
    "issues": [
@@ -9244,6 +9251,7 @@
    ]
   },
   {
+   "id": "dec-135-vidaa-rtl",
    "pergunta": "#135 (porte VIDAA) e #260 (RTL) em \"futuro\" ou \"nao vamos fazer\"?",
    "recomendacao": "Futuro; há trabalho feito em feat/vidaa e uma resposta pública dizendo \"depois\" para o RTL.",
    "issues": [
@@ -9252,6 +9260,7 @@
    ]
   },
   {
+   "id": "dec-144-aguardando-fechamento",
    "pergunta": "Issues abertas só aguardando fechamento (#144, #252, #287, #290, #293, #296, #298, #300, #303): fechar?",
    "recomendacao": "Fechar com comentário, depois que o dono aprovar o texto. Alvo registrado como ja-lancada (valor extra além dos cinco pedidos).",
    "issues": [
@@ -9267,6 +9276,7 @@
    ]
   },
   {
+   "id": "dec-341-blackbar-crop",
    "pergunta": "Blackbar/crop (remover barras pretas embutidas) é 2.1, 2.2 ou 2.0.5? Não consta do roadmap aprovado.",
    "recomendacao": "Sugestão do agente, não aprovada: manter fora das versões aprovadas; se o dono quiser, 2.2 ou futuro, pois é recurso novo, sem branch e toca os três pipelines de vídeo.",
    "issues": [
@@ -9274,11 +9284,13 @@
    ]
   },
   {
+   "id": "dec-dv-mkv-samsung",
    "pergunta": "Dolby Vision em MKV na Samsung: manter na 2.1, passar para 2.2 ou futuro? Não consta do roadmap aprovado.",
    "recomendacao": "Sugestão do agente, não aprovada: futuro, só como spike de pesquisa; não prometer ao público até haver prova num modelo.",
    "issues": []
   },
   {
+   "id": "dec-352-limites-trakt",
    "pergunta": "Limites maiores do Trakt/Biblioteca: entram dentro do redesign aprovado da 2.1 ou ficam fora?",
    "recomendacao": "Sugestão do agente, não aprovada: dentro do redesign (o plano biblioteca-ilimitada é parte dele). O redesign em si já está aprovado; a 2.0.5 fica só com indicadores de visto (#352) e esconder assistidos (#366).",
    "issues": [
@@ -9287,11 +9299,13 @@
    ]
   },
   {
+   "id": "dec-refatoracao-geral",
    "pergunta": "Plano de refatoração geral (docs/plans/refatoracao-geral.md): quando? Não consta do roadmap aprovado.",
    "recomendacao": "Sugestão do agente, não aprovada: depois da 2.0.3, na 2.1 como trabalho próprio; na 2.0.5 no máximo os itens 01-04 (apagar morto). Não misturar com recursos.",
    "issues": []
   },
   {
+   "id": "dec-250-arabe-autosync",
    "pergunta": "Menus em árabe (#250, #333) e auto sync de legenda (#374) seguem na 2.1? Não constam do roadmap aprovado; o árabe foi prometido na resposta do #325.",
    "recomendacao": "Sugestão do agente, não aprovada: manter na 2.1 só se sobrar espaço; senão futuro. Corrigir a promessa pública do #325 se for para futuro.",
    "issues": [
@@ -9301,6 +9315,7 @@
    ]
   },
   {
+   "id": "dec-fechar-203-sem-confirmacao",
    "pergunta": "Fechar com a 2.0.3 (bloco acima): fechar já as issues sem confirmação do autor ou esperar o retorno?",
    "recomendacao": "Fechar já #317 e #318 (autores confirmaram). As demais, esperar alguns dias pelo retorno; a resposta curta já pede para reabrir se persistir, então fechar também é aceitável.",
    "issues": [
@@ -9329,6 +9344,7 @@
    ]
   }
  ],
+ "decisoes_ids_retirados": [],
  "fechar_203": [
   {
    "numero": 269,

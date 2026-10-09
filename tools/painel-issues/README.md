@@ -25,3 +25,18 @@ containers; aborta se a 8094 estiver ocupada por outra coisa. Padrao de worktree
 
 Somente LAN (`http://192.168.1.20:8094`) ou Tailscale. Nao expor publicamente:
 as notas contem detalhes internos.
+
+## Respostas do dono (Sim/Nao + informacao adicional)
+
+Cada decisao em `docs/issues/mapa.json` tem um `id` estavel (`dec-...`); o painel mostra
+Sim/Nao, texto (2000 caracteres) e Enviar, e permite alterar ate a decisao ser marcada
+`aplicada_em` (AAAA-MM-DD, preenchido pela coordenacao). Sem a API, o painel fica so leitura.
+
+- API: `api/servidor.py` (stdlib), `POST/GET /api/respostas`, grava `/data/respostas.json`
+  (historico por id, ultima = atual). **Sem autenticacao**: so LAN/Tailscale, como o painel;
+  a defesa e o cabecalho Origin (origens do painel) + Content-Type JSON.
+- Implantar (precisa de OK do dono, recria o container nginx do painel):
+  `tools/painel-issues/api/implantar.sh` mostra o plano; `--aplicar` executa.
+- Ler as respostas: `tools/painel-issues/respostas.sh baixar` -> `docs/issues/respostas-dono.json`;
+  depois `python3 docs/issues/mapa.py` mostra "resposta do dono" no MAPA.md. `publicar.sh` ja baixa antes de gerar.
+- Teste local: `tools/painel-issues/tests/api-respostas.sh`.

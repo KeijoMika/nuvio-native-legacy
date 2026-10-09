@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gera docs/issues/MAPA.md a partir de docs/issues/mapa.json.
 Uso: python3 docs/issues/mapa.py   (edite so o json; o md e derivado)"""
-import json,os,re,collections,sys
+import json,os,re,collections,sys,subprocess
 D=os.path.dirname(os.path.abspath(__file__))
 J=json.load(open(os.path.join(D,'mapa.json')))
 R=J['itens']
@@ -24,6 +24,44 @@ def valida():
         r=por[n]
         if r['estado_github']!='aberta' or r['status']!='lancada': sys.exit(f"ERRO: #{n} em 'fechar com a 2.0.3' precisa estar aberta no GitHub e com status lancada")
     if set(fc)&set(nf): sys.exit('ERRO: issue em fechar_203 e em nao_fechar_ainda: '+str(sorted(set(fc)&set(nf))))
+RE_ID=re.compile(r'^dec-[a-z0-9]+(-[a-z0-9]+)*$')
+def valida_decisoes():
+    # id estavel por decisao: presente, bem formado, unico, nunca some nem e reusado
+    ids=[]
+    for k,d in enumerate(J['decisoes'],1):
+        i=d.get('id')
+        if not isinstance(i,str) or not RE_ID.match(i): sys.exit(f"ERRO: decisao {k} sem id valido (formato dec-<assunto>, minusculas/digitos/hifens): {i!r}")
+        ids.append(i)
+        a=d.get('aplicada_em')
+        if a is not None and not re.match(r'^\d{4}-\d{2}-\d{2}$',str(a)): sys.exit(f"ERRO: {i}: aplicada_em deve ser AAAA-MM-DD")
+    dup=sorted(i for i,c in collections.Counter(ids).items() if c>1)
+    if dup: sys.exit('ERRO: ids de decisao repetidos: '+', '.join(dup))
+    ret=J.get('decisoes_ids_retirados')
+    if not isinstance(ret,list): sys.exit("ERRO: falta 'decisoes_ids_retirados' (lista, pode ser vazia)")
+    if len(set(ret))!=len(ret): sys.exit('ERRO: decisoes_ids_retirados com repeticao')
+    reus=sorted(set(ret)&set(ids))
+    if reus: sys.exit('ERRO: id retirado foi reusado: '+', '.join(reus))
+    try:
+        ant=json.loads(subprocess.run(['git','-C',D,'show','HEAD:./mapa.json'],capture_output=True,text=True,check=True).stdout)
+        antes={d['id'] for d in ant.get('decisoes',[]) if 'id' in d}|set(ant.get('decisoes_ids_retirados',[]))
+    except Exception: antes=set()  # sem git/HEAD: so as checagens acima
+    sumiu=sorted(antes-set(ids)-set(ret))
+    if sumiu: sys.exit("ERRO: id de decisao sumiu sem ir para decisoes_ids_retirados: "+', '.join(sumiu))
+valida_decisoes()
+def carrega_respostas():
+    p=os.path.join(D,'respostas-dono.json')
+    if not os.path.exists(p): return {}
+    try: r=json.load(open(p,encoding='utf-8'))['respostas']
+    except Exception as e: sys.exit(f"ERRO: respostas-dono.json invalido: {e}")
+    ok={d['id'] for d in J['decisoes']}|set(J['decisoes_ids_retirados'])
+    out={}
+    for i,v in r.items():
+        h=v.get('historico') if isinstance(v,dict) else None
+        if not h or not all(isinstance(x,dict) and x.get('resposta') in ('sim','nao') for x in h): sys.exit(f"ERRO: respostas-dono.json: historico invalido em {i}")
+        if i not in ok: print(f"AVISO: resposta para id desconhecido {i} (ignorada)",file=sys.stderr); continue
+        out[i]=h[-1]
+    return out
+RESP=carrega_respostas()
 valida()
 def vk(t): return [int(p) for p in re.findall(r'\d+',t)]
 def grupo(r):
@@ -89,8 +127,21 @@ for x in J.get('nao_fechar_ainda',[]):
     r=next(i for i in R if i['numero']==x['numero'])
     L.append(f"| [#{r['numero']}]({r['url']}) | {cell(r['titulo'])[:60]} | {cell(x['motivo'])} |")
 L.append("\n## Decisões para o dono\n")
-for k,d in enumerate(J['decisoes'],1):
-    L.append(f"{k}. {d['pergunta']} Recomendação: {d['recomendacao']}")
+def estado_dec(d):
+    if d.get('aplicada_em'): return 'aplicada'
+    return 'respondida, a aplicar' if d['id'] in RESP else 'pendente'
+def linha_resp(d):
+    r=RESP.get(d['id'])
+    if not r: return ''
+    nota=(' Nota: '+cell(r['nota'])+'.') if r.get('nota') else ''
+    return f" **Resposta do dono: {'SIM' if r['resposta']=='sim' else 'NÃO'}**{nota} ({r.get('quando','?')[:10]})."
+pend=[d for d in J['decisoes'] if not d.get('aplicada_em')]
+for k,d in enumerate(pend,1):
+    L.append(f"{k}. `{d['id']}` [{estado_dec(d)}] {d['pergunta']} Recomendação: {d['recomendacao']}{linha_resp(d)}")
+apl=[d for d in J['decisoes'] if d.get('aplicada_em')]
+if apl:
+    L.append('\n### Decisões aplicadas\n')
+    for d in apl: L.append(f"- `{d['id']}` aplicada em {d['aplicada_em']}: {d['pergunta']}{linha_resp(d)}")
 L.append('')
 c=collections.Counter(r['status'] for r in R)
 L.append("## Resumo\n\nPor status:\n\n| Status | Qtd |\n|---|---|")
