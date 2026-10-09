@@ -3575,6 +3575,12 @@ int ajustes_teste_poster_modelo(const char *colado, char *lido, size_t n) {
   snprintf(lido, n, "%s", pstModelo);
   return pstAviso;
 }
+// So a leitura de posteres.txt (o que outra versao gravou), sem digitar nada.
+void ajustes_teste_poster_recarregar(char *lido, size_t n) {
+  pstModelo[0] = 0;
+  pstCarregar();
+  snprintf(lido, n, "%s", pstModelo);
+}
 #endif
 
 

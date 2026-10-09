@@ -12,6 +12,7 @@
 #include <string.h>
 
 int ajustes_teste_poster_modelo(const char *colado, char *lido, size_t n);
+void ajustes_teste_poster_recarregar(char *lido, size_t n);
 
 static int falhas;
 #define OK(c, m) do { if (c) printf("ok   %s\n", m); else { printf("FALHA %s\n", m); falhas++; } } while (0)
@@ -66,6 +67,27 @@ int main(void) {
     OK(aviso == 0 && !strcmp(lido, m) &&
        posterprov_montar_url(posterprov_cfg(), "tt0111161", 0, "movie", u2, sizeof u2),
        "400 caracteres com um {imdb} e aceito e monta"); }
+
+  // Codex P2 (rodada 2): o pior caso vale so para o que se DIGITA. O modelo que
+  // uma versao anterior gravou (< 300, marcadores conhecidos) e lido de volta
+  // mesmo que o pior caso passe de 512: 299 caracteres com 13 x {imdb} = 520 no
+  // pior caso, 338 com tt0111161 — monta.
+  { char m[PP_MODELO_MAX], arq[PP_MODELO_MAX + 16], u3[PP_URL_MAX];
+    int j = snprintf(m, sizeof m, "https://posters.exemplo.invalid/");
+    int i;
+    for (i = 0; i < 13; i++) j += snprintf(m + j, sizeof m - (size_t)j, "{imdb}");
+    while (j < 299) m[j++] = 'c';
+    m[j] = 0;
+    snprintf(arq, sizeof arq, "modelo=%s\n", m);
+    assert(dados_gravar("posteres.txt", arq));
+    ajustes_teste_poster_recarregar(lido, sizeof lido);
+    OK(!strcmp(lido, m), "modelo gravado por versao anterior (pior caso > 512) e mantido ao abrir");
+    { PosterProvCfg c;
+      memset(&c, 0, sizeof c);
+      c.prov = PP_MODELO;
+      snprintf(c.modelo, sizeof c.modelo, "%s", lido);
+      OK(posterprov_montar_url(&c, "tt0111161", 0, "movie", u3, sizeof u3) && strlen(u3) == 338,
+         "e ele monta (338 caracteres com tt0111161)"); } }
 
   if (falhas) { printf("%d falha(s)\n", falhas); return 1; }
   printf("tudo ok\n");
