@@ -8649,6 +8649,16 @@
    "conserto": [],
    "proximo_passo": "pedir log com o canal que pisca e a saída de vídeo da Shield",
    "notas": "Tela verde em vídeo costuma ser decodificador/superfície (buffer YUV sem quadro). No Android a superfície é recriada em partida HDR e mudança de aspecto (notas da 2.0.3). Não localizado no código; sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-ragingmuncher-01",
+   "titulo": "Painel lateral (side bar) pisca depois da atualização (Ragingmuncher)",
+   "plataforma": "desconhecida",
+   "status": "precisa-log",
+   "release": "sem alvo (aguardando informação do autor); relatado na 2.0.3",
+   "conserto": [],
+   "proximo_passo": "responder no Reddit pedindo: modelo da TV e pacote (.tpk/.wgt/versão do webOS); se o ponteiro estava na tela ou só setas; em qual tela/item e se já acontecia na 2.0.2; enviar o log logo depois, com a hora aproximada (Ajustes > Sobre > Enviar log); vídeo pelo celular se for só visual",
+   "notas": "Relato: o painel lateral (side bar) pisca depois da atualização para a 2.0.3. TV e plataforma desconhecidas. ANÁLISE de 09/10: em ~310 logs da 2.0.3 (webos, tizen, tizen-tpk, a partir de 09/10/2026 15:00 UTC) não há laço de troca de tela (no máximo 18 linhas \"[transicao] tela\" por log, espaçadas por segundos). O painel lateral não escreve linha de log, então isso só descarta um laço, NÃO um pisca visual. src/menu.c não mudou entre a v2.0.2 e a v2.0.3; src/ponteiro.c ganhou 11 linhas (só aparo de alvo do ponteiro). SUSPEITA, não provada: Magic Remote com o ponteiro sobre o painel com o fundo de vidro. Sem log ou vídeo é suspeita. Origem: Reddit u/Ragingmuncher, versão 2.0.3, 09/10/2026."
   }
  ],
  "base_roadmap": "21077ab5",
