@@ -8612,10 +8612,10 @@
     "ultima_nossa": null
    },
    "proximo_passo": "reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relevo, brilho de borda, cobertura) e Reflexo a 0%; comparar com 2.0.2; pedir log",
-   "notas": "Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor.",
+   "notas": "Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/410",
    "criada_em": "2026-10-09",
-   "alvo": "2.0.5"
+   "alvo": "2.0.4"
   }
  ],
  "fora_do_github": [
@@ -9362,21 +9362,24 @@
    "issues": [
     256,
     331
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "#360 (botão Sincronizar addons) fica em 2.0.5 mesmo com a mescla do sync já na 2.0.3?",
    "recomendacao": "Sim, 2.0.5; corrigir a resposta que perguntou \"on 2.0.3?\" dizendo que a mescla vem agora e o botão depois.",
    "issues": [
     360
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "#334 sai como 2.0.3 só com o limite de P2P e a limpeza, e a janela de streaming (armazenamento rotativo, agente/203-334-janela) fica para a 2.0.5?",
    "recomendacao": "Sim: limite e limpeza já estão em 2.0.3; a janela muda o motor de P2P e a 2.0.3 está congelada. Avisar na issue que o rotativo vem na 2.0.5.",
    "issues": [
     334
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "#326 e #338 foram prometidos para \"próxima atualização/next build\" e o código só está em branches de 2.0.5. Responder já avisando 2.0.5?",
@@ -9384,7 +9387,8 @@
    "issues": [
     326,
     338
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Bugs sem log (#288, #315, #316, #344-346, #353, #357, #367, #372, #373, #378, #379) ficam todos em 2.0.5?",
@@ -9403,7 +9407,8 @@
     373,
     378,
     379
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "\"nao vamos fazer\": #354 (PC), #307 (.ipa iOS), #324 (relatório de logs), #292 (aviso 4K Android). Confirma?",
@@ -9413,7 +9418,8 @@
     307,
     324,
     292
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Pedidos de interface (#304 serviços na barra lateral, #347 microfone, #348 pontos do carrossel/botão Reproduzir, #342 botão Pular cena) ficam em \"futuro\" ou \"nao vamos fazer\"?",
@@ -9423,7 +9429,8 @@
     348,
     347,
     342
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "#135 (porte VIDAA) e #260 (RTL) em \"futuro\" ou \"nao vamos fazer\"?",
@@ -9431,7 +9438,8 @@
    "issues": [
     135,
     260
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Issues abertas só aguardando fechamento (#144, #252, #287, #290, #293, #296, #298, #300, #303): fechar?",
@@ -9446,19 +9454,22 @@
     298,
     300,
     303
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Blackbar/crop (remover barras pretas embutidas) é 2.1, 2.2 ou 2.0.5? Não consta do roadmap aprovado.",
    "recomendacao": "Sugestão do agente, não aprovada: manter fora das versões aprovadas; se o dono quiser, 2.2 ou futuro, pois é recurso novo, sem branch e toca os três pipelines de vídeo.",
    "issues": [
     341
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Dolby Vision em MKV na Samsung: manter na 2.1, passar para 2.2 ou futuro? Não consta do roadmap aprovado.",
    "recomendacao": "Sugestão do agente, não aprovada: futuro, só como spike de pesquisa; não prometer ao público até haver prova num modelo.",
-   "issues": []
+   "issues": [],
+   "estado": "pendente"
   },
   {
    "pergunta": "Limites maiores do Trakt/Biblioteca: entram dentro do redesign aprovado da 2.1 ou ficam fora?",
@@ -9466,12 +9477,14 @@
    "issues": [
     352,
     366
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Plano de refatoração geral (docs/plans/refatoracao-geral.md): quando? Não consta do roadmap aprovado.",
    "recomendacao": "Sugestão do agente, não aprovada: depois da 2.0.3, na 2.1 como trabalho próprio; na 2.0.5 no máximo os itens 01-04 (apagar morto). Não misturar com recursos.",
-   "issues": []
+   "issues": [],
+   "estado": "pendente"
   },
   {
    "pergunta": "Menus em árabe (#250, #333) e auto sync de legenda (#374) seguem na 2.1? Não constam do roadmap aprovado; o árabe foi prometido na resposta do #325.",
@@ -9480,7 +9493,8 @@
     250,
     333,
     374
-   ]
+   ],
+   "estado": "pendente"
   },
   {
    "pergunta": "Fechar com a 2.0.3 (bloco acima): fechar já as issues sem confirmação do autor ou esperar o retorno?",
@@ -9508,7 +9522,86 @@
     368,
     370,
     384
-   ]
+   ],
+   "estado": "pendente"
+  },
+  {
+   "pergunta": "Ordem das fontes do add-on (#400, AIOStreams): entra na 2.0.4 ou fica para a 2.0.5?",
+   "recomendacao": "Opção \"Ordem das fontes: Por qualidade / Do addon\" na exibição, sem mexer no automático (o oficial já mantém a ordem do add-on).",
+   "issues": [
+    400
+   ],
+   "estado": "decidida",
+   "decisao": "Entra na 2.0.4. Implementação delegada ao Codex em agente/204-ordem400.",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "pergunta": "Atualizar o PR #408 (review only) com KM7, consertos do Copilot/ultrareview, OpenSubtitles e mapa?",
+   "recomendacao": "Sim: push de integracao/2.0.3.1.",
+   "issues": [
+    408
+   ],
+   "estado": "decidida",
+   "decisao": "Sim. Push feito (063f381b).",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "pergunta": "Card de novidades da 2.0.4 (hotfix): fazer ou não?",
+   "recomendacao": "Sugestão do agente era não fazer por ser hotfix.",
+   "issues": [],
+   "estado": "decidida",
+   "decisao": "Fazer. Delegado ao Codex em agente/204-novidades (até 3 cenas, só o que NOTAS.md prova).",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "pergunta": "Painel de issues: sempre atualizado?",
+   "recomendacao": "Republicar a cada mudança do mapa na integração.",
+   "issues": [],
+   "estado": "decidida",
+   "decisao": "Sim, faz parte do fluxo: hook post-commit/post-merge republica o painel (tools/painel-issues).",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "pergunta": "Erros de KM7 SE (Reddit): consertar na 2.0.4?",
+   "recomendacao": "Amlogic deixa de recriar a superfície de vídeo no HDR.",
+   "issues": [],
+   "estado": "decidida",
+   "decisao": "Sim, 2.0.4 (98929593, ccd37565).",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "pergunta": "Dolby Vision perfil 5 na LG: variante HDR10 ou MP4 primeiro (agente/2031-dvp5-hdr10 x agente/2031-dvp5-mp4)?",
+   "recomendacao": "Testar as duas na C9 e escolher; fora da 2.0.4 se não houver teste.",
+   "issues": [],
+   "estado": "pendente"
+  },
+  {
+   "pergunta": "Canal de comunidade (Telegram ou Discord) pedido por usuário?",
+   "recomendacao": "Sugestão do agente: Discord (o app já tem integração de presença com Discord); decisão do dono.",
+   "issues": [],
+   "estado": "pendente"
+  },
+  {
+   "pergunta": "Perfil sem Trakt (usuários com Simkl veem \"Trakt desconectado\"): entra em qual versão?",
+   "recomendacao": "2.0.5: perfil com dados do Simkl e mensagem certa quando só o Simkl está ligado.",
+   "issues": [],
+   "estado": "pendente"
+  },
+  {
+   "pergunta": "#410 (vidro, Profundidade e Reflexo no .tpk) entra em qual versão?",
+   "recomendacao": "Agente tinha posto 2.0.5.",
+   "issues": [
+    410
+   ],
+   "estado": "decidida",
+   "decisao": "2.0.4: é regressão da 2.0.3.",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
   }
  ],
  "fechar_203": [

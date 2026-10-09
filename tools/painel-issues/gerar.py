@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Gera o site estatico do painel de issues a partir de docs/issues/mapa.json."""
-import argparse, datetime, json, os, shutil, subprocess, sys
+import argparse, datetime, json, os, re, shutil, subprocess, sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
@@ -39,6 +39,18 @@ def main():
         "gerado_em": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "mapa_atualizado_em": dados.get("atualizado_em", ""),
     }
+
+    # Hashes citados em qualquer texto do mapa que EXISTEM no repo: so esses
+    # viram link de commit no painel (um prefixo de sha256 nao vira link morto).
+    texto = json.dumps(dados, ensure_ascii=False)
+    commits = {}
+    for h8 in sorted(set(re.findall(r"\b[0-9a-f]{7,12}\b", texto))):
+        full = git(a.repo, "rev-parse", "--verify", "--quiet", h8 + "^{commit}")
+        if full: commits[h8] = full
+    remoto = git(a.repo, "remote", "get-url", "origin")
+    mrep = re.search(r"github\.com[:/]([^/]+/[^/.]+)", remoto)
+    dados["meta"]["commits"] = commits
+    dados["meta"]["repo"] = "https://github.com/" + mrep.group(1) if mrep else ""
 
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, "data.json"), "w", encoding="utf-8") as f:
