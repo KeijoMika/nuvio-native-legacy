@@ -87,13 +87,13 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 | Alvo | Qtd | Issues |
 |---|---|---|
 | 2.0.3 | 5 | #246, #280, #283, #334, #356 |
-| 2.0.3.1 | 3 | #328, #344, #372 |
+| 2.0.3.1 | 4 | #294, #328, #344, #372 |
 | 2.0.4 | 40 | #266, #286, #288, #302, #306, #308, #310, #313, #315, #316, #326, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #373, #378, #379, #382, #385, #386, #387, #388, #390 |
 | 2.1 | 3 | #250, #333, #374 |
 | 2.2 | 0 |  |
 | futuro | 8 | #135, #260, #304, #342, #343, #347, #348, #389 |
 | nao vamos fazer | 4 | #292, #307, #324, #354 |
-| ja-lancada | 34 | #144, #252, #269, #284, #287, #290, #293, #294, #296, #298, #300, #303, #305, #311, #312, #317, #318, #319, #320, #321, #322, #323, #330, #332, #335, #339, #340, #341, #361, #363, #368, #370, #383, #384 |
+| ja-lancada | 33 | #144, #252, #269, #284, #287, #290, #293, #296, #298, #300, #303, #305, #311, #312, #317, #318, #319, #320, #321, #322, #323, #330, #332, #335, #339, #340, #341, #361, #363, #368, #370, #383, #384 |
 
 ## Fechar com a 2.0.3
 
@@ -103,7 +103,6 @@ Issues ABERTAS no GitHub cujo conserto saiu na v2.0.3 (commits contidos na tag).
 |---|---|---|---|
 | [#269](https://github.com/iqui27/nuvio-native-legacy/issues/269) | Embedded subtitles are not being detected or not being displ | NÃO: o autor agradeceu o conserto parcial da 2.0.2; nao testou a 2.0.3 | Thanks for reporting this! Embedded subtitles on big MKV files (over 2 GB) are fixed in 2.0.3. Please update, and reopen this if they still don't show up. |
 | [#284](https://github.com/iqui27/nuvio-native-legacy/issues/284) | Source result ("Best for this tv") missing resolution | NÃO: sem comentarios do autor | Thanks! The "Best for this TV" source line now shows the resolution in 2.0.3. Please reopen if you still don't see it. |
-| [#294](https://github.com/iqui27/nuvio-native-legacy/issues/294) | 🐛 Home collection order resets after switching profiles | NÃO: autor mandou logs; nao confirmou o conserto | Thanks for the logs! 2.0.3 keeps your collections in place when you switch profiles and clears the other profile's rows. Reopen this if it happens again. |
 | [#305](https://github.com/iqui27/nuvio-native-legacy/issues/305) | Hide player ui when pressing up | NÃO: sem confirmacao do autor | Done in 2.0.3: pressing Up on the seek bar now hides the player controls (any key brings them back). Reopen if it doesn't work for you. |
 | [#311](https://github.com/iqui27/nuvio-native-legacy/issues/311) | [suggestion] option to disable "from nuvio search" | NÃO: o autor perguntou onde ficava a opcao; nao confirmou na 2.0.3 | The search options (including turning off "from Nuvio" results) are in 2.0.3, under Settings > Sources & add-ons. Thanks for the idea, and reopen if you can't find them. |
 | [#317](https://github.com/iqui27/nuvio-native-legacy/issues/317) | App doesn't  open on my LG webOS Tv UK6550PSB | SIM: o autor confirmou que abre com o build de teste (07/10) | Glad it opens now! The fix is included in the regular 2.0.3 release, so you don't need the test build anymore. Please reopen if anything breaks. |
@@ -128,6 +127,7 @@ Issues ABERTAS no GitHub cujo conserto saiu na v2.0.3 (commits contidos na tag).
 
 | # | Título | Motivo |
 |---|---|---|
+| [#294](https://github.com/iqui27/nuvio-native-legacy/issues/294) | 🐛 Home collection order resets after switching profiles | A #392 (rawldon, 09/10, v2.0.3, Samsung Tizen 6.0 .tpk) diz que trocar de perfil e voltar ainda reordena a Home (coleções, catálogos e Continuar). Conserto da 2.0.3 não basta; agente/2031-ordemperfil investigando (logs VV8JG2/Z4HDY2). |
 | [#266](https://github.com/iqui27/nuvio-native-legacy/issues/266) | Bug: Doesn't open on ATv | Varios relatos no mesmo fio: o QR do Shield foi confirmado (charles474), mas ele trouxe queixa nova de legenda diferente do Nuvio oficial e ha log de outro aparelho (Airtel Xtreme) sem leitura. |
 | [#286](https://github.com/iqui27/nuvio-native-legacy/issues/286) | Performance on older Samsung UA40N5300 | O autor disse "a bit better"; ainda ha trabalho de desempenho no Mali-400 em andamento (poster/GPU, ordenacao do sync). |
 | [#302](https://github.com/iqui27/nuvio-native-legacy/issues/302) | Live TV issue persists with 2.1 tpk65 | O autor segue dizendo que a TV ao vivo congela o filme (log 2TAVFN); a leitura nossa diz que e a rede, sem confirmacao dele. |
@@ -347,7 +347,7 @@ Notas:
 | [#287](https://github.com/iqui27/nuvio-native-legacy/issues/287) | Auto select forced embedded sub | ? | feature | lancada | 2.0.2 | ja-lancada | 0702a143 | autor 10-07 | nada (autor confirmou; pode fechar) |
 | [#290](https://github.com/iqui27/nuvio-native-legacy/issues/290) | Few minor issues on 2.1 | ? | bug | lancada | 2.0.2 | ja-lancada | 75cee76f, 4843e5b0, b5deeb25 | autor 10-06 | nada (pedir confirmação se quiser) |
 | [#293](https://github.com/iqui27/nuvio-native-legacy/issues/293) | Audio codec details on player | ? | feature | lancada | 2.0.2 | ja-lancada | 8c856535, db1f5891 | nós 10-07 | nada |
-| [#294](https://github.com/iqui27/nuvio-native-legacy/issues/294) | 🐛 Home collection order resets after switching profiles | ? | bug | lancada | 2.0.3 | ja-lancada | 66e6ae9e, 26d845c6, abd0770a | nós 10-07 | fechar com a resposta curta do bloco "fechar com a 2.0.3" (o dono decide; saiu na v2.0.3) |
+| [#294](https://github.com/iqui27/nuvio-native-legacy/issues/294) | 🐛 Home collection order resets after switching profiles | ? | bug | lancada | 2.0.3 | 2.0.3.1 | 66e6ae9e, 26d845c6, abd0770a | nós 10-07 | fechar com a resposta curta do bloco "fechar com a 2.0.3" (o dono decide; saiu na v2.0.3) |
 | [#296](https://github.com/iqui27/nuvio-native-legacy/issues/296) | Si podrías agregar estas visitas seria grandioso | Samsung .wgt | feature | lancada | 2.0.2 | ja-lancada | sem commit | autor 10-07 | nada (pode fechar) |
 | [#298](https://github.com/iqui27/nuvio-native-legacy/issues/298) | The Arabic subtitles | Samsung (Tizen 6) | feature | lancada | 2.0.2 | ja-lancada | sem commit | autor 10-07 | responder (autor informou Tizen 6; dizer em qual versão testar) |
 | [#300](https://github.com/iqui27/nuvio-native-legacy/issues/300) | Default Aspect Ratio Option | ? | feature | lancada | 2.0.2 | ja-lancada | sem commit | nós 10-07 | nada (pode fechar) |
@@ -390,7 +390,7 @@ Notas:
 - **#287**: Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#290**: 7 commits #290 na 2.0.2 (gradiente do hero sobre trailer em janela, aspecto, etc.). Sem confirmação do autor; base08 confirmou o ponto 1 antes do release. Título original "Few minor issues on 2.1". Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#293**: Codec/canais do áudio no player na 2.0.2 (db1f5891). Estatísticas completas em 8c856535 (agente/203-338 = 2.0.4). Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
-- **#294**: Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
+- **#294**: Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. PERSISTE NA 2.0.3 (09/10): a #392 relata a mesma reordenação ao trocar de perfil em v2.0.3 (.tpk Tizen 6.0); investigação em agente/2031-ordemperfil.
 - **#296**: Coberto pela "Elección de la fuente" (#310) na 2.0.2; nenhum commit cita #296. Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#298**: #273 (legendas árabes, 546c7418/57e24174) está na 2.0.2; #335 refina na 2.0.3. Nossa resposta de 07/10 disse "próxima release"; já estava na 2.0.2. Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#300**: Resposta cita 2.0.2; nenhum commit cita #300. Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.

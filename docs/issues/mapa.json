@@ -6325,10 +6325,10 @@
     "ultima_nossa": "2026-10-07"
    },
    "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
-   "notas": "Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
+   "notas": "Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. PERSISTE NA 2.0.3 (09/10): a #392 relata a mesma reordenação ao trocar de perfil em v2.0.3 (.tpk Tizen 6.0); investigação em agente/2031-ordemperfil.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/294",
    "criada_em": "2026-10-06",
-   "alvo": "ja-lancada"
+   "alvo": "2.0.3.1"
   },
   {
    "numero": 295,
@@ -8903,12 +8903,6 @@
    "confirmacao": "sem comentarios do autor"
   },
   {
-   "numero": 294,
-   "resposta": "Thanks for the logs! 2.0.3 keeps your collections in place when you switch profiles and clears the other profile's rows. Reopen this if it happens again.",
-   "confirmado": false,
-   "confirmacao": "autor mandou logs; nao confirmou o conserto"
-  },
-  {
    "numero": 305,
    "resposta": "Done in 2.0.3: pressing Up on the seek bar now hides the player controls (any key brings them back). Reopen if it doesn't work for you.",
    "confirmado": false,
@@ -9024,6 +9018,10 @@
   }
  ],
  "nao_fechar_ainda": [
+  {
+   "numero": 294,
+   "motivo": "A #392 (rawldon, 09/10, v2.0.3, Samsung Tizen 6.0 .tpk) diz que trocar de perfil e voltar ainda reordena a Home (coleções, catálogos e Continuar). Conserto da 2.0.3 não basta; agente/2031-ordemperfil investigando (logs VV8JG2/Z4HDY2)."
+  },
   {
    "numero": 266,
    "motivo": "Varios relatos no mesmo fio: o QR do Shield foi confirmado (charles474), mas ele trouxe queixa nova de legenda diferente do Nuvio oficial e ha log de outro aparelho (Airtel Xtreme) sem leitura."
