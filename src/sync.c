@@ -350,8 +350,11 @@ static void addonsRestaurar(void) {
   pthread_mutex_unlock(&addonsTrava);
   if (n) {
     int mudou = addons_definir_lista(lista, n);
+    int antes = addons_perfil_da_lista();
     addons_marcar_da_conta(perfis_ativo());
-    if (mudou) desc_repetir_addons();
+    // #392: lista identica mas ate agora marcada de OUTRO perfil: o registro de
+    // fileiras foi pulado nessa janela e precisa ser refeito.
+    if (mudou || (antes > 0 && antes != perfis_ativo())) desc_repetir_addons();
     printf("[sync] edicao local de addons restaurada antes da rede\n");
   }
 }
@@ -1713,9 +1716,12 @@ void sync_passo(unsigned agoraMs) {
       // perfil — e antes de desc_repetir_addons, para a volta que ela dispara
       // ja poder podar. Ver addons_marcar_da_conta.
       { int mudou = addons_definir_lista(addonsRem, nAddonsRem);
+        int antes = addons_perfil_da_lista();
         addonsBaseDefinir();
         if (nAddonsRem > 0) addons_marcar_da_conta(perfilDoCiclo);
-        if (mudou) desc_repetir_addons(); }
+        // #392: lista identica de outro perfil para este: refaz o registro.
+        if (mudou || (nAddonsRem > 0 && antes > 0 && antes != perfilDoCiclo))
+          desc_repetir_addons(); }
       temAddonsRem = 0;
     }
   }
@@ -1777,10 +1783,15 @@ void sync_passo(unsigned agoraMs) {
   // resposta chegou fazia um ciclo de descoberta completo a cada cinco minutos
   // com a lista identica — ver listaIgual em addons.c.
   if (temAddonsRem && !addonsPendentes() && (!addonsLocalCiclo || addonsAplicarCiclo)) {
+    int antes = addons_perfil_da_lista();
     if (addons_definir_lista(addonsRem, nAddonsRem)) soAddons = 1;
     addonsBaseDefinir();
     // O ciclo de outro perfil ja foi descartado acima: esta lista e do ativo.
-    if (nAddonsRem > 0) addons_marcar_da_conta(perfilDoCiclo);
+    if (nAddonsRem > 0) {
+      addons_marcar_da_conta(perfilDoCiclo);
+      // #392: lista identica, mas marcada ate aqui de outro perfil.
+      if (antes > 0 && antes != perfilDoCiclo) soAddons = 1;
+    }
   }
   // O pull precede o push: depois dele a caixa antiga nao vale como confirmacao.
   temAddonsRem = 0;

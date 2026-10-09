@@ -776,6 +776,10 @@ unsigned fil_perfil_geracao(void) {
   unsigned g; pthread_mutex_lock(&trava); g = perfilGeracao; pthread_mutex_unlock(&trava); return g;
 }
 
+// Perfil cuja conta mandou a lista de addons de agora (addons.c). Fraca para os
+// testes que compilam este arquivo sem addons.c: la vale 0 (pacote), que passa.
+__attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }
+
 int fil_lista_e_deste_perfil(int perfilDaLista) {
   int r;
   pthread_mutex_lock(&trava);
@@ -821,6 +825,20 @@ static void registrar(const char *chave, const char *titulo,
   pthread_mutex_lock(&trava);
   garantir();
   i = achar(chave);
+  // #392: CHAVE NOVA DE CATALOGO NAO ENTRA ENQUANTO A LISTA DE ADDONS AINDA E DO
+  // PERFIL QUE SAIU. Vale para todo escritor (descoberta, home, fora da cota):
+  // os catalogos dela despejariam as fileiras deste perfil e entrariam no fim.
+  // Fileira do app e grupo de colecao nao dependem da lista e passam. Perfil
+  // sem lista na conta (addons_marcar_da_conta so roda com lista nao vazia)
+  // fica sem catalogo novo ate ela chegar: pular e o lado seguro.
+  if (i < 0) {
+    int o = fil_origem_de(chave);
+    if (o != FIL_ORIGEM_APP && o != FIL_ORIGEM_COLECAO &&
+        !(addons_perfil_da_lista() <= 0 || addons_perfil_da_lista() == perfil)) {
+      pthread_mutex_unlock(&trava);
+      return;
+    }
+  }
   if (i < 0 && !podeDespejar && nLinhas >= FIL_MAX) {
     // SO SE COUBER: e o registro dos catalogos que a cota de declaracoes deixou
     // de fora (descoberta.c). Eles entram para poderem ser ESCOLHIDOS, e nao

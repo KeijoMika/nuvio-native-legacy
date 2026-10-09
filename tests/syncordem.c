@@ -629,3 +629,5 @@ int main(int argc, char **argv) {
 
 // sync.c 2.0 chama no logout; faltava aqui e o teste nao ligava (igual a contaoffline.c)
 void psparede_esquecer(void) {}
+
+__attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }

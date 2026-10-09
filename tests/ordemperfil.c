@@ -33,12 +33,15 @@ static void guardar(void) {
   nAntes = fil_n();
   for (int i = 0; i < nAntes; i++) snprintf(antes[i], sizeof antes[i], "%s", fil_chave(i));
 }
-// What descoberta.c does with the declared catalogs of the list it holds.
-static void passada(int perfilDaLista, const char *prefixo) {
+static int tagLista;   // what addons_marcar_da_conta would have recorded
+int addons_perfil_da_lista(void) { return tagLista; }
+// Writers of the real path: the discovery pass, the home drawer and the
+// beyond-quota listing all end in these two functions.
+static void passada(const char *prefixo) {
   for (int i = 0; i < 40; i++) {
     char k[96]; snprintf(k, sizeof k, "%s_movie_new%d", prefixo, i);
-    if (!fil_lista_e_deste_perfil(perfilDaLista)) continue;
-    fil_registrar(k, k, "Addon", "movie", -1);
+    if (i % 2) fil_registrar(k, k, "Addon", "movie", -1);
+    else fil_registrar_se_couber(k, k, "Addon", "movie");
   }
   fil_gravar_registro();
 }
@@ -54,18 +57,28 @@ int main(void) {
   assert(fil_n() == FIL_MAX);
   guardar();
 
+  tagLista = 1;
   fil_definir_perfil(2);                 // A -> B
-  passada(2, "addonB");                  // B's own list
+  tagLista = 2; passada("addonB");       // B's own list
   fil_definir_perfil(1);                 // B -> A, account of A not answered yet
   fil_n();                               // loads A's file from disk
-  passada(2, "addonB");                  // stale pass: list still belongs to B
+  passada("addonB");                     // stale writers: tag still says B
   fil_gravar_registro();
   fil_teste_recarregar();
 
   assert(fil_n() == nAntes);
   for (int i = 0; i < nAntes; i++) assert(!strcmp(fil_chave(i), antes[i]));
-  passada(1, "addonA2");                 // A's own list arrives: may register
-  assert(fil_lista_e_deste_perfil(0) && fil_lista_e_deste_perfil(1));
+  // App and collection rows do not depend on the list and still register.
+  fil_registrar("collection_x", "X", "", "", 1);
+  assert(fil_n() == nAntes || fil_n() == FIL_MAX);
+
+  // Same list arrives (addons_definir_lista == 0): the tag flips to A and the
+  // repeated pass registers normally (the repeat is what sync.c now forces).
+  tagLista = 1; passada("addonA2");
+  fil_teste_recarregar();
+  int achou = 0;
+  for (int i = 0; i < fil_n(); i++) if (strstr(fil_chave(i), "addonA2_")) achou = 1;
+  assert(achou);
   printf("ordemperfil ok\n");
   return 0;
 }

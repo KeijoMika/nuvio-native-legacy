@@ -429,3 +429,5 @@ int main(int argc, char **argv) {
 }
 
 void cat_historico_contexto(const char *u, int p) { (void)u; (void)p; }
+
+__attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }

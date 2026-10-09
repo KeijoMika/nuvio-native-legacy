@@ -2124,6 +2124,9 @@ static char *escolherPelaCota(const char *corpo, const char *fim,
 // A versao da lista de addons com que a volta leu os manifestos (ver a poda de
 // fantasmas em montar()). So o fio da descoberta mexe.
 static unsigned versaoManifestos;
+// #392: de quem era a lista e qual perfil das fileiras valia quando a volta a leu.
+static int perfilListaVolta;
+static unsigned geracaoPerfilVolta;
 
 // Catalogos que so respondem com busca, somados na volta: nao entram mais no
 // vetor de Decl (nao gastam cota), e a linha do log que os contava continua.
@@ -3474,7 +3477,8 @@ static int ordenarCandidatos(Decl *decls, int nDecl, int *ordem, int nFixas,
     // lista ainda e a do perfil que saiu (a conta responde alguns segundos
     // depois); registra-la despejava as fileiras do perfil novo e acrescentava
     // as do outro ("a ordem da Home muda quando volto ao principal").
-    if (fil_lista_e_deste_perfil(addons_perfil_da_lista())) {
+    if (fil_lista_e_deste_perfil(perfilListaVolta) &&
+        fil_perfil_geracao() == geracaoPerfilVolta) {
       for (k = 0; k < nOrdem && k < FIL_MAX; k++)
         fil_registrar(decls[ordem[k]].chave, decls[ordem[k]].titulo,
                       decls[ordem[k]].nomeAddon, decls[ordem[k]].tipo, -1);
@@ -4157,6 +4161,8 @@ static void *montar(void *u) {
     // passa a cota inteira dele adiante. Uma volta so, sem reler manifesto:
     // reler custaria um pedido de rede por addon.
     versaoManifestos = addons_versao();
+    perfilListaVolta = addons_perfil_da_lista();
+    geracaoPerfilVolta = fil_perfil_geracao();
     { int nAd = addons_n();
       int cota = nAd > 0 ? DECL_MAX / nAd : DECL_MAX;
       int folga = 0;
@@ -4301,6 +4307,8 @@ static void *montar(void *u) {
       if (nForaCota > 0) {
         int q;
         for (q = 0; q < nForaCota; q++)
+          if (fil_lista_e_deste_perfil(perfilListaVolta) &&
+              fil_perfil_geracao() == geracaoPerfilVolta)
           fil_registrar_se_couber(foraCota[q].chave, foraCota[q].titulo,
                                   foraCota[q].addon, foraCota[q].tipo);
         fil_gravar_registro();
