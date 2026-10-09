@@ -90,6 +90,25 @@ int main(int argc, char **argv) {
     memcpy(longa + 250, "release 5.0", 11);       // numero cortado pelo limite da linha
     CHECK(com(d, NULL, longa) == 0);
   }
+  // JSON malformado em valor que nao e o nosso: o documento todo e desconhecido
+  CHECK(com(d, "{\"x\":[},\"webos_release\":\"5.0\"}", NULL) == 0);        // fechador de outro tipo
+  CHECK(com(d, "{\"x\":{]},\"webos_release\":\"5.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"x\":,\"webos_release\":\"5.0\"}", NULL) == 0);          // valor ausente
+  CHECK(com(d, "{\"x\":tru,\"webos_release\":\"5.0\"}", NULL) == 0);       // primitivo invalido
+  CHECK(com(d, "{\"x\":[tru],\"webos_release\":\"5.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"x\":[1,],\"webos_release\":\"5.0\"}", NULL) == 0);      // virgula sobrando
+  CHECK(com(d, "{\"x\":[1 2],\"webos_release\":\"5.0\"}", NULL) == 0);     // virgula faltando
+  CHECK(com(d, "{\"x\" 1,\"webos_release\":\"5.0\"}", NULL) == 0);         // dois-pontos faltando
+  CHECK(com(d, "{\"a\":1,,\"webos_release\":\"5.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"webos_release\":\"5.0\",}", NULL) == 0);
+  CHECK(com(d, "{\"x\":-,\"webos_release\":\"5.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"x\":01,\"webos_release\":\"5.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"x\":1.,\"webos_release\":\"5.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"a\":true,\"b\":false,\"c\":null,\"d\":-1.5e3,\"e\":[1,{\"y\":[]},\"s\"],\"webos_release\":\"5.0\"}", NULL) == 5);
+  // chave com barra no nivel 1: documento desconhecido (nao decodificamos), em qualquer ordem
+  CHECK(com(d, "{\"webos_release\":\"5.0.0\",\"webos\\u005frelease\":\"3.9.3\"}", NULL) == 0);
+  CHECK(com(d, "{\"webos\\u005frelease\":\"3.9.3\",\"webos_release\":\"5.0.0\"}", NULL) == 0);
+  CHECK(com(d, "{\"webos\\u005frelease\":\"3.9.3\"}", NULL) == 0);
   // 4/6: sem caminho e sem hook nao le nada; getters devolvem copia
   nv_webos_testar(NULL, NULL);
 #ifndef NV_WEBOS
