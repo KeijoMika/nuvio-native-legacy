@@ -801,6 +801,9 @@ object NvPlayer {
         } catch (e: Exception) { Log.w(TAG, "logTaxaDeQuadros: $e") }
     }
     private fun hdrNaSuperficie() {
+        // MStar/Amlogic nao recriam (RecriaHdr.kt): sem log de "recria" nem a
+        // segunda rodada; avaliarEstavel ja trata esse caso como SDR.
+        if (semRecriar) return
         if (!quadroVisto || ultHdr.isEmpty() || ultHdr == "none" || ultHdr == hdrRecriadoPara) return
         val primeira = !hdrRecriado
         hdrRecriado = true
