@@ -362,11 +362,14 @@ function cardDecisao(x) {
   if (a && a.nota) d.appendChild(el("p", { class: "rec" }, [document.createTextNode("Informacao adicional: "), tx(a.nota)]));
   if (feita || !API_OK || !x.id) return d;
 
-  var r = RASCUNHOS[x.id] || {}, escolha = a ? a.resposta : (r.escolha || ""), enviando = false;
+  // Rascunho nao enviado tem precedencia sobre a resposta salva: o redesenho do
+  // polling nunca sobrescreve o que o dono esta digitando ou escolhendo.
+  var r = RASCUNHOS[x.id];
+  var escolha = (r ? r.escolha : a && a.resposta) || "", enviando = false;
   var bS = el("button", { type: "button", class: "sim", text: "Aceitar" }), bN = el("button", { type: "button", class: "nao", text: "Negar" });
   var ta = el("textarea", { maxlength: "2000", rows: "3", placeholder: "informacao adicional (opcional, vai junto da resposta)", "aria-label": "Informacao adicional" });
   ta.setAttribute("data-dec", x.id);
-  ta.value = a ? a.nota || "" : (r.nota || "");
+  ta.value = (r ? r.nota : a && a.nota) || "";
   var ctr = el("span", { class: "ctr" }), est = el("span", { class: "est" });
   var env = el("button", { type: "button", class: "env", text: a ? "Alterar resposta" : "Enviar" });
   function guarda() { RASCUNHOS[x.id] = { escolha: escolha, nota: ta.value }; }
@@ -651,13 +654,19 @@ function init(d) { ASSINATURA = JSON.stringify(d); esqueleto(); return aplicaDad
 // Recarrega sem perder o que o dono esta digitando nem o scroll.
 // fn pode devolver promise: a restauracao so acontece depois do redesenho
 // assincrono dos cartoes de decisao.
+var EV = "scroll wheel click keydown input touchstart";
 function preserva(fn) {
   var y = window.pageYOffset || document.documentElement.scrollTop || 0;
   var caixas = [].slice.call(document.querySelectorAll(".scroll")).map(function (c) { return [c.id, c.scrollTop]; });
   var a = document.activeElement;
   var id = a && a.tagName === "TEXTAREA" ? a.getAttribute("data-dec") : null;
   var pos = a && a.selectionStart;
+  var mexidos = false, ouve = function () { mexidos = true; };
+  EV.split(" ").forEach(function (ev) { window.addEventListener(ev, ouve, true); });
+  var solta = function () { EV.split(" ").forEach(function (ev) { window.removeEventListener(ev, ouve, true); }); };
   return Promise.resolve(fn()).then(function () {
+    solta();
+    if (mexidos) return;   // o dono mexeu durante a espera: nao rouba o foco nem o scroll
     // foco primeiro e sem rolar: senao o foco puxa a pagina para o textarea
     if (id) {
       var t = document.querySelector('textarea[data-dec="' + id.replace(/"/g, "") + '"]');
@@ -671,7 +680,7 @@ function preserva(fn) {
       if (c) c.scrollTop = p[1];
     });
     window.scrollTo(0, y);
-  });
+  }, function (e) { solta(); throw e; });
 }
 function relogio() {
   var s = Math.max(0, Math.round((Date.now() - ULTIMA) / 1000)), m = Math.floor(s / 60);
@@ -684,11 +693,14 @@ function buscaMapa() {
   });
 }
 function recarrega() {
-  return buscaMapa().then(function (d) {
-    if (JSON.stringify(d) === ASSINATURA) { ULTIMA = Date.now(); relogio(); return; }
-    return preserva(function () { return aplicaDados(d); }).then(function () {
-      ASSINATURA = JSON.stringify(d); ULTIMA = Date.now(); relogio();
+  return preserva(function () {
+    return buscaMapa().then(function (d) {
+      if (JSON.stringify(d) !== ASSINATURA) { ASSINATURA = JSON.stringify(d); return aplicaDados(d); }
+      // mapa igual, mas as respostas podem ter vindo de outra aba (ou a API ter voltado)
+      return carregaRespostas().then(renderDecisoes);
     });
+  }).then(function () {
+    ULTIMA = Date.now(); relogio();
   }).catch(function (e) {
     ULTIMA = Date.now(); relogio();
     var av = document.getElementById("falha");

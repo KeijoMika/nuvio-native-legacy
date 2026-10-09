@@ -156,4 +156,12 @@ rc=0; PAINEL_RESPOSTAS_ARQUIVO="$T/ruim.json" "$AQUI/../respostas.sh" baixar "$R
 [ "$rc" != 0 ] && grep -q dec-a "$RS/docs/issues/respostas-dono.json" && ok "respostas.sh nao trunca o destino com origem invalida" || bad "respostas.sh truncou"
 rc=0; PAINEL_RESPOSTAS_ARQUIVO="$T/dados/respostas.json" "$AQUI/../respostas.sh" baixar "$RS" >/dev/null || rc=$?
 espera "respostas.sh baixar valido" 0 "$rc"; ls -A "$RS/docs/issues" | grep -q '\.tmp$' && bad "tmp sobrando em respostas.sh" || ok "respostas.sh sem tmp"
+# painel no navegador: polling de 30 s, rascunho e restauracao de scroll (DOM e fetch falsos)
+if command -v node >/dev/null 2>&1; then
+  rc=0; node "$AQUI/painel-js.mjs" || rc=$?
+  espera "index.html: polling, rascunho e scroll (painel-js.mjs)" 0 "$rc"
+else
+  echo "PULADO index.html: node nao instalado (tests/painel-js.mjs)"
+fi
+
 [ "$FALHAS" = 0 ] && { echo "TUDO OK"; exit 0; } || { echo "$FALHAS falha(s)"; exit 1; }
