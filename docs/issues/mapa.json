@@ -8595,6 +8595,27 @@
    "proximo_passo": "reproduzir no .tpk: cima a partir do Play na pagina do titulo abre o menu do topo (o mesmo do canal +)",
    "notas": "mackojanko, QE65Q80A, 2.0.3: acima do Play o foco abre o menu do topo; ele acha que nao deveria abrir. Sem log.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/407"
+  },
+  {
+   "numero": 410,
+   "titulo": "Settings interface lower resolution; glass, depth, edge glow, sheen settings do little",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relevo, brilho de borda, cobertura) e Reflexo a 0%; comparar com 2.0.2; pedir log",
+   "notas": "Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/410",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.5"
   }
  ],
  "fora_do_github": [
@@ -9886,6 +9907,44 @@
    "ref": "APK de 06419b6b; ipk de bed3534c",
    "resultado": "passou",
    "evidencia": "TCL logcat: \"[player] recriar superficie no HDR: sim\" (TCL segue recriando); C9 /tmp/nuvio.log: OLED65C9PSA webos-4.10.2 app=2.0.4, 0 SIGSEGV"
+  },
+  {
+   "data": "2026-10-09 20:20",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "OpenSubtitles \"sem resposta\": 1a versão (manifesto lido no fio da busca)",
+   "issues": [],
+   "ref": "4f5780ba (agente/204-sostream, descartado)",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/sostream-codex.txt (P1 corrida no parser do manifesto; P2 tentativa em andamento; P2 cancelamento)"
+  },
+  {
+   "data": "2026-10-09 20:40",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "OpenSubtitles \"sem resposta\": versão só-leitura, rodadas 2 e 3",
+   "issues": [],
+   "ref": "agente/204-sostream",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/sostream2-codex.txt e sostream3-codex.txt (P2 de leitura sem sincronização e 200 vazio corrigidos; último P2 = republicação pela descoberta, corrigido com atômico em fonte; limite documentado: sonda terminando depois do resumo)"
+  },
+  {
+   "data": "2026-10-09 20:35",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Teste do add-on só de legenda com a sonda terminando no meio da busca (reproduz \"OpenSubtitles v3 não respondeu\" da TCL)",
+   "issues": [],
+   "ref": "ee2c64eb (FAIL) -> agente/204-sostream (PASS)",
+   "resultado": "passou",
+   "evidencia": "tests/addonslista.sh: 2 pedidos de stream e motivo \"OpenSubtitles v3 não respondeu\" antes; 1 pedido e motivo vazio depois; autoplay_alvo e addonurl rc=0"
+  },
+  {
+   "data": "2026-10-09 20:30",
+   "quem": "Codex gpt-6-astra (pesquisa)",
+   "o_que": "Estudo do app oficial NuvioTV Android 1.1.0-beta.5 (add-ons, plugins, ordem das fontes, player, abertura, HDR)",
+   "issues": [
+    400
+   ],
+   "ref": "NuvioMedia/NuvioTV 6adf0251; APK sha256 09865e1a…",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/tmp/nuvio-oficial/relatorio.md (oficial preserva a ordem interna do add-on; não recria a superfície no HDR; buffer padrão 50 s; plugins até 10 scrapers)"
   }
  ]
 }
