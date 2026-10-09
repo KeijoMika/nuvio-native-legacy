@@ -1,6 +1,6 @@
 {
  "atualizado_em": "2026-10-09",
- "base": "80fc8e6d",
+ "base": "a740ea73",
  "nota": "Status: aberta, respondida, consertada-nao-lancada, lancada, por-desenho, fora-do-escopo, precisa-log, duplicada (+ fechada-sem-resposta, usado só em issues fechadas sem nenhum comentário).",
  "itens": [
   {
@@ -5401,7 +5401,7 @@
     "ultima_nossa": "2026-10-06"
    },
    "proximo_passo": "pedir log (pedido em 06/10, sem retorno)",
-   "notas": "NOTAS 2.0.3: \"LG: resume no longer drops the source on a failed seek (#246)\". Não confirmado que cobre o relato HEVC/anime; plataforma do relato desconhecida. ALVO 2.0.3 = SUSPEITA: o conserto está nas NOTAS mas não está confirmado que cobre o relato; falta log do autor.",
+   "notas": "NOTAS 2.0.3: \"LG: resume no longer drops the source on a failed seek (#246)\". Não confirmado que cobre o relato HEVC/anime; plataforma do relato desconhecida. ALVO 2.0.3 = SUSPEITA: o conserto está nas NOTAS mas não está confirmado que cobre o relato; falta log do autor. COMMITS vs v2.0.3 (09/10): a7f23592, a8048e0d, 023497dd estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/246",
    "criada_em": "2026-10-04",
    "alvo": "2.0.3"
@@ -5755,16 +5755,16 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "eabe3afd (2.0.3)",
-    "b03aa2f0 (2.0.3)",
-    "35421d1a (2.0.3)",
-    "22461251 (2.0.3)",
-    "2f19b526 (2.0.3)",
-    "bcd78417 (2.0.3)",
-    "73c4ab4c (2.0.3)",
+    "eabe3afd (v2.0.3)",
+    "b03aa2f0 (v2.0.3)",
+    "35421d1a (v2.0.3)",
+    "22461251 (v2.0.3)",
+    "2f19b526 (v2.0.3)",
+    "bcd78417 (v2.0.3)",
+    "73c4ab4c (v2.0.3)",
     "a1d5e039 (v2.0.2)"
    ],
    "ultima_resposta": {
@@ -5774,10 +5774,10 @@
     "ultima_nossa": "2026-10-07"
    },
    "proximo_passo": "responder (confirmou QR com teste-318.x; nova queixa: legenda diferente do Nuvio oficial)",
-   "notas": "Vários relatos juntos (Shield/TCL/BRAVIA). Reporter charles474 confirmou QR com build de teste em 08/10. Parte do conserto já na 2.0.2 (a1d5e039).",
+   "notas": "Vários relatos juntos (Shield/TCL/BRAVIA). Reporter charles474 confirmou QR com build de teste em 08/10. Parte do conserto já na 2.0.2 (a1d5e039). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/266",
    "criada_em": "2026-10-06",
-   "alvo": "2.0.3"
+   "alvo": "2.0.4"
   },
   {
    "numero": 267,
@@ -5805,10 +5805,10 @@
    "estado_github": "aberta",
    "plataforma": "Samsung (tpk/wgt?)",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "80569112 (2.0.3)",
+    "80569112 (v2.0.3)",
     "6ec3907b (v2.0.2)",
     "b35bcbcf (v2.0.2)",
     "ce1552cd (v2.0.1)",
@@ -5821,11 +5821,11 @@
     "ultimo_comentario_por": "antoinecuzol051-blip",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "MKV >2 GB rejeitado pelo leitor de legendas; conserto 80569112 só na 2.0.3 (2.0.1/2.0.2 tiveram partes). Resposta também prometeu \"setting para o usuário escolher este comportamento\": item vago, sem commit identificado.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "MKV >2 GB rejeitado pelo leitor de legendas; conserto 80569112 só na 2.0.3 (2.0.1/2.0.2 tiveram partes). Resposta também prometeu \"setting para o usuário escolher este comportamento\": item vago, sem commit identificado. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/269",
    "criada_em": "2026-10-06",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 270,
@@ -6042,7 +6042,7 @@
     "ultima_nossa": "2026-10-06"
    },
    "proximo_passo": "pedir log (autor mandou só captura \"See logs\", sem código)",
-   "notas": "SUSPEITA: único commit que cita #280 é 3c51d5b7 (remontagens da descoberta, 2.0.3); a correção é genérica de fileiras. ALVO 2.0.3 = SUSPEITA: o conserto está nas NOTAS mas não está confirmado que cobre o relato; falta log do autor.",
+   "notas": "SUSPEITA: único commit que cita #280 é 3c51d5b7 (remontagens da descoberta, 2.0.3); a correção é genérica de fileiras. ALVO 2.0.3 = SUSPEITA: o conserto está nas NOTAS mas não está confirmado que cobre o relato; falta log do autor. COMMITS vs v2.0.3 (09/10): 3c51d5b7 estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/280",
    "criada_em": "2026-10-06",
    "alvo": "2.0.3"
@@ -6122,11 +6122,11 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "df492356 (2.0.3)",
-    "a63ec982 (2.0.3)"
+    "df492356 (v2.0.3)",
+    "a63ec982 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -6134,11 +6134,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder (sem resposta nossa ainda)",
-   "notas": "a63ec982: linha \"Melhor para esta TV\" mostra resolução. Sem comentário nosso na issue.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "a63ec982: linha \"Melhor para esta TV\" mostra resolução. Sem comentário nosso na issue. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/284",
    "criada_em": "2026-10-06",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 286,
@@ -6146,10 +6146,10 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "325ed7a0 (2.0.3)",
+    "325ed7a0 (v2.0.3)",
     "e03080dd (v2.0.2)"
    ],
    "ultima_resposta": {
@@ -6159,10 +6159,10 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "postar correção",
-   "notas": "Rascunho de correção em 203-respostas-correcao.md: nome certo é \"Resolução da interface > 720p (leve)\". Mali-400 (Utgard).",
+   "notas": "Rascunho de correção em 203-respostas-correcao.md: nome certo é \"Resolução da interface > 720p (leve)\". Mali-400 (Utgard). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/286",
    "criada_em": "2026-10-06",
-   "alvo": "2.0.3"
+   "alvo": "2.0.4"
   },
   {
    "numero": 287,
@@ -6310,12 +6310,12 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "66e6ae9e (2.0.3)",
-    "26d845c6 (2.0.3)",
-    "abd0770a (2.0.3)",
+    "66e6ae9e (v2.0.3)",
+    "26d845c6 (v2.0.3)",
+    "abd0770a (v2.0.3)",
     "b4186acd (v2.0.2)"
    ],
    "ultima_resposta": {
@@ -6324,11 +6324,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/294",
    "criada_em": "2026-10-06",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 295,
@@ -6450,11 +6450,11 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "6c4d3863 (2.0.3)",
-    "8fea5018 (2.0.3)",
+    "6c4d3863 (v2.0.3)",
+    "8fea5018 (v2.0.3)",
     "0021b573 (v2.0.2)"
    ],
    "ultima_resposta": {
@@ -6464,10 +6464,10 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "postar correção",
-   "notas": "Rascunho de correção: o conserto do live TV NÃO está na 2.0.2 (resposta anterior dizia que sim). 0021b573 (2.0.2) é parcial.",
+   "notas": "Rascunho de correção: o conserto do live TV NÃO está na 2.0.2 (resposta anterior dizia que sim). 0021b573 (2.0.2) é parcial. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/302",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "2.0.4"
   },
   {
    "numero": 303,
@@ -6519,10 +6519,10 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "98bee79f (2.0.3)"
+    "98bee79f (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -6530,11 +6530,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/305",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 306,
@@ -6653,14 +6653,14 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "607b25bf (2.0.3)",
-    "a86e55c2 (2.0.3)",
-    "0d5ca11b (2.0.3)",
-    "c7824e57 (2.0.3)",
-    "345056d1 (2.0.3)"
+    "607b25bf (v2.0.3)",
+    "a86e55c2 (v2.0.3)",
+    "0d5ca11b (v2.0.3)",
+    "c7824e57 (v2.0.3)",
+    "345056d1 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -6668,11 +6668,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "avisar Namer03 quando sair (prometido: \"I'll ping\")",
-   "notas": "Resposta corrigiu: opções de busca não estão na 2.0.2, saem na 2.0.3.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "Resposta corrigiu: opções de busca não estão na 2.0.2, saem na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/311",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 312,
@@ -6680,11 +6680,11 @@
    "estado_github": "aberta",
    "plataforma": "LG",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "a86e55c2 (2.0.3)",
-    "317cb179 (2.0.3)"
+    "a86e55c2 (v2.0.3)",
+    "317cb179 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -6693,10 +6693,10 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "postar correção",
-   "notas": "Nossa resposta disse que \"Dolby Vision in MKV\" vem LIGADO por padrão: ERRADO, é DESLIGADO (docs 203-dvmkv-decisao.md; ajustes_ux_padrao.inc). Resumo traduzido e \"All sources\" saem na 2.0.3, não na 2.0.2.",
+   "notas": "Nossa resposta disse que \"Dolby Vision in MKV\" vem LIGADO por padrão: ERRADO, é DESLIGADO (docs 203-dvmkv-decisao.md; ajustes_ux_padrao.inc). Resumo traduzido e \"All sources\" saem na 2.0.3, não na 2.0.2. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/312",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 313,
@@ -6770,14 +6770,14 @@
    "estado_github": "aberta",
    "plataforma": "LG",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "9a17b810 (2.0.3)",
-    "8cf12920 (2.0.3)",
-    "d423b051 (2.0.3)",
-    "65871816 (2.0.3)",
-    "15e6d285 (2.0.3)",
+    "9a17b810 (v2.0.3)",
+    "8cf12920 (v2.0.3)",
+    "d423b051 (v2.0.3)",
+    "65871816 (v2.0.3)",
+    "15e6d285 (v2.0.3)",
     "0fcfa601 (v2.0.2)",
     "937f8e6b (v2.0.2)"
    ],
@@ -6787,11 +6787,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "LG webOS 4 com pouca RAM; partes na 2.0.2 (0fcfa601, 937f8e6b).",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LG webOS 4 com pouca RAM; partes na 2.0.2 (0fcfa601, 937f8e6b). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/317",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 318,
@@ -6799,14 +6799,14 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "142ae407 (2.0.3)",
-    "773658c8 (2.0.3)",
-    "730556e1 (2.0.3)",
-    "a4b580a8 (2.0.3)",
-    "8ecc6bdc (2.0.3)",
+    "142ae407 (v2.0.3)",
+    "773658c8 (v2.0.3)",
+    "730556e1 (v2.0.3)",
+    "a4b580a8 (v2.0.3)",
+    "8ecc6bdc (v2.0.3)",
     "0fcfa601 (v2.0.2)",
     "7e96e7e7 (v2.0.2)"
    ],
@@ -6816,11 +6816,11 @@
     "ultimo_comentario_por": "mo7AmMeD64",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "responder (autor testou teste-318.3: ok, enviou log)",
-   "notas": "Tudo integrado em 2.0.3. O relator de queda nativa no Android < 12 (c8793c11 em agente/203-318-play) entrou como 142ae407, o mesmo commit com outro hash; tests/queda.sh passa em c3c1032e.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "Tudo integrado em 2.0.3. O relator de queda nativa no Android < 12 (c8793c11 em agente/203-318-play) entrou como 142ae407, o mesmo commit com outro hash; tests/queda.sh passa em c3c1032e. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/318",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 319,
@@ -6828,11 +6828,11 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "66e6ae9e (2.0.3)",
-    "3c51d5b7 (2.0.3)",
+    "66e6ae9e (v2.0.3)",
+    "3c51d5b7 (v2.0.3)",
     "0fcfa601 (v2.0.2)",
     "c796ca7d (v2.0.2)"
    ],
@@ -6842,11 +6842,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/319",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 320,
@@ -6854,11 +6854,11 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "22ecac46 (2.0.3)",
-    "8ab3b78f (2.0.3)"
+    "22ecac46 (v2.0.3)",
+    "8ab3b78f (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -6866,11 +6866,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "Nenhum commit cita #320; 22ecac46/8ab3b78f (\"tpk: arabic plain subtitles find Noto Naskh when the installed res/ predates 2.0.2\") batem com a promessa \"o próximo update busca a fonte sozinho\".",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "Nenhum commit cita #320; 22ecac46/8ab3b78f (\"tpk: arabic plain subtitles find Noto Naskh when the installed res/ predates 2.0.2\") batem com a promessa \"o próximo update busca a fonte sozinho\". LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/320",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 321,
@@ -6878,10 +6878,10 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "b347004c (2.0.3)"
+    "b347004c (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -6889,11 +6889,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "b347004c \"rotulo de secao desce com o cartao aberto\" (cita #203 = versão); NOTAS 2.0.3 o lista.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "b347004c \"rotulo de secao desce com o cartao aberto\" (cita #203 = versão); NOTAS 2.0.3 o lista. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/321",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 322,
@@ -6901,10 +6901,10 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "b8d110de (2.0.3)"
+    "b8d110de (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -6912,11 +6912,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "b8d110de: up next removível + opção para desligar (cita \"#203\" = versão).",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "b8d110de: up next removível + opção para desligar (cita \"#203\" = versão). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/322",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 323,
@@ -6924,11 +6924,11 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "1b6c9a89 (2.0.3)",
-    "696afa74 (2.0.3)"
+    "1b6c9a89 (v2.0.3)",
+    "696afa74 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -6936,11 +6936,11 @@
     "ultimo_comentario_por": "ghbarker",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (autor confirmou: sem o passo de múltiplas fontes não cai)",
-   "notas": "Tudo integrado em 2.0.3. O SIGSEGV em verificarOuParar (Conferencia na pilha) está consertado por 696afa74, que veio no merge 1b6c9a89: a Conferencia vai para o heap com contagem e é solta pelo último fio. f349c2f7/4d22e4f7 são uma versão anterior do mesmo conserto (sem liberar) e não precisam entrar; SANITIZE=1 tests/fonteparalela.sh passa em c3c1032e.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "Tudo integrado em 2.0.3. O SIGSEGV em verificarOuParar (Conferencia na pilha) está consertado por 696afa74, que veio no merge 1b6c9a89: a Conferencia vai para o heap com contagem e é solta pelo último fio. f349c2f7/4d22e4f7 são uma versão anterior do mesmo conserto (sem liberar) e não precisam entrar; SANITIZE=1 tests/fonteparalela.sh passa em c3c1032e. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/323",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 324,
@@ -7015,11 +7015,11 @@
    "estado_github": "fechada",
    "plataforma": "Samsung .wgt",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "8ab1b19b (2.0.3)",
-    "d268b069 (2.0.3)"
+    "8ab1b19b (v2.0.3)",
+    "d268b069 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7027,8 +7027,8 @@
     "ultimo_comentario_por": "jhonam05",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "Fechada no GitHub antes do release 2.0.3.",
+   "proximo_passo": "nada (fechada; saiu na v2.0.3)",
+   "notas": "Fechada no GitHub antes do release 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/327",
    "criada_em": "2026-10-07"
   },
@@ -7038,11 +7038,11 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "9c5d0027 (2.0.3)",
-    "7edab4b0 (2.0.3)"
+    "9c5d0027 (v2.0.3)",
+    "7edab4b0 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7051,10 +7051,10 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder (sem resposta nossa)",
-   "notas": "09/10: SUSPEITA de mesma raiz do #372 (temporadas/episódios errados pelo catálogo do Nuvio primeiro, regressão 9677065b), não confirmada; se o conserto de agente/2031-temporadas (2.0.3.1) resolver, vale também aqui.",
+   "notas": "09/10: SUSPEITA de mesma raiz do #372 (temporadas/episódios errados pelo catálogo do Nuvio primeiro, regressão 9677065b), não confirmada; se o conserto de agente/2031-temporadas (2.0.3.1) resolver, vale também aqui. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/328",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "2.0.3.1"
   },
   {
    "numero": 329,
@@ -7088,10 +7088,10 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "2f047898 (2.0.3)"
+    "2f047898 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7099,11 +7099,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder (sem resposta nossa)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/330",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 331,
@@ -7137,13 +7137,13 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "eabe3afd (2.0.3)",
-    "b03aa2f0 (2.0.3)",
-    "35421d1a (2.0.3)",
-    "22461251 (2.0.3)"
+    "eabe3afd (v2.0.3)",
+    "b03aa2f0 (v2.0.3)",
+    "35421d1a (v2.0.3)",
+    "22461251 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -7151,11 +7151,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "pedir log (após build com /dev/urandom + HttpURLConnection)",
-   "notas": "SUSPEITA: relato Sony BRAVIA preso em \"rede _preparar\"; commits citados são os do #266. A resposta final do dono fala de outro assunto (contorno do vidro dos pôsteres, citado como \"corrigido para a próxima versão\"). teste-shield-266.2 não resolveu segundo EzequielS04.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "SUSPEITA: relato Sony BRAVIA preso em \"rede _preparar\"; commits citados são os do #266. A resposta final do dono fala de outro assunto (contorno do vidro dos pôsteres, citado como \"corrigido para a próxima versão\"). teste-shield-266.2 não resolveu segundo EzequielS04. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/332",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 333,
@@ -7198,8 +7198,8 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "Limite de P2P e limpeza integrados em 2.0.3 (d3ca720b, c3e19d00, merge 891a72a9 de agente/203-334b; agente/203-334 tem os mesmos dois commits com outro hash). Só a janela de streaming (\"armazenamento rotativo\", prometido como planejado: d453fd1c e 8e09dad2 em agente/203-334-janela) NÃO está integrada; alvo 2.0.4 para essa parte.",
+   "proximo_passo": "avisar na issue: limite de P2P e limpeza saíram na 2.0.3; janela de streaming (armazenamento rotativo) fica para a 2.0.4",
+   "notas": "Limite de P2P e limpeza integrados em 2.0.3 (d3ca720b, c3e19d00, merge 891a72a9 de agente/203-334b; agente/203-334 tem os mesmos dois commits com outro hash). Só a janela de streaming (\"armazenamento rotativo\", prometido como planejado: d453fd1c e 8e09dad2 em agente/203-334-janela) NÃO está integrada; alvo 2.0.4 para essa parte. COMMITS vs v2.0.3 (09/10): dentro da tag: c3e19d00, d3ca720b; fora: 8e09dad2, d453fd1c.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/334",
    "criada_em": "2026-10-07",
    "alvo": "2.0.3"
@@ -7210,15 +7210,15 @@
    "estado_github": "aberta",
    "plataforma": "Samsung (tpk/wgt?)",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "01016036 (2.0.3)",
-    "531e344a (2.0.3)",
-    "bbc31cb2 (2.0.3)",
-    "3b93dfad (2.0.3)",
-    "bae0316a (2.0.3)",
-    "503ed5cc (2.0.3)"
+    "01016036 (v2.0.3)",
+    "531e344a (v2.0.3)",
+    "bbc31cb2 (v2.0.3)",
+    "3b93dfad (v2.0.3)",
+    "bae0316a (v2.0.3)",
+    "503ed5cc (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -7226,11 +7226,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/335",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 336,
@@ -7303,13 +7303,13 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "607b25bf (2.0.3)",
-    "b1b53000 (2.0.3)",
-    "30e13fa4 (2.0.3)",
-    "7dc8cd71 (2.0.3)"
+    "607b25bf (v2.0.3)",
+    "b1b53000 (v2.0.3)",
+    "30e13fa4 (v2.0.3)",
+    "7dc8cd71 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -7317,11 +7317,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/339",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 340,
@@ -7329,10 +7329,10 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "bc63d8ca (2.0.3)"
+    "bc63d8ca (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7340,11 +7340,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder (sem resposta nossa)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/340",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 341,
@@ -7352,10 +7352,10 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "beb5007a (2.0.3)"
+    "beb5007a (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7364,10 +7364,10 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder (sem resposta nossa; pedir teste)",
-   "notas": "SUSPEITA: nenhum commit cita #341; beb5007a \"tpk 4/5: botão de aspecto/zoom do player passa a ter efeito\" está na 2.0.3 e NOTAS cita \"aspect/zoom button on Tizen 4/5\".",
+   "notas": "SUSPEITA: nenhum commit cita #341; beb5007a \"tpk 4/5: botão de aspecto/zoom do player passa a ter efeito\" está na 2.0.3 e NOTAS cita \"aspect/zoom button on Tizen 4/5\". LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/341",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 342,
@@ -7543,10 +7543,10 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "4b8ba24b (2.0.3)"
+    "4b8ba24b (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7555,10 +7555,10 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "postar correção",
-   "notas": "Rascunho de correção: nome do ajuste é \"OK no card\"; \"Ver detalhes\" no menu de segurar sai na 2.0.3. Autor relatou depois filme travando durante TV ao vivo: responder.",
+   "notas": "Rascunho de correção: nome do ajuste é \"OK no card\"; \"Ver detalhes\" no menu de segurar sai na 2.0.3. Autor relatou depois filme travando durante TV ao vivo: responder. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/350",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "2.0.4"
   },
   {
    "numero": 352,
@@ -7667,7 +7667,7 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "ler o log T5JF2G (09/10) e confirmar a leitura abaixo; se for isso, pedir novo log na 2.0.3",
-   "notas": "d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config \"quanto à frente\" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo \"a seguir da conta\" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar).",
+   "notas": "d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config \"quanto à frente\" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo \"a seguir da conta\" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar). COMMITS vs v2.0.3 (09/10): d47a78c8, 9af09e0c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/356",
    "criada_em": "2026-10-08",
    "alvo": "2.0.3"
@@ -7760,7 +7760,7 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "postar correção",
-   "notas": "Mescla do sync em 2.0.3 (46507ea5, 6b305295); botão \"Sincronizar addons\" só 2.0.4 (e2f1eede). Namer03 perguntou \"on 2.0.3?\"; rascunho de correção. Alvo 2.0.4 porque a issue pede o botão \"Sincronizar addons\" (e2f1eede, fora da 2.0.3); a mescla do sync já está em 2.0.3.",
+   "notas": "Mescla do sync em 2.0.3 (46507ea5, 6b305295); botão \"Sincronizar addons\" só 2.0.4 (e2f1eede). Namer03 perguntou \"on 2.0.3?\"; rascunho de correção. Alvo 2.0.4 porque a issue pede o botão \"Sincronizar addons\" (e2f1eede, fora da 2.0.3); a mescla do sync já está em 2.0.3. COMMITS vs v2.0.3 (09/10): dentro da tag: 46507ea5, 6b305295; fora: e2f1eede.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/360",
    "criada_em": "2026-10-08",
    "alvo": "2.0.4"
@@ -7771,12 +7771,12 @@
    "estado_github": "aberta",
    "plataforma": "all",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "9ac3531d (2.0.3)",
-    "2220b019 (2.0.3)",
-    "81f7128b (2.0.3)"
+    "9ac3531d (v2.0.3)",
+    "2220b019 (v2.0.3)",
+    "81f7128b (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7784,11 +7784,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder (sem resposta nossa); avisar quando a 2.0.3 sair",
-   "notas": "NOTAS 2.0.3: posters com URL longa (>~500 caracteres) chegam inteiros ao fundo, detalhe, Salvos e conta (merge 9ac3531d, agente/203-361). Pedido original pedia limite maior; URL de fundo/logo longa demais é descartada com linha de log.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "NOTAS 2.0.3: posters com URL longa (>~500 caracteres) chegam inteiros ao fundo, detalhe, Salvos e conta (merge 9ac3531d, agente/203-361). Pedido original pedia limite maior; URL de fundo/logo longa demais é descartada com linha de log. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/361",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 362,
@@ -7820,12 +7820,12 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "54cf2fab (2.0.3)",
-    "9bb93887 (2.0.3)",
-    "08e58b14 (2.0.3)"
+    "54cf2fab (v2.0.3)",
+    "9bb93887 (v2.0.3)",
+    "08e58b14 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7833,11 +7833,11 @@
     "ultimo_comentario_por": "markcodes",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/363",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 364,
@@ -7932,11 +7932,11 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "dbec4f44 (2.0.3)",
-    "1af6067e (2.0.3)"
+    "dbec4f44 (v2.0.3)",
+    "1af6067e (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -7944,11 +7944,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "postar correção",
-   "notas": "Rascunho de correção: ocultar add-ons no guia sai na 2.0.3, não na 2.0.2; busca espera 300 ms.",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "Rascunho de correção: ocultar add-ons no guia sai na 2.0.3, não na 2.0.2; busca espera 300 ms. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/368",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 369,
@@ -7956,11 +7956,11 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "712557ca (2.0.3)",
-    "5f04c36b (2.0.3)"
+    "712557ca (v2.0.3)",
+    "5f04c36b (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -7969,10 +7969,10 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder (sem resposta); relatório de 9 itens, só 2 com commit",
-   "notas": "Parcial: tailandês (712557ca) e ocultar não lançados (5f04c36b). Os outros itens do relatório de 9: sem commit identificado.",
+   "notas": "Parcial: tailandês (712557ca) e ocultar não lançados (5f04c36b). Os outros itens do relatório de 9: sem commit identificado. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/369",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "2.0.4"
   },
   {
    "numero": 370,
@@ -7980,13 +7980,13 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .wgt",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "2aee231b (2.0.3)",
-    "3fe3c8ca (2.0.3)",
-    "56c9832e (2.0.3)",
-    "8b2aac84 (2.0.3)"
+    "2aee231b (v2.0.3)",
+    "3fe3c8ca (v2.0.3)",
+    "56c9832e (v2.0.3)",
+    "8b2aac84 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": true,
@@ -7994,11 +7994,11 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "notas": "LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/370",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 371,
@@ -8006,13 +8006,13 @@
    "estado_github": "fechada",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "b39f4149 (2.0.3)",
-    "1cdd1cbb (2.0.3)",
-    "2fa6e51a (2.0.3)",
-    "cde8d0a5 (2.0.3)"
+    "b39f4149 (v2.0.3)",
+    "1cdd1cbb (v2.0.3)",
+    "2fa6e51a (v2.0.3)",
+    "cde8d0a5 (v2.0.3)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -8020,8 +8020,8 @@
     "ultimo_comentario_por": "Namer03",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "Fechada no GitHub antes do release 2.0.3.",
+   "proximo_passo": "nada (fechada; saiu na v2.0.3)",
+   "notas": "Fechada no GitHub antes do release 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/371",
    "criada_em": "2026-10-08"
   },
@@ -8148,7 +8148,7 @@
     "ultimo_comentario_por": "Namer03",
     "ultima_nossa": null
    },
-   "proximo_passo": "responder: corrigido na 2.0.3 (índice cobre a faixa inteira; janela do playhead)",
+   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
    "notas": "LG C5, webOS 26, Nuvio 2.0.2; Re:Zero S1 (Seadex): legenda embutida do ep. 3 funcionou, a do ep. 4 parou de aparecer depois da abertura. O autor (Vidhin05) JÁ mandou dois códigos de log no corpo (DDRROH e 98ZQED), ainda não lidos por nós; por isso o status é aberta e não precisa-log. Um comentário do próprio autor fala de \"quedas de conexão e falhas de rede, talvez queda do debrid\": relato solto, sem log próprio, tratar como segundo sintoma e checar nos mesmos logs. Namer03 (não é do projeto) respondeu \"mesma coisa do #308, sai na 2.0.3\": SUSPEITA, o #308 é legenda que bloqueia a fonte, o sintoma aqui (legenda some no meio) pode ser outro; não confirmado. Candidatos já na 2.0.3: #269 (legenda embutida) e #335 (ASS). ALVO 2.0.4 = triagem: pode virar 2.0.3 se os logs mostrarem que é o #308. CAUSA ACHADA (09/10, nos logs do próprio autor): NÃO é o #308 e NÃO está corrigido na 2.0.3 até agora. O coletor de ASS embutido indexa no máximo 8000 blocos (MKVASS_MAX_PONTOS, src/mkvass.c:61) NA ORDEM DO ARQUIVO; numa release com muito typeset (letreiros, karaokê) os 8000 acabam logo depois da abertura, e o resto do episódio fica sem legenda (log: \"cobertura=7360-217270ms\" com exatamente 8000 eventos). O branch agente/203-384 trabalha nisso; o alvo continua 2.0.4 a menos que esse branch entre na 2.0.3. Próximo passo: integrar agente/203-384 (ou deixar para a 2.0.4) e avisar o autor. O comentário de \"queda do debrid\" segue sem log próprio. CORRIGIDO (09/10): o conserto de agente/203-384 entrou na 2.0.3 (merge 2b4c3cea; b03b86db teste e 9ee093ac conserto, ambos contidos na tag v2.0.3): o índice cobre a faixa inteira e a faixa grande é colhida só na janela do playhead, sem carga extra no CDN. O texto acima sobre \"não está corrigido\" e \"alvo 2.0.4\" é histórico. A \"queda do debrid\" do autor segue sem log próprio.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/384",
    "criada_em": "2026-10-09",
@@ -8173,7 +8173,7 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder ao autor: não é regressão da 2.0.2, é bloqueio do nó/IP do TorBox (outro aparelho/outra rede ou trocar de nó confirma); a pausa de conexão recusada saiu na 2.0.3; na 2.0.4, conferir a verificação paralela de fontes e o vazamento de eventos do trailer no .tpk",
-   "notas": "LOG LIDO (09/10, registro 64551, 2.0.2): a plataforma é tizen-tpk, NÃO .wgt (formulário errado; a linha [tv] com a versão do Tizen não aparece no trecho). O que o log prova: (1) a fonte escolhida a mão, um link de loja do TorBox via StremThru, não chegou a abrir: o \"vídeo de 129 s\" NÃO era placa do provedor, era o TRAILER do IMDb (\"tpk evento 1 (129036)\" vem sempre depois de \"[trailer] ... no fundo com som\" e aparece até sem episódio aberto). No log 1 o evento de duração do trailer chegou depois de \"abrir: url ao pipeline\" e o posplay o leu como duração do episódio (\"[posplay] duracao suspeita: pipeline diz 129s, catalogo diz 2820s\"). CORREÇÃO de leitura de 09/10: a hipótese de placa do provedor está descartada. (2) Com o vídeo aberto, toda conexão nova nossa ao nó do CDN do TorBox foi recusada na hora: 11 vezes \"Failed to connect to <nó tb-cdn> port 443: Connection refused\" (curl 7), vindas da pré-busca do mkvass (5 Ranges, cada um repetido em conexão nova, \"3 conexao(oes) extra(s)\", 13 a 15 s) e da sonda do MKV pela rede. (3) Cerca de 5 s depois o player da Samsung perde a conexão dele (ConnectionFailed, 0xfe6c0026), entra na reconexão 1/3 e 2/3 e o Prepare falha. (4) Numa segunda tentativa o player caiu em 5,6 s SEM nenhum pedido nosso antes; então o nó recusa por conta própria, e não está provado que as nossas conexões extras causam a queda. (5) No mesmo log, um add-on https (4KHDHub) abriu e tocou, a pré-busca leu o cabeçalho em 684 ms e parou (3 legendas, nenhuma em coreano). VEREDITO: a recusa é do lado do TorBox/CDN (um nó só, sempre o mesmo). Do nosso lado havia um endurecimento pequeno, não provado como causa: a pausa do leitor lateral da #308 (b65c3324, já na 2.0.3) só disparava com curl 28, 429 e 5xx; conexão recusada (curl 7) continuava sendo repetida 5 vezes em conexão nova com o vídeo aberto, e a sonda do MKV também insistia. Esse endurecimento entrou na 2.0.3 (ver VEREDITO FINAL). Histórico da triagem anterior, feita sem log e achando que era .wgt: PLATAFORMA NÃO CONFIRMADA (.wgt declarado; pode ser .tpk40: um UT8000 com Tizen 5.5 também roda o .tpk 4/5). Perguntar qual arquivo ele instalou (.wgt ou .tpk). Sem log. HIPÓTESE #308 ENFRAQUECIDA (09/10): o autor pôs o idioma da legenda em coreano (nenhuma faixa é escolhida) e \"caiu na hora de novo\". Lido no código (483a73b8): no .wgt a pré-busca do mkvass NEM EXISTE (player.c:1548, #ifndef __EMSCRIPTEN__) e, sem faixa escolhida, a automática dá LING_AUTO_NADA e o mkvass não colhe nada por Range; o que roda em TODO MKV no .wgt é só a sonda do cabeçalho (video_tizen.c lerMkv -> mkv_faixas_e_caps: um trecho inicial, mais um ou dois Ranges se Tracks/Chapters ficarem fora dele), uma vez por abertura. Logo, no .wgt, sem legenda ligada o app não enche o CDN de pedidos. SE FOR O .tpk40 a conta muda um pouco: lá a pré-busca existe (NV_TPK não é Emscripten) e roda em todo MKV com idioma de legenda definido diferente de \"none\" (prebuscaCabe, player.c), mas quando nenhuma faixa casa com o idioma (coreano) o fio termina depois do cabeçalho, um Range (mkvass.h); somam-se a sonda do cabeçalho (video_tpk.c) e os capítulos do capmkv (uma janela de 320 KB, 4 s depois de abrir, capmkv.c). Continua sendo meia dúzia de pedidos por abertura, não uma colheita. O que pesa no .tpk é o caso COM legenda: lá toda legenda embutida de TEXTO (não só ASS) vai para o overlay do app e é colhida por Range (faixas.c, FX_TEXTO_OVERLAY=1 só no .tpk), então antes de trocar para coreano a #308 encaixa melhor no .tpk40 do que no .wgt. Resta, sem prova, o bloqueio do CDN do debrid àquele IP/conta ainda valendo de antes. Alvo volta para 2.0.4 (triagem); plano: as três suspeitas da triagem no fim desta nota. Hipótese anterior, mantida para registro: provavelmente coberta pelo conserto da #308 que já está na 2.0.3 (b65c3324 leitor lateral mais gentil: menos Ranges, uma conexão, pausa quando o CDN aperta; 73ce1648). Namer03 comentou (09/10) que a leitura da legenda embutida enche o CDN do TorBox de pedidos; bate com o relato: o CDN do debrid passa a recusar, o vídeo reconecta em laço e TODA fonte de debrid falha, enquanto add-on https segue. CONDIÇÃO: no .wgt o mkvass (leitura por Range) só entra para legenda embutida ASS/SSA (faixas.c: FX_TEXTO_OVERLAY é 1 só no .tpk; SRT/texto embutido a TV desenha), e ele roda no .wgt (tizen.sh compila com NV_ASS_LIBASS, video_tizen.c tem a sonda do MKV). Então só é a #308 se o usuário estava com uma faixa ASS embutida ligada num MKV: perguntar isso (título, se a legenda era embutida, se desligando a embutida a queda some). Não medido quantos Ranges o mkvass fazia no .wgt antes do b65c3324, e nenhum registro .wgt do D1 mostra o laço. Se persistir na 2.0.3, volta para precisa-log com as suspeitas abaixo (plano 2.0.4). Triagem anterior: Samsung UT8000 (Tizen 5.5), .wgt, Nuvio 2.0.2; sem log. Relato: VOD de debrid cai no meio com \"reconectando\" em laço; depois TODA fonte dá \"não deu para carregar\", só add-on https segue tocando. Triagem (09/10) no D1 e no código, sem TV: NÃO provado. No D1 (.wgt, ~32 mil ids recentes, ~300 registros) só 2 registros (2 pessoas, ambos 2.0.1) mostram a reconexão de VOD começar (\"conexao caiu ... tentativa 1/3\"), nenhum chega a \"reconexao: desistiu\" e nenhum tem o par \"queda e depois toda fonte falha\"; os outros ~25 registros com PLAYER_ERROR_CONNECTION_FAILED são falha de abertura de uma fonte, e a próxima fonte abriu (sem envenenamento). Código: a reconexão do .wgt (video_tizen.c:1180-1215, video_reconexao.h) são 3 tentativas por queda, e o contador zera 10 s depois do ponto da queda, então rede instável gera laço de \"reconectando\" por desenho; o 2.0.3 só mexeu na reconexão de TV ao vivo (#302/#350), VOD não mudou. Descartado por leitura: negcache (só 4 APIs de metadados), flag offline (redesaude.c só pinta a ilha), pool de threads (strict=0, [fios] estável nos logs), lista de fontes recusadas (zera a cada lista nova), XHR síncrono (estado por fio). \"Só o https funciona\" contraria um AVPlay quebrado (os dois passam por ele) e aponta para a conta do debrid/links do host, que é do lado de lá. SUSPEITA, não provada: (1) o open de reconexão não tem prazo: se o prepareAsync nunca responder, video_reconectando() fica 1 e tentarProximaFonteVOD (app.c) volta cedo, então fica \"reconectando\" sem fim; (2) a op \"abrir\" do JS faz stop() e close() no MESMO try (video_tizen.c:264-267): se o stop() levantar, o close() não roda e o próximo open() falha; (3) debrid.c marca conta sem plano para a SESSÃO inteira (semPlano), mas só com corpo \"PLAN_RESTRICTED/not premium\", não com 429. Essas três ficam como plano da 2.0.4 se a 2.0.3 não resolver. VEREDITO FINAL (09/10, segundo log, HSV8YA): NÃO é regressão da 2.0.2. É bloqueio do nó/IP do TorBox: o player falhou com ZERO pedidos nossos no Comet, no StremThru Torz e no Torrentio, e o 4KHDHub tocou. O conserto que saiu na 2.0.3 é a pausa da leitura lateral quando o host do vídeo recusa conexão (agente/203-385, commits c29c6f96 teste e 4151683c conserto; na tag v2.0.3). SUSPEITA ABERTA: a 2.0.2 passou a verificar fontes em paralelo por padrão (45deaa14, 2c399b99), o que segue redirecionamentos dos add-ons até nós do TorBox várias de uma vez; sem prova, a conferir na 2.0.4. BUG SEPARADO (SUSPEITA, alvo 2.0.4): eventos do trailer vazando para a sessão do episódio no .tpk (duração e eventos do trailer lidos como se fossem do episódio, o \"duracao suspeita 129s\" do log 1); ver o item de roadmap da 2.0.4.",
+   "notas": "LOG LIDO (09/10, registro 64551, 2.0.2): a plataforma é tizen-tpk, NÃO .wgt (formulário errado; a linha [tv] com a versão do Tizen não aparece no trecho). O que o log prova: (1) a fonte escolhida a mão, um link de loja do TorBox via StremThru, não chegou a abrir: o \"vídeo de 129 s\" NÃO era placa do provedor, era o TRAILER do IMDb (\"tpk evento 1 (129036)\" vem sempre depois de \"[trailer] ... no fundo com som\" e aparece até sem episódio aberto). No log 1 o evento de duração do trailer chegou depois de \"abrir: url ao pipeline\" e o posplay o leu como duração do episódio (\"[posplay] duracao suspeita: pipeline diz 129s, catalogo diz 2820s\"). CORREÇÃO de leitura de 09/10: a hipótese de placa do provedor está descartada. (2) Com o vídeo aberto, toda conexão nova nossa ao nó do CDN do TorBox foi recusada na hora: 11 vezes \"Failed to connect to <nó tb-cdn> port 443: Connection refused\" (curl 7), vindas da pré-busca do mkvass (5 Ranges, cada um repetido em conexão nova, \"3 conexao(oes) extra(s)\", 13 a 15 s) e da sonda do MKV pela rede. (3) Cerca de 5 s depois o player da Samsung perde a conexão dele (ConnectionFailed, 0xfe6c0026), entra na reconexão 1/3 e 2/3 e o Prepare falha. (4) Numa segunda tentativa o player caiu em 5,6 s SEM nenhum pedido nosso antes; então o nó recusa por conta própria, e não está provado que as nossas conexões extras causam a queda. (5) No mesmo log, um add-on https (4KHDHub) abriu e tocou, a pré-busca leu o cabeçalho em 684 ms e parou (3 legendas, nenhuma em coreano). VEREDITO: a recusa é do lado do TorBox/CDN (um nó só, sempre o mesmo). Do nosso lado havia um endurecimento pequeno, não provado como causa: a pausa do leitor lateral da #308 (b65c3324, já na 2.0.3) só disparava com curl 28, 429 e 5xx; conexão recusada (curl 7) continuava sendo repetida 5 vezes em conexão nova com o vídeo aberto, e a sonda do MKV também insistia. Esse endurecimento entrou na 2.0.3 (ver VEREDITO FINAL). Histórico da triagem anterior, feita sem log e achando que era .wgt: PLATAFORMA NÃO CONFIRMADA (.wgt declarado; pode ser .tpk40: um UT8000 com Tizen 5.5 também roda o .tpk 4/5). Perguntar qual arquivo ele instalou (.wgt ou .tpk). Sem log. HIPÓTESE #308 ENFRAQUECIDA (09/10): o autor pôs o idioma da legenda em coreano (nenhuma faixa é escolhida) e \"caiu na hora de novo\". Lido no código (483a73b8): no .wgt a pré-busca do mkvass NEM EXISTE (player.c:1548, #ifndef __EMSCRIPTEN__) e, sem faixa escolhida, a automática dá LING_AUTO_NADA e o mkvass não colhe nada por Range; o que roda em TODO MKV no .wgt é só a sonda do cabeçalho (video_tizen.c lerMkv -> mkv_faixas_e_caps: um trecho inicial, mais um ou dois Ranges se Tracks/Chapters ficarem fora dele), uma vez por abertura. Logo, no .wgt, sem legenda ligada o app não enche o CDN de pedidos. SE FOR O .tpk40 a conta muda um pouco: lá a pré-busca existe (NV_TPK não é Emscripten) e roda em todo MKV com idioma de legenda definido diferente de \"none\" (prebuscaCabe, player.c), mas quando nenhuma faixa casa com o idioma (coreano) o fio termina depois do cabeçalho, um Range (mkvass.h); somam-se a sonda do cabeçalho (video_tpk.c) e os capítulos do capmkv (uma janela de 320 KB, 4 s depois de abrir, capmkv.c). Continua sendo meia dúzia de pedidos por abertura, não uma colheita. O que pesa no .tpk é o caso COM legenda: lá toda legenda embutida de TEXTO (não só ASS) vai para o overlay do app e é colhida por Range (faixas.c, FX_TEXTO_OVERLAY=1 só no .tpk), então antes de trocar para coreano a #308 encaixa melhor no .tpk40 do que no .wgt. Resta, sem prova, o bloqueio do CDN do debrid àquele IP/conta ainda valendo de antes. Alvo volta para 2.0.4 (triagem); plano: as três suspeitas da triagem no fim desta nota. Hipótese anterior, mantida para registro: provavelmente coberta pelo conserto da #308 que já está na 2.0.3 (b65c3324 leitor lateral mais gentil: menos Ranges, uma conexão, pausa quando o CDN aperta; 73ce1648). Namer03 comentou (09/10) que a leitura da legenda embutida enche o CDN do TorBox de pedidos; bate com o relato: o CDN do debrid passa a recusar, o vídeo reconecta em laço e TODA fonte de debrid falha, enquanto add-on https segue. CONDIÇÃO: no .wgt o mkvass (leitura por Range) só entra para legenda embutida ASS/SSA (faixas.c: FX_TEXTO_OVERLAY é 1 só no .tpk; SRT/texto embutido a TV desenha), e ele roda no .wgt (tizen.sh compila com NV_ASS_LIBASS, video_tizen.c tem a sonda do MKV). Então só é a #308 se o usuário estava com uma faixa ASS embutida ligada num MKV: perguntar isso (título, se a legenda era embutida, se desligando a embutida a queda some). Não medido quantos Ranges o mkvass fazia no .wgt antes do b65c3324, e nenhum registro .wgt do D1 mostra o laço. Se persistir na 2.0.3, volta para precisa-log com as suspeitas abaixo (plano 2.0.4). Triagem anterior: Samsung UT8000 (Tizen 5.5), .wgt, Nuvio 2.0.2; sem log. Relato: VOD de debrid cai no meio com \"reconectando\" em laço; depois TODA fonte dá \"não deu para carregar\", só add-on https segue tocando. Triagem (09/10) no D1 e no código, sem TV: NÃO provado. No D1 (.wgt, ~32 mil ids recentes, ~300 registros) só 2 registros (2 pessoas, ambos 2.0.1) mostram a reconexão de VOD começar (\"conexao caiu ... tentativa 1/3\"), nenhum chega a \"reconexao: desistiu\" e nenhum tem o par \"queda e depois toda fonte falha\"; os outros ~25 registros com PLAYER_ERROR_CONNECTION_FAILED são falha de abertura de uma fonte, e a próxima fonte abriu (sem envenenamento). Código: a reconexão do .wgt (video_tizen.c:1180-1215, video_reconexao.h) são 3 tentativas por queda, e o contador zera 10 s depois do ponto da queda, então rede instável gera laço de \"reconectando\" por desenho; o 2.0.3 só mexeu na reconexão de TV ao vivo (#302/#350), VOD não mudou. Descartado por leitura: negcache (só 4 APIs de metadados), flag offline (redesaude.c só pinta a ilha), pool de threads (strict=0, [fios] estável nos logs), lista de fontes recusadas (zera a cada lista nova), XHR síncrono (estado por fio). \"Só o https funciona\" contraria um AVPlay quebrado (os dois passam por ele) e aponta para a conta do debrid/links do host, que é do lado de lá. SUSPEITA, não provada: (1) o open de reconexão não tem prazo: se o prepareAsync nunca responder, video_reconectando() fica 1 e tentarProximaFonteVOD (app.c) volta cedo, então fica \"reconectando\" sem fim; (2) a op \"abrir\" do JS faz stop() e close() no MESMO try (video_tizen.c:264-267): se o stop() levantar, o close() não roda e o próximo open() falha; (3) debrid.c marca conta sem plano para a SESSÃO inteira (semPlano), mas só com corpo \"PLAN_RESTRICTED/not premium\", não com 429. Essas três ficam como plano da 2.0.4 se a 2.0.3 não resolver. VEREDITO FINAL (09/10, segundo log, HSV8YA): NÃO é regressão da 2.0.2. É bloqueio do nó/IP do TorBox: o player falhou com ZERO pedidos nossos no Comet, no StremThru Torz e no Torrentio, e o 4KHDHub tocou. O conserto que saiu na 2.0.3 é a pausa da leitura lateral quando o host do vídeo recusa conexão (agente/203-385, commits c29c6f96 teste e 4151683c conserto; na tag v2.0.3). SUSPEITA ABERTA: a 2.0.2 passou a verificar fontes em paralelo por padrão (45deaa14, 2c399b99), o que segue redirecionamentos dos add-ons até nós do TorBox várias de uma vez; sem prova, a conferir na 2.0.4. BUG SEPARADO (SUSPEITA, alvo 2.0.4): eventos do trailer vazando para a sessão do episódio no .tpk (duração e eventos do trailer lidos como se fossem do episódio, o \"duracao suspeita 129s\" do log 1); ver o item de roadmap da 2.0.4. COMMITS vs v2.0.3 (09/10): c29c6f96, 4151683c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/385",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
@@ -8382,12 +8382,12 @@
    "notas": "Nada encontrado em commits, docs, notas de release ou issues (buscas por \"80 GB\"/\"80GB\"). Não preencher sem a fonte."
   }
  ],
- "base_roadmap": "6a9140c2",
+ "base_roadmap": "a740ea73",
  "roadmap": [
   {
    "release": "2.0.3",
-   "situacao": "congelada (integracao/2.0.3, ainda não lançada)",
-   "descricao": "Só entra o que já está em integracao/2.0.3. Lista completa em docs/releases/2.0.3/NOTAS.md; o mapa abaixo marca cada issue aberta com conserto lá. Inclui #361 (URL de cartaz longa).",
+   "situacao": "lançada 09/10 (v2.0.3, 8ed4517c)",
+   "descricao": "Publicada na tag v2.0.3 (commit 8ed4517c, 09/10/2026). Lista completa em docs/releases/2.0.3/NOTAS.md. Em 09/10 os consertos com todos os commits contidos na tag passaram a status lancada; o que ficou como estava tem commits fora da tag ou conserto só suspeito (ver notas de cada issue). Inclui #361 (URL de cartaz longa).",
    "itens": []
   },
   {
@@ -8852,6 +8852,241 @@
     333,
     374
    ]
+  },
+  {
+   "pergunta": "#308: fechar como resolvida e abrir issue nova só para o desenho do ASS, ou manter a #308 aberta?",
+   "recomendacao": "Fechar a #308 (o problema original, legenda que bloqueia a fonte, está corrigido na 2.0.3; o autor disse \"got them working now\") e abrir uma issue nova só para o desenho do ASS: sombra/anel, cores diferentes da original, lentidão com legendas grandes e um trecho fora de sincronia. Decisão do dono.",
+   "issues": [
+    308
+   ]
+  },
+  {
+   "pergunta": "Fechar com a 2.0.3 (bloco acima): fechar já as issues sem confirmação do autor ou esperar o retorno?",
+   "recomendacao": "Fechar já #317 e #318 (autores confirmaram). As demais, esperar alguns dias pelo retorno; a resposta curta já pede para reabrir se persistir, então fechar também é aceitável.",
+   "issues": [
+    269,
+    284,
+    294,
+    305,
+    311,
+    317,
+    318,
+    319,
+    320,
+    321,
+    322,
+    323,
+    330,
+    332,
+    335,
+    339,
+    340,
+    361,
+    363,
+    368,
+    370,
+    384
+   ]
+  }
+ ],
+ "fechar_203": [
+  {
+   "numero": 269,
+   "resposta": "Thanks for reporting this! Embedded subtitles on big MKV files (over 2 GB) are fixed in 2.0.3. Please update, and reopen this if they still don't show up.",
+   "confirmado": false,
+   "confirmacao": "o autor agradeceu o conserto parcial da 2.0.2; nao testou a 2.0.3"
+  },
+  {
+   "numero": 284,
+   "resposta": "Thanks! The \"Best for this TV\" source line now shows the resolution in 2.0.3. Please reopen if you still don't see it.",
+   "confirmado": false,
+   "confirmacao": "sem comentarios do autor"
+  },
+  {
+   "numero": 294,
+   "resposta": "Thanks for the logs! 2.0.3 keeps your collections in place when you switch profiles and clears the other profile's rows. Reopen this if it happens again.",
+   "confirmado": false,
+   "confirmacao": "autor mandou logs; nao confirmou o conserto"
+  },
+  {
+   "numero": 305,
+   "resposta": "Done in 2.0.3: pressing Up on the seek bar now hides the player controls (any key brings them back). Reopen if it doesn't work for you.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 311,
+   "resposta": "The search options (including turning off \"from Nuvio\" results) are in 2.0.3, under Settings > Sources & add-ons. Thanks for the idea, and reopen if you can't find them.",
+   "confirmado": false,
+   "confirmacao": "o autor perguntou onde ficava a opcao; nao confirmou na 2.0.3"
+  },
+  {
+   "numero": 317,
+   "resposta": "Glad it opens now! The fix is included in the regular 2.0.3 release, so you don't need the test build anymore. Please reopen if anything breaks.",
+   "confirmado": true,
+   "confirmacao": "o autor confirmou que abre com o build de teste (07/10)"
+  },
+  {
+   "numero": 318,
+   "resposta": "Thanks for testing the build! The fix for the flicker/freeze after pressing OK is in 2.0.3. Please reopen if it comes back.",
+   "confirmado": true,
+   "confirmacao": "o autor testou o teste-318.3 e deu retorno (08/10)"
+  },
+  {
+   "numero": 319,
+   "resposta": "Thanks for the log! 2.0.3 fixes the home rows not refreshing (rows of switched-off add-ons are now cleaned up properly). Please reopen if it still happens.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 320,
+   "resposta": "This is fixed in 2.0.3: the Arabic subtitle font is now found even when the update only replaced the app's code. Please reopen if you still see empty boxes.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 321,
+   "resposta": "Fixed in 2.0.3: the section label now moves down with the expanded card. Reopen if you still see it.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 322,
+   "resposta": "2.0.3 adds \"Remove from Continue Watching\" for the \"Up next\" items too (plus an option to turn them off). Please reopen if it doesn't work for you.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 323,
+   "resposta": "The crash in the \"check several sources at once\" step is fixed in 2.0.3, so you can turn that option back on. Please reopen if it crashes again.",
+   "confirmado": false,
+   "confirmacao": "o autor confirmou que sem o passo de varias fontes nao cai; nao testou a 2.0.3"
+  },
+  {
+   "numero": 330,
+   "resposta": "Thanks for the report! 2.0.3 includes a fix for the lag after repeated playback. Please update and reopen if it's still slow.",
+   "confirmado": false,
+   "confirmacao": "sem comentarios do autor"
+  },
+  {
+   "numero": 332,
+   "resposta": "Thanks for the report! 2.0.3 includes the startup fixes for these Android TV devices (and the poster glass outline fix). Please update and reopen if it still doesn't finish opening.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor; suspeita de mesma raiz do #266, sem log do aparelho"
+  },
+  {
+   "numero": 335,
+   "resposta": "2.0.3 raises the subtitle size up to 250%, uses a real bold Arabic font, and draws ASS subtitles at the screen's real resolution. Please reopen if anything is still off.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 339,
+   "resposta": "2.0.3 adds a \"Settings layout\" option (Settings > Appearance) with the List style, categories and options one below the other as before. Thanks for the feedback, and reopen if it's not what you wanted.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 340,
+   "resposta": "2.0.3 makes seeking and skipping quicker. Please try it and reopen if it still feels slow.",
+   "confirmado": false,
+   "confirmacao": "sem comentarios do autor"
+  },
+  {
+   "numero": 361,
+   "resposta": "Long poster URLs now come through whole in 2.0.3 (background, details, Saved and account). Please reopen if you still see broken posters.",
+   "confirmado": false,
+   "confirmacao": "sem comentarios do autor"
+  },
+  {
+   "numero": 363,
+   "resposta": "Fixed in 2.0.3: recommending an episode from Continue Watching now sends the show correctly. Please reopen if it still fails.",
+   "confirmado": false,
+   "confirmacao": "o autor mandou o log; nao confirmou o conserto"
+  },
+  {
+   "numero": 368,
+   "resposta": "2.0.3 makes search wait for you to stop typing (300 ms) and adds the option to hide add-ons in the TV guide. Please reopen if search is still slow on your TV.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor"
+  },
+  {
+   "numero": 370,
+   "resposta": "2.0.3 fixes Arabic plain-text subtitles showing boxes on the Samsung .wgt. If the timing is still off now that the text is readable, please reopen and tell us which title.",
+   "confirmado": false,
+   "confirmacao": "sem confirmacao do autor; o sincronismo pode continuar fora"
+  },
+  {
+   "numero": 384,
+   "resposta": "Fixed in 2.0.3: the embedded ASS subtitle index now covers the whole file, so the subtitles no longer vanish after the intro. Please update and reopen if they still do.",
+   "confirmado": false,
+   "confirmacao": "o autor mandou logs; nao confirmou na 2.0.3 (a queda de conexao que ele citou segue sem log proprio)"
+  }
+ ],
+ "nao_fechar_ainda": [
+  {
+   "numero": 266,
+   "motivo": "Varios relatos no mesmo fio: o QR do Shield foi confirmado (charles474), mas ele trouxe queixa nova de legenda diferente do Nuvio oficial e ha log de outro aparelho (Airtel Xtreme) sem leitura."
+  },
+  {
+   "numero": 286,
+   "motivo": "O autor disse \"a bit better\"; ainda ha trabalho de desempenho no Mali-400 em andamento (poster/GPU, ordenacao do sync)."
+  },
+  {
+   "numero": 302,
+   "motivo": "O autor segue dizendo que a TV ao vivo congela o filme (log 2TAVFN); a leitura nossa diz que e a rede, sem confirmacao dele."
+  },
+  {
+   "numero": 350,
+   "motivo": "Mesmo autor do #302: filme travando durante a TV ao vivo ainda sem resposta; fechar so depois de resolver esse ponto."
+  },
+  {
+   "numero": 312,
+   "motivo": "Nossa resposta publica disse que Dolby Vision em MKV vem LIGADO por padrao (e DESLIGADO); corrigir o texto antes de fechar."
+  },
+  {
+   "numero": 328,
+   "motivo": "Entra na secao 2.0.3.1 como suspeita da mesma raiz do #372 (lista de episodios do Nuvio primeiro); o commit da 2.0.3 nao cobre a causa provada."
+  },
+  {
+   "numero": 341,
+   "motivo": "SUSPEITA: nenhum commit cita o #341 e nao foi testado em Tizen 5; o pedido de crop de barras pretas segue como decisao aberta."
+  },
+  {
+   "numero": 369,
+   "motivo": "Relatorio de 9 itens; so 2 tem commit (tailandes e ocultar nao lancados), os outros 7 ficam abertos (alvo 2.0.4)."
+  },
+  {
+   "numero": 383,
+   "motivo": "SUSPEITA de que a 2.0.3 cobre o pedido (memoria por perfil/titulo); pedir ao autor que confirme que bate com o Nuvio antes de fechar."
+  },
+  {
+   "numero": 308,
+   "motivo": "Original resolvido na 2.0.3 (o autor disse \"got them working now\"), mas ele trouxe sintomas novos de desenho do ASS no mesmo fio; ver decisao para o dono."
+  },
+  {
+   "numero": 385,
+   "motivo": "Suspeitas abertas: verificacao paralela de fontes e vazamento de eventos do trailer no .tpk; o conserto da 2.0.3 e so a pausa da leitura lateral. Alvo 2.0.4."
+  },
+  {
+   "numero": 334,
+   "motivo": "Limite de P2P e limpeza na 2.0.3, mas a janela de streaming (armazenamento rotativo) so na 2.0.4; avisar na issue."
+  },
+  {
+   "numero": 360,
+   "motivo": "Mescla do sync na 2.0.3, mas o botao \"Sincronizar addons\" (e2f1eede) e 2.0.4."
+  },
+  {
+   "numero": 246,
+   "motivo": "precisa-log: nao confirmado que o conserto da 2.0.3 cobre o relato HEVC/anime; falta log do autor."
+  },
+  {
+   "numero": 280,
+   "motivo": "precisa-log: correcao generica de fileiras na 2.0.3, sem log do autor para confirmar."
+  },
+  {
+   "numero": 356,
+   "motivo": "precisa-log: leitura do log T5JF2G indica causa nao coberta pela 2.0.3; precisa de log novo."
   }
  ]
 }

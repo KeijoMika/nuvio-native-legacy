@@ -16,6 +16,14 @@ def valida():
     for r in R:
         if r['estado_github']=='aberta' and r['alvo']=='2.0.3' and r['status']=='aberta': sys.exit(f"ERRO: #{r['numero']} alvo 2.0.3 mas sem conserto (status aberta)")
         if r['estado_github']!='aberta' and 'alvo' in r: sys.exit(f"ERRO: #{r['numero']} fechada com alvo")
+    por={x['numero']:x for x in R}
+    fc=[x['numero'] for x in J.get('fechar_203',[])]; nf=[x['numero'] for x in J.get('nao_fechar_ainda',[])]
+    for n in fc+nf:
+        if n not in por: sys.exit(f"ERRO: #{n} nas listas de fechamento mas fora de itens")
+    for n in fc:
+        r=por[n]
+        if r['estado_github']!='aberta' or r['status']!='lancada': sys.exit(f"ERRO: #{n} em 'fechar com a 2.0.3' precisa estar aberta no GitHub e com status lancada")
+    if set(fc)&set(nf): sys.exit('ERRO: issue em fechar_203 e em nao_fechar_ainda: '+str(sorted(set(fc)&set(nf))))
 valida()
 def vk(t): return [int(p) for p in re.findall(r'\d+',t)]
 def grupo(r):
@@ -44,7 +52,7 @@ def notas(rs):
     ls=[f"- **#{r['numero']}**: {r['notas']}" for r in rs if r['notas']]
     return ('\n\nNotas:\n\n'+'\n'.join(ls)) if ls else ''
 L=[]
-L.append(f"# Mapa vivo das issues\n\nBase: `{J['base']}` (integracao/2.0.3). Atualizado em {J['atualizado_em']}. {len(R)} issues (abertas e fechadas) de iqui27/nuvio-native-legacy.\n")
+L.append(f"# Mapa vivo das issues\n\nBase: `{J['base']}` (integracao/2.0.3.1; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em {J['atualizado_em']}. {len(R)} issues (abertas e fechadas) de iqui27/nuvio-native-legacy.\n")
 L.append("""## Como atualizar
 
 1. Chegou issue nova, ou um conserto entrou numa branch/tag: edite **uma** entrada em `docs/issues/mapa.json` (procure por `"numero": N`) e rode `python3 docs/issues/mapa.py`, que valida e reescreve este arquivo. Sem o script, edite a linha equivalente aqui.
@@ -69,6 +77,16 @@ L.append("| Alvo | Qtd | Issues |\n|---|---|---|")
 for a in ALVOS:
     ns=sorted(r['numero'] for r in R if r['estado_github']=='aberta' and r['alvo']==a)
     L.append(f"| {a} | {len(ns)} | "+', '.join('#'+str(n) for n in ns)+" |")
+L.append("\n## Fechar com a 2.0.3\n\nIssues ABERTAS no GitHub cujo conserto saiu na v2.0.3 (commits contidos na tag). Cada uma tem uma resposta curta em inglês para colar; \"autor confirmou\" diz se quem abriu já testou. O dono decide quando fechar.\n")
+L.append("| # | Título | Autor confirmou? | Resposta curta (EN) |\n|---|---|---|---|")
+for x in J.get('fechar_203',[]):
+    r=next(i for i in R if i['numero']==x['numero'])
+    L.append(f"| [#{r['numero']}]({r['url']}) | {cell(r['titulo'])[:60]} | "+('SIM: ' if x['confirmado'] else 'NÃO: ')+f"{cell(x['confirmacao'])} | {cell(x['resposta'])} |")
+L.append("\n### Não fechar ainda\n")
+L.append("| # | Título | Motivo |\n|---|---|---|")
+for x in J.get('nao_fechar_ainda',[]):
+    r=next(i for i in R if i['numero']==x['numero'])
+    L.append(f"| [#{r['numero']}]({r['url']}) | {cell(r['titulo'])[:60]} | {cell(x['motivo'])} |")
 L.append("\n## Decisões para o dono\n")
 for k,d in enumerate(J['decisoes'],1):
     L.append(f"{k}. {d['pergunta']} Recomendação: {d['recomendacao']}")
@@ -80,7 +98,7 @@ rc=collections.Counter()
 for r in R:
     rel=r['release']
     if r['status']=='lancada': rc['lançadas em tag v* (qualquer versão)']+=1
-    elif rel.startswith('2.0.3'): rc['2.0.3 (integracao/2.0.3)']+=1
+    elif rel.startswith('2.0.3'): rc['2.0.3 lançada, com pendência']+=1
     elif rel.startswith('2.0.4'): rc['2.0.4 (branches)']+=1
     elif rel.startswith(('2.1','2.2','futuro')): rc['futuro (2.1/2.2)']+=1
     else: rc['sem release']+=1
@@ -90,7 +108,7 @@ rl=collections.Counter(r['release'] for r in R if r['status']=='lancada')
 L.append("\nLançadas por versão: "+', '.join(f"{k}: {v}" for k,v in sorted(rl.items(),key=lambda kv:vk(kv[0])))+".")
 ab=sum(1 for r in R if r['estado_github']=='aberta'); L.append(f"\nAbertas no GitHub: {ab}. Fechadas: {len(R)-ab}.")
 L.append(f"Abertas sem nenhum comentário nosso: {sum(1 for r in R if r['estado_github']=='aberta' and not r['ultima_resposta']['ultima_nossa'])}.\n")
-sec=[('203','## Sai na 2.0.3 (integracao/2.0.3, ainda não lançada)'),('204','## Planejado na 2.0.4 (com branch)'),('fut','## Futuro (2.1, 2.2, depois)'),('sem','## Aberta sem plano'),('ok','## Já lançado'),('fech','## Fechado sem conserto (por-desenho, fora-do-escopo, duplicada, respondida, sem resposta)')]
+sec=[('203','## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)'),('204','## Planejado na 2.0.4 (com branch)'),('fut','## Futuro (2.1, 2.2, depois)'),('sem','## Aberta sem plano'),('ok','## Já lançado'),('fech','## Fechado sem conserto (por-desenho, fora-do-escopo, duplicada, respondida, sem resposta)')]
 for k,t in sec:
     rs=G.get(k,[])
     L.append(f"{t}\n\n{len(rs)} issues.\n")
