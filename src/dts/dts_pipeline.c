@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <pthread.h>
 struct DtsPipeline { void *library, *native; const DtsAdapter *api; };
 static void *open_adapter(int major, const DtsAdapter **api) {
   char path[PATH_MAX], executable[PATH_MAX];
@@ -50,12 +51,37 @@ fail:
   fprintf(stderr, "[dts] adapter unavailable: %s (ABI or firmware probe failed)\n", path);
   *api = NULL; dlclose(library); return NULL;
 }
-int dts_pipeline_available(int major) {
+/* A resposta vale para o processo inteiro: o firmware nao muda com o app
+ * aberto e nenhum ajuste muda o que a TV carrega. Antes cada video sondava de
+ * novo, e no webOS 3 isso era um dlopen do webos4 que sempre falha
+ * (GLIBCXX_3.4.21) mais o do webos3 e o da libplayerAPIs. Uma posicao por
+ * pedido (0 = automatico, 3, 4+); -1 = ainda nao sondado. A trava cobre o
+ * caso de dois fios perguntarem ao mesmo tempo: o segundo espera a resposta
+ * do primeiro em vez de sondar junto. */
+static pthread_mutex_t sondaTrava = PTHREAD_MUTEX_INITIALIZER;
+static int sondaResposta[3] = {-1, -1, -1};
+static int sondaPosicao(int major) { return major == 0 ? 0 : major == 3 ? 1 : 2; }
+static int sondar(int major) {
   const DtsAdapter *api;
   void *lib = open_adapter(major, &api);
   if (!lib) return 0;
   printf("[dts] firmware adapter ready\n"); fflush(stdout);
   dlclose(lib); return 1;
+}
+int dts_pipeline_available(int major) {
+  int i, r;
+  if (major != 0 && major < 3) return 0;
+  i = sondaPosicao(major);
+  pthread_mutex_lock(&sondaTrava);
+  if (sondaResposta[i] < 0) sondaResposta[i] = sondar(major);
+  r = sondaResposta[i];
+  pthread_mutex_unlock(&sondaTrava);
+  return r;
+}
+void dts_pipeline_available_esquecer(void) {
+  pthread_mutex_lock(&sondaTrava);
+  for (int i = 0; i < 3; i++) sondaResposta[i] = -1;
+  pthread_mutex_unlock(&sondaTrava);
 }
 DtsPipeline *dts_pipeline_create(const char *app, const char *window, int major,
                                 void (*event)(void *, const char *), void *user) {

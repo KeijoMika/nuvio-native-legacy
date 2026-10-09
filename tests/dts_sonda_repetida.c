@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 4; i++) {
     if (!dts_pipeline_available(3)) { fprintf(stderr, "sonda %d recusada\n", i + 1); return 1; }
     usleep(50 * 1000);  /* o fio da lib falsa roda entre uma sonda e outra */
+    dts_pipeline_available_esquecer();  /* sem a resposta guardada: carrega de novo */
   }
   usleep(200 * 1000);
   printf("OK: 4 sondas, processo vivo\n");
