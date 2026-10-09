@@ -588,6 +588,7 @@ int         ajustes_nota_titulo(int fonte);
 int ajustes_aplicar_blob(const char *json);
 // #378: so os idiomas de legenda/audio da conta, para o blob que chega com os
 // ajustes locais protegidos (sync.c nao o aplica). Nao mexe em escolha local.
+// NULL esquece os idiomas da conta (troca de perfil/conta).
 void ajustes_idiomas_da_conta(const char *json);
 
 // AJUSTES POR PERFIL NESTA TV (ajustes-p<N>.txt). _guardar grava os ajustes que

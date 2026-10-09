@@ -3774,6 +3774,10 @@ static void idiomasDoBlob(const char *json, const char *fim) {
     { "preferred_audio_language",            ling_conta_audio    },
   };
   size_t k;
+  // #378 (revisao): o blob e o retrato INTEIRO da conta. Chave ausente = a
+  // conta nao tem idioma; sem limpar, o do perfil anterior ficava valendo.
+  // So a parte da conta: a escolha desta TV (ling_local_*) nao e tocada.
+  for (k = 0; k < sizeof M / sizeof *M; k++) M[k].aplica("");
   for (k = 0; k < sizeof M / sizeof *M; k++) {
     char bruto[80], texto[80];
     size_t n;
@@ -3795,7 +3799,9 @@ static void idiomasDoBlob(const char *json, const char *fim) {
 // #378: so os idiomas da conta, para o blob que chega com os ajustes locais
 // protegidos (sync.c nao o aplica). Ver a nota em sync.c.
 void ajustes_idiomas_da_conta(const char *json) {
-  if (json && *json) idiomasDoBlob(json, json + strlen(json));
+  if (json && *json) { idiomasDoBlob(json, json + strlen(json)); return; }
+  // NULL: troca de perfil/conta (sync_reaplicar_ajustes) — esquece os da conta.
+  ling_conta_legenda(""); ling_conta_legenda2(""); ling_conta_audio("");
 }
 
 int ajustes_aplicar_blob(const char *json) {

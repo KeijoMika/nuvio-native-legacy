@@ -417,6 +417,10 @@ static int cVistos, cBiblio, cColecoes, temAjustesPerfil, temCatHome;
 // objeto muito mais chaves do que este app conhece, e escolher um teto aqui e
 // escolher uma conta que nao vai funcionar.
 static char *ajustesBlob;
+// Sobe a cada blob novo em ajustesBlob. "Blob novo" era o PONTEIRO mudar, e o
+// do perfil seguinte, do mesmo tamanho, cai no endereco que
+// sync_reaplicar_ajustes acabou de soltar (#378, revisao).
+static unsigned ajustesBlobGeracao;
 static int  temAjustesBlob;
 static int  aplicarAjustes = 1;
 // Flag em disco: a pessoa ja mudou ajustes nesta TV depois do ultimo
@@ -1238,6 +1242,7 @@ static int puxarAjustesPerfil(const char *corpo) {
             novo[n] = 0;
             free(ajustesBlob);
             ajustesBlob = novo;
+            ajustesBlobGeracao++;
             temAjustesBlob = aplicarAjustes;
             ok = 1;
             printf("[sync] blob de ajustes: %d bytes\n", (int)n);
@@ -1303,6 +1308,7 @@ static void empurrarAjustes(void) {
     sujoAjustes = 0;
     free(ajustesBlob);
     ajustesBlob = mesclado;
+    ajustesBlobGeracao++;
     // NAO liga temAjustesBlob: o blob agora E o estado local: aplica-lo seria
     // trabalho para nao mudar nada.
     printf("[sync] ajustes desta TV guardados na conta\n");
@@ -1932,10 +1938,10 @@ void sync_passo(unsigned agoraMs) {
     aplicarAjustes = 0;   // daqui para frente, o que a pessoa mudar na TV fica
   }
   // #187: uma linha por blob novo (aplicado ou protegido) dizendo qual idioma
-  // a TV pede ao TMDB e o que a conta guarda. O ponteiro muda a cada pull.
-  { static const char *relatado;
-    if (ajustesBlob && ajustesBlob != relatado) {
-      relatado = ajustesBlob;
+  // a TV pede ao TMDB e o que a conta guarda. A geracao muda a cada blob.
+  { static unsigned relatado;
+    if (ajustesBlob && ajustesBlobGeracao != relatado) {
+      relatado = ajustesBlobGeracao;
       ajustes_tmdb_idioma_relatar(ajustesBlob);
       // #378: PROTEGIDO, o blob nao e aplicado — mas os idiomas de legenda e
       // audio da conta nao sao ajuste desta TV: sao o que "Da conta" quer
@@ -2163,6 +2169,9 @@ void sync_reaplicar_ajustes(void) {
   free(ajustesBlob);
   ajustesBlob = NULL;
   temAjustesBlob = 0;
+  // Os idiomas da conta eram do perfil velho: ate o blob do novo chegar,
+  // "Da conta" nao tem idioma (#378, revisao).
+  ajustes_idiomas_da_conta(NULL);
 }
 
 // A pendencia local de um perfil que nao esta ativo. So o perfil ativo usa
