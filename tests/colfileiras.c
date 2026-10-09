@@ -144,6 +144,7 @@ int   addons_aceita_id(int i, const char *t, const char *id) { (void)i; (void)t;
 const char *ajustes_tmdb_idioma(void)      { return "pt-BR"; }
 int   cat_acrescentar(const CatItem *i)    { (void)i; return -1; }
 void  cat_atualizar_item(int i, const CatItem *n) { (void)i; (void)n; }
+void  cat_atualizar_item_sem_abas(int i, const CatItem *n) { (void)i; (void)n; }
 // 2.0.3: fios da descoberta copiam e escrevem por partes (2b4234eb, 70acffaf).
 int   cat_copiar_item(int i, CatItem *s) { (void)i; (void)s; return 0; }
 int   cat_completar_sinopse(int i, const char *im, const char *si, const char *ti) { (void)i; (void)im; (void)si; (void)ti; return 0; }

@@ -6379,12 +6379,36 @@ static int epAlvoDe(int alvoItem, const char *id) {
 }
 static int epAlvo(int alvoItem) { return epAlvoDe(alvoItem, epAlvoId); }
 
+// AS ABAS DE TEMPORADA SAO AS DA LISTA QUE FOI PUBLICADA (#372). Eram lidas do
+// corpo da ficha (o do Nuvio) mesmo quando a lista que entrou era a de um
+// addon: Apothecary Diaries publicava 72 episodios do AIOMetadata nas
+// temporadas 1-3 com UMA aba (o Nuvio junta tudo na 1), e detail.c so mostra
+// episodio de temporada que tem aba. Cada publicacao regrava estas abas; quem
+// publica por ultimo e quem as define.
+typedef struct { int n, t[CAT_TEMP_MAX]; } TempsPub;
+
+static void temporadasDosEps(const CatEp *eps, int n, TempsPub *tp) {
+  int i, j, k;
+  tp->n = 0;
+  for (i = 0; i < n; i++) {
+    int t = eps[i].temporada;
+    if (t <= 0) continue;
+    for (j = 0; j < tp->n && tp->t[j] < t; j++) {}
+    if (j < tp->n && tp->t[j] == t) continue;
+    if (tp->n >= CAT_TEMP_MAX) continue;
+    for (k = tp->n; k > j; k--) tp->t[k] = tp->t[k - 1];
+    tp->t[j] = t;
+    tp->n++;
+  }
+}
+
 static int publicarEpisodios(const char *corpo, int alvoItem, const char *titulo,
-                             const char *sobre, int modo) {
+                             const char *sobre, int modo, TempsPub *tp) {
   CatEp *eps = malloc(sizeof(CatEp) * VIDEOS_MAX);
   int n = 0;
   if (!eps) return 0;
   n = parsearEpisodios(corpo, eps, VIDEOS_MAX);
+  if (tp && n) temporadasDosEps(eps, n, tp);
   if (sobre && n) {
     CatEp *o = malloc(sizeof(CatEp) * VIDEOS_MAX);
     if (o) {
@@ -6415,7 +6439,7 @@ static int publicarEpisodios(const char *corpo, int alvoItem, const char *titulo
 // se e menor, a do Cinemeta fica e leva nome e sinopse do addon nos episodios
 // que os dois tem. Devolve 1 quando o texto do addon entrou.
 static int episodiosDoAddon(int alvoItem, const char *serie, const char *titulo,
-                            const char *corpoCine, int nCine, int aplicar) {
+                            const char *corpoCine, int nCine, int aplicar, TempsPub *tp) {
   char *melhorCorpo = NULL;
   const char *melhorNome = "";
   int melhor = 0, i, n = addons_n(), usouTexto = 0;
@@ -6435,14 +6459,14 @@ static int episodiosDoAddon(int alvoItem, const char *serie, const char *titulo,
            titulo, melhorNome, melhor, nCine);
     fflush(stdout);
     publicarEpisodios(melhorCorpo, alvoItem, titulo, aplicar ? corpoCine : NULL,
-                      DESC_MESCLA_VAZIOS);
+                      DESC_MESCLA_VAZIOS, tp);
     arte_reserva_episodios(serie, melhorCorpo);
     usouTexto = aplicar;
   } else if (aplicar) {
     printf("[desc] %s: %s tem %d episodios contra %d do Cinemeta; nome e sinopse do addon\n",
            titulo, melhorNome, melhor, nCine);
     fflush(stdout);
-    publicarEpisodios(corpoCine, alvoItem, titulo, melhorCorpo, DESC_MESCLA_TEXTO);
+    publicarEpisodios(corpoCine, alvoItem, titulo, melhorCorpo, DESC_MESCLA_TEXTO, tp);
     usouTexto = 1;
   }
   free(melhorCorpo);
@@ -6862,7 +6886,7 @@ static void completarFicha(CatItem *d, const MetaFontes *mf, const char *tipo) {
 // Devolve 1 quando os episodios publicados sao de um addon (o TMDB, depois, so
 // preenche o que faltar neles).
 static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *serie,
-                               const MetaFontes *mf) {
+                               const MetaFontes *mf, TempsPub *tp) {
   int i, fonte = -1, outro = -1;
   for (i = 0; i < mf->n; i++)
     if (desc_meta_n_episodios(mf->corpo[i]) > 0) { if (fonte < 0) fonte = i; else if (outro < 0) outro = i; }
@@ -6871,7 +6895,7 @@ static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *ser
   // sentido quando o item tambem e do IMDb.
   if (outro >= 0 && !(idbase_e_imdb(serie) && mf->cine[outro])) outro = -1;
   publicarEpisodios(mf->corpo[fonte], alvoItem, titulo,
-                    outro >= 0 ? mf->corpo[outro] : NULL, DESC_MESCLA_VAZIOS);
+                    outro >= 0 ? mf->corpo[outro] : NULL, DESC_MESCLA_VAZIOS, tp);
   arte_reserva_episodios(serie, mf->corpo[fonte]);
   return !mf->cine[fonte];
 }
@@ -7005,15 +7029,16 @@ static void *buscarEps(void *u) {
   // Na ficha do catalogo o texto JA e o do addon; a preferencia nao tem o que trocar.
   int aplicar = !viaCatalogo && (externo || (idiomaNaoIngles() && !tmdbTraduz));
   int epsDoAddon = 0;
+  TempsPub tp = {0};
   if (!ehFilme && viaCatalogo)
-    epsDoAddon = episodiosDoCatalogo(alvoItem, it->titulo, serie, &mf);
+    epsDoAddon = episodiosDoCatalogo(alvoItem, it->titulo, serie, &mf, &tp);
   else if (!ehFilme) {
-    int nCine = publicarEpisodios(corpo, alvoItem, it->titulo, NULL, 0);
+    int nCine = publicarEpisodios(corpo, alvoItem, it->titulo, NULL, 0, &tp);
     // Temporada e data de cada episodio para a reserva do still: quando o
     // TMDB divide a serie em outras temporadas (One Piece), e por elas que o
     // still do TMDB e achado (artereserva.h).
     arte_reserva_episodios(serie, corpo);
-    epsDoAddon = episodiosDoAddon(alvoItem, serie, it->titulo, corpo, nCine, aplicar);
+    epsDoAddon = episodiosDoAddon(alvoItem, serie, it->titulo, corpo, nCine, aplicar, &tp);
   }
   // O MAPA DE EPISODIOS VISTOS NAO E PEDIDO AQUI, e essa linha existe para dizer
   // por que: extras.c JA baixa /shows/<id>/progress/watched ao abrir o titulo,
@@ -7069,7 +7094,12 @@ static void *buscarEps(void *u) {
         edit.nota = n10;
       } }
     js_texto(corpo, NULL, "country", edit.pais, sizeof edit.pais);
-    // Temporadas presentes, sem repetir e em ordem.
+    // Temporadas presentes, sem repetir e em ordem: as da lista publicada
+    // (TempsPub, #372); o corpo so quando nada foi publicado.
+    if (tp.n > 0) {
+      edit.nTemporadas = tp.n;
+      memcpy(edit.temporadas, tp.t, sizeof(int) * (size_t)tp.n);
+    } else
     { const char *v = js_array(corpo, NULL, "videos");
       edit.nTemporadas = 0;
       while (v) {
@@ -7177,7 +7207,12 @@ static void *buscarEps(void *u) {
           fotosDoElenco(&edit, tt, !strcmp(it->tipo, "series"), manter);
         } else { printf("[desc] elenco %s: id fora do IMDb, sem fotos (meta pedido como %s)\n", it->imdb, serie); fflush(stdout); }
       } }
-    if (alvoItem >= 0 && (alvoItem = epAlvoDe(alvoItem, meuId)) >= 0) cat_atualizar_item(alvoItem, &edit);
+    // AS ABAS NAO SAO DESTA CAUDA (#372). Ela roda com fioEpVivo ja solto: o
+    // mesmo titulo reaberto (bloco de episodios reciclado) publica outra lista
+    // com outras abas, e republicar o `edit` inteiro devolvia as abas velhas
+    // (T1 com 72 episodios em T1-T3: T2/T3 carregados e escondidos). As abas
+    // ficam as que estao no item; o resto (elenco, arte, texto) e desta cauda.
+    if (alvoItem >= 0 && (alvoItem = epAlvoDe(alvoItem, meuId)) >= 0) cat_atualizar_item_sem_abas(alvoItem, &edit);
     printf("[desc] %s: %d atores, dir='%s', %d temporadas\n",
            edit.titulo, edit.nElenco, edit.direcao, edit.nTemporadas);
     fflush(stdout);
