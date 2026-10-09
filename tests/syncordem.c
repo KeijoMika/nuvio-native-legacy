@@ -631,5 +631,3 @@ int main(int argc, char **argv) {
 void psparede_esquecer(void) {}
 
 __attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }
-__attribute__((weak)) int addons_perfil_em_uso(void) { return 0; }
-__attribute__((weak)) void addons_marcar_em_uso(int p) { (void)p; }

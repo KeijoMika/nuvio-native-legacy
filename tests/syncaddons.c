@@ -431,5 +431,3 @@ int main(int argc, char **argv) {
 void cat_historico_contexto(const char *u, int p) { (void)u; (void)p; }
 
 __attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }
-__attribute__((weak)) int addons_perfil_em_uso(void) { return 0; }
-__attribute__((weak)) void addons_marcar_em_uso(int p) { (void)p; }

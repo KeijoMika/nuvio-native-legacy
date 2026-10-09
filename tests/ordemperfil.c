@@ -34,7 +34,7 @@ static void guardar(void) {
   for (int i = 0; i < nAntes; i++) snprintf(antes[i], sizeof antes[i], "%s", fil_chave(i));
 }
 static int tagLista;   // what addons_marcar_da_conta would have recorded
-int addons_perfil_em_uso(void) { return tagLista; }
+int addons_perfil_da_lista(void) { return tagLista; }
 // Writers of the real path: the discovery pass, the home drawer and the
 // beyond-quota listing all end in these two functions.
 static void passada(const char *prefixo) {
@@ -139,17 +139,18 @@ int main(void) {
   FilPassada p5 = fil_passada_ler();
   fil_registrar_se_couber_de(&p5, "addonS_movie_sug", "s", "S", "movie");
   fil_gravar_registro();
-  assert(fil_oculta("addonS_movie_sug"));          // a suggestion: hidden
+  int e0 = fil_estado_chave("addonS_movie_sug");   // a suggestion
+  assert(e0 >= 0);
   fil_definir_perfil(4); tagLista = 4;
   FilPassada p4 = fil_passada_ler();
   fil_definir_perfil(5); tagLista = 5;
   fil_registrar_de(&p4, "addonS_movie_sug", "s", "S", "movie", -1);
-  assert(fil_oculta("addonS_movie_sug"));          // not promoted by the old pass
+  assert(fil_estado_chave("addonS_movie_sug") == e0);   // not promoted by the old pass
   fil_registrar_de(&p5, "addonS_movie_sug", "s", "S", "movie", -1);
-  assert(fil_oculta("addonS_movie_sug"));          // p5 is stale too (switched away)
+  assert(fil_estado_chave("addonS_movie_sug") == e0);   // p5 is stale too (switched away)
   FilPassada p5b = fil_passada_ler();
   fil_registrar_de(&p5b, "addonS_movie_sug", "s", "S", "movie", -1);
-  assert(!fil_oculta("addonS_movie_sug"));         // current pass promotes it
+  assert(fil_estado_chave("addonS_movie_sug") != e0);   // current pass promotes it
 
   // Round 4 / P2: logout, then selecting the SAME profile again, invalidates
   // snapshots; tag 0 after logout must not validate an old one.

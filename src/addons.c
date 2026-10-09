@@ -271,21 +271,12 @@ static int pedidoCoube(int i, int w, size_t tam) {
 // --- leitura do arquivo de configuracao -------------------------------------
 
 // Perfil cuja conta mandou a lista atual; 0 = pacote ou nada. Ver addons.h.
-// Lidos pela descoberta (outro fio) e escritos pelo sync: atomicos.
-// perfilLista: a CONTA deste perfil mandou a lista (poda de fileiras).
-// perfilUso: a lista em memoria e a que este perfil USA — igual a perfilLista,
-// exceto quando a conta respondeu VAZIO e o app manteve a lista local (#392).
-static int perfilLista, perfilUso;
+// Lida pela descoberta (outro fio) e escrita pelo sync: atomica.
+static int perfilLista;
 void addons_marcar_da_conta(int perfil) {
-  int p = perfil > 0 ? perfil : 0;
-  __atomic_store_n(&perfilLista, p, __ATOMIC_SEQ_CST);
-  __atomic_store_n(&perfilUso, p, __ATOMIC_SEQ_CST);
-}
-void addons_marcar_em_uso(int perfil) {
-  __atomic_store_n(&perfilUso, perfil > 0 ? perfil : 0, __ATOMIC_SEQ_CST);
+  __atomic_store_n(&perfilLista, perfil > 0 ? perfil : 0, __ATOMIC_SEQ_CST);
 }
 int  addons_perfil_da_lista(void) { return __atomic_load_n(&perfilLista, __ATOMIC_SEQ_CST); }
-int  addons_perfil_em_uso(void) { return __atomic_load_n(&perfilUso, __ATOMIC_SEQ_CST); }
 
 int addons_carregar(const char *dirArte) {
   // A linha e nome<TAB>url<TAB>colunas: a URL inteira mais folga para o resto.

@@ -772,13 +772,17 @@ int fil_addon_novo(const char *id, const char *base) {
 // Generation of the profile that owns linhas[]; bumped on every real switch so
 // callers holding per-profile snapshots (colfileiras.c) can tell they are stale.
 static unsigned perfilGeracao;
+// #392: geracao das FOTOS de passada. Sobe a cada selecao de perfil (inclusive o
+// mesmo indice) e no logout; perfilGeracao so sobe na troca real, porque
+// colfileiras.c a usa para saber de quem sao as colecoes em memoria.
+static unsigned passadaGeracao;
 unsigned fil_perfil_geracao(void) {
   unsigned g; pthread_mutex_lock(&trava); g = perfilGeracao; pthread_mutex_unlock(&trava); return g;
 }
 
 // Perfil cuja conta mandou a lista de addons de agora (addons.c). Fraca para os
 // testes que compilam este arquivo sem addons.c: la vale 0 (pacote), que passa.
-__attribute__((weak)) int addons_perfil_em_uso(void) { return 0; }
+__attribute__((weak)) int addons_perfil_da_lista(void) { return 0; }
 
 // Com o mutex: a lista (tag) e a geracao pertencem a este perfil das fileiras.
 static int listaValidaLocked(int perfilLista) {
@@ -788,17 +792,17 @@ static int listaValidaLocked(int perfilLista) {
 FilPassada fil_passada_ler(void) {
   FilPassada p;
   pthread_mutex_lock(&trava);
-  p.geracao = perfilGeracao;
+  p.geracao = passadaGeracao;
   pthread_mutex_unlock(&trava);
-  p.perfilLista = addons_perfil_em_uso();
+  p.perfilLista = addons_perfil_da_lista();
   return p;
 }
 
 int fil_passada_valida(const FilPassada *p) {
   int r;
   pthread_mutex_lock(&trava);
-  r = p->geracao == perfilGeracao && listaValidaLocked(p->perfilLista) &&
-      listaValidaLocked(addons_perfil_em_uso());
+  r = p->geracao == passadaGeracao && listaValidaLocked(p->perfilLista) &&
+      listaValidaLocked(addons_perfil_da_lista());
   pthread_mutex_unlock(&trava);
   return r;
 }
@@ -814,6 +818,7 @@ int fil_lista_e_deste_perfil(int perfilDaLista) {
 void fil_definir_perfil(int p) {
   pthread_mutex_lock(&trava);
   if (p < 0) p = 0;
+  passadaGeracao++;   // toda selecao, mesmo a do mesmo perfil
   if (p != perfil) {
     // #294: a pending registry write belongs to the profile that is leaving.
     // Flush it now; left pending, the next fil_gravar_registro wrote it under
@@ -847,19 +852,28 @@ static void registrar(const FilPassada *passada, const char *chave,
   if (!chave || !chave[0]) return;
   pthread_mutex_lock(&trava);
   garantir();
+  // #392: FOTO VELHA NAO MUDA NADA, nem chave que ja existe (promover sugestao,
+  // sujar o registro, limpar semAddon).
+  if (passada && (passada->geracao != passadaGeracao ||
+                  !listaValidaLocked(passada->perfilLista))) {
+    pthread_mutex_unlock(&trava);
+    return;
+  }
   i = achar(chave);
   // #392: CHAVE NOVA DE CATALOGO NAO ENTRA ENQUANTO A LISTA DE ADDONS AINDA E DO
   // PERFIL QUE SAIU. Vale para todo escritor (descoberta, home, fora da cota):
   // os catalogos dela despejariam as fileiras deste perfil e entrariam no fim.
   // Fileira do app e grupo de colecao nao dependem da lista e passam. Perfil
   // sem lista na conta (addons_marcar_da_conta so roda com lista nao vazia)
-  // fica sem catalogo novo ate ela chegar: pular e o lado seguro.
+  // fica sem catalogo novo ate ela chegar: pular e o lado seguro. Resposta
+  // VAZIA da conta (a lista local fica em memoria, e e a de OUTRO perfil)
+  // tambem: marcar essa lista como do perfil novo inseria os catalogos do
+  // outro na ordem dele e despejava as dele no teto; quem decide e uma lista
+  // de verdade (addons_marcar_da_conta), que tambem refaz a passada.
   if (i < 0) {
     int o = fil_origem_de(chave);
     if (o != FIL_ORIGEM_APP && o != FIL_ORIGEM_COLECAO &&
-        (!listaValidaLocked(addons_perfil_em_uso()) ||
-         (passada && (passada->geracao != perfilGeracao ||
-                      !listaValidaLocked(passada->perfilLista))))) {
+        !listaValidaLocked(addons_perfil_da_lista())) {
       pthread_mutex_unlock(&trava);
       return;
     }
@@ -1420,7 +1434,7 @@ void fil_espelhar_ordem(const char *const *chaves,
     // perfil; app e colecao nao dependem dela.
     { int o = fil_origem_de(chaves[i]);
       if (o != FIL_ORIGEM_APP && o != FIL_ORIGEM_COLECAO &&
-          !listaValidaLocked(addons_perfil_em_uso())) continue; }
+          !listaValidaLocked(addons_perfil_da_lista())) continue; }
     if (nLinhas < FIL_MAX) {
       v = nLinhas++;
     } else {
@@ -1711,6 +1725,7 @@ int fil_unir(const char *const *chaves, int n, int *saida, int max) {
 
 void fil_esquecer(void) {
   pthread_mutex_lock(&trava);
+  passadaGeracao++;   // #392: fotos de antes do logout nao valem
   nLinhas = 0;
   ordemLocal = 0;
   donoAuto[0] = 0;
