@@ -1,5 +1,6 @@
 #include "app_id.h"
 #include "video.h"
+#include "webosver.h"
 #include "audioinfo.h"
 #include "esmaecer.h"
 #include "video_escala.h"
@@ -712,27 +713,18 @@ static void esperar(int ms) { struct timespec t; t.tv_sec = ms / 1000;
 // registro 6311 (LG C4 atualizada para webOS 11.2) era o chute "sem ACB => 5"
 // e nao a versao: a TV do relato e as que tocam saiam iguais no log, e a
 // unica diferenca conhecida — o firmware — nao aparecia em lugar nenhum.
-static char releaseLinha[128];
+// Quem decide a versao e o webosver.c (webos_release do nyx, depois o
+// starfish-release): a TV de 2017 (webOS 3.9) so tem o nyx e antes caia no 4
+// daqui. Desconhecida continua valendo o chute de sempre (5 com a libAcbAPI
+// ausente, senao 4), guardado no primeiro uso.
 static int webosMaior(void) {
   static int v, lido;
   if (v) return v;
-  { FILE *f = fopen("/etc/starfish-release", "r");
-    if (f) {
-      char linha[256];
-      while (fgets(linha, sizeof linha, f)) {
-        const char *r = strstr(linha, "release ");
-        if (!releaseLinha[0]) {
-          size_t n = strcspn(linha, "\r\n");
-          snprintf(releaseLinha, sizeof releaseLinha, "%.*s", (int)n, linha);
-        }
-        if (r && sscanf(r + 8, "%d", &v) == 1 && v > 0) break;
-        v = 0;
-      }
-      fclose(f);
-    } }
+  v = nv_webos_major();
   if (!lido) {
     lido = 1;
-    printf("[video] starfish-release: %s\n", releaseLinha[0] ? releaseLinha : "(sem arquivo)");
+    printf("[video] starfish-release: %s\n", nv_webos_starfish_linha()[0] ? nv_webos_starfish_linha() : "(sem arquivo)");
+    printf("[video] webos major=%d fonte=%s\n", v, nv_webos_fonte());
     fflush(stdout);
   }
   if (!v) v = expWin[0] ? 5 : 4;
