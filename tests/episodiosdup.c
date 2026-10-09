@@ -592,6 +592,30 @@ int main(void) {
         assert(!strcmp(cat_episodio(0, i)->nome, esperado));
       }
       puts("ok  catalogo primeiro: nome do Cinemeta entra mesmo com outra fonte no meio");
+      // LISTA DE ARQUIVOS QUE FICOU NAO E "TEXTO DO ADDON": o retorno liga
+      // DESC_EPT_SO_VAZIO em buscarEps e o TMDB deixaria de traduzir os nomes,
+      // prendendo os 8 nomes de arquivo que sobraram. Como em episodiosDoAddon,
+      // devolve 0. (Chamada direta: o que se mede e o retorno.)
+      {
+        MetaFontes m3;
+        TempsPub tp3 = {0};
+        int r;
+        memset(&m3, 0, sizeof m3);
+        m3.corpo[0] = maior; m3.corpo[1] = dez; m3.corpo[2] = doze;
+        m3.cine[2] = 1; m3.n = 3;
+        r = episodiosDoCatalogo(0, "Serie", "tt13293588", &m3, &tp3);
+        printf("lista de arquivos que ficou: retorno %d\n", r);
+        assert(cat_n_episodios(0) == 20);
+        assert(r == 0);
+        // A base de verdade continua contando como episodios do addon.
+        memset(&m3, 0, sizeof m3);
+        memset(&tp3, 0, sizeof tp3);
+        m3.corpo[0] = dez; m3.corpo[1] = doze; m3.cine[1] = 1; m3.n = 2;
+        r = episodiosDoCatalogo(0, "Serie", "tt13293588", &m3, &tp3);
+        assert(cat_n_episodios(0) == 10 && r == 1);
+        assert(!strcmp(cat_episodio(0, 0)->nome, "D1"));
+      }
+      puts("ok  catalogo primeiro: lista de arquivos que ficou nao trava a traducao do TMDB");
     }
     nFake = 0; nRotas = 0;
     addonMeta = 0; cineSerie = NULL; addonResp = NULL;
