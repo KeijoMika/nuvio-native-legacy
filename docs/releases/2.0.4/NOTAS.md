@@ -8,6 +8,7 @@
 - **Series no longer show the same episode on every card.** When a stream add-on answered the episode request with its list of torrent files (thousands of entries repeating the same few episodes), that list replaced the real one: every card read "Episode 1" with "1200 of 1200 watched" (2.0.2), or the series was left with only a handful of episodes (2.0.3). Add-on lists are now compared by distinct episodes, and a file list is only used when it really knows more episodes than the catalog (the catalog's episode names are kept where both have them). This also covers series opened from that add-on's own catalog.
 - 2017 LG TVs (webOS 3.9) are no longer treated as webOS 4: the version now comes from the TV's own `webos_release` (the same one the log's `[tv]` line shows), so Dolby Vision in MKV, which needs webOS 4, stays off on them.
 - Switching profile and coming back no longer rearranges the Home rows (collections, catalogs, Continue Watching): the other profile's addon catalogs are no longer registered into the profile you return to (#392).
+- **Custom poster URL template is saved again** (#390). Long templates (up to 400 characters) and API keys with uppercase letters are kept as typed; before, anything past 299 characters was cut and the key was lowercased, so the template was rejected without saving. A template whose finished address could not fit is refused when you save it, with a message.
 
 ## Notes
 
