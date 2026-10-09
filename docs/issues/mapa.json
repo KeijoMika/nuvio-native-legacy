@@ -7600,7 +7600,7 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "responder / pedir log (sem resposta humana)",
-   "notas": "Os 2 comentários nossos na issue são relatórios de triagem automática, não resposta ao autor.",
+   "notas": "Os 2 comentários nossos na issue são relatórios de triagem automática, não resposta ao autor. REDDIT hboinay 09/10 (itens 9 e 10): (a) tocar uma vez por título e sessão é DECISÃO DO DONO de 30/09 (home.c:460-466, heroTrailerJaTocou em home.c:4588); (b) o trailer iniciado com o foco num cartaz (Trailer do cartaz em foco) abre sempre mudo, o som só vale com o foco no destaque (home.c:4646 focoHero && ajustes_trailer_hero_som()), comentário \"o do cartaz em foco segue mudo\". Falta decidir se o som segue o ajuste também no cartaz.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/353",
    "criada_em": "2026-10-08",
    "alvo": "2.0.4"
@@ -7668,7 +7668,7 @@
     "ultima_nossa": "2026-10-08"
    },
    "proximo_passo": "ler o log T5JF2G (09/10) e confirmar a leitura abaixo; se for isso, pedir novo log na 2.0.3",
-   "notas": "d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config \"quanto à frente\" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo \"a seguir da conta\" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar). COMMITS vs v2.0.3 (09/10): d47a78c8, 9af09e0c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.",
+   "notas": "d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config \"quanto à frente\" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo \"a seguir da conta\" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar). COMMITS vs v2.0.3 (09/10): d47a78c8, 9af09e0c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor. REDDIT hboinay 09/10 (item 5, \"próximas temporadas apareceram uma vez e sumiram\"): mesmo sintoma; pedir o log da 2.0.3.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/356",
    "criada_em": "2026-10-08",
    "alvo": "2.0.3"
@@ -8435,8 +8435,8 @@
     "6b3aaae1 (Shield 318.3: card do Continuar com o still do episódio; filme assistido diz Reproduzir, 2.0.3)",
     "eabe3afd/b03aa2f0/35421d1a/73c4ab4c (#266/#332: curl fora do fio principal, /dev/urandom, login por HttpURLConnection, 2.0.3)"
    ],
-   "proximo_passo": "achar o texto original do relatório e mapear os 22 itens um a um",
-   "notas": "O texto dos 22 itens NÃO está no repositório nem nas issues. Só três grupos de commits citam \"Shield\". Mapeamento item a item: desconhecido."
+   "proximo_passo": "mapeado em 09/10: o relatório de 20 itens do hboinay (provável versão do de 22) está nas entradas reddit-hboinay-NN abaixo; postar o rascunho docs/issues/rascunhos/reddit-hboinay-2026-10-09.md",
+   "notas": "O texto dos 22 itens NÃO está no repositório nem nas issues. Só três grupos de commits citam \"Shield\". Mapeamento item a item: desconhecido. ATUALIZAÇÃO 09/10: chegou um relatório de 20 itens do mesmo autor e da mesma build (teste-318.3); cada item virou uma entrada reddit-hboinay-NN (ou uma nota em #353/#356). Falta confirmar se é o mesmo relatório dos 22."
   },
   {
    "id": "android-9",
@@ -8474,6 +8474,181 @@
    "conserto": [],
    "proximo_passo": "perguntar ao dono o que é",
    "notas": "Nada encontrado em commits, docs, notas de release ou issues (buscas por \"80 GB\"/\"80GB\"). Não preencher sem a fonte."
+  },
+  {
+   "id": "reddit-hboinay-01",
+   "titulo": "Home: mais de 40 fileiras e ordem dos catálogos (hboinay item 1)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "alvo sugerido 2.0.4 (teto) / sem alvo (ordem)",
+   "conserto": [
+    "8e058817 (agente/204-fileiras-android, não integrado): Android com fileiras ilimitadas, teto 200"
+   ],
+   "proximo_passo": "teto: integrar agente/204-fileiras-android na 2.0.4 (já no roadmap); ordem: pedir log",
+   "notas": "TETO por desenho: CAT_FIL_MAX 40 (catalogo.h:394) e FIL_LIMITE_MAX 40 (fileiras.h:60); a branch 204-fileiras-android o sobe para 200 só no Android. ORDEM: não há como afirmar sem log; ligação provável com #358 (catálogos que a Home move para \"Fora da Home\", 29c640b7 em agente/204-conta-catalogos). Pedir o log para ver a ordem da conta contra a da Home. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-03",
+   "titulo": "Continuar com fonte Nuvio mostra 5-6 itens e depois 1; a conta tem 30 (hboinay item 3)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "2.0.3 (parcial, 507d3a6b); teto alvo sugerido 2.0.4",
+   "conserto": [
+    "507d3a6b (v2.0.3): fonte Conta semeia o \"a seguir\" mesmo com Trakt/Simkl, descarta vistos velhos"
+   ],
+   "proximo_passo": "pedir log da 2.0.3 (Ajustes > Sobre > Enviar log)",
+   "notas": "O teto de cada fonte é CONT_MAX 12 (descoberta.c:2605), então 30 na conta nunca aparecem inteiros, e o \"a seguir\" ainda passa por filtros (episódio visto em outra fonte, série parada há mais de 60 dias com Trakt/Simkl vinculado, descoberta.c). 5-6 e depois 1 pode ser o filtro ou a lista de vistos da conta ainda não puxada (mesma suspeita do #356). Sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-04",
+   "titulo": "Com Trakt e Simkl vinculados, Continuar mostra vistos antigos mesmo com fonte Nuvio (hboinay item 4)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "2.0.3 (parcial, 507d3a6b + 005b3095 + c0f4054c)",
+   "conserto": [
+    "507d3a6b (v2.0.3)",
+    "005b3095 (v2.0.3): desmarcar ganha",
+    "c0f4054c (v2.0.3): a seguir recua para o primeiro episódio desmarcado"
+   ],
+   "proximo_passo": "pedir log da 2.0.3 com a fonte em Conta Nuvio",
+   "notas": "Na leitura do código a fonte Conta não consulta Trakt nem Simkl (descoberta.c: querTrakt só em Trakt/Todas, querSimkl idem), então os \"vistos antigos\" teriam de vir de continuarLocal ou do \"a seguir\" da conta; a 2.0.3 descarta o visto em outra fonte e o parado há mais de 60 dias. Não reproduzido. Sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-06",
+   "titulo": "Biblioteca: Trakt 213 e Simkl 483 de 1600+ (hboinay item 6)",
+   "plataforma": "Android",
+   "status": "aberta",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [
+    "d30344ab (v2.0.3): watchlist do Trakt paginada",
+    "96ccdab1 (v2.0.3): tetos do Android voltam a 400/300",
+    "7b9e641a (órfão, nenhuma branch): reverte o 96ccdab1 e devolve os tetos 2000/1000 no Android"
+   ],
+   "proximo_passo": "decidir o 7b9e641a: reaproveitá-lo na 2.0.4 (Android com teto 2000 Trakt e 1000 Simkl) ou manter o teto de hoje",
+   "notas": "Na 2.0.3 o Trakt pagina (?page=&limit=500, trakt.c:1873-1960) mas para em TRAKT_LISTA_MAX 400 (trakt.h:133) em todas as plataformas, e o Simkl em SIMKL_PTW_MAX 300 (simkl.h): quem tem 1600+ passa a ver 400/300 em vez de 213/483. O teto maior só existe no commit órfão 7b9e641a. O Simkl não pagina (all-items numa resposta), então o teto é só memória. Nota da 2.0.3 diz \"até 400 itens\" e vale para todas as TVs. Relacionado: #393. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-07",
+   "titulo": "Selo de assistido não aparece em séries nos cartazes (só em filmes) (hboinay item 7)",
+   "plataforma": "Android",
+   "status": "aberta",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [],
+   "proximo_passo": "ler o /sync/watched/shows do Trakt uma vez (como o mapa de filmes vistos em trakt.c:1317) para marcar as séries inteiras",
+   "notas": "cat_visto (catalogo.c:432) devolve 0 para série sem histórico; o histórico da série só é escrito quando a PÁGINA do título é aberta (extras.c:586-597, contadores de /shows/<id>/progress/watched) ou ao marcar à mão. Cartaz de série em fileira não tem selo antes disso. Vale para todas as plataformas. #352 (agente/204-biblioteca-visto, 402e2438) só leva o selo para a Biblioteca. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-08",
+   "titulo": "Trailers do destaque e da ficha começam pequenos e depois enchem a tela (hboinay item 8)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [],
+   "proximo_passo": "reproduzir na Shield com o log de trailer; ver a ordem posição/recorte no NvPlayer.kt",
+   "notas": "No Android o Kotlin posiciona o recorte (video_android.c:9, video_recorte_fonte=1) e trailer_mostra_video (trailer.c:467) só espera o recorte no .tpk; no Android o plano aparece assim que toca. O pedido é esconder até o recorte assentar, como o .tpk faz (trailer.h:54-60). Hipótese, não medida. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-11",
+   "titulo": "Cartazes escuros demais; pede desligar o brilho animado (hboinay item 11)",
+   "plataforma": "Android",
+   "status": "aberta",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [],
+   "proximo_passo": "dois ajustes pequenos: luz do foco (varredura) liga/desliga e força do véu do cartaz",
+   "notas": "A varredura de luz no foco (revela_varre, revela.h:83, home.c:5426) só some com \"Animações reduzidas\" global (anim_politica_reduzida), que também tira todo o resto do movimento; não há ajuste próprio. O escurecimento vem do véu sobre a arte (veusDoCard, home.c:4844) e do efeito de profundidade (AJ_PROF_*), este com liga/desliga em Ajustes. Contorno de hoje: Animações reduzidas e Efeito de profundidade desligados. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-12",
+   "titulo": "Selos: URL do manifesto diz \"isso não é um JSON de selos\"; não usa os selos da conta (hboinay item 12)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [],
+   "proximo_passo": "pedir a URL do manifesto e o log; testar o JSON no selospacote_adicionar",
+   "notas": "A mensagem sai de SELOS_ERR_JSON (ajustes.c:3047; selospacote.c:639-648): corpo que não é objeto/string JSON ou resposta maior que 4 MB. Os selos da conta só vêm de features.stream_badge_settings.stream_badge_rules no blob de ajustes do perfil (selospacote.c:588-612): se a conta não tem esse campo, nada é usado. Sem a URL e o log não dá para saber qual dos dois é. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-13",
+   "titulo": "Só um servidor Jellyfin e um Emby por perfil (hboinay item 13)",
+   "plataforma": "Android",
+   "status": "por-desenho",
+   "release": "alvo sugerido 2.1",
+   "conserto": [],
+   "proximo_passo": "avaliar vários servidores por tipo (hoje instância 0 = Jellyfin, 1 = Emby, mais Plex)",
+   "notas": "Por desenho: um servidor por tipo e por perfil (jellyfin.h:5-10, JfInst; token em jellyfin-p<N>.txt). Vários exigem lista de instâncias, ids com namespace por servidor (jfid.h) e Home com mais fileiras (SRV_FIL_MAX, servidores.h). Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-14",
+   "titulo": "Jellyfin/Emby fora das listas de fontes: add-ons permitidos, ordem, lista (hboinay item 14)",
+   "plataforma": "Android",
+   "status": "aberta",
+   "release": "alvo sugerido 2.1",
+   "conserto": [],
+   "proximo_passo": "decidir como o servidor pessoal entra em fonteregra (permitidos/ordem)",
+   "notas": "Para título de servidor pessoal a lista de fontes é só a do servidor (addons.c:493-510, servidores_fontes_colher + stream_definir_lista) e as regras de add-on permitido e ordem (fonteregra.h) só conhecem add-ons/plugins. O servidor vem sempre primeiro por desenho (9025bfa9). Confirmar com o autor o que ele esperava ver. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-16",
+   "titulo": "Estilo da legenda só para a segunda legenda nos Ajustes; sincronia automática só por áudio (hboinay item 16)",
+   "plataforma": "Android",
+   "status": "aberta",
+   "release": "alvo sugerido 2.0.4 (estilo)",
+   "conserto": [],
+   "proximo_passo": "estilo da principal em Ajustes; perguntar quais legendas ele testou na sincronia",
+   "notas": "Ajustes tem Tamanho/Cor/Fundo/Borda só da segunda legenda (ajustes.c:1268-1272; a dica diz que a da principal \"é definida no player\"). Sincronia: além do áudio (AJ \"Sincronia por áudio\") existe o AutoSync por texto (legsync.c/autosync.c, em v2.0.3), mas só em legenda EXTERNA, tendo como referência a faixa de texto do MKV (legsync.h:11-16); legenda embutida ou nativa fica indisponível. Pode não ser bug, e sim limite. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-17",
+   "titulo": "Só uma conta Xtream por perfil (hboinay item 17)",
+   "plataforma": "Android",
+   "status": "por-desenho",
+   "release": "alvo sugerido 2.1",
+   "conserto": [],
+   "proximo_passo": "avaliar várias contas (lista por perfil, canais com id por conta)",
+   "notas": "Por desenho: um servidor, usuário e senha por perfil (xtream.h, arquivo xtream-p<N>.txt; id \"xtream:<stream_id>\" sem conta). Várias contas pedem mudar o id do canal e o cadastro nos Ajustes. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-18",
+   "titulo": "IPTV sem VOD/séries do Xtream (hboinay item 18)",
+   "plataforma": "Android",
+   "status": "por-desenho",
+   "release": "futuro",
+   "conserto": [],
+   "proximo_passo": "registrar como pedido; não planejado",
+   "notas": "O módulo só lê get_live_categories e get_live_streams (xtream.c, xtream.h); não existe get_vod_* nem get_series. Seria um módulo novo (catálogo + ficha + resolução de URL /movie/ e /series/). Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-19",
+   "titulo": "TV ao vivo só com canais do Reino Unido e EUA, de dezenas de países (hboinay item 19)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "2.0.3 (provável, 5413db8a)",
+   "conserto": [
+    "5413db8a (v2.0.3): guia diz \"Mostrando N de M canais\"; Android guarda 3000 canais e 128 categorias",
+    "45ae240c (teste)"
+   ],
+   "proximo_passo": "pedir para atualizar para a 2.0.3 e, se persistir, o log",
+   "notas": "Antes da 2.0.3 o guia cortava em 900 canais e 48 categorias sem avisar e sumia categorias inteiras (45ae240c); com a lista ordenada isso deixaria só os primeiros países. Hipótese forte, sem confirmação do autor. Se persistir na 2.0.3, a fonte passa a ser o catálogo do add-on (Ajustes > Guia, canais por add-on, #283). Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-20",
+   "titulo": "TV ao vivo com fps variando entre 24 e 50 (33, 34, 48) (hboinay item 20)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [],
+   "proximo_passo": "pedir log com o medidor de desempenho ligado durante um canal ao vivo",
+   "notas": "Sem leitura de código que explique. O medidor (AJ_MEDIDOR) mede quadros da interface, não do vídeo; o vídeo ao vivo roda no Media3 (video_android.c). Pode ser decodificação, rede ou troca de taxa da tela. Só dá para dizer com o log. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
+  },
+  {
+   "id": "reddit-hboinay-21",
+   "titulo": "Canais piscando em verde na TV ao vivo (hboinay item 21)",
+   "plataforma": "Android",
+   "status": "precisa-log",
+   "release": "alvo sugerido 2.0.4",
+   "conserto": [],
+   "proximo_passo": "pedir log com o canal que pisca e a saída de vídeo da Shield",
+   "notas": "Tela verde em vídeo costuma ser decodificador/superfície (buffer YUV sem quadro). No Android a superfície é recriada em partida HDR e mudança de aspecto (notas da 2.0.3). Não localizado no código; sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026."
   }
  ],
  "base_roadmap": "21077ab5",

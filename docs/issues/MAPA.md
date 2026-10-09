@@ -222,7 +222,7 @@ Notas:
 - **#280**: SUSPEITA: único commit que cita #280 é 3c51d5b7 (remontagens da descoberta, 2.0.3); a correção é genérica de fileiras. ALVO 2.0.3 = SUSPEITA: o conserto está nas NOTAS mas não está confirmado que cobre o relato; falta log do autor. COMMITS vs v2.0.3 (09/10): 3c51d5b7 estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.
 - **#334**: Limite de P2P e limpeza integrados em 2.0.3 (d3ca720b, c3e19d00, merge 891a72a9 de agente/203-334b; agente/203-334 tem os mesmos dois commits com outro hash). Só a janela de streaming ("armazenamento rotativo", prometido como planejado: d453fd1c e 8e09dad2 em agente/203-334-janela) NÃO está integrada; alvo 2.0.4 para essa parte. COMMITS vs v2.0.3 (09/10): dentro da tag: c3e19d00, d3ca720b; fora: 8e09dad2, d453fd1c.
 - **#344**: CAUSA PROVADA (09/10) por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, EpgProg ps[24] enquanto epg_faixa/xtepg_faixa devolvem o total). Existe desde a v1.7.0, continua na 2.0.3 e vale para todas as plataformas com o guia. Conserto em agente/2031-guiabusca, alvo 2.0.3.1. Primeira rodada integrada em integracao/2.0.3.1 (merge c9af64b1; teste 9d78c75a falhava com ASan, conserto 8dd273f3); ainda sem tag v*.
-- **#356**: d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config "quanto à frente" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo "a seguir da conta" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar). COMMITS vs v2.0.3 (09/10): d47a78c8, 9af09e0c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.
+- **#356**: d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config "quanto à frente" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo "a seguir da conta" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar). COMMITS vs v2.0.3 (09/10): d47a78c8, 9af09e0c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor. REDDIT hboinay 09/10 (item 5, "próximas temporadas apareceram uma vez e sumiram"): mesmo sintoma; pedir o log da 2.0.3.
 - **#372**: CAUSA PROVADA (09/10): regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo em 1-2 temporadas: Bleach no Nuvio {1:366,2:50} contra S1-16 no Cinemeta) somada a um defeito antigo: as abas de temporada saem do corpo do Nuvio mesmo quando a lista de episódios é a do add-on (descoberta.c ~7069-7087, detail.c ~742-765). O log BZB857 (2.0.3, webOS) prova. A teoria do autor sobre o Trakt está errada.  Relacionado: #328 (episódios duplicados), mesma raiz (numeração). A parte SIMKL do título não foi tratada. DECISÃO DO DONO (09/10), duas partes. PARTE 1, conserto na 2.0.3.1: as abas de temporada saem da lista de episódios publicada (não da ficha do Nuvio) e a cauda de enriquecimento do detalhe não repõe abas velhas; integrada em integracao/2.0.3.1 (merge 21077ab5; 038a7dc7, c2112b61, a120b67c, 167310e6, 8eb5ce90), ainda sem tag v*. PARTE 2, 2.0.4, opção (b): lista de episódios na numeração Cinemeta/TVDB mais uma camada de tradução por número absoluto do episódio para o progresso/scrobble do Trakt, a conta Nuvio, o Simkl, os ids de "a seguir"/Continuar assistindo e as marcas de visto (vistonao/vistoep). Como a issue tem um alvo só, o alvo é 2.0.4 (parte aberta). Origem: dono 09/10.
 - **#385**: LOG LIDO (09/10, registro 64551, 2.0.2): a plataforma é tizen-tpk, NÃO .wgt (formulário errado; a linha [tv] com a versão do Tizen não aparece no trecho). O que o log prova: (1) a fonte escolhida a mão, um link de loja do TorBox via StremThru, não chegou a abrir: o "vídeo de 129 s" NÃO era placa do provedor, era o TRAILER do IMDb ("tpk evento 1 (129036)" vem sempre depois de "[trailer] ... no fundo com som" e aparece até sem episódio aberto). No log 1 o evento de duração do trailer chegou depois de "abrir: url ao pipeline" e o posplay o leu como duração do episódio ("[posplay] duracao suspeita: pipeline diz 129s, catalogo diz 2820s"). CORREÇÃO de leitura de 09/10: a hipótese de placa do provedor está descartada. (2) Com o vídeo aberto, toda conexão nova nossa ao nó do CDN do TorBox foi recusada na hora: 11 vezes "Failed to connect to <nó tb-cdn> port 443: Connection refused" (curl 7), vindas da pré-busca do mkvass (5 Ranges, cada um repetido em conexão nova, "3 conexao(oes) extra(s)", 13 a 15 s) e da sonda do MKV pela rede. (3) Cerca de 5 s depois o player da Samsung perde a conexão dele (ConnectionFailed, 0xfe6c0026), entra na reconexão 1/3 e 2/3 e o Prepare falha. (4) Numa segunda tentativa o player caiu em 5,6 s SEM nenhum pedido nosso antes; então o nó recusa por conta própria, e não está provado que as nossas conexões extras causam a queda. (5) No mesmo log, um add-on https (4KHDHub) abriu e tocou, a pré-busca leu o cabeçalho em 684 ms e parou (3 legendas, nenhuma em coreano). VEREDITO: a recusa é do lado do TorBox/CDN (um nó só, sempre o mesmo). Do nosso lado havia um endurecimento pequeno, não provado como causa: a pausa do leitor lateral da #308 (b65c3324, já na 2.0.3) só disparava com curl 28, 429 e 5xx; conexão recusada (curl 7) continuava sendo repetida 5 vezes em conexão nova com o vídeo aberto, e a sonda do MKV também insistia. Esse endurecimento entrou na 2.0.3 (ver VEREDITO FINAL). Histórico da triagem anterior, feita sem log e achando que era .wgt: PLATAFORMA NÃO CONFIRMADA (.wgt declarado; pode ser .tpk40: um UT8000 com Tizen 5.5 também roda o .tpk 4/5). Perguntar qual arquivo ele instalou (.wgt ou .tpk). Sem log. HIPÓTESE #308 ENFRAQUECIDA (09/10): o autor pôs o idioma da legenda em coreano (nenhuma faixa é escolhida) e "caiu na hora de novo". Lido no código (483a73b8): no .wgt a pré-busca do mkvass NEM EXISTE (player.c:1548, #ifndef __EMSCRIPTEN__) e, sem faixa escolhida, a automática dá LING_AUTO_NADA e o mkvass não colhe nada por Range; o que roda em TODO MKV no .wgt é só a sonda do cabeçalho (video_tizen.c lerMkv -> mkv_faixas_e_caps: um trecho inicial, mais um ou dois Ranges se Tracks/Chapters ficarem fora dele), uma vez por abertura. Logo, no .wgt, sem legenda ligada o app não enche o CDN de pedidos. SE FOR O .tpk40 a conta muda um pouco: lá a pré-busca existe (NV_TPK não é Emscripten) e roda em todo MKV com idioma de legenda definido diferente de "none" (prebuscaCabe, player.c), mas quando nenhuma faixa casa com o idioma (coreano) o fio termina depois do cabeçalho, um Range (mkvass.h); somam-se a sonda do cabeçalho (video_tpk.c) e os capítulos do capmkv (uma janela de 320 KB, 4 s depois de abrir, capmkv.c). Continua sendo meia dúzia de pedidos por abertura, não uma colheita. O que pesa no .tpk é o caso COM legenda: lá toda legenda embutida de TEXTO (não só ASS) vai para o overlay do app e é colhida por Range (faixas.c, FX_TEXTO_OVERLAY=1 só no .tpk), então antes de trocar para coreano a #308 encaixa melhor no .tpk40 do que no .wgt. Resta, sem prova, o bloqueio do CDN do debrid àquele IP/conta ainda valendo de antes. Alvo volta para 2.0.4 (triagem); plano: as três suspeitas da triagem no fim desta nota. Hipótese anterior, mantida para registro: provavelmente coberta pelo conserto da #308 que já está na 2.0.3 (b65c3324 leitor lateral mais gentil: menos Ranges, uma conexão, pausa quando o CDN aperta; 73ce1648). Namer03 comentou (09/10) que a leitura da legenda embutida enche o CDN do TorBox de pedidos; bate com o relato: o CDN do debrid passa a recusar, o vídeo reconecta em laço e TODA fonte de debrid falha, enquanto add-on https segue. CONDIÇÃO: no .wgt o mkvass (leitura por Range) só entra para legenda embutida ASS/SSA (faixas.c: FX_TEXTO_OVERLAY é 1 só no .tpk; SRT/texto embutido a TV desenha), e ele roda no .wgt (tizen.sh compila com NV_ASS_LIBASS, video_tizen.c tem a sonda do MKV). Então só é a #308 se o usuário estava com uma faixa ASS embutida ligada num MKV: perguntar isso (título, se a legenda era embutida, se desligando a embutida a queda some). Não medido quantos Ranges o mkvass fazia no .wgt antes do b65c3324, e nenhum registro .wgt do D1 mostra o laço. Se persistir na 2.0.3, volta para precisa-log com as suspeitas abaixo (plano 2.0.4). Triagem anterior: Samsung UT8000 (Tizen 5.5), .wgt, Nuvio 2.0.2; sem log. Relato: VOD de debrid cai no meio com "reconectando" em laço; depois TODA fonte dá "não deu para carregar", só add-on https segue tocando. Triagem (09/10) no D1 e no código, sem TV: NÃO provado. No D1 (.wgt, ~32 mil ids recentes, ~300 registros) só 2 registros (2 pessoas, ambos 2.0.1) mostram a reconexão de VOD começar ("conexao caiu ... tentativa 1/3"), nenhum chega a "reconexao: desistiu" e nenhum tem o par "queda e depois toda fonte falha"; os outros ~25 registros com PLAYER_ERROR_CONNECTION_FAILED são falha de abertura de uma fonte, e a próxima fonte abriu (sem envenenamento). Código: a reconexão do .wgt (video_tizen.c:1180-1215, video_reconexao.h) são 3 tentativas por queda, e o contador zera 10 s depois do ponto da queda, então rede instável gera laço de "reconectando" por desenho; o 2.0.3 só mexeu na reconexão de TV ao vivo (#302/#350), VOD não mudou. Descartado por leitura: negcache (só 4 APIs de metadados), flag offline (redesaude.c só pinta a ilha), pool de threads (strict=0, [fios] estável nos logs), lista de fontes recusadas (zera a cada lista nova), XHR síncrono (estado por fio). "Só o https funciona" contraria um AVPlay quebrado (os dois passam por ele) e aponta para a conta do debrid/links do host, que é do lado de lá. SUSPEITA, não provada: (1) o open de reconexão não tem prazo: se o prepareAsync nunca responder, video_reconectando() fica 1 e tentarProximaFonteVOD (app.c) volta cedo, então fica "reconectando" sem fim; (2) a op "abrir" do JS faz stop() e close() no MESMO try (video_tizen.c:264-267): se o stop() levantar, o close() não roda e o próximo open() falha; (3) debrid.c marca conta sem plano para a SESSÃO inteira (semPlano), mas só com corpo "PLAN_RESTRICTED/not premium", não com 429. Essas três ficam como plano da 2.0.4 se a 2.0.3 não resolver. VEREDITO FINAL (09/10, segundo log, HSV8YA): NÃO é regressão da 2.0.2. É bloqueio do nó/IP do TorBox: o player falhou com ZERO pedidos nossos no Comet, no StremThru Torz e no Torrentio, e o 4KHDHub tocou. O conserto que saiu na 2.0.3 é a pausa da leitura lateral quando o host do vídeo recusa conexão (agente/203-385, commits c29c6f96 teste e 4151683c conserto; na tag v2.0.3). SUSPEITA ABERTA: a 2.0.2 passou a verificar fontes em paralelo por padrão (45deaa14, 2c399b99), o que segue redirecionamentos dos add-ons até nós do TorBox várias de uma vez; sem prova, a conferir na 2.0.4. BUG SEPARADO (SUSPEITA, alvo 2.0.4): eventos do trailer vazando para a sessão do episódio no .tpk (duração e eventos do trailer lidos como se fossem do episódio, o "duracao suspeita 129s" do log 1); ver o item de roadmap da 2.0.4. COMMITS vs v2.0.3 (09/10): c29c6f96, 4151683c estão na tag; status mantido porque o conserto é suspeita/parcial e sem confirmação do autor.
 - **#392**: Samsung .tpk Tizen 6.0, v2.0.3 (rawldon, log VV8JG2): ao trocar de perfil e voltar, a ordem das fileiras da Home muda (coleções, catálogos e Continuar assistindo). CAUSA PROVADA pelo log VV8JG2: o build da Home registra os catálogos dos add-ons do perfil anterior no arquivo de ordem do perfil novo, e isso expulsa fileiras. Conserto em agente/2031-ordemperfil (teste bb583b60, conserto 9023ebdb: a lista de add-ons do perfil que saiu não é registrada no arquivo do perfil novo), ainda não integrado. Mesma queixa do #294, que persiste na 2.0.3.
@@ -330,7 +330,7 @@ Notas:
 - **#333**: Duplicata de #250 (Arabic). Comentário no commit c824675c (v1.0.1) é falso positivo.
 - **#345**: Log code no corpo; sem resposta nossa.
 - **#346**: Sem resposta nossa. Possível relação com #373 (Samsung).
-- **#353**: Os 2 comentários nossos na issue são relatórios de triagem automática, não resposta ao autor.
+- **#353**: Os 2 comentários nossos na issue são relatórios de triagem automática, não resposta ao autor. REDDIT hboinay 09/10 (itens 9 e 10): (a) tocar uma vez por título e sessão é DECISÃO DO DONO de 30/09 (home.c:460-466, heroTrailerJaTocou em home.c:4588); (b) o trailer iniciado com o foco num cartaz (Trailer do cartaz em foco) abre sempre mudo, o som só vale com o foco no destaque (home.c:4646 focoHero && ajustes_trailer_hero_som()), comentário "o do cartaz em foco segue mudo". Falta decidir se o som segue o ajuste também no cartaz.
 - **#354**: SUSPEITA: versão desktop está fora do escopo (app é para TVs).
 - **#357**: Zidoo Z9X 8K (Android 11) fecha ao abrir; Ugoos AM9 Pro. Autor comentou que não achou o aparelho no relatório #324 e não consegue enviar log.
 - **#365**: Autor diz que o problema principal da Home foi resolvido; fantasmas permanecem em "Fora da Home". Relacionado a #358.
@@ -848,8 +848,8 @@ Notas:
 - Status: desconhecido
 - Release: 2.0.3 (parcial)
 - Conserto: d30344ab/96ccdab1 (#6 Shield: tetos do Android e paginação da watchlist do Trakt, 2.0.3; 7b9e641a, o revert do 96ccdab1, não está em nenhuma branch); 5413db8a (Shield #19: guia "Mostrando N de M canais", Android guarda 3000 canais/128 categorias, 2.0.3); 6b3aaae1 (Shield 318.3: card do Continuar com o still do episódio; filme assistido diz Reproduzir, 2.0.3); eabe3afd/b03aa2f0/35421d1a/73c4ab4c (#266/#332: curl fora do fio principal, /dev/urandom, login por HttpURLConnection, 2.0.3)
-- Próximo passo: achar o texto original do relatório e mapear os 22 itens um a um
-- Notas: O texto dos 22 itens NÃO está no repositório nem nas issues. Só três grupos de commits citam "Shield". Mapeamento item a item: desconhecido.
+- Próximo passo: mapeado em 09/10: o relatório de 20 itens do hboinay (provável versão do de 22) está nas entradas reddit-hboinay-NN abaixo; postar o rascunho docs/issues/rascunhos/reddit-hboinay-2026-10-09.md
+- Notas: O texto dos 22 itens NÃO está no repositório nem nas issues. Só três grupos de commits citam "Shield". Mapeamento item a item: desconhecido. ATUALIZAÇÃO 09/10: chegou um relatório de 20 itens do mesmo autor e da mesma build (teste-318.3); cada item virou uma entrada reddit-hboinay-NN (ou uma nota em #353/#356). Falta confirmar se é o mesmo relatório dos 22.
 
 ### Relatório Android TV (9 itens) = #369
 
@@ -877,3 +877,147 @@ Notas:
 - Conserto: nenhum encontrado
 - Próximo passo: perguntar ao dono o que é
 - Notas: Nada encontrado em commits, docs, notas de release ou issues (buscas por "80 GB"/"80GB"). Não preencher sem a fonte.
+
+### Home: mais de 40 fileiras e ordem dos catálogos (hboinay item 1)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: alvo sugerido 2.0.4 (teto) / sem alvo (ordem)
+- Conserto: 8e058817 (agente/204-fileiras-android, não integrado): Android com fileiras ilimitadas, teto 200
+- Próximo passo: teto: integrar agente/204-fileiras-android na 2.0.4 (já no roadmap); ordem: pedir log
+- Notas: TETO por desenho: CAT_FIL_MAX 40 (catalogo.h:394) e FIL_LIMITE_MAX 40 (fileiras.h:60); a branch 204-fileiras-android o sobe para 200 só no Android. ORDEM: não há como afirmar sem log; ligação provável com #358 (catálogos que a Home move para "Fora da Home", 29c640b7 em agente/204-conta-catalogos). Pedir o log para ver a ordem da conta contra a da Home. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Continuar com fonte Nuvio mostra 5-6 itens e depois 1; a conta tem 30 (hboinay item 3)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: 2.0.3 (parcial, 507d3a6b); teto alvo sugerido 2.0.4
+- Conserto: 507d3a6b (v2.0.3): fonte Conta semeia o "a seguir" mesmo com Trakt/Simkl, descarta vistos velhos
+- Próximo passo: pedir log da 2.0.3 (Ajustes > Sobre > Enviar log)
+- Notas: O teto de cada fonte é CONT_MAX 12 (descoberta.c:2605), então 30 na conta nunca aparecem inteiros, e o "a seguir" ainda passa por filtros (episódio visto em outra fonte, série parada há mais de 60 dias com Trakt/Simkl vinculado, descoberta.c). 5-6 e depois 1 pode ser o filtro ou a lista de vistos da conta ainda não puxada (mesma suspeita do #356). Sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Com Trakt e Simkl vinculados, Continuar mostra vistos antigos mesmo com fonte Nuvio (hboinay item 4)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: 2.0.3 (parcial, 507d3a6b + 005b3095 + c0f4054c)
+- Conserto: 507d3a6b (v2.0.3); 005b3095 (v2.0.3): desmarcar ganha; c0f4054c (v2.0.3): a seguir recua para o primeiro episódio desmarcado
+- Próximo passo: pedir log da 2.0.3 com a fonte em Conta Nuvio
+- Notas: Na leitura do código a fonte Conta não consulta Trakt nem Simkl (descoberta.c: querTrakt só em Trakt/Todas, querSimkl idem), então os "vistos antigos" teriam de vir de continuarLocal ou do "a seguir" da conta; a 2.0.3 descarta o visto em outra fonte e o parado há mais de 60 dias. Não reproduzido. Sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Biblioteca: Trakt 213 e Simkl 483 de 1600+ (hboinay item 6)
+
+- Plataforma: Android
+- Status: aberta
+- Release: alvo sugerido 2.0.4
+- Conserto: d30344ab (v2.0.3): watchlist do Trakt paginada; 96ccdab1 (v2.0.3): tetos do Android voltam a 400/300; 7b9e641a (órfão, nenhuma branch): reverte o 96ccdab1 e devolve os tetos 2000/1000 no Android
+- Próximo passo: decidir o 7b9e641a: reaproveitá-lo na 2.0.4 (Android com teto 2000 Trakt e 1000 Simkl) ou manter o teto de hoje
+- Notas: Na 2.0.3 o Trakt pagina (?page=&limit=500, trakt.c:1873-1960) mas para em TRAKT_LISTA_MAX 400 (trakt.h:133) em todas as plataformas, e o Simkl em SIMKL_PTW_MAX 300 (simkl.h): quem tem 1600+ passa a ver 400/300 em vez de 213/483. O teto maior só existe no commit órfão 7b9e641a. O Simkl não pagina (all-items numa resposta), então o teto é só memória. Nota da 2.0.3 diz "até 400 itens" e vale para todas as TVs. Relacionado: #393. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Selo de assistido não aparece em séries nos cartazes (só em filmes) (hboinay item 7)
+
+- Plataforma: Android
+- Status: aberta
+- Release: alvo sugerido 2.0.4
+- Conserto: nenhum encontrado
+- Próximo passo: ler o /sync/watched/shows do Trakt uma vez (como o mapa de filmes vistos em trakt.c:1317) para marcar as séries inteiras
+- Notas: cat_visto (catalogo.c:432) devolve 0 para série sem histórico; o histórico da série só é escrito quando a PÁGINA do título é aberta (extras.c:586-597, contadores de /shows/<id>/progress/watched) ou ao marcar à mão. Cartaz de série em fileira não tem selo antes disso. Vale para todas as plataformas. #352 (agente/204-biblioteca-visto, 402e2438) só leva o selo para a Biblioteca. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Trailers do destaque e da ficha começam pequenos e depois enchem a tela (hboinay item 8)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: alvo sugerido 2.0.4
+- Conserto: nenhum encontrado
+- Próximo passo: reproduzir na Shield com o log de trailer; ver a ordem posição/recorte no NvPlayer.kt
+- Notas: No Android o Kotlin posiciona o recorte (video_android.c:9, video_recorte_fonte=1) e trailer_mostra_video (trailer.c:467) só espera o recorte no .tpk; no Android o plano aparece assim que toca. O pedido é esconder até o recorte assentar, como o .tpk faz (trailer.h:54-60). Hipótese, não medida. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Cartazes escuros demais; pede desligar o brilho animado (hboinay item 11)
+
+- Plataforma: Android
+- Status: aberta
+- Release: alvo sugerido 2.0.4
+- Conserto: nenhum encontrado
+- Próximo passo: dois ajustes pequenos: luz do foco (varredura) liga/desliga e força do véu do cartaz
+- Notas: A varredura de luz no foco (revela_varre, revela.h:83, home.c:5426) só some com "Animações reduzidas" global (anim_politica_reduzida), que também tira todo o resto do movimento; não há ajuste próprio. O escurecimento vem do véu sobre a arte (veusDoCard, home.c:4844) e do efeito de profundidade (AJ_PROF_*), este com liga/desliga em Ajustes. Contorno de hoje: Animações reduzidas e Efeito de profundidade desligados. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Selos: URL do manifesto diz "isso não é um JSON de selos"; não usa os selos da conta (hboinay item 12)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: alvo sugerido 2.0.4
+- Conserto: nenhum encontrado
+- Próximo passo: pedir a URL do manifesto e o log; testar o JSON no selospacote_adicionar
+- Notas: A mensagem sai de SELOS_ERR_JSON (ajustes.c:3047; selospacote.c:639-648): corpo que não é objeto/string JSON ou resposta maior que 4 MB. Os selos da conta só vêm de features.stream_badge_settings.stream_badge_rules no blob de ajustes do perfil (selospacote.c:588-612): se a conta não tem esse campo, nada é usado. Sem a URL e o log não dá para saber qual dos dois é. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Só um servidor Jellyfin e um Emby por perfil (hboinay item 13)
+
+- Plataforma: Android
+- Status: por-desenho
+- Release: alvo sugerido 2.1
+- Conserto: nenhum encontrado
+- Próximo passo: avaliar vários servidores por tipo (hoje instância 0 = Jellyfin, 1 = Emby, mais Plex)
+- Notas: Por desenho: um servidor por tipo e por perfil (jellyfin.h:5-10, JfInst; token em jellyfin-p<N>.txt). Vários exigem lista de instâncias, ids com namespace por servidor (jfid.h) e Home com mais fileiras (SRV_FIL_MAX, servidores.h). Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Jellyfin/Emby fora das listas de fontes: add-ons permitidos, ordem, lista (hboinay item 14)
+
+- Plataforma: Android
+- Status: aberta
+- Release: alvo sugerido 2.1
+- Conserto: nenhum encontrado
+- Próximo passo: decidir como o servidor pessoal entra em fonteregra (permitidos/ordem)
+- Notas: Para título de servidor pessoal a lista de fontes é só a do servidor (addons.c:493-510, servidores_fontes_colher + stream_definir_lista) e as regras de add-on permitido e ordem (fonteregra.h) só conhecem add-ons/plugins. O servidor vem sempre primeiro por desenho (9025bfa9). Confirmar com o autor o que ele esperava ver. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Estilo da legenda só para a segunda legenda nos Ajustes; sincronia automática só por áudio (hboinay item 16)
+
+- Plataforma: Android
+- Status: aberta
+- Release: alvo sugerido 2.0.4 (estilo)
+- Conserto: nenhum encontrado
+- Próximo passo: estilo da principal em Ajustes; perguntar quais legendas ele testou na sincronia
+- Notas: Ajustes tem Tamanho/Cor/Fundo/Borda só da segunda legenda (ajustes.c:1268-1272; a dica diz que a da principal "é definida no player"). Sincronia: além do áudio (AJ "Sincronia por áudio") existe o AutoSync por texto (legsync.c/autosync.c, em v2.0.3), mas só em legenda EXTERNA, tendo como referência a faixa de texto do MKV (legsync.h:11-16); legenda embutida ou nativa fica indisponível. Pode não ser bug, e sim limite. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Só uma conta Xtream por perfil (hboinay item 17)
+
+- Plataforma: Android
+- Status: por-desenho
+- Release: alvo sugerido 2.1
+- Conserto: nenhum encontrado
+- Próximo passo: avaliar várias contas (lista por perfil, canais com id por conta)
+- Notas: Por desenho: um servidor, usuário e senha por perfil (xtream.h, arquivo xtream-p<N>.txt; id "xtream:<stream_id>" sem conta). Várias contas pedem mudar o id do canal e o cadastro nos Ajustes. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### IPTV sem VOD/séries do Xtream (hboinay item 18)
+
+- Plataforma: Android
+- Status: por-desenho
+- Release: futuro
+- Conserto: nenhum encontrado
+- Próximo passo: registrar como pedido; não planejado
+- Notas: O módulo só lê get_live_categories e get_live_streams (xtream.c, xtream.h); não existe get_vod_* nem get_series. Seria um módulo novo (catálogo + ficha + resolução de URL /movie/ e /series/). Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### TV ao vivo só com canais do Reino Unido e EUA, de dezenas de países (hboinay item 19)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: 2.0.3 (provável, 5413db8a)
+- Conserto: 5413db8a (v2.0.3): guia diz "Mostrando N de M canais"; Android guarda 3000 canais e 128 categorias; 45ae240c (teste)
+- Próximo passo: pedir para atualizar para a 2.0.3 e, se persistir, o log
+- Notas: Antes da 2.0.3 o guia cortava em 900 canais e 48 categorias sem avisar e sumia categorias inteiras (45ae240c); com a lista ordenada isso deixaria só os primeiros países. Hipótese forte, sem confirmação do autor. Se persistir na 2.0.3, a fonte passa a ser o catálogo do add-on (Ajustes > Guia, canais por add-on, #283). Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### TV ao vivo com fps variando entre 24 e 50 (33, 34, 48) (hboinay item 20)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: alvo sugerido 2.0.4
+- Conserto: nenhum encontrado
+- Próximo passo: pedir log com o medidor de desempenho ligado durante um canal ao vivo
+- Notas: Sem leitura de código que explique. O medidor (AJ_MEDIDOR) mede quadros da interface, não do vídeo; o vídeo ao vivo roda no Media3 (video_android.c). Pode ser decodificação, rede ou troca de taxa da tela. Só dá para dizer com o log. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
+
+### Canais piscando em verde na TV ao vivo (hboinay item 21)
+
+- Plataforma: Android
+- Status: precisa-log
+- Release: alvo sugerido 2.0.4
+- Conserto: nenhum encontrado
+- Próximo passo: pedir log com o canal que pisca e a saída de vídeo da Shield
+- Notas: Tela verde em vídeo costuma ser decodificador/superfície (buffer YUV sem quadro). No Android a superfície é recriada em partida HDR e mudança de aspecto (notas da 2.0.3). Não localizado no código; sem log é suspeita. Origem: Reddit u/hboinay, NVIDIA SHIELD TV Pro 2019, build teste-318.3 (base 2.0.2), 09/10/2026.
