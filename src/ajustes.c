@@ -3520,7 +3520,10 @@ static const char *PST_ALFA_TOKEN  =
 static const char *PST_ALFA_EXTRA  = "abcdefghijklmnopqrstuvwxyz0123456789=&_.,-%";
 static const char *PST_ALFA_CHAVE  =
   "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
-static const char *PST_ALFA_MODELO = "abcdefghijklmnopqrstuvwxyz0123456789:/.-_?=&{}%";
+// O modelo leva a chave do servico no caminho: caixa mista e os sinais que
+// uma URL aceita. So minusculas baixava a caixa da chave (#390).
+static const char *PST_ALFA_MODELO =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/.-_?=&{}%~+,;!*@$()";
 static void pstAtivar(int op) {
   if (inativa(op)) return;
   switch (op) {

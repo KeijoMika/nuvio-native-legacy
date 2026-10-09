@@ -42,7 +42,8 @@ typedef enum {
 #define PP_TOKEN_MAX    400    // a URL inteira tem de caber em PP_URL_MAX (512)
 #define PP_EXTRA_MAX    120
 #define PP_CHAVE_MAX     64
-#define PP_MODELO_MAX   300
+#define PP_MODELO_MAX   401    // 400 = TECLADO_LONGO: o modelo colado do celular
+                               // passa de 299 (#361/#390); a URL montada segue em PP_URL_MAX
 #define PP_INSTANCIA_PADRAO "https://spatial-posters.vercel.app"
 
 typedef struct {
