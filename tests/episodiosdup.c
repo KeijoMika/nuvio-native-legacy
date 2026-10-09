@@ -395,6 +395,28 @@ int main(void) {
     assert(cat_n_episodios(0) == 72);
     assert(cat_item(0)->nTemporadas == 6);
     puts("ok  addon com mais episodios distintos continua ganhando");
+    // CATALOGO PRIMEIRO: a mesma lista de arquivos, agora na ficha do addon que
+    // PUBLICOU o item (titulo aberto de um catalogo dele). A base manda no
+    // texto, mas a lista de arquivos dela nao pode esconder os 62 do Cinemeta.
+    addonMeta = 0; addonResp = NULL;
+    nFake = 1;
+    fake[0] = (FakeAddon){ "Fontes", "https://fx.test/SEGREDO", "org.fx", "tt", 0 };
+    nRotas = 0;
+    rota("fx.test/SEGREDO/meta/series/tt13293588.json", arq);
+    limparCacheMeta();
+    catalogoDe("tt13293588", "series", "Serie", "org.fx");
+    abrir();
+    assert(pediu("fx.test/SEGREDO/meta/series/tt13293588.json"));
+    assert(pediu("cinemeta"));
+    printf("catalogo primeiro, lista de arquivos: %d episodios, %d abas\n",
+           cat_n_episodios(0), cat_item(0)->nTemporadas);
+    assert(cat_n_episodios(0) == 62);
+    assert(cat_item(0)->nTemporadas == 5);
+    assert(cat_episodio(0, 61)->temporada == 5 && cat_episodio(0, 61)->episodio == 16);
+    for (i = 0; i < 62; i++) assert(!strstr(cat_episodio(0, i)->nome, ".mkv"));
+    assert(!strcmp(cat_episodio(0, 0)->nome, "T1E1"));
+    puts("ok  catalogo primeiro: lista de arquivos da base nao esconde a lista real");
+    nFake = 0; nRotas = 0;
     addonMeta = 0; cineSerie = NULL; addonResp = NULL;
     limparCacheMeta();
     free(cine); free(arq); free(maior);
