@@ -57,6 +57,36 @@ int main(void) {
   caso(&v[15], 2160, 0, "2160p + FHD; alternative 720p sem r-1080");
   caso(&v[16], 720, 0, "720p | FHD no name: numero vence");
   free(v);
+  // Revisao 2: FHD so como rotulo solto do formatador, nunca dentro de URL,
+  // nome de arquivo ou frase; nome cortado no buffer e nome do provedor nao contam.
+  { char json[2048], longo[260];
+    memset(longo, 'X', 185); strcpy(longo + 185, " | FHDx");   // 192 bytes: rotulo corta em "| FHD"
+    snprintf(json, sizeof json, "{\"streams\":["
+      "{\"url\":\"https://example.invalid/a\",\"name\":\"https://fhd.example.invalid/help\"},"
+      "{\"url\":\"https://example.invalid/b\",\"name\":\"Movie.WEBRip.x265.FHD.mkv\"},"
+      "{\"url\":\"https://example.invalid/c\",\"name\":\"Movie.WEBRip.x265_FHD.mkv\"},"
+      "{\"url\":\"https://example.invalid/d\",\"name\":\"Movie.WEBRip.x265-[FHD].mkv\"},"
+      "{\"url\":\"https://example.invalid/e\",\"name\":\"The FHD Story\"},"
+      "{\"url\":\"https://example.invalid/f\",\"name\":\"%s\"},"
+      "{\"url\":\"https://example.invalid/g\",\"name\":\"[RD+] AIOStreams\\nFHD \xE2\x80\xA2 REMUX\"},"
+      "{\"url\":\"https://example.invalid/h\",\"name\":\"Movie | FHD\"}"
+      "]}", longo);
+    n = stream_extrair(json, "fixture", &v);
+    if (n != 8) { printf("FAIL contagem revisao 2: %d\n", n); return 1; }
+    caso(&v[0], 0, 0, "name e URL com host fhd");
+    caso(&v[1], 0, 0, "name x265.FHD.mkv");
+    caso(&v[2], 0, 0, "name x265_FHD.mkv");
+    caso(&v[3], 0, 0, "name x265-[FHD].mkv");
+    caso(&v[4], 0, 0, "The FHD Story");
+    caso(&v[5], 0, 0, "name cortado no buffer terminando em FHD");
+    caso(&v[6], 1080, 1, "FHD no inicio da 2a linha, antes de bullet");
+    caso(&v[7], 1080, 1, "Movie | FHD");
+    free(v);
+    n = stream_extrair("{\"streams\":[{\"url\":\"https://example.invalid/i\",\"description\":\"WEB-DL\"}]}",
+                       "FHD Movies", &v);
+    if (n != 1) { printf("FAIL contagem provedor: %d\n", n); return 1; }
+    caso(&v[0], 0, 0, "sem name, provedor FHD Movies");
+    free(v); }
   if (falhas) { printf("FAIL #402: %d caso(s)\n", falhas); return 1; }
   puts("PASS #402: FHD/Full HD agrupam como 1080p.");
   return 0;
