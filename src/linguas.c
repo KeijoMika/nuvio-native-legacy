@@ -209,7 +209,11 @@ static void guardar(char *dest, size_t n, const char *v) {
   if (!v || !*v) { dest[0] = 0; return; }
   if (!strcasecmp(v, "off") || !strcasecmp(v, "device") ||
       !strcasecmp(v, "default") || !strcasecmp(v, "original") ||
-      !strcasecmp(v, "system") || !strcmp(v, "*")) { dest[0] = 0; return; }
+      !strcasecmp(v, "system") || !strcmp(v, "*") ||
+      // #378: "forced" e o "Usar legendas forcadas" do app oficial, nao um
+      // idioma; como codigo nao casa com faixa nenhuma e "Da conta" ficava sem
+      // legenda. Vale como conta sem idioma (a escolha a mao decide).
+      !strcasecmp(v, "forced") || !strcasecmp(v, "force")) { dest[0] = 0; return; }
   snprintf(dest, n, "%s", v);
 }
 

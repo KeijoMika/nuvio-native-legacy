@@ -3792,6 +3792,12 @@ static void idiomasDoBlob(const char *json, const char *fim) {
   fflush(stdout);
 }
 
+// #378: so os idiomas da conta, para o blob que chega com os ajustes locais
+// protegidos (sync.c nao o aplica). Ver a nota em sync.c.
+void ajustes_idiomas_da_conta(const char *json) {
+  if (json && *json) idiomasDoBlob(json, json + strlen(json));
+}
+
 int ajustes_aplicar_blob(const char *json) {
   const char *fim;
   int i, mudou = 0, reconhecidas = 0;

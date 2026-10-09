@@ -1921,8 +1921,10 @@ void sync_passo(unsigned agoraMs) {
   else if (soAddons) desc_repetir_addons();
   else if (soFileiras) desc_remontar_fileiras();
   spMarcar(SP_REMONTAR); }
+  int blobAplicado = 0;
   if (temAjustesBlob && ajustesBlob) {
     ajustes_aplicar_blob(ajustesBlob);
+    blobAplicado = 1;
     // O BLOB NAO E LIBERADO AQUI (mudou em #85): ele e a base da costura que
     // sobe no proximo ciclo. Quem o libera e o pull seguinte, que o substitui,
     // e o logout.
@@ -1935,6 +1937,11 @@ void sync_passo(unsigned agoraMs) {
     if (ajustesBlob && ajustesBlob != relatado) {
       relatado = ajustesBlob;
       ajustes_tmdb_idioma_relatar(ajustesBlob);
+      // #378: PROTEGIDO, o blob nao e aplicado — mas os idiomas de legenda e
+      // audio da conta nao sao ajuste desta TV: sao o que "Da conta" quer
+      // dizer, e linguas.c ja nao os deixa passar por cima da escolha local.
+      // Sem isto, quem mexeu em QUALQUER ajuste ficava com "Da conta" = nada.
+      if (!blobAplicado) ajustes_idiomas_da_conta(ajustesBlob);
     } }
   spMarcar(SP_AJUSTES);
   // Progresso da conta: progresso.c decide linha a linha (pendente local vence,
