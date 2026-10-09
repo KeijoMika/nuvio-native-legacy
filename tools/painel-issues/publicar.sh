@@ -34,7 +34,7 @@ if [ "$DRY" = 1 ]; then
   echo "  (nenhum outro container e tocado)"
 else
   ssh "$HOST" "mkdir -p '$DEST'"
-  rsync -az --delete "$TMP"/ "$HOST:$DEST/"
+  rsync -az --delete --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r "$TMP"/ "$HOST:$DEST/"
   ssh "$HOST" bash -s -- "$NOME" "$PORTA" "$DEST" <<'REMOTO'
 set -euo pipefail
 nome="$1"; porta="$2"; dest="$3"
