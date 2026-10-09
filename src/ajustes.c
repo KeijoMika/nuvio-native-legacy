@@ -3555,6 +3555,24 @@ static void pstAtivar(int op) {
       break;
   }
 }
+#ifdef AJUSTES_TESTE
+// #390: "Modelo de URL dos posteres" pelo caminho de verdade — a modal do
+// campo, o texto que chega do celular, pstDefinir, posteres.txt e a leitura de
+// volta. Devolve o aviso (PST_OK = 0) e o modelo relido em `lido`.
+void teclado_teste_sistema(const char *t);
+int ajustes_teste_poster_modelo(const char *colado, char *lido, size_t n) {
+  valor[AJ_POSTER_PROV] = PP_MODELO;
+  pstAtivar(AJ_POSTER_MODELO);
+  if (!teclado_aberto()) return -1;
+  teclado_teste_sistema(colado);
+  pstDefinir(AJ_POSTER_MODELO, teclado_texto());
+  teclado_esquecer();
+  pstModelo[0] = 0;
+  pstCarregar();
+  snprintf(lido, n, "%s", pstModelo);
+  return pstAviso;
+}
+#endif
 
 
 // IDIOMA AUTOMATICO — o resto (estado e regra: ver ajustes_idioma e idiomaauto.h).
