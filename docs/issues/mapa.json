@@ -8359,6 +8359,27 @@
    "alvo": "2.0.3.1"
   },
   {
+   "numero": 393,
+   "titulo": "[Feature Request] Option to change the library source from Trakt to Simkl",
+   "estado_github": "aberta",
+   "plataforma": "?",
+   "tipo": "feature",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "sugestao: perguntar ao autor qual tela e qual TV (a Biblioteca já lista o Simkl em Listas e \"Onde o + salva\" aceita Simkl); se faltar a aba Salvos seguir o Simkl, entra na 2.0.4",
+   "notas": "Issue de uma linha, sem texto. O que existe hoje (09/10): a Biblioteca tem três modos (Salvos, Coleção, Listas; biblioteca.c:267-269) e em Listas as fontes Trakt, Simkl, Nuvio, Fixadas e Públicas (biblioteca.c:282-284, lst_pedir LST_SIMKL em :685); \"Coleção\" só existe no Trakt. O que o \"+\" salva é Ajustes › Conta e serviços › Trakt e Simkl › \"Onde o + salva\" (AJ_SALVOS_DEST, ajustes.c:1105; destinos Esta TV/Trakt/Simkl), e o Plan to Watch do Simkl aparece como \"SIMKL\" na aba Salvos (biblioteca.c:2055); o \"Continuar assistindo\" tem \"Fonte do Continuar assistindo\" (Todas as fontes, Conta Nuvio, Trakt, Simkl; ajustes.c:711, 1034). Não há UMA chave \"fonte da biblioteca\" que troque a aba Salvos inteira do Trakt para o Simkl: se é isso que o autor quer, é pequeno (a aba Salvos passar a seguir AJ_SALVOS_DEST), mas o pedido pode já estar coberto pelas Listas › Simkl. Sugestão de alvo: 2.0.4, depois de o autor dizer qual tela e qual aparelho. Sem commit.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/393",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
    "numero": 394,
    "titulo": "ASS subtitles: lag on large tracks, shadow/color shift, occasional desync (.tpk)",
    "estado_github": "aberta",
@@ -8378,6 +8399,27 @@
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/394",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
+  },
+  {
+   "numero": 397,
+   "titulo": "[Feature Request] Playback Engine Robustness: Native Codec Optimization, On-the-Fly Subtitle Tuning, and AV Sync",
+   "estado_github": "aberta",
+   "plataforma": "LG",
+   "tipo": "feature",
+   "status": "respondida",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "postar o rascunho (EN, nas notas): o que já existe e o caminho; o que falta (atraso do áudio, passo de quadro) vai ao roadmap",
+   "notas": "Pedido em quatro partes (formulário diz LG webOS / All; o texto fala de Android/Fire TV). Caminhos conferidos NO CÓDIGO (09/10), sem prova em TV. (a) HDR/Dolby Vision e passthrough: JÁ HÁ o que o app controla. Preferência de fonte em Ajustes › Reprodução › \"Dolby Vision e HDR\" (AJ_FONTE_HDR) e \"Preferir som Dolby Atmos\" (AJ_ATMOS, ajustes.c:4452-4453); \"Dolby Vision em MKV (experimental)\" só LG webOS 4+, desligado por padrão (AJ_DV_MKV, ajustes.c:5399): na 2.0.3 troca TrueHD por E-AC-3/AC-3 no idioma ouvido para manter o Dolby Vision (docs/releases/2.0.3/NOTAS.md:17). \"Converter DTS para a TV ouvir\" (AJ_DTS_AC3, ajustes.c:4464): só LG, converte o DTS em estéreo (AAC) ou 5.1 (Dolby Digital) via src/dts/; na Samsung o app só AVISA quando a TV recusa DTS/TrueHD (video_tpk.c:130-141, #313; esconder as faixas é 2.0.4, fase 1). LIMITADO PELA TV/PLATAFORMA, não dá para prometer: na LG e na Samsung quem decodifica HDR/DV e faz o passthrough é a TV (uMS / AVPlay / player .tpk), o app só escolhe a fonte e o caminho; no Android o Media3 usa o passthrough por AudioCapabilities (NvPlayer.kt:374-386; video_android.c:27) e com bitstream o app não mexe no áudio (sem reforço de volume, sem velocidade: video_android.c:260, 836-841). Não há \"robustez garantida\" a implementar sem um caso de TV com log. (b) Estilo da legenda na hora: JÁ EXISTE no player. Botão Legendas (PLR_CC, player.c:189) › aba \"Estilo\" (legendasui.c:824; faixas.c:1489, corpo faixas.c:533-600), com Tamanho (50% a 250%, de 10 em 10, padrão 120%, faixas.c:590), Fonte OpenSubtitles, Cor, Opacidade (100/75/50/25%), Fundo (Nenhum, Escuro 25/50/75/100%), Posição (1 a 8), Borda (Nenhuma/Contorno/Sombra), Atraso, Negrito (Ligado/Desligado) e Restaurar padrão; OK cicla o valor e aplica na hora. Ressalvas: com ASS desenhado pelo app, fonte/cor/fundo/posição/borda/negrito ficam \"Preservado pelo ASS\" (faixas.c:536-541) e o tamanho vira escala; o negrito vale só para legenda externa/OpenSubtitles, a faixa que a TV desenha segue o peso da TV (faixas.c:571-572). Os valores são cíclicos (sem slider). (c) Atraso: legenda JÁ EXISTE: Legendas › linha \"Atraso\" (LR_ATRASO, legendasui.c:671-676), régua de -10 s a +10 s, 0,1 s por toque e 0,5 s segurando a seta (legendasui.c:444-451); a legenda secundária tem o seu; e \"Sincronização automática\" (AutoSync, linha LR_SYNC) que acerta pelo áudio (Ajustes \"Sincronizar pelo áudio\", AJ_LEG_SYNC_AUDIO, só onde o player entrega PCM, hoje Android: audsync.h:1-6). ATRASO DO ÁUDIO NÃO EXISTE (sem backend nem linha: grep audio_atraso/audioDelay vazio). (d) Proporção JÁ EXISTE: botão Proporção (PLR_ASPECTO) ou tecla 0, 8 modos: Original, Recortar, Esticar, Zoom leve, Zoom cinema, Zoom ultra, Ajustar altura, Ajustar largura (player.c:877-881, player.h:218-226); padrão em Ajustes › Reprodução › \"Proporção padrão\" (AJ_PROPORCAO_PADRAO). Em TVs que não recortam a imagem os modos de zoom caem para Original (player.c:1173); o .wgt Samsung (AVPlay/WebAssembly) não tem o zoom que corta a barra preta. Velocidade JÁ EXISTE: folha de Áudio, linha \"Velocidade\" (faixas.c:1448; \"Playback speed\" no i18n), 0,75x 1x 1,25x 1,5x 1,75x 2x (velocidade.c:7), por vídeo; disponível na LG, no .tpk e no Android; AUSENTE na Samsung .wgt (AVPlay só tem trick play inteiro, video_tizen.c:1531-1539) e bloqueada no Android com áudio em passthrough (\"Indisponível com áudio pelo receptor\", faixas.c:1449, #202). Salto de QUADROS (frame step/skip) NÃO EXISTE (só saltos de 10/30/60/120 s); o pedido é ambíguo (passo de quadro ou pular quadros?). FALTA, sugestao: atraso do áudio na 2.1 (começar onde o backend deixa, Android/Media3; LG e Samsung podem não ter API, a confirmar); passo de quadro em futuro (precisa de pausa + avanço por quadro nos 4 backends, sem prova de que a TV deixa); faixa de velocidade mais larga (0,25x-3x) e slider de tamanho/opacidade da legenda em 2.0.4 se o dono quiser (pequeno). Alvo geral = o mais cedo entre as peças que faltam (atraso do áudio, 2.1). Origem: pedido do autor somprakashpathakoneplus-cell. Rascunho (EN): The subtitle style (size up to 250%, color, opacity, background, bold), the subtitle delay ruler (-10 s to +10 s) and AutoSync are already in the player under Subtitles, tab Style; aspect modes are on the Aspect ratio button (or key 0) and playback speed (0.75x-2x) is on the Audio sheet. Audio delay and frame stepping are not there yet and are on the roadmap, while HDR, Dolby Vision and passthrough depend on what each TV or player decodes, so we can only choose the source and path. Which device are you on, so we know which of these you are missing?",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/397",
+   "criada_em": "2026-10-09",
+   "alvo": "2.1"
   }
  ],
  "fora_do_github": [
@@ -8617,6 +8659,14 @@
      "branches": [
       "docs/plans/rust-piloto.md"
      ]
+    },
+    {
+     "nome": "Biblioteca: aba Salvos seguir o destino Simkl (sugestao)",
+     "porque": "#393; só se o autor confirmar que o que falta é isso (Listas › Simkl e \"Onde o + salva\" já existem). Sugestão do agente, não aprovado pelo dono.",
+     "issues": [
+      393
+     ],
+     "origem": "agente 09/10"
     }
    ]
   },
@@ -8757,6 +8807,14 @@
      "branches": [
       "docs/plans/rust-piloto.md"
      ]
+    },
+    {
+     "nome": "Atraso do áudio no player (sugestao)",
+     "porque": "Pedido no #397; não existe hoje (só o atraso de legenda). Sugestão do agente, não aprovado pelo dono: começar onde o backend deixa (Android/Media3); LG e Samsung podem não ter API.",
+     "issues": [
+      397
+     ],
+     "origem": "agente 09/10"
     }
    ]
   },
@@ -8814,6 +8872,14 @@
       304,
       342
      ]
+    },
+    {
+     "nome": "Passo de quadro no player (sugestao)",
+     "porque": "Pedido no #397 (\"frame skipping\", ambíguo); não existe, só saltos de 10 a 120 s. Sugestão do agente, não aprovado pelo dono; depende de a TV aceitar avanço por quadro.",
+     "issues": [
+      397
+     ],
+     "origem": "agente 09/10"
     }
    ]
   },

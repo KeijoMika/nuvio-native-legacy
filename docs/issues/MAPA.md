@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `21077ab5` (integracao/2.0.3.1; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 365 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `21077ab5` (integracao/2.0.3.1; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 367 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -45,6 +45,7 @@ Pequenos recursos de player e Biblioteca que já têm código fora da 2.0.3, mai
 - **Trailer vazando para a sessão do episódio no .tpk (#385)** (#385): SUSPEITA, sem conserto. No log do #385 (.tpk, 2.0.2), "tpk evento 1 (129036)" vem sempre depois de "[trailer] ... no fundo com som" e aparece até sem episódio aberto; no log 1 o evento de duração do trailer chegou depois de "abrir: url ao pipeline" e o posplay o leu como duração do episódio ("duracao suspeita 129s"). Conferir se os eventos do player do trailer (duração, fim, erro) são descartados ao abrir o episódio. Separado da recusa de conexão do TorBox, que foi bloqueio do nó/IP (conserto da pausa na 2.0.3). Origem: logs do #385, 09/10.
 - **Numeração de temporadas Cinemeta + camada de tradução (#372 parte 2)** (#372, #328): Opção (b) escolhida pelo dono: lista de episódios na numeração Cinemeta/TVDB mais uma camada de tradução por número absoluto do episódio para o progresso/scrobble do Trakt, a conta Nuvio, o Simkl, os ids de "a seguir"/Continuar assistindo e as marcas de visto (vistonao/vistoep). A parte 1 (abas de temporada) sai na 2.0.3.1. #328 acompanha: mesma raiz suspeita. Origem: dono 09/10.
 - **CI com ASan/TSan nos testes de host (+ ASan do app inteiro por candidata a release, helpers de buffer limitado)**: Alternativa sem Rust do estudo: SANITIZE=1 e SANITIZE=thread nos 152 + 29 testes que já aceitam, falhando o PR; roteiro fixo com ASan no app inteiro por release candidate; helpers de buffer limitado (nv_cpy, nv_slice). Cobre os bugs de memória do ranking a custo de horas, sem tocar em alvo de TV. Referência: docs/plans/rust-piloto.md ("alternativas sem Rust", seção 5). Origem: dono 09/10. Branches: `docs/plans/rust-piloto.md`.
+- **Biblioteca: aba Salvos seguir o destino Simkl (sugestao)** (#393): #393; só se o autor confirmar que o que falta é isso (Listas › Simkl e "Onde o + salva" já existem). Sugestão do agente, não aprovado pelo dono. Origem: agente 09/10.
 
 ### 2.1 - aprovada pelo dono em 06/10/2026 (e 07/10 para Ajustes); sem data
 
@@ -65,6 +66,7 @@ Os seis recursos aprovados pelo dono, mais perfis com o pacote de UX dos Ajustes
 - **Auto-play: reusar último link com validade e regex separada por tipo (filmes / séries / anime)** (#310): Pedidos (b) e (c) do #310. (b) não há cache de link hoje (fontepref guarda só a identidade, 180 dias; fontecache é prefetch de 30 s): guardar URL de debrid pede arquivo, validade nos Ajustes e queda para a busca. (c) hoje há uma regex e um modo só (fonteregra.c:15, ajustes.c:1301, uma chave na conta): por tipo pede três regex, três modos, blob novo e uma definição de anime. Médio e grande, por isso 2.1 e não 2.0.4. Sem aprovação do dono ainda. Origem: suspeita (sugestão do agente, não aprovado).
 - **Piloto Rust 'mkvcore' (no_std, atrás de -DNV_RUST_MKVCORE, com fallback C) — piloto de toolchain**: Experimento de toolchain nos 5 alvos com flag por alvo e fallback C (reversível trocando uma variável de build); flag desligada por padrão no primeiro candidato. Estimativa de 3 a 4 semanas, SUSPEITA. Referência: docs/plans/rust-piloto.md (seção 4). Origem: dono 09/10. Branches: `docs/plans/rust-piloto.md`.
 - **Portar fonteparalela+streams e o publicador do catálogo (se o piloto passar)**: Só depois do piloto mkvcore passar os guards nos 5 alvos; é onde está o ganho real de Rust segundo o estudo, mas o custo é de meses (SUSPEITA). Coordenar com o plano de refatoração geral, que também mexe em streams.c. Referência: docs/plans/rust-piloto.md (seção 6). Origem: dono 09/10. Branches: `docs/plans/rust-piloto.md`.
+- **Atraso do áudio no player (sugestao)** (#397): Pedido no #397; não existe hoje (só o atraso de legenda). Sugestão do agente, não aprovado pelo dono: começar onde o backend deixa (Android/Media3); LG e Samsung podem não ter API. Origem: agente 09/10.
 
 ### 2.2 - aprovada pelo dono em 06/10/2026; sem data
 
@@ -79,6 +81,7 @@ Servidores locais, guia de TV e música.
 Pedidos que fazem sentido mas não têm plano.
 
 - **Porte VIDAA, layout RTL, anime-skip.com, busca por microfone, pontos do carrossel estilo Apple TV, serviços na barra lateral** (#135, #260, #343, #347, #348, #304, #342): Cada um é grande ou depende de terceiros; nenhum tem branch.
+- **Passo de quadro no player (sugestao)** (#397): Pedido no #397 ("frame skipping", ambíguo); não existe, só saltos de 10 a 120 s. Sugestão do agente, não aprovado pelo dono; depende de a TV aceitar avanço por quadro. Origem: agente 09/10.
 
 ### nao vamos fazer - fora do escopo do produto
 
@@ -94,8 +97,8 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 |---|---|---|
 | 2.0.3 | 5 | #246, #280, #283, #334, #356 |
 | 2.0.3.1 | 3 | #294, #344, #392 |
-| 2.0.4 | 42 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #378, #379, #382, #385, #386, #387, #388, #390, #394 |
-| 2.1 | 3 | #250, #333, #374 |
+| 2.0.4 | 43 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #378, #379, #382, #385, #386, #387, #388, #390, #393, #394 |
+| 2.1 | 4 | #250, #333, #374, #397 |
 | 2.2 | 0 |  |
 | futuro | 8 | #135, #260, #304, #342, #343, #347, #348, #389 |
 | nao vamos fazer | 4 | #292, #307, #324, #354 |
@@ -174,8 +177,8 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 268 |
-| aberta | 28 |
-| respondida | 22 |
+| aberta | 29 |
+| respondida | 23 |
 | por-desenho | 14 |
 | consertada-nao-lancada | 14 |
 | precisa-log | 8 |
@@ -188,15 +191,15 @@ Por release (grupo de planejamento):
 | Grupo | Qtd |
 |---|---|
 | lançadas em tag v* (qualquer versão) | 268 |
-| sem release | 73 |
+| sem release | 75 |
 | 2.0.4 (branches) | 11 |
 | 2.0.3 lançada, com pendência | 8 |
 | futuro (2.1/2.2) | 5 |
 
 Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18, 2.0.3: 35.
 
-Abertas no GitHub: 96. Fechadas: 269.
-Abertas sem nenhum comentário nosso: 47.
+Abertas no GitHub: 98. Fechadas: 269.
+Abertas sem nenhum comentário nosso: 49.
 
 ## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)
 
@@ -270,7 +273,7 @@ Notas:
 
 ## Aberta sem plano
 
-37 issues.
+39 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -310,7 +313,9 @@ Notas:
 | [#388](https://github.com/iqui27/nuvio-native-legacy/issues/388) | Profile picture on side bar is squashed | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir captura de tela e log |
 | [#389](https://github.com/iqui27/nuvio-native-legacy/issues/389) | Card depth effect | Samsung (tpk/wgt?) | feature | aberta | - | futuro | - | sem comentários | responder: pedir exemplo do efeito de profundidade desejado (sombra, inclinação, escala no |
 | [#390](https://github.com/iqui27/nuvio-native-legacy/issues/390) | Custom poster source not setting | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log: o campo de log veio vazio |
+| [#393](https://github.com/iqui27/nuvio-native-legacy/issues/393) | [Feature Request] Option to change the library source from T | ? | feature | aberta | - | 2.0.4 | - | sem comentários | sugestao: perguntar ao autor qual tela e qual TV (a Biblioteca já lista o Simkl em Listas  |
 | [#394](https://github.com/iqui27/nuvio-native-legacy/issues/394) | ASS subtitles: lag on large tracks, shadow/color shift, occa | Samsung .tpk | bug | aberta | - | 2.0.4 | - | nós 10-09 | investigar renderizacao libass no .tpk (sombra/anel, cor, lentidao em faixa grande, dessin |
+| [#397](https://github.com/iqui27/nuvio-native-legacy/issues/397) | [Feature Request] Playback Engine Robustness: Native Codec O | LG | feature | respondida | - | 2.1 | - | sem comentários | postar o rascunho (EN, nas notas): o que já existe e o caminho; o que falta (atraso do áud |
 
 Notas:
 
@@ -336,7 +341,9 @@ Notas:
 - **#388**: QN70F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito "2.02"). A foto do perfil na barra lateral aparece achatada. Sem log nem imagem. Não investigado no código.
 - **#389**: Pedido de efeito de profundidade em cartões, trailers e elenco. Não existe opção com esse nome. SUSPEITA de alvo: futuro, sem plano nem aprovação do dono; pode ser ligado à Biblioteca/Glass UI da 2.1.
 - **#390**: QN74F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito "2.02"). Ao colocar a URL de cartaz própria (pelo celular e à mão) e apertar "Concluído", volta para as opções sem gravar a URL. Mesmo autor do #388 e do #389. Não investigado. Relação com a URL de cartaz longa do #361 (2.0.3) não conferida: SUSPEITA.
+- **#393**: Issue de uma linha, sem texto. O que existe hoje (09/10): a Biblioteca tem três modos (Salvos, Coleção, Listas; biblioteca.c:267-269) e em Listas as fontes Trakt, Simkl, Nuvio, Fixadas e Públicas (biblioteca.c:282-284, lst_pedir LST_SIMKL em :685); "Coleção" só existe no Trakt. O que o "+" salva é Ajustes › Conta e serviços › Trakt e Simkl › "Onde o + salva" (AJ_SALVOS_DEST, ajustes.c:1105; destinos Esta TV/Trakt/Simkl), e o Plan to Watch do Simkl aparece como "SIMKL" na aba Salvos (biblioteca.c:2055); o "Continuar assistindo" tem "Fonte do Continuar assistindo" (Todas as fontes, Conta Nuvio, Trakt, Simkl; ajustes.c:711, 1034). Não há UMA chave "fonte da biblioteca" que troque a aba Salvos inteira do Trakt para o Simkl: se é isso que o autor quer, é pequeno (a aba Salvos passar a seguir AJ_SALVOS_DEST), mas o pedido pode já estar coberto pelas Listas › Simkl. Sugestão de alvo: 2.0.4, depois de o autor dizer qual tela e qual aparelho. Sem commit.
 - **#394**: Aberta pelo dono em 09/10 ao fechar a #308: depois da 2.0.3 o Namer03 (.tpk S95C) viu as legendas ASS funcionando, mas com sombra/anel e cor alterada em relacao ao original, lentidao (fps baixo) em legenda grande/avancada e um clipe fora de sincronia. Causa nao investigada (suspeita: renderizacao libass/composicao no .tpk). Alvo 2.0.4.
+- **#397**: Pedido em quatro partes (formulário diz LG webOS / All; o texto fala de Android/Fire TV). Caminhos conferidos NO CÓDIGO (09/10), sem prova em TV. (a) HDR/Dolby Vision e passthrough: JÁ HÁ o que o app controla. Preferência de fonte em Ajustes › Reprodução › "Dolby Vision e HDR" (AJ_FONTE_HDR) e "Preferir som Dolby Atmos" (AJ_ATMOS, ajustes.c:4452-4453); "Dolby Vision em MKV (experimental)" só LG webOS 4+, desligado por padrão (AJ_DV_MKV, ajustes.c:5399): na 2.0.3 troca TrueHD por E-AC-3/AC-3 no idioma ouvido para manter o Dolby Vision (docs/releases/2.0.3/NOTAS.md:17). "Converter DTS para a TV ouvir" (AJ_DTS_AC3, ajustes.c:4464): só LG, converte o DTS em estéreo (AAC) ou 5.1 (Dolby Digital) via src/dts/; na Samsung o app só AVISA quando a TV recusa DTS/TrueHD (video_tpk.c:130-141, #313; esconder as faixas é 2.0.4, fase 1). LIMITADO PELA TV/PLATAFORMA, não dá para prometer: na LG e na Samsung quem decodifica HDR/DV e faz o passthrough é a TV (uMS / AVPlay / player .tpk), o app só escolhe a fonte e o caminho; no Android o Media3 usa o passthrough por AudioCapabilities (NvPlayer.kt:374-386; video_android.c:27) e com bitstream o app não mexe no áudio (sem reforço de volume, sem velocidade: video_android.c:260, 836-841). Não há "robustez garantida" a implementar sem um caso de TV com log. (b) Estilo da legenda na hora: JÁ EXISTE no player. Botão Legendas (PLR_CC, player.c:189) › aba "Estilo" (legendasui.c:824; faixas.c:1489, corpo faixas.c:533-600), com Tamanho (50% a 250%, de 10 em 10, padrão 120%, faixas.c:590), Fonte OpenSubtitles, Cor, Opacidade (100/75/50/25%), Fundo (Nenhum, Escuro 25/50/75/100%), Posição (1 a 8), Borda (Nenhuma/Contorno/Sombra), Atraso, Negrito (Ligado/Desligado) e Restaurar padrão; OK cicla o valor e aplica na hora. Ressalvas: com ASS desenhado pelo app, fonte/cor/fundo/posição/borda/negrito ficam "Preservado pelo ASS" (faixas.c:536-541) e o tamanho vira escala; o negrito vale só para legenda externa/OpenSubtitles, a faixa que a TV desenha segue o peso da TV (faixas.c:571-572). Os valores são cíclicos (sem slider). (c) Atraso: legenda JÁ EXISTE: Legendas › linha "Atraso" (LR_ATRASO, legendasui.c:671-676), régua de -10 s a +10 s, 0,1 s por toque e 0,5 s segurando a seta (legendasui.c:444-451); a legenda secundária tem o seu; e "Sincronização automática" (AutoSync, linha LR_SYNC) que acerta pelo áudio (Ajustes "Sincronizar pelo áudio", AJ_LEG_SYNC_AUDIO, só onde o player entrega PCM, hoje Android: audsync.h:1-6). ATRASO DO ÁUDIO NÃO EXISTE (sem backend nem linha: grep audio_atraso/audioDelay vazio). (d) Proporção JÁ EXISTE: botão Proporção (PLR_ASPECTO) ou tecla 0, 8 modos: Original, Recortar, Esticar, Zoom leve, Zoom cinema, Zoom ultra, Ajustar altura, Ajustar largura (player.c:877-881, player.h:218-226); padrão em Ajustes › Reprodução › "Proporção padrão" (AJ_PROPORCAO_PADRAO). Em TVs que não recortam a imagem os modos de zoom caem para Original (player.c:1173); o .wgt Samsung (AVPlay/WebAssembly) não tem o zoom que corta a barra preta. Velocidade JÁ EXISTE: folha de Áudio, linha "Velocidade" (faixas.c:1448; "Playback speed" no i18n), 0,75x 1x 1,25x 1,5x 1,75x 2x (velocidade.c:7), por vídeo; disponível na LG, no .tpk e no Android; AUSENTE na Samsung .wgt (AVPlay só tem trick play inteiro, video_tizen.c:1531-1539) e bloqueada no Android com áudio em passthrough ("Indisponível com áudio pelo receptor", faixas.c:1449, #202). Salto de QUADROS (frame step/skip) NÃO EXISTE (só saltos de 10/30/60/120 s); o pedido é ambíguo (passo de quadro ou pular quadros?). FALTA, sugestao: atraso do áudio na 2.1 (começar onde o backend deixa, Android/Media3; LG e Samsung podem não ter API, a confirmar); passo de quadro em futuro (precisa de pausa + avanço por quadro nos 4 backends, sem prova de que a TV deixa); faixa de velocidade mais larga (0,25x-3x) e slider de tamanho/opacidade da legenda em 2.0.4 se o dono quiser (pequeno). Alvo geral = o mais cedo entre as peças que faltam (atraso do áudio, 2.1). Origem: pedido do autor somprakashpathakoneplus-cell. Rascunho (EN): The subtitle style (size up to 250%, color, opacity, background, bold), the subtitle delay ruler (-10 s to +10 s) and AutoSync are already in the player under Subtitles, tab Style; aspect modes are on the Aspect ratio button (or key 0) and playback speed (0.75x-2x) is on the Audio sheet. Audio delay and frame stepping are not there yet and are on the roadmap, while HDR, Dolby Vision and passthrough depend on what each TV or player decodes, so we can only choose the source and path. Which device are you on, so we know which of these you are missing?
 
 ## Já lançado
 
