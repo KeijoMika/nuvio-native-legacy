@@ -26,9 +26,17 @@ int main(void) {
     "{\"url\":\"https://example.invalid/6\",\"name\":\"Movie\",\"description\":\"DTS-HD MA 5.1\"},"
     "{\"url\":\"https://example.invalid/7\",\"name\":\"XFHDX\"},"
     "{\"url\":\"https://example.invalid/8\",\"name\":\"1080p\",\"description\":\"FHD WEB-DL\"},"
-    "{\"url\":\"https://example.invalid/9\",\"name\":\"2160p\",\"description\":\"FHD HDR10\"}"
+    "{\"url\":\"https://example.invalid/9\",\"name\":\"2160p\",\"description\":\"FHD HDR10\"},"
+    // Revisao: FHD so na falta de numero escrito, e so do name.
+    "{\"url\":\"https://example.invalid/10\",\"name\":\"720p\",\"description\":\"FHD WEB-DL\"},"
+    "{\"url\":\"https://example.invalid/11\",\"name\":\"480p | FHD\"},"
+    "{\"url\":\"https://example.invalid/12\",\"name\":\"Movie\",\"description\":\"More information: https://fhd.example.invalid/help\"},"
+    "{\"url\":\"https://example.invalid/13\",\"name\":\"Movie.WEBRip.x265-FHD.mkv\"},"
+    "{\"url\":\"https://example.invalid/14\",\"name\":\"Movie\",\"behaviorHints\":{\"filename\":\"Movie.WEBRip.x265-FHD.mkv\"}},"
+    "{\"url\":\"https://example.invalid/15\",\"name\":\"2160p\",\"description\":\"FHD; alternative 720p\"},"
+    "{\"url\":\"https://example.invalid/16\",\"name\":\"720p | FHD\"}"
     "]}", "fixture", &v);
-  if (n != 10) { printf("FAIL contagem %d\n", n); return 1; }
+  if (n != 17) { printf("FAIL contagem %d\n", n); return 1; }
   caso(&v[0], 1080, 1, "FHD | REMUX | SDR");
   caso(&v[1], 1080, 1, "FHD | SDR + WEBRip HEVC");
   caso(&v[2], 1080, 1, "Full HD BluRay");
@@ -41,6 +49,13 @@ int main(void) {
   caso(&v[8], 1080, 1, "1080p + FHD");
   caso(&v[9], 2160, 0, "2160p + FHD: numero explicito vence");
   if (!(v[9].badges & badges_bit("r-4k"))) { puts("FAIL 2160p+FHD sem r-4k"); falhas++; }
+  caso(&v[10], 720, 0, "720p no name + FHD na descricao");
+  caso(&v[11], 480, 0, "480p | FHD no name");
+  caso(&v[12], 0, 0, "fhd como host de URL");
+  caso(&v[13], 0, 0, "grupo de release x265-FHD no name");
+  caso(&v[14], 0, 0, "grupo de release x265-FHD no filename");
+  caso(&v[15], 2160, 0, "2160p + FHD; alternative 720p sem r-1080");
+  caso(&v[16], 720, 0, "720p | FHD no name: numero vence");
   free(v);
   if (falhas) { printf("FAIL #402: %d caso(s)\n", falhas); return 1; }
   puts("PASS #402: FHD/Full HD agrupam como 1080p.");
