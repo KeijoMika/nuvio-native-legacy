@@ -6322,7 +6322,11 @@ int desc_meta_n_episodios(const char *corpo) { return metaContarEpisodios(corpo,
 
 // O videos[] e uma lista de ARQUIVOS, nao de episodios? Em media mais de tres
 // entradas por episodio so acontece em addon de fontes (o agregador de anime
-// do #328 repete uma ou duas vezes). Lista pequena nunca e recusada.
+// do #328 repete uma ou duas vezes). Lista pequena nunca e.
+// Ser lista de arquivos NAO descarta o corpo por si so: ele perde o empate e a
+// preferencia pela ficha do addon, e so e recusado quando nao conhece MAIS
+// episodios distintos que a lista com que disputa (episodiosDoAddon,
+// episodiosDoCatalogo).
 static int metaListaDeArquivos(int distintos, int brutos) {
   return brutos >= 60 && brutos > distintos * 3;
 }
@@ -6514,28 +6518,45 @@ static int episodiosDoAddon(int alvoItem, const char *serie, const char *titulo,
                             const char *corpoCine, int nCine, int aplicar, TempsPub *tp) {
   char *melhorCorpo = NULL;
   const char *melhorNome = "";
-  int melhor = 0, i, n = addons_n(), usouTexto = 0;
+  int melhor = 0, melhorArq = 0, i, n = addons_n(), usouTexto = 0;
   for (i = 0; i < n; i++) {
     char *c2 = metaDoAddon(i, "series", serie);
-    int n2, brutos = 0;
+    int n2, brutos = 0, arq;
     if (!c2) continue;
     // Episodios DISTINTOS: pela contagem bruta, a lista de arquivos de um addon
     // de fontes (18529 "episodios" contra 62) ganhava de qualquer lista real.
     n2 = metaContarEpisodios(c2, &brutos);
-    if (metaListaDeArquivos(n2, brutos)) {
-      printf("[desc] %s: %s respondeu %d videos para %d episodios (lista de arquivos); "
-             "nao serve de lista de episodios\n", titulo, addons_nome(i), brutos, n2);
+    arq = metaListaDeArquivos(n2, brutos);
+    // LISTA DE ARQUIVOS SO ENTRA SE SOUBER MAIS EPISODIOS que o Cinemeta (20 em
+    // 4 variantes contra 12: os 8 a mais nao se perdem). No empate ou com menos
+    // ela nao serve nem de lista nem de texto: o "nome" dela e nome de arquivo.
+    if (arq && n2 <= nCine) {
+      printf("[desc] %s: %s respondeu %d videos para %d episodios (lista de arquivos) "
+             "contra %d do Cinemeta; nao serve de lista de episodios\n",
+             titulo, addons_nome(i), brutos, n2, nCine);
       fflush(stdout);
       free(c2);
       continue;
     }
-    if (n2 > melhor) {
+    // Entre addons, mais episodios ganha; no empate, a lista de verdade tira a
+    // de arquivos.
+    if (n2 > melhor || (n2 == melhor && melhorArq && !arq)) {
       free(melhorCorpo);
-      melhorCorpo = c2; melhor = n2; melhorNome = addons_nome(i);
+      melhorCorpo = c2; melhor = n2; melhorArq = arq; melhorNome = addons_nome(i);
     } else free(c2);
   }
   if (!melhorCorpo) return 0;
-  if (melhor > nCine || (aplicar && melhor >= nCine)) {
+  if (melhorArq) {
+    // So chegou aqui por saber MAIS episodios. A lista e dela; o texto nao:
+    // o nome do Cinemeta entra por cima nos episodios que os dois tem, e o
+    // texto do addon nao conta como aplicado (o TMDB segue podendo traduzir).
+    printf("[desc] %s: %s tem %d episodios (lista de arquivos) contra %d do Cinemeta; "
+           "usando a lista do addon com os nomes do Cinemeta\n",
+           titulo, melhorNome, melhor, nCine);
+    fflush(stdout);
+    publicarEpisodios(melhorCorpo, alvoItem, titulo, corpoCine, DESC_MESCLA_TEXTO, tp);
+    arte_reserva_episodios(serie, melhorCorpo);
+  } else if (melhor > nCine || (aplicar && melhor >= nCine)) {
     printf("[desc] %s: %s tem %d episodios contra %d do Cinemeta; usando a lista do addon\n",
            titulo, melhorNome, melhor, nCine);
     fflush(stdout);
