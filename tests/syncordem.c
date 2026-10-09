@@ -183,6 +183,10 @@ static const char *legContaValor = "en";   // valor da legenda no proximo blob
 static int idiomasChamadas;
 char *sessao_rpc(const char *funcao, const char *corpo, int *st) {
   *st = 200;
+  // modoBlob 2: so o perfil 1 tem blob na conta; o 2 nunca salvou ajustes.
+  if (modoBlob == 2 && !strcmp(funcao, "sync_pull_profile_settings_blob") &&
+      strstr(corpo, "\"p_profile_id\":2"))
+    return strdup("[]");
   if (modoBlob && !strcmp(funcao, "sync_pull_profile_settings_blob"))
   { char b[256];
     snprintf(b, sizeof b, "[{\"settings_json\":{\"features\":{\"player_settings\":{"
@@ -507,6 +511,33 @@ int main(int argc, char **argv) {
   int remAntes, rpcAntes;
 
   setvbuf(stdout, NULL, _IOLBF, 0);
+  if (argc > 1 && !strcmp(argv[1], "legconta-troca")) {
+    // Revisao P1: troca do 1 para o 2 com o ciclo do 1 no ar. O blob do 1
+    // ("en") chega DEPOIS da troca (sync_reaplicar_ajustes ja o tinha
+    // soltado), o ciclo do 1 e descartado, e o 2 nao tem blob na conta. Os
+    // idiomas do 1 nao podem virar "Da conta" do 2.
+    printf("-- sessao: troca 1 -> 2 com o blob do 1 chegando depois\n");
+    modoBlob = 2;
+    escolher(1);
+    segurarCol = 1;
+    sync_iniciar();
+    pthread_mutex_lock(&trava);
+    while (!puxandoCol) pthread_cond_wait(&sinal, &trava);
+    pthread_mutex_unlock(&trava);
+    escolher(2);
+    sync_trocar_perfil(1);
+    sync_iniciar();
+    pthread_mutex_lock(&trava);
+    segurarCol = 0;
+    pthread_cond_broadcast(&sinal);
+    pthread_mutex_unlock(&trava);
+    ateTerminar();
+    ateTerminar();
+    ciclo();                           // mais um ciclo do 2, ainda sem blob
+    confere("idiomas do perfil 1 nao vazam para o 2", !strstr(idiomasConta, "\"en\""));
+    printf("%s\n", falhas ? "FALHOU" : "PASSOU");
+    return falhas ? 1 : 0;
+  }
   if (argc > 1 && !strcmp(argv[1], "legconta")) {
     // #378: uma mudanca anterior em Ajustes deixou a protecao gravada. O blob
     // nao e aplicado (certo), mas os idiomas da conta tem de chegar a

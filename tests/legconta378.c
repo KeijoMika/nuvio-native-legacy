@@ -110,6 +110,22 @@ int main(void) {
   confere("a escolha local de audio sobrevive a limpeza", !strcmp(ling_audio(), "de"));
   ling_local_audio("");
 
+  printf("-- chaves parciais: so o audio, so a secundaria\n");
+  ajustes_idiomas_da_conta("{\"features\":{\"player_settings\":{"
+    "\"subtitle_preferred_language\":\"en\",\"subtitle_secondary_language\":\"fr\","
+    "\"preferred_audio_language\":\"es\"}}}");
+  ajustes_idiomas_da_conta("{\"features\":{\"player_settings\":{\"preferred_audio_language\":\"ja\"}}}");
+  confere("so audio: audio ja, legendas da conta vazias",
+          !strcmp(ling_audio(), "ja") && !ling_legenda()[0] && !ling_legenda2()[0]);
+  ajustes_idiomas_da_conta("{\"features\":{\"player_settings\":{\"subtitle_secondary_language\":\"it\"}}}");
+  confere("so secundaria: secundaria it, principal e audio vazios",
+          !strcmp(ling_legenda2(), "it") && !ling_legenda()[0] && !ling_audio()[0]);
+
+  printf("-- o log separa o que a conta diz do que vale\n");
+  ling_local_legenda("es");
+  ajustes_idiomas_da_conta(blob("en"));           // a linha sai daqui (grep no .sh)
+  ling_local_legenda("");
+
   printf("%s\n", falhas ? "FALHOU" : "PASSOU");
   return falhas ? 1 : 0;
 }
