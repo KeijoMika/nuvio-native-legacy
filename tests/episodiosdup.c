@@ -8,7 +8,18 @@ int ajustes_hist_conta(void) { return 1; }
 int ajustes_busca_cinemeta(void) { return 1; }
 int ajustes_busca_nuvio(void) { return 0; }   // #311: Primeiro (padrao)
 int ajustes_ocultar_nao_lancados(void) { return 0; }   // #369: descoberta.c le o ajuste
+// FALTA DE MEMORIA NO CRESCIMENTO DO CONJUNTO (EpSet): com `callocFalha` ligado,
+// todo calloc de mais de 1024 itens (so o crescimento do conjunto pede isso
+// neste teste) responde NULL. O primeiro, de 1024, passa.
+#include <stdlib.h>
+static int callocFalha, callocNegados;
+static void *callocDoTeste(size_t n, size_t tam) {
+  if (callocFalha && n > 1024) { callocNegados++; return NULL; }
+  return calloc(n, tam);
+}
+#define calloc(n, tam) callocDoTeste(n, tam)
 #include "../src/descoberta.c"
+#undef calloc
 Uint32 SDL_GetTicks(void) { return 0; }
 #include "../src/progresso.h"
 #include <assert.h>
@@ -395,6 +406,30 @@ int main(void) {
     assert(cat_n_episodios(0) == 72);
     assert(cat_item(0)->nTemporadas == 6);
     puts("ok  addon com mais episodios distintos continua ganhando");
+    // SEM MEMORIA PARA CRESCER O CONJUNTO, a repeticao continua sendo repeticao:
+    // 600 episodios, cada um duas vezes. O conjunto de 1024 casas cabe os 600;
+    // o crescimento (pedido ao passar de meia carga) falha sempre.
+    k = (size_t)snprintf(maior, cap, "{\"videos\":[");
+    for (i = 0; i < 1200; i++)
+      k += (size_t)snprintf(maior + k, cap - k, "%s{\"id\":\"f%d\",\"season\":1,\"episode\":%d}",
+                            i ? "," : "", i, i % 600 + 1);
+    snprintf(maior + k, cap - k, "]}");
+    callocFalha = 1; callocNegados = 0;
+    n = desc_meta_n_episodios(maior);
+    printf("sem memoria para crescer: %d distintos (%d callocs negados)\n", n, callocNegados);
+    assert(callocNegados > 0);                 // a falha foi mesmo injetada
+    assert(n == 600);
+    {
+      CatEp *g = malloc(sizeof(CatEp) * VIDEOS_MAX);
+      assert(g);
+      n = parsearEpisodios(maior, g, VIDEOS_MAX);
+      assert(n == 600);
+      assert(!strcmp(g[0].vid, "f0") && g[599].episodio == 600);
+      free(g);
+    }
+    callocFalha = 0;
+    puts("ok  sem memoria para crescer o conjunto, repeticao continua repeticao");
+
     // CATALOGO PRIMEIRO: a mesma lista de arquivos, agora na ficha do addon que
     // PUBLICOU o item (titulo aberto de um catalogo dele). A base manda no
     // texto, mas a lista de arquivos dela nao pode esconder os 62 do Cinemeta.
