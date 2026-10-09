@@ -417,6 +417,13 @@ static int cVistos, cBiblio, cColecoes, temAjustesPerfil, temCatHome;
 // objeto muito mais chaves do que este app conhece, e escolher um teto aqui e
 // escolher uma conta que nao vai funcionar.
 static char *ajustesBlob;
+// Sobe a cada blob novo em ajustesBlob. "Blob novo" era o PONTEIRO mudar, e o
+// do perfil seguinte, do mesmo tamanho, cai no endereco que
+// sync_reaplicar_ajustes acabou de soltar (#378, revisao).
+static unsigned ajustesBlobGeracao;
+// DE QUAL PERFIL e o blob (#378, revisao): o ciclo do perfil anterior pode
+// entregar o dele DEPOIS da troca (sync_reaplicar_ajustes ja soltou o velho).
+static int ajustesBlobPerfil = -1;
 static int  temAjustesBlob;
 static int  aplicarAjustes = 1;
 // Flag em disco: a pessoa ja mudou ajustes nesta TV depois do ultimo
@@ -1238,6 +1245,8 @@ static int puxarAjustesPerfil(const char *corpo) {
             novo[n] = 0;
             free(ajustesBlob);
             ajustesBlob = novo;
+            ajustesBlobGeracao++;
+            ajustesBlobPerfil = perfilDoCiclo;
             temAjustesBlob = aplicarAjustes;
             ok = 1;
             printf("[sync] blob de ajustes: %d bytes\n", (int)n);
@@ -1303,6 +1312,7 @@ static void empurrarAjustes(void) {
     sujoAjustes = 0;
     free(ajustesBlob);
     ajustesBlob = mesclado;
+    ajustesBlobGeracao++;
     // NAO liga temAjustesBlob: o blob agora E o estado local: aplica-lo seria
     // trabalho para nao mudar nada.
     printf("[sync] ajustes desta TV guardados na conta\n");
@@ -1761,6 +1771,12 @@ void sync_passo(unsigned agoraMs) {
     free(bibBlob);     bibBlob = NULL;     temBibBlob = 0;
     free(vistosBlob);  vistosBlob = NULL;  temVistosBlob = 0;
     temAjustesBlob = 0;
+    // O blob que o ciclo descartado trouxe e do perfil anterior: nao fica
+    // como base da costura nem como "Da conta" do perfil novo (#378).
+    if (ajustesBlob && ajustesBlobPerfil != perfis_ativo()) {
+      free(ajustesBlob);
+      ajustesBlob = NULL;
+    }
     syncprog_esquecer();
     pedidoComFioVivo = 0;
     sync_iniciar();
@@ -1921,8 +1937,10 @@ void sync_passo(unsigned agoraMs) {
   else if (soAddons) desc_repetir_addons();
   else if (soFileiras) desc_remontar_fileiras();
   spMarcar(SP_REMONTAR); }
+  int blobAplicado = 0;
   if (temAjustesBlob && ajustesBlob) {
     ajustes_aplicar_blob(ajustesBlob);
+    blobAplicado = 1;
     // O BLOB NAO E LIBERADO AQUI (mudou em #85): ele e a base da costura que
     // sobe no proximo ciclo. Quem o libera e o pull seguinte, que o substitui,
     // e o logout.
@@ -1930,11 +1948,17 @@ void sync_passo(unsigned agoraMs) {
     aplicarAjustes = 0;   // daqui para frente, o que a pessoa mudar na TV fica
   }
   // #187: uma linha por blob novo (aplicado ou protegido) dizendo qual idioma
-  // a TV pede ao TMDB e o que a conta guarda. O ponteiro muda a cada pull.
-  { static const char *relatado;
-    if (ajustesBlob && ajustesBlob != relatado) {
-      relatado = ajustesBlob;
+  // a TV pede ao TMDB e o que a conta guarda. A geracao muda a cada blob.
+  { static unsigned relatado;
+    if (ajustesBlob && ajustesBlobGeracao != relatado) {
+      relatado = ajustesBlobGeracao;
       ajustes_tmdb_idioma_relatar(ajustesBlob);
+      // #378: PROTEGIDO, o blob nao e aplicado — mas os idiomas de legenda e
+      // audio da conta nao sao ajuste desta TV: sao o que "Da conta" quer
+      // dizer, e linguas.c ja nao os deixa passar por cima da escolha local.
+      // Sem isto, quem mexeu em QUALQUER ajuste ficava com "Da conta" = nada.
+      if (!blobAplicado && ajustesBlobPerfil == perfis_ativo())
+        ajustes_idiomas_da_conta(ajustesBlob);
     } }
   spMarcar(SP_AJUSTES);
   // Progresso da conta: progresso.c decide linha a linha (pendente local vence,
@@ -2156,6 +2180,9 @@ void sync_reaplicar_ajustes(void) {
   free(ajustesBlob);
   ajustesBlob = NULL;
   temAjustesBlob = 0;
+  // Os idiomas da conta eram do perfil velho: ate o blob do novo chegar,
+  // "Da conta" nao tem idioma (#378, revisao).
+  ajustes_idiomas_da_conta(NULL);
 }
 
 // A pendencia local de um perfil que nao esta ativo. So o perfil ativo usa

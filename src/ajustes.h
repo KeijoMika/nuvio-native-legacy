@@ -585,7 +585,15 @@ int         ajustes_nota_titulo(int fonte);
 // Chave ausente no blob NAO mexe na opcao, e valor de texto que este app nao
 // reconhece tambem nao: trocar por um padrao seria inventar uma escolha que o
 // usuario nunca fez.
+// EXCECAO (#378): os idiomas de legenda, legenda secundaria e audio da conta.
+// Eles nao sao opcao desta tabela, sao a parte "da conta" de linguas.c, e o
+// blob e o retrato inteiro dela: chave ausente = a conta nao tem idioma (sem
+// isso, os do perfil anterior ficavam valendo). A escolha local nao e tocada.
 int ajustes_aplicar_blob(const char *json);
+// #378: so os idiomas de legenda/audio da conta, para o blob que chega com os
+// ajustes locais protegidos (sync.c nao o aplica). Nao mexe em escolha local.
+// NULL esquece os idiomas da conta (troca de perfil/conta).
+void ajustes_idiomas_da_conta(const char *json);
 
 // AJUSTES POR PERFIL NESTA TV (ajustes-p<N>.txt). _guardar grava os ajustes que
 // sao do perfil (os mesmos que a conta guarda; nunca os deste aparelho).
