@@ -225,6 +225,7 @@ void nv_webos_starfish_linha(char *out, size_t cap) {
   pthread_mutex_unlock(&trava);
 }
 
+#ifdef AJUSTES_TESTE
 void nv_webos_testar(const char *nyx, const char *starfish) {
   pthread_mutex_lock(&trava);
 #ifdef NV_WEBOS
@@ -237,3 +238,4 @@ void nv_webos_testar(const char *nyx, const char *starfish) {
   lido = 0;
   pthread_mutex_unlock(&trava);
 }
+#endif

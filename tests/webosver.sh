@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")/.."
 d=$(mktemp -d "${TMPDIR:-/tmp}/webosver.XXXXXX")
 trap 'rm -rf "$d"' EXIT
-cc -std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -Werror -Isrc tests/webosver.c src/webosver.c -pthread -o "$d/t"
+cc -std=c11 -D_DEFAULT_SOURCE -DAJUSTES_TESTE -Wall -Wextra -Werror -Isrc tests/webosver.c src/webosver.c -pthread -o "$d/t"
 "$d/t" "$d"
 # Ultrareview do #408: o gancho de teste nao pode ir no binario de producao
 # (ele troca os caminhos da versao do webOS que o DTS e o Dolby Vision leem).

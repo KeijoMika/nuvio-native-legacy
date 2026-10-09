@@ -13,7 +13,7 @@ g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Itests/dts_pipeli
 # So o adaptador do webOS 3, como na TV de 2017: o do webOS 4 falta e falha.
 g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Isrc/dts/adapter -Itests/dts_pipeline_sdk \
   src/dts/adapter/starfish.cpp "$tmp/js.o" -o "$tmp/good/dts-starfish-webos3.so" -ldl -pthread
-cc -std=c11 -Wall -Wextra -Werror -Isrc tests/dts_sonda_cache.c src/dts/dts_pipeline.c src/webosver.c -ldl -pthread -o "$tmp/test"
+cc -std=c11 -DAJUSTES_TESTE -Wall -Wextra -Werror -Isrc tests/dts_sonda_cache.c src/dts/dts_pipeline.c src/webosver.c -ldl -pthread -o "$tmp/test"
 mkdir -p "$tmp/vazia"
 ruim=0
 # conta as linhas "adapter load failed" e "firmware adapter ready" de uma rodada
