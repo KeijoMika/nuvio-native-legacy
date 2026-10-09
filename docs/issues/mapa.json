@@ -8431,13 +8431,13 @@
    "release": "-",
    "conserto": [],
    "ultima_resposta": {
-    "nos": false,
-    "data": null,
-    "ultimo_comentario_por": null,
-    "ultima_nossa": null
+    "nos": true,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "iqui27",
+    "ultima_nossa": "2026-10-09"
    },
-   "proximo_passo": "postar o rascunho (EN) em docs/issues/rascunhos/respostas-401-403.md; conserto de tamanho (strip do binário) é 2.0.5",
-   "notas": "LG C5 webOS 26, 2.0.32 para 2.0.3 pelo Homebrew Channel, 15+ min. NAO e regressao de tamanho (ipk 2.0.3 61,1 MB/1218 arquivos; 2.0.2 60,7 MB/1215). MEDIDO no ipk 2.0.4 (58,3 MB, 1190 arquivos, 99,5 MB descomprimido): o binário nuvio-proto tem 55,3 MB e VEM COM debug_info e símbolos (file: not stripped), 30,8 MB de seções .debug*/.symtab/.strtab que gzip reduz a 10,5 MB; a arte (art/) tem 39 MB em 1142 arquivos, já comprimida (JPG/PNG/WebP). Estimativa (nao medida): strip tira ~10 MB do ipk (58,3 para ~48 MB). O Homebrew Channel baixa o ipk inteiro para /tmp, confere sha256 e chama appInstallService/dev/install (services/service.ts); a barra de download usa o content-length do servidor, nao o ipkSize (tools/hb-repo.sh ja grava ipkSize). Onde estao os 15 min (download do GitHub pela TV, gravacao em /tmp, ou appInstallService instalando 1190 arquivos) NAO foi medido: SUSPEITA. Pedir ao autor a duracao de cada fase (a barra mostra Downloading/Verifying/Installing). Alvo 2.0.5.",
+   "proximo_passo": "conserto na 2.0.5 (dados fora da pasta do app + limpeza de sobras; strip do binário)",
+   "notas": "SUSPEITA nova (09/10, relato do autor: 'Updating 1%..99%' lento, instalação nova da 2.0.2 em segundos): dados do app dentro da pasta do app (.nuvio 359 MB/3980 arquivos na C9, incluindo cache.suspeito-1853 de 195 MB nunca apagado). LG C5 webOS 26, 2.0.32 para 2.0.3 pelo Homebrew Channel, 15+ min. NAO e regressao de tamanho (ipk 2.0.3 61,1 MB/1218 arquivos; 2.0.2 60,7 MB/1215). MEDIDO no ipk 2.0.4 (58,3 MB, 1190 arquivos, 99,5 MB descomprimido): o binário nuvio-proto tem 55,3 MB e VEM COM debug_info e símbolos (file: not stripped), 30,8 MB de seções .debug*/.symtab/.strtab que gzip reduz a 10,5 MB; a arte (art/) tem 39 MB em 1142 arquivos, já comprimida (JPG/PNG/WebP). Estimativa (nao medida): strip tira ~10 MB do ipk (58,3 para ~48 MB). O Homebrew Channel baixa o ipk inteiro para /tmp, confere sha256 e chama appInstallService/dev/install (services/service.ts); a barra de download usa o content-length do servidor, nao o ipkSize (tools/hb-repo.sh ja grava ipkSize). Onde estao os 15 min (download do GitHub pela TV, gravacao em /tmp, ou appInstallService instalando 1190 arquivos) NAO foi medido: SUSPEITA. Pedir ao autor a duracao de cada fase (a barra mostra Downloading/Verifying/Installing). Alvo 2.0.5.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/401",
    "criada_em": "2026-10-09",
    "alvo": "2.0.5"
@@ -8481,6 +8481,27 @@
    "proximo_passo": "postar o rascunho (EN); botao Proximo na fileira de controles do player entra no item do proximo episodio da 2.0.5",
    "notas": "Existe em parte: o cartao de proximo episodio (posplay.c, player_regra_proximo player.c:2192) so sobe nos creditos/ultimos segundos (marcador de creditos ou intro_fim_estimado, 50 s) e no fim; se o autor dispensa com Voltar ou pula os creditos, a dispensa gruda (posplay.c:104 e 257) e o unico caminho e o botao Episodios da fileira de controles (player.c:2846-2851, abre a lista). Nao ha botao Proximo na fileira de controles, nem durante a reproducao fora da janela. Codigo comum a todas as plataformas (LG, Samsung, Android); canal ao vivo tem Canal +/- (AV_B_PROX), nao conta. Conferido no codigo, sem prova em TV.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/403",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.5"
+  },
+  {
+   "numero": 404,
+   "titulo": "Continue watching mixes up",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder pedindo log + fonte do Continuar + um título que não deu play; investigar na 2.0.5",
+   "notas": "Namer03, S95C, 2.0.3: Continuar assistindo registra títulos que ele não deu play; ele acha que é o debrid ou os amigos. SUSPEITA: debrid não escreve no Continuar; vem da conta Nuvio (outros apps/aparelhos) ou do Trakt/Simkl (qualquer app ligado). Sem log.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/404",
    "criada_em": "2026-10-09",
    "alvo": "2.0.5"
   }
@@ -8939,6 +8960,13 @@
       403
      ],
      "origem": "agente 09/10"
+    },
+    {
+     "nome": "Dados do app fora da pasta do app (LG) e limpeza de sobras",
+     "porque": "Medido na C9 (09/10): .nuvio dentro da pasta do app com 359 MB / 3980 arquivos (cache de imagens 111 MB, cache.suspeito-1853 195 MB nunca apagado, trailers 28 MB, fontes de legenda ASS repetidas por faixa ~7,5 MB cada). SUSPEITA de ser o que deixa a atualização pelo Homebrew lenta (#401): instalação nova é rápida, atualização por cima leva 15 min. Fazer: (1) cache de imagens, trailers e fontes da legenda fora da pasta do app; (2) apagar cache.suspeito-* antigos; (3) não guardar cópia das fontes por faixa. Aprovado pelo dono 09/10.",
+     "issues": [
+      401
+     ]
     }
    ]
   },
