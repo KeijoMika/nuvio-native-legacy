@@ -18,8 +18,9 @@ int main(void) {
   setenv("NUVIO_DADOS", dir, 1);
   dados_iniciar(dir);
   ajustes_dir(dir);
-  // Sem ajustes.txt, o ajuste novo nasce LIGADO (V_LIGA: 0 = Ligado).
-  assert(ajustes_addons_do_principal() == 1);
+  // Sem ajustes.txt, "Usar os addons do perfil principal" nasce DESLIGADO
+  // (dono, 09/10: cada perfil com os seus addons por padrao).
+  assert(ajustes_addons_do_principal() == 0);
 
   // Perfil 1: destaque desligado, 4K pedido. 2.0.2: ele manda o historico so
   // para o Simkl e nao quer o social; o perfil 2 e o contrario.
