@@ -6959,15 +6959,43 @@ static void completarFicha(CatItem *d, const MetaFontes *mf, const char *tipo) {
 // preenche o que faltar neles).
 static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *serie,
                                const MetaFontes *mf, TempsPub *tp) {
-  int i, fonte = -1, outro = -1;
-  for (i = 0; i < mf->n; i++)
-    if (desc_meta_n_episodios(mf->corpo[i]) > 0) { if (fonte < 0) fonte = i; else if (outro < 0) outro = i; }
+  int i, fonte = -1, outro = -1, mesmoId = idbase_e_imdb(serie);
+  int nEp[META_FONTES_MAX], arq[META_FONTES_MAX];
+  for (i = 0; i < mf->n; i++) {
+    int brutos = 0;
+    nEp[i] = metaContarEpisodios(mf->corpo[i], &brutos);
+    arq[i] = metaListaDeArquivos(nEp[i], brutos);
+    if (nEp[i] > 0 && fonte < 0) fonte = i;
+  }
   if (fonte < 0) return 0;
+  // LISTA DE ARQUIVOS NA BASE (addon de fontes que tambem publica catalogo): a
+  // base manda no texto da ficha, mas a lista dela so fica quando conhece MAIS
+  // episodios distintos que as outras fontes. Senao vale a maior lista de
+  // verdade. So entre listas do mesmo espaco de ids (item do IMDb): "kitsu:1"
+  // e uma temporada, e a serie inteira do Cinemeta nao a substitui.
+  if (arq[fonte] && mesmoId) {
+    int melhor = -1;
+    for (i = 0; i < mf->n; i++)
+      if (i != fonte && !arq[i] && nEp[i] >= nEp[fonte] && (melhor < 0 || nEp[i] > nEp[melhor]))
+        melhor = i;
+    if (melhor >= 0) {
+      printf("[desc] %s: %s respondeu uma lista de arquivos com %d episodios; "
+             "usando os %d de %s\n", titulo, mf->nome[fonte], nEp[fonte], nEp[melhor],
+             mf->nome[melhor]);
+      fflush(stdout);
+      fonte = melhor;
+    }
+  }
+  for (i = 0; i < mf->n && outro < 0; i++)
+    if (i != fonte && nEp[i] > 0) outro = i;
   // Mesmo espaco de ids: a lista do IMDb (Cinemeta) sobre uma de addon so faz
   // sentido quando o item tambem e do IMDb.
-  if (outro >= 0 && !(idbase_e_imdb(serie) && mf->cine[outro])) outro = -1;
+  if (outro >= 0 && !(mesmoId && mf->cine[outro])) outro = -1;
+  // Lista de arquivos que ficou (sabe mais episodios): o nome dela e nome de
+  // arquivo, entao o do Cinemeta entra por cima nos episodios que os dois tem.
   publicarEpisodios(mf->corpo[fonte], alvoItem, titulo,
-                    outro >= 0 ? mf->corpo[outro] : NULL, DESC_MESCLA_VAZIOS, tp);
+                    outro >= 0 ? mf->corpo[outro] : NULL,
+                    arq[fonte] ? DESC_MESCLA_TEXTO : DESC_MESCLA_VAZIOS, tp);
   arte_reserva_episodios(serie, mf->corpo[fonte]);
   return !mf->cine[fonte];
 }
