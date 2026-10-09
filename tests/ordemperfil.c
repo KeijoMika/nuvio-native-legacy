@@ -112,6 +112,55 @@ int main(void) {
     fil_registrar_se_couber(k, k, "Addon", "movie");
   }
   assert(fil_n() == 40);
+  // Round 4 / P1: B at the cap, memory holds A's list (tag A), the account
+  // answered empty: nothing new may be registered, and B's real list later
+  // leaves every key and position as it was.
+  fil_definir_perfil(7); tagLista = 7;
+  static char b7[FIL_MAX][96]; 
+  for (int i = 0; i < FIL_MAX; i++) {
+    snprintf(b7[i], sizeof b7[i], "addonB7_movie_o%03d", i);
+    fil_registrar(b7[i], b7[i], "B", "movie", 3);
+  }
+  fil_gravar_registro(); fil_teste_recarregar();
+  tagLista = 1;                          // memory still holds A's list
+  passada("addonA7");
+  { static char ks[40][96]; const char *ch[40];
+    for (int i = 0; i < 40; i++) { snprintf(ks[i], sizeof ks[i], "addonA7_movie_new%d", i); ch[i] = ks[i]; }
+    fil_espelhar_ordem(ch, ch, 40); }
+  fil_gravar_registro(); fil_teste_recarregar();
+  tagLista = 7;                          // B's real list arrives
+  for (int i = 0; i < FIL_MAX; i++) fil_registrar(b7[i], b7[i], "B", "movie", 3);
+  fil_gravar_registro(); fil_teste_recarregar();
+  assert(fil_n() == FIL_MAX);
+  for (int i = 0; i < FIL_MAX; i++) assert(!strcmp(fil_chave(i), b7[i]));
+
+  // Round 4 / P2: a stale snapshot changes nothing, not even existing keys.
+  fil_definir_perfil(5); tagLista = 5;
+  FilPassada p5 = fil_passada_ler();
+  fil_registrar_se_couber_de(&p5, "addonS_movie_sug", "s", "S", "movie");
+  fil_gravar_registro();
+  assert(fil_oculta("addonS_movie_sug"));          // a suggestion: hidden
+  fil_definir_perfil(4); tagLista = 4;
+  FilPassada p4 = fil_passada_ler();
+  fil_definir_perfil(5); tagLista = 5;
+  fil_registrar_de(&p4, "addonS_movie_sug", "s", "S", "movie", -1);
+  assert(fil_oculta("addonS_movie_sug"));          // not promoted by the old pass
+  fil_registrar_de(&p5, "addonS_movie_sug", "s", "S", "movie", -1);
+  assert(fil_oculta("addonS_movie_sug"));          // p5 is stale too (switched away)
+  FilPassada p5b = fil_passada_ler();
+  fil_registrar_de(&p5b, "addonS_movie_sug", "s", "S", "movie", -1);
+  assert(!fil_oculta("addonS_movie_sug"));         // current pass promotes it
+
+  // Round 4 / P2: logout, then selecting the SAME profile again, invalidates
+  // snapshots; tag 0 after logout must not validate an old one.
+  fil_definir_perfil(6); tagLista = 6;
+  FilPassada p6 = fil_passada_ler();
+  fil_esquecer(); tagLista = 0;
+  fil_definir_perfil(6);
+  fil_registrar_de(&p6, "addonL_movie_old", "o", "L", "movie", -1);
+  assert(fil_n() == 0 && !fil_passada_valida(&p6));
+  fil_teste_recarregar();
+  assert(fil_n() == 0);
   printf("ordemperfil ok\n");
   return 0;
 }
