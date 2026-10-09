@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Parte que roda NO ZimaOS (enviada por ssh pelo implantar.sh). Uso: implantar-remoto.sh BASE [deploy|limpar]
+# Parte que roda NO ZimaOS (enviada por ssh pelo implantar.sh). Uso: implantar-remoto.sh BASE [deploy|limpar] [sim]
 # Regra: nenhum container existente e apagado ou renomeado no deploy. Os novos tem nome versionado,
 # o antigo so e parado (docker stop) e, se algo falhar, religado (docker start).
+# limpar so remove PARADOS e nunca o legado nem o ultimo bom; sem o 3o argumento "sim" so lista.
 set -Eeuo pipefail
 BASE="$1"; MODO="${2:-deploy}"
 TS="${TS:-$(date +%Y%m%d%H%M%S)}"
@@ -47,10 +48,19 @@ recupera() {
 
 if [ "$MODO" = limpar ]; then
   servido || { echo "ERRO: 8094 nao esta servindo; rode o deploy antes de limpar" >&2; exit 1; }
+  # nunca remove o legado (nome sem sufixo) nem o ultimo bom gravado no BOM
+  BOM_N="$(cat "$BOM_NGX" 2>/dev/null || true)"; BOM_A="$(cat "$BOM_API" 2>/dev/null || true)"
+  alvo=""
   for n in $(parados "$RE_NGX") $(parados "$RE_API"); do
-    [ "$n" = "$(cat "$BOM_NGX" 2>/dev/null)" ] || [ "$n" = "$(cat "$BOM_API" 2>/dev/null)" ] && continue
-    docker rm "$n" >/dev/null && echo "removido: $n"
+    case "$n" in nuvio-painel|nuvio-painel-api|"$BOM_N"|"$BOM_A") continue ;; esac
+    alvo="$alvo $n"
   done
+  echo "--limpar removeria:${alvo:- (nenhum)}"
+  if [ "${3:-}" != sim ]; then
+    echo "nada removido: rode com --limpar --sim para confirmar" >&2
+    exit 0
+  fi
+  for n in $alvo; do docker rm "$n" >/dev/null && echo "removido: $n"; done
   exit 0
 fi
 
@@ -116,4 +126,4 @@ servido
 
 CONCLUIDO=1
 echo "$NOVO_NGX" > "$BOM_NGX"; echo "$NOVO_API" > "$BOM_API"
-echo "ok: $NOVO_NGX e $NOVO_API no ar; antigos parados (${ANT_NGX:--} ${ANT_API:--}); 'implantar.sh --limpar' remove parados"
+echo "ok: $NOVO_NGX e $NOVO_API no ar; antigos parados (${ANT_NGX:--} ${ANT_API:--}); 'implantar.sh --limpar --sim' remove os parados antigos"

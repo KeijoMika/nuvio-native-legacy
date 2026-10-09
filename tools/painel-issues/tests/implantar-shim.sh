@@ -3,6 +3,9 @@
 set -euo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REMOTO="$AQUI/../api/implantar-remoto.sh"
+# O bloco REMOTO do publicar.sh: testado direto, com o mesmo docker/curl falsos.
+REMOTO_PUB="$(awk "/<<'REMOTO'/{f=1;next} /^REMOTO\$/{f=0} f" "$AQUI/../publicar.sh")"
+[ -n "$REMOTO_PUB" ] || { echo "publicar.sh: bloco REMOTO nao encontrado"; exit 1; }
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 FALHAS=0
 ok()  { echo "PASS $1"; }
@@ -77,6 +80,11 @@ case "$url" in
                api_up || exit 22; echo '{"ok": true}';;
 esac
 S
+cat > "$SH/ss" <<'S'
+#!/bin/sh
+[ -n "${PORTA_OCUPADA:-}" ] && echo "LISTEN 0 128 0.0.0.0:8094 0.0.0.0:*"   # ss de verdade: nada escutando
+exit 0
+S
 chmod +x "$SH"/*
 
 novo_cenario() { # recria base e estado: nginx legado servindo na 8094
@@ -94,6 +102,12 @@ estado() { cat "$ST/c/$1" 2>/dev/null | cut -d' ' -f1 || true; }
 tem() { [ -e "$ST/c/$1" ]; }
 espera() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (esperado $2, veio $3)"; fi; }
 sem_novos() { ! ls "$ST/c" | grep -- "-$1-7$" >/dev/null; }
+# O bloco REMOTO do publicar.sh, com o mesmo docker/curl falsos. Vai por arquivo e
+# nao por stdin porque o docker falso le o stdin (igual o ssh bash -s real).
+publica() {
+  printf '%s\n' "$REMOTO_PUB" > "$W/pub-remoto.sh"
+  ( export PATH="$SH:$PATH"; bash "$W/pub-remoto.sh" nuvio-painel 8094 "$W/base/html" ) >"$W/pub" 2>&1
+}
 
 echo "== sucesso (com migracao de respostas.json)"
 novo_cenario; rc=0; roda 20260101000001 || rc=$?
@@ -108,12 +122,51 @@ espera "2o deploy rc" 0 "$rc"
 espera "1a versao parada" exited "$(estado nuvio-painel-20260101000001-7)"
 espera "1a API parada" exited "$(estado nuvio-painel-api-20260101000001-7)"
 espera "2a versao rodando" running "$(estado nuvio-painel-20260101000002-7)"
-echo "== --limpar remove so os parados que nao sao o ultimo bom"
-rc=0; ( export PATH="$SH:$PATH" TS=x; bash -s -- "$W/base" limpar < "$REMOTO" ) >"$W/out" 2>&1 || rc=$?
+echo "== --limpar sem --sim: so lista, nao apaga"
+limpar() { ( export PATH="$SH:$PATH" TS=x; bash -s -- "$W/base" limpar "${1:-}" < "$REMOTO" ) >"$W/out" 2>&1; }
+rc=0; limpar || rc=$?
 espera "limpar rc" 0 "$rc"
-tem nuvio-painel && bad "legado parado deveria sair" || ok "legado removido"
-tem nuvio-painel-20260101000001-7 && bad "1a versao parada deveria sair" || ok "versoes antigas removidas"
+grep -q "removeria:.*nuvio-painel-20260101000001-7" "$W/out" && ok "lista o que removeria" || bad "nao listou o que removeria: $(cat "$W/out")"
+grep "^--limpar removeria:" "$W/out" | grep -qv "20260101000002-7" && ok "o ultimo bom nao aparece na lista" || bad "ultimo bom na lista: $(grep '^--limpar removeria:' "$W/out")"
+tem nuvio-painel-20260101000001-7 && ok "sem --sim nada foi apagado" || bad "apagou sem --sim"
+tem nuvio-painel-api-20260101000001-7 && ok "API antiga intacta sem --sim" || bad "apagou API sem --sim"
+
+echo "== --limpar --sim: remove so os parados velhos; legado e ultimo bom ficam"
+rc=0; limpar sim || rc=$?
+espera "limpar --sim rc" 0 "$rc"
+tem nuvio-painel && ok "legado preservado" || bad "legado removido"
+tem nuvio-painel-20260101000001-7 && bad "1a versao parada deveria sair" || ok "versao antiga removida"
+tem nuvio-painel-api-20260101000001-7 && bad "1a API parada deveria sair" || ok "API antiga removida"
 espera "atual intacto" running "$(estado nuvio-painel-20260101000002-7)"
+espera "API atual intacta" running "$(estado nuvio-painel-api-20260101000002-7)"
+
+echo "== publicar.sh com o deploy versionado no ar: so sincroniza, nao religa o legado"
+rc=0; publica || rc=$?
+espera "publicar rc" 0 "$rc"
+espera "legado segue parado" exited "$(estado nuvio-painel)"
+espera "versionado segue rodando" running "$(estado nuvio-painel-20260101000002-7)"
+grep -q "so os arquivos foram sincronizados" "$W/pub" && ok "fala que so sincronizou" || bad "mensagem: $(cat "$W/pub")"
+
+echo "== publicar.sh sem nada servindo: religa o legado parado"
+echo "exited 8094" > "$ST/c/nuvio-painel-20260101000002-7"
+echo "exited -" > "$ST/c/nuvio-painel-api-20260101000002-7"
+rc=0; publica || rc=$?
+espera "publicar rc" 0 "$rc"
+espera "legado religado" running "$(estado nuvio-painel)"
+grep -q "estava parado: iniciado" "$W/pub" && ok "mensagem do legado religado" || bad "mensagem: $(cat "$W/pub")"
+
+echo "== publicar.sh sem container nenhum e porta livre: cria o legado"
+novo_cenario; rm "$ST/c/nuvio-painel"
+rc=0; publica || rc=$?
+espera "publicar rc" 0 "$rc"
+espera "legado criado na 8094" running "$(estado nuvio-painel)"
+grep -q "criado na porta" "$W/pub" && ok "mensagem do container criado" || bad "mensagem: $(cat "$W/pub")"
+
+echo "== publicar.sh sem container e com a porta ocupada por outro: aborta"
+novo_cenario; rm "$ST/c/nuvio-painel"; echo "exited 8094" > "$ST/c/nuvio-painel-outro-1"
+export PORTA_OCUPADA=1; rc=0; publica || rc=$?; unset PORTA_OCUPADA
+[ "$rc" != 0 ] && grep -q "porta 8094 ja em uso" "$W/pub" && ok "abortou sem criar nada (rc=$rc)" || bad "deveria abortar (rc=$rc): $(cat "$W/pub")"
+tem nuvio-painel && bad "criou container com a porta ocupada" || ok "nenhum container criado"
 
 echo "== falha no build: nada tocado"
 novo_cenario; rc=0; roda 20260101000003 FALHA_BUILD=1 || rc=$?

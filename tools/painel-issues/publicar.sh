@@ -34,10 +34,11 @@ if [ "$DRY" = 1 ]; then
   echo "[dry-run] nenhum ssh sera feito. Faria:"
   echo "  ssh $HOST mkdir -p $DEST"
   echo "  rsync -az --delete $TMP/ $HOST:$DEST/   (arquivos: $(ls "$TMP" | tr '\n' ' '))"
-  echo "  ssh $HOST: se '$NOME' nao existe em 'docker ps -a':"
-  echo "     checa a porta $PORTA livre (ss -ltn / docker ps); aborta se ocupada;"
+  echo "  ssh $HOST: se a $PORTA ja responde (/index.html), so sincroniza os arquivos e nao toca em container"
+  echo "  senao (primeira publicacao, ainda sem API):"
+  echo "     se '$NOME' existe em 'docker ps -a' e parado: 'docker start $NOME'"
+  echo "     se nao existe: confere a $PORTA livre (ss -ltn / docker ps); aborta se ocupada;"
   echo "     docker run -d --name $NOME --restart unless-stopped -p $PORTA:80 -v $DEST:/usr/share/nginx/html:ro nginx:alpine"
-  echo "  senao: so sincroniza os arquivos e faz 'docker start $NOME' se estiver parado"
   echo "  (nenhum outro container e tocado)"
 else
   ssh "$HOST" "mkdir -p '$DEST'"
@@ -48,8 +49,16 @@ else
   ssh "$HOST" bash -s -- "$NOME" "$PORTA" "$DEST" <<'REMOTO'
 set -euo pipefail
 nome="$1"; porta="$2"; dest="$3"
-if docker ps -a --format '{{.Names}}' | grep -qx "$nome"; then
-  if ! docker ps --format '{{.Names}}' | grep -qx "$nome"; then
+# Deploy versionado no ar (api/implantar.sh): a porta ja responde, entao os arquivos
+# sincronizados acima chegam pelo bind mount. Nao religa o legado nem cria container.
+if curl -fsS --max-time 5 -o /dev/null "http://127.0.0.1:$porta/index.html"; then
+  echo "porta $porta ja servindo: so os arquivos foram sincronizados (nenhum container tocado)"
+  exit 0
+fi
+# grep sem -q de proposito: o -q sai na primeira linha e mata o docker com SIGPIPE,
+# o que com pipefail faria este if parecer "container nao existe".
+if docker ps -a --format '{{.Names}}' | grep -x "$nome" >/dev/null; then
+  if ! docker ps --format '{{.Names}}' | grep -x "$nome" >/dev/null; then
     docker start "$nome" >/dev/null
     echo "container $nome estava parado: iniciado"
   else
