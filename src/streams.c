@@ -2527,11 +2527,17 @@ static void montar(int automatica) {
   // #400: ordem visual do addon, sem promover, agrupar ou particionar fontes.
   // A folha chama montar() a cada desenho: mudar o ajuste vale no proximo quadro.
   if (ajustes_fonte_ordem_addon()) {
+    // A classificacao do StreamFit (avisos "Acima da conexao") e o
+    // enriquecimento de canal (grupoRes -> stream_canal_enriquecer) continuam;
+    // so a ordem e a do addon.
+    fitAtualizar();
     memset(secN, 0, sizeof secN);
     nOrdem = 0;
     for (k = 0; k < n; k++) {
       i = ORD(k);
-      if (passaFiltro(i)) porLinha(i, &y, automatica);
+      if (!passaFiltro(i)) continue;
+      (void)grupoRes(&lista[i]);
+      porLinha(i, &y, automatica);
     }
     alturaTotal = y;
     return;
