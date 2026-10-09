@@ -7016,11 +7016,12 @@ static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *ser
       fonte = melhor;
     }
   }
-  for (i = 0; i < mf->n && outro < 0; i++)
-    if (i != fonte && nEp[i] > 0) outro = i;
   // Mesmo espaco de ids: a lista do IMDb (Cinemeta) sobre uma de addon so faz
-  // sentido quando o item tambem e do IMDb.
-  if (outro >= 0 && !(mesmoId && mf->cine[outro])) outro = -1;
+  // sentido quando o item tambem e do IMDb. Procura o Cinemeta entre TODAS as
+  // outras fontes: parar na primeira com episodios deixava a lista sem
+  // complemento quando havia outro addon no meio.
+  for (i = 0; mesmoId && i < mf->n && outro < 0; i++)
+    if (i != fonte && nEp[i] > 0 && mf->cine[i]) outro = i;
   // Lista de arquivos que ficou (sabe mais episodios): o nome dela e nome de
   // arquivo, entao o do Cinemeta entra por cima nos episodios que os dois tem.
   publicarEpisodios(mf->corpo[fonte], alvoItem, titulo,
