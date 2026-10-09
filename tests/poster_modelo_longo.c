@@ -46,6 +46,27 @@ int main(void) {
   aviso = ajustes_teste_poster_modelo("https://meu.servidor.invalid/x.jpg", lido, sizeof lido);
   OK(aviso != 0, "modelo sem marcador continua recusado");
 
+  // Codex P2: o modelo cabe em 400, mas o MONTADO tem de caber em PP_URL_MAX.
+  // 40 x {imdb} viram 40 x tt0111161 = 520 caracteres: salvo, nunca montaria.
+  { char m[PP_MODELO_MAX], u2[PP_URL_MAX];
+    int j = snprintf(m, sizeof m, "https://posters.exemplo.invalid/");
+    int i;
+    for (i = 0; i < 40; i++) j += snprintf(m + j, sizeof m - (size_t)j, "{imdb}");
+    while (j < 400) m[j++] = 'a';
+    m[j] = 0;
+    assert(strlen(m) == 400);
+    aviso = ajustes_teste_poster_modelo(m, lido, sizeof lido);
+    printf("aviso 40x{imdb}=%d\n", aviso);
+    OK(aviso != 0, "400 caracteres com 40 x {imdb} (montado > 512) e recusado ao salvar");
+    // 400 com um {imdb} so continua valendo e monta.
+    j = snprintf(m, sizeof m, "https://posters.exemplo.invalid/FAKEKEY/{imdb}/");
+    while (j < 400) m[j++] = 'b';
+    m[j] = 0;
+    aviso = ajustes_teste_poster_modelo(m, lido, sizeof lido);
+    OK(aviso == 0 && !strcmp(lido, m) &&
+       posterprov_montar_url(posterprov_cfg(), "tt0111161", 0, "movie", u2, sizeof u2),
+       "400 caracteres com um {imdb} e aceito e monta"); }
+
   if (falhas) { printf("%d falha(s)\n", falhas); return 1; }
   printf("tudo ok\n");
   return 0;
