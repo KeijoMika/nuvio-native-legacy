@@ -38,9 +38,7 @@ uint64_t badges_detectar(const char *metadata) {
   int ddp=HAS("ddp")||strstr(s,"ddp5")||strstr(s,"ddp7")||HAS("dd+")||HAS("eac3")||HAS("eac-3")||HAS("e-ac-3");
   int dd=HAS("ac3")||HAS("ac-3")||HAS("dd5.1")||HAS("dd2.0");
   if((HAS("4k")||HAS("2160p")||HAS("2160")||HAS("uhd"))&&!HAS("1080p")&&!HAS("720p"))ADD("r-4k");
-  // "FHD"/"Full HD" sem os digitos (#402); com 4K no texto o selo e so o r-4k.
-  int fhd=HAS("fhd")||HAS("fullhd")||HAS("full hd")||HAS("full-hd")||HAS("full.hd");
-  if(HAS("1080p")||HAS("1080i")||HAS("1080")||(fhd&&!(m&bit("r-4k"))))ADD("r-1080");
+  if(HAS("1080p")||HAS("1080i")||HAS("1080"))ADD("r-1080");
   if(HAS("720p")||HAS("720"))ADD("r-720");
   if(HAS("remux"))ADD("q-remux");else if(HAS("bluray")||HAS("blu-ray"))ADD("q-bluray");
   if(HAS("web-dl")||HAS("webdl")||HAS("web.dl")||HAS("web dl"))ADD("q-webdl");

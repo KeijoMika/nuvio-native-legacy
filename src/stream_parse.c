@@ -70,6 +70,20 @@ static int contem(const char *s, const char *termo) {
   return 0;
 }
 
+// "FHD"/"Full HD" como token do name (#402). Nao o "hd" solto do
+// nv_res_do_texto ("DTS-HD" viraria 720), e nao depois de '-': "x265-FHD" e
+// grupo de release, nao resolucao.
+static int fhdNoNome(const char *s) {
+  static const char *const t[] = {"fhd", "fullhd", "full hd", "full-hd", "full.hd"};
+  for (const char *p = s; *p; p++)
+    for (size_t i = 0; i < sizeof t / sizeof t[0]; i++) {
+      size_t n = strlen(t[i]);
+      if ((p == s || (!isalnum((unsigned char)p[-1]) && p[-1] != '-')) &&
+          !strncasecmp(p, t[i], n) && !isalnum((unsigned char)p[n])) return 1;
+    }
+  return 0;
+}
+
 // Token isolado reconhece .DV., DV/HDR e [DV], mas nunca DVD/DVDRip.
 static int token(const char *s, const char *t) {
   size_t n = strlen(t);
@@ -278,18 +292,23 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
       snprintf(s.provedor, sizeof s.provedor, "%s", provedor);
       snprintf(texto, sizeof texto, "%s %s %s %s", s.rotulo, s.descricao, titulo, s.arquivo);
       for (char *q = texto; *q; q++) if (*q == '\n') *q = ' ';
-      // "FHD"/"Full HD" (#402): formatadores tipo AIOStreams escrevem so a
-      // sigla, sem 1080. Token isolado, e na vez do 1080: numero maior escrito
-      // ainda vence. Nao o "hd" solto do nv_res_do_texto: "DTS-HD" viraria 720.
       s.altura = contem(texto, "2160") || token(texto, "4k") || token(texto, "uhd") ? 2160 :
-                 contem(texto, "1440") ? 1440 :
-                 contem(texto, "1080") || token(texto, "fhd") || token(texto, "fullhd") ||
-                 token(texto, "full hd") || token(texto, "full-hd") || token(texto, "full.hd") ? 1080 :
+                 contem(texto, "1440") ? 1440 : contem(texto, "1080") ? 1080 :
                  contem(texto, "720") ? 720 : contem(texto, "480") ? 480 : 0;
       s.dolbyVision = token(texto, "dv") || token(texto, "dovi") ||
                       contem(texto, "dolby vision") || contem(texto, "dolbyvision");
       s.dolbyAtmos = token(texto, "atmos");
       s.badges = badges_detectar(texto);
+      // "FHD"/"Full HD" (#402): formatadores tipo AIOStreams poem a resolucao
+      // so como sigla no name ("FHD | REMUX | SDR"). Vale so na FALTA de
+      // resolucao escrita em qualquer campo, e so do name: descricao e
+      // filename trazem URL ("https://fhd...") e grupo de release ("x265-FHD").
+      // altura 0 ja garante que o texto nao deu nenhum selo r-*: todos os
+      // tokens de resolucao do badges_detectar contem 2160/1080/720 ou 4k/uhd.
+      if (!s.altura && fhdNoNome(s.rotulo)) {
+        s.altura = 1080;
+        s.badges |= badges_bit("r-1080");
+      }
       s.mp4 = token(texto, "mp4") || contem(s.url, ".mp4");
       s.foraCache = stream_texto_fora_de_cache(texto);
       if (s.infoHash[0]) s.temSemeadores = lerSemeadores(texto, &s.semeadores);
