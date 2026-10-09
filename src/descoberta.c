@@ -6254,7 +6254,9 @@ int desc_meta_tem_temporadas(const char *corpo) {
 // pode responder o /meta com um video por ARQUIVO de torrent (relato de TV LG,
 // Breaking Bad: 18529 entradas para 62 episodios), entao contar e cortar tem de
 // ser sobre episodios DISTINTOS. Enderecamento aberto, dobra ao passar de meia
-// carga: O(n) no corpo inteiro, 64 KB para os 18529 do relato.
+// carga: O(n) no corpo inteiro. Memoria pelos pares DISTINTOS, nao pelas
+// entradas: 8 KiB (1024 casas) ate 511 pares, o caso do relato (62); 18 mil
+// pares distintos chegam a 512 KiB, com 768 KiB no instante da copia.
 typedef struct { unsigned long long *v; unsigned cap, n; } EpSet;
 
 static unsigned epSetCasa(const EpSet *s, unsigned long long k) {
@@ -6263,8 +6265,11 @@ static unsigned epSetCasa(const EpSet *s, unsigned long long k) {
   return i;
 }
 
-// 1 = par novo (entrou); 0 = repetido. Sem memoria responde "novo": o pior
-// caso e o de antes do conjunto existir.
+// 1 = par novo (entrou); 0 = repetido. A chave e procurada ANTES de crescer:
+// faltar memoria para a tabela maior nao pode transformar em "novo" um par que
+// ja esta nela. Sem crescer, os pares novos seguem entrando ate sobrar uma casa
+// vazia (a que encerra a sondagem); so dai em diante o par que nao coube
+// responde "novo" sem ser guardado — o pior caso e o de antes do conjunto.
 static int epSetNovo(EpSet *s, int t, int e) {
   unsigned long long k = ((unsigned long long)(unsigned)t << 32) | (unsigned)e;
   unsigned i;
@@ -6272,16 +6277,20 @@ static int epSetNovo(EpSet *s, int t, int e) {
     s->cap = 1024; s->n = 0;
     s->v = calloc(s->cap, sizeof *s->v);
     if (!s->v) return 1;
-  } else if (s->n * 2 >= s->cap) {
-    EpSet g = { calloc((size_t)s->cap * 2, sizeof *s->v), s->cap * 2, s->n };
-    if (!g.v) return 1;
-    for (i = 0; i < s->cap; i++)
-      if (s->v[i]) g.v[epSetCasa(&g, s->v[i])] = s->v[i];
-    free(s->v);
-    *s = g;
   }
   i = epSetCasa(s, k);
   if (s->v[i]) return 0;
+  if (s->n * 2 >= s->cap) {
+    EpSet g = { calloc((size_t)s->cap * 2, sizeof *s->v), s->cap * 2, s->n };
+    if (g.v) {
+      unsigned j;
+      for (j = 0; j < s->cap; j++)
+        if (s->v[j]) g.v[epSetCasa(&g, s->v[j])] = s->v[j];
+      free(s->v);
+      *s = g;
+      i = epSetCasa(s, k);
+    } else if (s->n + 2 > s->cap) return 1;   // cheia: fica a casa vazia
+  }
   s->v[i] = k; s->n++;
   return 1;
 }
