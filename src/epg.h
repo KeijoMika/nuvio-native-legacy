@@ -114,11 +114,15 @@ int  epg_total(int epg);
 // Programas do canal que TOCAM o intervalo [de, ate) — fim > de e ini < ate —
 // em ordem de inicio. Com `out`, escreve e devolve no maximo `cap` (nunca mais
 // do que cabe no buffer: #344); se devolveu `cap`, pode haver mais, e quem
-// quiser tudo continua chamando com de = out[cap-1].fim. Com out NULL, so conta
+// quiser tudo pagina com epg_faixa_desde. Com out NULL, so conta
 // e devolve quantos EXISTEM. Um programa que atravessa `de` entra inteiro, com o
 // ini real (anterior a `de`); o guia decide como desenhar a parte de fora.
 // Sem alocacao; O(log n + resultado).
 int  epg_faixa(int epg, time_t de, time_t ate, EpgProg *out, int cap);
+// O mesmo, pulando os `pular` primeiros da sequencia. Para paginar: cada
+// chamada passa o total ja entregue, e cada programa e visto uma vez so, mesmo
+// com sobreposicao na grade (o horario nao serve de cursor).
+int  epg_faixa_desde(int epg, time_t de, time_t ate, int pular, EpgProg *out, int cap);
 
 // --- SUPERFICIE DE TESTE ----------------------------------------------------
 // epg_xml_processar alimenta o parser sem rede nem disco: os testes chamam
