@@ -112,12 +112,14 @@ int main(void) {
     n = stream_extrair("{\"streams\":["
       "{\"url\":\"https://example.invalid/q\",\"name\":\"\xE2\xB4\x8B\xE2\xB4\x84 FHD\"},"
       "{\"url\":\"https://example.invalid/r\",\"name\":\"\xE2\xB0\x80 FHD\"},"
-      "{\"url\":\"https://example.invalid/s\",\"name\":\"\xE2\xAD\x90 FHD\"}"
+      "{\"url\":\"https://example.invalid/s\",\"name\":\"\xE2\xAD\x90 FHD\"},"
+      "{\"url\":\"https://example.invalid/t\",\"name\":\"\xE2\xAF\xBF FHD\"}"
       "]}", "fixture", &v);
-    if (n != 3) { printf("FAIL contagem revisao 4: %d\n", n); return 1; }
+    if (n != 4) { printf("FAIL contagem revisao 4: %d\n", n); return 1; }
     caso(&v[0], 0, 0, "letras georgianas antes de FHD");
     caso(&v[1], 0, 0, "letra glagolitica antes de FHD");
     caso(&v[2], 1080, 1, "estrela U+2B50 + FHD");
+    caso(&v[3], 1080, 1, "U+2BFF, ultimo simbolo aceito, + FHD");
     free(v); }
   if (falhas) { printf("FAIL #402: %d caso(s)\n", falhas); return 1; }
   puts("PASS #402: FHD/Full HD agrupam como 1080p.");

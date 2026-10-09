@@ -91,7 +91,8 @@ static int ehSepFhd(const char *a, const char *ini, int antes) {
 // Prefixo da linha feito so de SIMBOLO/emoji e espaco, e curto (ate 2 simbolos):
 // "\u23f3 FHD", "\u26a1 FHD". So os blocos de simbolo do UTF-8 contam — E2 80..AF xx
 // (U+2000..U+2BFF: setas, relogios, raios, estrelas; de U+2C00 em diante ha letras,
-// Glagolitico e Georgiano) e F0 9F xx xx (emoji), com EF B8 8F
+// Glagolitico e Georgiano; U+2E00..U+2FFF tem pontuacao e radicais, recusados por
+// seguranca) e F0 9F xx xx (emoji), com EF B8 8F
 // (seletor de variacao) junto. Letra de outro alfabeto (Cirilico D0/D1, CJK
 // E3..E9) e palavra, nao rotulo: "Фильм FHD" e "我的 FHD" continuam frase.
 static int prefixoSoSimbolos(const char *ini, const char *fim) {
