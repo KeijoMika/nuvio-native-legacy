@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 371 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 375 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -20,14 +20,16 @@ Alvo de cada issue aberta e os recursos por versão. Alvos são decisão de plan
 Publicada na tag v2.0.3 (commit 8ed4517c, 09/10/2026). Lista completa em docs/releases/2.0.3/NOTAS.md. Em 09/10 os consertos com todos os commits contidos na tag passaram a status lancada; o que ficou como estava tem commits fora da tag ou conserto só suspeito (ver notas de cada issue). Inclui #361 (URL de cartaz longa).
 
 
-### 2.0.4 - hotfix (antes chamado 2.0.3.1; sai como 2.0.4 porque webOS e Tizen exigem x.y.z) em andamento; temporadas (#372 parte 1) e busca do guia (#344, primeira rodada) integradas em integracao/2.0.3.1 (21077ab5), sem tag
+### 2.0.4 - hotfix (antes chamado 2.0.3.1; sai como 2.0.4 porque webOS e Tizen exigem x.y.z) em revisao no PR #408 (so revisao); tudo abaixo integrado em integracao/2.0.3.1 menos o Dolby Vision perfil 5, sem tag
 
 Hotfix sobre a 2.0.3 (já publicada na tag v2.0.3) com as causas achadas em 09/10.
 
 - **Temporadas: abas da lista publicada (#372 parte 1)** (#372): INTEGRADO em integracao/2.0.3.1 (merge 21077ab5; 038a7dc7, c2112b61, a120b67c, 167310e6, 8eb5ce90), sem tag v*. CAUSA PROVADA: regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo, Bleach {1:366,2:50} contra S1-16 no Cinemeta) e defeito antigo das abas de temporada vindas do corpo do Nuvio mesmo quando a lista do add-on vence (descoberta.c ~7069-7087, detail.c ~742-765). Log BZB857 (2.0.3, webOS). A parte 2 (numeração) foi para a 2.0.5. #328 saiu daqui: vai para a 2.0.5. Origem: logs dos autores, 09/10; decisão do dono 09/10. Branches: `agente/2031-temporadas (integrada)`.
 - **Queda ao pesquisar na TV ao vivo (#344), primeira rodada** (#344): INTEGRADO em integracao/2.0.3.1 (merge c9af64b1; teste 9d78c75a, conserto 8dd273f3), sem tag v*. CAUSA PROVADA por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, ps[24] com epg_faixa/xtepg_faixa devolvendo o total), desde a v1.7.0, todas as plataformas com o guia. Origem: log do autor, 09/10. Branches: `agente/2031-guiabusca (integrada)`.
-- **Ordem da Home ao trocar de perfil (#392, #294)** (#392, #294): PENDENTE, conserto pronto em branch e não integrado. CAUSA PROVADA pelo log VV8JG2 (.tpk Tizen 6.0, v2.0.3): o build da Home registra os catálogos de add-ons do perfil anterior no arquivo de ordem do perfil novo e expulsa fileiras. Teste bb583b60, conserto 9023ebdb. Origem: log do autor, 09/10. Branches: `agente/2031-ordemperfil`.
-- **Queda do webOS 3 na sonda do adaptador DTS**: PENDENTE, em branch e não integrado: a sonda do adaptador DTS responde uma vez por processo (00b4a937) e a libplayerAPIs fica na memória (RTLD_NODELETE, 65491e7b); a explicação do mecanismo é SUSPEITA, não certeza (1d7264c1). Sem issue no mapa. Origem: investigação 09/10. Branches: `agente/2031-webos3`.
+- **Ordem da Home ao trocar de perfil (#392, #294)** (#392, #294): INTEGRADO em integracao/2.0.3.1 (merge bdd49eb6). CAUSA PROVADA pelo log VV8JG2 (.tpk Tizen 6.0, v2.0.3): o build da Home registra os catálogos de add-ons do perfil anterior no arquivo de ordem do perfil novo e expulsa fileiras. Teste bb583b60, conserto 9023ebdb. Origem: log do autor, 09/10. Branches: `agente/2031-ordemperfil`.
+- **Queda do webOS 3 na sonda do adaptador DTS**: INTEGRADO em integracao/2.0.3.1 (merge 09ce19a0): a sonda do adaptador DTS responde uma vez por processo (00b4a937) e a libplayerAPIs fica na memória (RTLD_NODELETE, 65491e7b); a explicação do mecanismo é SUSPEITA, não certeza (1d7264c1). Sem issue no mapa. Origem: investigação 09/10. Branches: `agente/2031-webos3`.
+- **Fontes com FHD sem numero caem em Outras (#402)** (#402): INTEGRADO em integracao/2.0.3.1 (merge ca8f29b4; teste tests/fhd402.sh, revisado por Codex e OpenCode). CAUSA lida no codigo: stream_parse.c:281-283 e badges.c:40-42 nao reconhecem FHD/FULLHD sem numero, entao altura=0 e o grupo vira Outras (streams.c:2105). Conserto de 2 linhas mais teste; candidato a entrar na 2.0.4 se o dono quiser. Nao e a ordenacao nem uma configuracao. Origem: agente 09/10.
+- **Legendas "Da conta" e modelo de URL do poster (#378, #390)**: INTEGRADO em integracao/2.0.3.1 (merges 28aa5c4b e beab28ec), cada um com teste que falhava antes do conserto.
 - **Dolby Vision perfil 5 na LG: decisão pendente (HDR10 ou MP4 primeiro)**: Pendente: duas branches de alternativas; a decisão espera o teste do dono na C9. Entra no hotfix só se for escolhida. Origem: dono, 09/10; decisão pendente. Branches: `agente/2031-dvp5-hdr10`, `agente/2031-dvp5-mp4`.
 
 ### 2.0.5 - planejada; já tem branches agente/203-3xx e agente/204-*, nada integrado
@@ -47,9 +49,9 @@ Pequenos recursos de player e Biblioteca que já têm código fora da 2.0.3, mai
 - **CI com ASan/TSan nos testes de host (+ ASan do app inteiro por candidata a release, helpers de buffer limitado)**: Alternativa sem Rust do estudo: SANITIZE=1 e SANITIZE=thread nos 152 + 29 testes que já aceitam, falhando o PR; roteiro fixo com ASan no app inteiro por release candidate; helpers de buffer limitado (nv_cpy, nv_slice). Cobre os bugs de memória do ranking a custo de horas, sem tocar em alvo de TV. Referência: docs/plans/rust-piloto.md ("alternativas sem Rust", seção 5). Origem: dono 09/10. Branches: `docs/plans/rust-piloto.md`.
 - **Biblioteca: aba Salvos seguir o destino Simkl (sugestao)** (#393): #393; só se o autor confirmar que o que falta é isso (Listas › Simkl e "Onde o + salva" já existem). Sugestão do agente, não aprovado pelo dono. Origem: agente 09/10.
 - **Binario do LG sem simbolos de depuracao: ipk menor (#401)** (#401): MEDIDO no ipk 2.0.4: 58,3 MB, binario 55,3 MB com debug_info/.symtab (30,8 MB de secoes de depuracao, 10,5 MB comprimidas), arte 39 MB ja comprimida. Strip no link do tools/arm.sh deve baixar o ipk para ~48 MB (estimativa, nao medida) e guardar o binario com simbolos como anexo da release para simbolizar queda. Nao prova que seja a causa dos 15 min do #401 (SUSPEITA: download da TV ou instalacao de 1190 arquivos); pedir ao autor o tempo por fase. Fontes opcionais (Roboto, Montserrat, Inter, ate ~4 MB descomprimidos) poderiam baixar sob demanda como a Naskh (assrender.c ~870), sem promessa. Origem: agente 09/10.
-- **Fontes com FHD sem numero caem em Outras (#402)** (#402): CAUSA lida no codigo: stream_parse.c:281-283 e badges.c:40-42 nao reconhecem FHD/FULLHD sem numero, entao altura=0 e o grupo vira Outras (streams.c:2105). Conserto de 2 linhas mais teste; candidato a entrar na 2.0.4 se o dono quiser. Nao e a ordenacao nem uma configuracao. Origem: agente 09/10.
 - **Botao Proximo episodio na fileira de controles do player (#403)** (#403): Hoje so o cartao na janela de creditos/fim (dispensa gruda) e a lista pelo botao Episodios. Sugestao: acao de proximo episodio na fileira (ou atalho) para serie, reaproveitando player_proximo_episodio e o pedido de app.c:4424. Vai junto com o proximo episodio automatico. Sugestao do agente, nao aprovado pelo dono. Origem: agente 09/10.
 - **Dados do app fora da pasta do app (LG) e limpeza de sobras** (#401): Medido na C9 (09/10): .nuvio dentro da pasta do app com 359 MB / 3980 arquivos (cache de imagens 111 MB, cache.suspeito-1853 195 MB nunca apagado, trailers 28 MB, fontes de legenda ASS repetidas por faixa ~7,5 MB cada). SUSPEITA de ser o que deixa a atualização pelo Homebrew lenta (#401): instalação nova é rápida, atualização por cima leva 15 min. Fazer: (1) cache de imagens, trailers e fontes da legenda fora da pasta do app; (2) apagar cache.suspeito-* antigos; (3) não guardar cópia das fontes por faixa. Aprovado pelo dono 09/10.
+- **Novos de 09/10: ordem do add-on, busca rapida, notas em bloco, menu do topo (#400, #405, #406, #407)**: Triagem 09/10 sem conserto: #400 pedido (opcao de manter a ordem do add-on), #405 bug com log ABB125, #406 pedido, #407 bug sem log, todos do Samsung menos o #400.
 
 ### 2.1 - aprovada pelo dono em 06/10/2026 (e 07/10 para Ajustes); sem data
 
@@ -100,8 +102,8 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 | Alvo | Qtd | Issues |
 |---|---|---|
 | 2.0.3 | 5 | #246, #280, #283, #334, #356 |
-| 2.0.4 | 3 | #294, #344, #392 |
-| 2.0.5 | 47 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #378, #379, #382, #385, #386, #387, #388, #390, #393, #394, #401, #402, #403, #404 |
+| 2.0.4 | 6 | #294, #344, #378, #390, #392, #402 |
+| 2.0.5 | 48 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #379, #382, #385, #386, #387, #388, #393, #394, #400, #401, #403, #404, #405, #406, #407 |
 | 2.1 | 4 | #250, #333, #374, #397 |
 | 2.2 | 0 |  |
 | futuro | 8 | #135, #260, #304, #342, #343, #347, #348, #389 |
@@ -181,10 +183,10 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 268 |
-| aberta | 32 |
+| aberta | 33 |
 | respondida | 24 |
+| consertada-nao-lancada | 17 |
 | por-desenho | 14 |
-| consertada-nao-lancada | 14 |
 | precisa-log | 8 |
 | fechada-sem-resposta | 6 |
 | fora-do-escopo | 3 |
@@ -195,7 +197,7 @@ Por release (grupo de planejamento):
 | Grupo | Qtd |
 |---|---|
 | lançadas em tag v* (qualquer versão) | 268 |
-| sem release | 79 |
+| sem release | 83 |
 | 2.0.5 (branches) | 11 |
 | 2.0.3 lançada, com pendência | 5 |
 | futuro (2.1/2.2) | 5 |
@@ -203,8 +205,8 @@ Por release (grupo de planejamento):
 
 Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18, 2.0.3: 35.
 
-Abertas no GitHub: 102. Fechadas: 269.
-Abertas sem nenhum comentário nosso: 52.
+Abertas no GitHub: 106. Fechadas: 269.
+Abertas sem nenhum comentário nosso: 56.
 
 ## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)
 
@@ -234,7 +236,7 @@ Notas:
 |---|---|---|---|---|---|---|---|---|---|
 | [#344](https://github.com/iqui27/nuvio-native-legacy/issues/344) | Live TV search crash | Android | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | 9d78c75a, 8dd273f3, c9af64b1 | sem comentários | responder com a causa quando o hotfix 2.0.4 sair |
 | [#372](https://github.com/iqui27/nuvio-native-legacy/issues/372) | [Bug] Incorrect Season/Episode Metadata Mapping for TV Anime | Samsung .tpk | bug | consertada-nao-lancada | 2.0.4 | 2.0.5 | 038a7dc7, c2112b61, a120b67c | sem comentários | parte 1 (abas de temporada) sai na 2.0.4: responder ao autor com a causa quando sair; part |
-| [#392](https://github.com/iqui27/nuvio-native-legacy/issues/392) | Profile switching still rearrange my home screen | Samsung .tpk | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | bb583b60, 9023ebdb | sem comentários | integrar agente/2031-ordemperfil na 2.0.4 e responder ao autor com a causa |
+| [#392](https://github.com/iqui27/nuvio-native-legacy/issues/392) | Profile switching still rearrange my home screen | Samsung .tpk | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | bb583b60, 9023ebdb, bdd49eb6 | sem comentários | responder ao autor com a causa quando a 2.0.4 sair |
 
 Notas:
 
@@ -288,7 +290,7 @@ Notas:
 
 ## Aberta sem plano
 
-43 issues.
+47 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -320,21 +322,25 @@ Notas:
 | [#367](https://github.com/iqui27/nuvio-native-legacy/issues/367) | [Bug][webOS] Audio control sometimes opens Subtitles on firs | LG | bug | aberta | - | 2.0.5 | - | sem comentários | responder / pedir log (sem resposta) |
 | [#373](https://github.com/iqui27/nuvio-native-legacy/issues/373) | [bug] missing info after continue watching | Samsung .tpk | bug | aberta | - | 2.0.5 | - | autor 10-09 | responder (autor deu mais detalhes em 08 e 09/10; pedir log com o código) |
 | [#374](https://github.com/iqui27/nuvio-native-legacy/issues/374) | [port] sync subtitles by line "auto sync" | ? | feature | aberta | - | 2.1 | - | sem comentários | responder (sem resposta) |
-| [#378](https://github.com/iqui27/nuvio-native-legacy/issues/378) | “From Account” subtitle setting defaults to “NONE” on playba | Samsung .tpk | bug | aberta | - | 2.0.5 | - | autor 10-08 | responder / pedir log (ghbarker confirmou com +1) |
+| [#378](https://github.com/iqui27/nuvio-native-legacy/issues/378) | “From Account” subtitle setting defaults to “NONE” on playba | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | 28aa5c4b | autor 10-08 | responder ao autor quando a 2.0.4 sair |
 | [#379](https://github.com/iqui27/nuvio-native-legacy/issues/379) | Movie or TV show at the end never return to homescreen. | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | responder / pedir log (sem resposta) |
 | [#382](https://github.com/iqui27/nuvio-native-legacy/issues/382) | No internet error despite having internet | LG | bug | precisa-log | - | 2.0.5 | - | sem comentários | pedir log (o formulário veio sem código); perguntar se a TV está em Wi-Fi ou cabo e se o a |
 | [#386](https://github.com/iqui27/nuvio-native-legacy/issues/386) | [bug] glitchy info in playback at the top left when pressing | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | responder / pedir log: o vídeo anexado mostra o defeito; o campo de log veio vazio |
 | [#387](https://github.com/iqui27/nuvio-native-legacy/issues/387) | [bug] instant long press in library | Samsung .wgt | bug | aberta | - | 2.0.5 | - | sem comentários | responder / pedir log: o vídeo anexado mostra o defeito; o campo de log veio vazio |
 | [#388](https://github.com/iqui27/nuvio-native-legacy/issues/388) | Profile picture on side bar is squashed | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | responder / pedir captura de tela e log |
 | [#389](https://github.com/iqui27/nuvio-native-legacy/issues/389) | Card depth effect | Samsung (tpk/wgt?) | feature | aberta | - | futuro | - | sem comentários | responder: pedir exemplo do efeito de profundidade desejado (sombra, inclinação, escala no |
-| [#390](https://github.com/iqui27/nuvio-native-legacy/issues/390) | Custom poster source not setting | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | responder / pedir log: o campo de log veio vazio |
+| [#390](https://github.com/iqui27/nuvio-native-legacy/issues/390) | Custom poster source not setting | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | beab28ec | sem comentários | responder ao autor quando a 2.0.4 sair |
 | [#393](https://github.com/iqui27/nuvio-native-legacy/issues/393) | [Feature Request] Option to change the library source from T | ? | feature | aberta | - | 2.0.5 | - | sem comentários | sugestao: perguntar ao autor qual tela e qual TV (a Biblioteca já lista o Simkl em Listas  |
 | [#394](https://github.com/iqui27/nuvio-native-legacy/issues/394) | ASS subtitles: lag on large tracks, shadow/color shift, occa | Samsung .tpk | bug | aberta | - | 2.0.5 | - | nós 10-09 | investigar renderizacao libass no .tpk (sombra/anel, cor, lentidao em faixa grande, dessin |
 | [#397](https://github.com/iqui27/nuvio-native-legacy/issues/397) | [Feature Request] Playback Engine Robustness: Native Codec O | LG | feature | respondida | - | 2.1 | - | sem comentários | postar o rascunho (EN, nas notas): o que já existe e o caminho; o que falta (atraso do áud |
+| [#400](https://github.com/iqui27/nuvio-native-legacy/issues/400) | feature-request: allow using default addon sources sort orde | all | feature | aberta | - | 2.0.5 | - | sem comentários | responder: hoje nao existe; opcao "manter a ordem do add-on" na aba de cada add-on, para a |
 | [#401](https://github.com/iqui27/nuvio-native-legacy/issues/401) | Long update time on Homebrew channel (15 mins +) | LG | bug | respondida | - | 2.0.5 | - | nós 10-09 | conserto na 2.0.5 (dados fora da pasta do app + limpeza de sobras; strip do binário) |
-| [#402](https://github.com/iqui27/nuvio-native-legacy/issues/402) | Wrong sorting in sources | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | postar o rascunho (EN); conserto pequeno em src/stream_parse.c:281 (e badges.c:40-42): FHD |
+| [#402](https://github.com/iqui27/nuvio-native-legacy/issues/402) | Wrong sorting in sources | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | ca8f29b4 | sem comentários | responder ao autor quando a 2.0.4 sair |
 | [#403](https://github.com/iqui27/nuvio-native-legacy/issues/403) | feature-request: Add a next button to go to next episode | all | feature | aberta | - | 2.0.5 | - | sem comentários | postar o rascunho (EN); botao Proximo na fileira de controles do player entra no item do p |
 | [#404](https://github.com/iqui27/nuvio-native-legacy/issues/404) | Continue watching mixes up | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | responder pedindo log + fonte do Continuar + um título que não deu play; investigar na 2.0 |
+| [#405](https://github.com/iqui27/nuvio-native-legacy/issues/405) | Quick search doesn't list all results | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | ler o log ABB125 e comparar a busca rapida (canal -) com a busca do menu para "Silo" |
+| [#406](https://github.com/iqui27/nuvio-native-legacy/issues/406) | Passing through ratings on title page | Samsung .tpk | feature | aberta | - | 2.0.5 | - | sem comentários | decidir com o dono: notas da pagina do titulo como um bloco so na navegacao vertical |
+| [#407](https://github.com/iqui27/nuvio-native-legacy/issues/407) | Top menu open when scrolling up on the title page | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | reproduzir no .tpk: cima a partir do Play na pagina do titulo abre o menu do topo (o mesmo |
 
 Notas:
 
@@ -363,10 +369,14 @@ Notas:
 - **#393**: Issue de uma linha, sem texto. O que existe hoje (09/10): a Biblioteca tem três modos (Salvos, Coleção, Listas; biblioteca.c:267-269) e em Listas as fontes Trakt, Simkl, Nuvio, Fixadas e Públicas (biblioteca.c:282-284, lst_pedir LST_SIMKL em :685); "Coleção" só existe no Trakt. O que o "+" salva é Ajustes › Conta e serviços › Trakt e Simkl › "Onde o + salva" (AJ_SALVOS_DEST, ajustes.c:1105; destinos Esta TV/Trakt/Simkl), e o Plan to Watch do Simkl aparece como "SIMKL" na aba Salvos (biblioteca.c:2055); o "Continuar assistindo" tem "Fonte do Continuar assistindo" (Todas as fontes, Conta Nuvio, Trakt, Simkl; ajustes.c:711, 1034). Não há UMA chave "fonte da biblioteca" que troque a aba Salvos inteira do Trakt para o Simkl: se é isso que o autor quer, é pequeno (a aba Salvos passar a seguir AJ_SALVOS_DEST), mas o pedido pode já estar coberto pelas Listas › Simkl. Sugestão de alvo: 2.0.5, depois de o autor dizer qual tela e qual aparelho. Sem commit.
 - **#394**: Aberta pelo dono em 09/10 ao fechar a #308: depois da 2.0.3 o Namer03 (.tpk S95C) viu as legendas ASS funcionando, mas com sombra/anel e cor alterada em relacao ao original, lentidao (fps baixo) em legenda grande/avancada e um clipe fora de sincronia. Causa nao investigada (suspeita: renderizacao libass/composicao no .tpk). Alvo 2.0.5.
 - **#397**: Pedido em quatro partes (formulário diz LG webOS / All; o texto fala de Android/Fire TV). Caminhos conferidos NO CÓDIGO (09/10), sem prova em TV. (a) HDR/Dolby Vision e passthrough: JÁ HÁ o que o app controla. Preferência de fonte em Ajustes › Reprodução › "Dolby Vision e HDR" (AJ_FONTE_HDR) e "Preferir som Dolby Atmos" (AJ_ATMOS, ajustes.c:4452-4453); "Dolby Vision em MKV (experimental)" só LG webOS 4+, desligado por padrão (AJ_DV_MKV, ajustes.c:5399): na 2.0.3 troca TrueHD por E-AC-3/AC-3 no idioma ouvido para manter o Dolby Vision (docs/releases/2.0.3/NOTAS.md:17). "Converter DTS para a TV ouvir" (AJ_DTS_AC3, ajustes.c:4464): só LG, converte o DTS em estéreo (AAC) ou 5.1 (Dolby Digital) via src/dts/; na Samsung o app só AVISA quando a TV recusa DTS/TrueHD (video_tpk.c:130-141, #313; esconder as faixas é 2.0.5, fase 1). LIMITADO PELA TV/PLATAFORMA, não dá para prometer: na LG e na Samsung quem decodifica HDR/DV e faz o passthrough é a TV (uMS / AVPlay / player .tpk), o app só escolhe a fonte e o caminho; no Android o Media3 usa o passthrough por AudioCapabilities (NvPlayer.kt:374-386; video_android.c:27) e com bitstream o app não mexe no áudio (sem reforço de volume, sem velocidade: video_android.c:260, 836-841). Não há "robustez garantida" a implementar sem um caso de TV com log. (b) Estilo da legenda na hora: JÁ EXISTE no player. Botão Legendas (PLR_CC, player.c:189) › aba "Estilo" (legendasui.c:824; faixas.c:1489, corpo faixas.c:533-600), com Tamanho (50% a 250%, de 10 em 10, padrão 120%, faixas.c:590), Fonte OpenSubtitles, Cor, Opacidade (100/75/50/25%), Fundo (Nenhum, Escuro 25/50/75/100%), Posição (1 a 8), Borda (Nenhuma/Contorno/Sombra), Atraso, Negrito (Ligado/Desligado) e Restaurar padrão; OK cicla o valor e aplica na hora. Ressalvas: com ASS desenhado pelo app, fonte/cor/fundo/posição/borda/negrito ficam "Preservado pelo ASS" (faixas.c:536-541) e o tamanho vira escala; o negrito vale só para legenda externa/OpenSubtitles, a faixa que a TV desenha segue o peso da TV (faixas.c:571-572). Os valores são cíclicos (sem slider). (c) Atraso: legenda JÁ EXISTE: Legendas › linha "Atraso" (LR_ATRASO, legendasui.c:671-676), régua de -10 s a +10 s, 0,1 s por toque e 0,5 s segurando a seta (legendasui.c:444-451); a legenda secundária tem o seu; e "Sincronização automática" (AutoSync, linha LR_SYNC) que acerta pelo áudio (Ajustes "Sincronizar pelo áudio", AJ_LEG_SYNC_AUDIO, só onde o player entrega PCM, hoje Android: audsync.h:1-6). ATRASO DO ÁUDIO NÃO EXISTE (sem backend nem linha: grep audio_atraso/audioDelay vazio). (d) Proporção JÁ EXISTE: botão Proporção (PLR_ASPECTO) ou tecla 0, 8 modos: Original, Recortar, Esticar, Zoom leve, Zoom cinema, Zoom ultra, Ajustar altura, Ajustar largura (player.c:877-881, player.h:218-226); padrão em Ajustes › Reprodução › "Proporção padrão" (AJ_PROPORCAO_PADRAO). Em TVs que não recortam a imagem os modos de zoom caem para Original (player.c:1173); o .wgt Samsung (AVPlay/WebAssembly) não tem o zoom que corta a barra preta. Velocidade JÁ EXISTE: folha de Áudio, linha "Velocidade" (faixas.c:1448; "Playback speed" no i18n), 0,75x 1x 1,25x 1,5x 1,75x 2x (velocidade.c:7), por vídeo; disponível na LG, no .tpk e no Android; AUSENTE na Samsung .wgt (AVPlay só tem trick play inteiro, video_tizen.c:1531-1539) e bloqueada no Android com áudio em passthrough ("Indisponível com áudio pelo receptor", faixas.c:1449, #202). Salto de QUADROS (frame step/skip) NÃO EXISTE (só saltos de 10/30/60/120 s); o pedido é ambíguo (passo de quadro ou pular quadros?). FALTA, sugestao: atraso do áudio na 2.1 (começar onde o backend deixa, Android/Media3; LG e Samsung podem não ter API, a confirmar); passo de quadro em futuro (precisa de pausa + avanço por quadro nos 4 backends, sem prova de que a TV deixa); faixa de velocidade mais larga (0,25x-3x) e slider de tamanho/opacidade da legenda em 2.0.5 se o dono quiser (pequeno). Alvo geral = o mais cedo entre as peças que faltam (atraso do áudio, 2.1). Origem: pedido do autor somprakashpathakoneplus-cell. Rascunho (EN): The subtitle style (size up to 250%, color, opacity, background, bold), the subtitle delay ruler (-10 s to +10 s) and AutoSync are already in the player under Subtitles, tab Style; aspect modes are on the Aspect ratio button (or key 0) and playback speed (0.75x-2x) is on the Audio sheet. Audio delay and frame stepping are not there yet and are on the roadmap, while HDR, Dolby Vision and passthrough depend on what each TV or player decodes, so we can only choose the source and path. Which device are you on, so we know which of these you are missing?
+- **#400**: Vidhin05 (tambem a discussao #376): quer a ordem do AIOStreams (ranked stream expressions). Hoje a lista sempre agrupa por resolucao e ordena do maior arquivo para o menor, uma aba por add-on (texto de ajuda em idioma_tab.h). As opcoes de ordem existentes valem so para o automatico.
 - **#401**: SUSPEITA nova (09/10, relato do autor: 'Updating 1%..99%' lento, instalação nova da 2.0.2 em segundos): dados do app dentro da pasta do app (.nuvio 359 MB/3980 arquivos na C9, incluindo cache.suspeito-1853 de 195 MB nunca apagado). LG C5 webOS 26, 2.0.32 para 2.0.3 pelo Homebrew Channel, 15+ min. NAO e regressao de tamanho (ipk 2.0.3 61,1 MB/1218 arquivos; 2.0.2 60,7 MB/1215). MEDIDO no ipk 2.0.4 (58,3 MB, 1190 arquivos, 99,5 MB descomprimido): o binário nuvio-proto tem 55,3 MB e VEM COM debug_info e símbolos (file: not stripped), 30,8 MB de seções .debug*/.symtab/.strtab que gzip reduz a 10,5 MB; a arte (art/) tem 39 MB em 1142 arquivos, já comprimida (JPG/PNG/WebP). Estimativa (nao medida): strip tira ~10 MB do ipk (58,3 para ~48 MB). O Homebrew Channel baixa o ipk inteiro para /tmp, confere sha256 e chama appInstallService/dev/install (services/service.ts); a barra de download usa o content-length do servidor, nao o ipkSize (tools/hb-repo.sh ja grava ipkSize). Onde estao os 15 min (download do GitHub pela TV, gravacao em /tmp, ou appInstallService instalando 1190 arquivos) NAO foi medido: SUSPEITA. Pedir ao autor a duracao de cada fase (a barra mostra Downloading/Verifying/Installing). Alvo 2.0.5.
 - **#402**: Namer03, S95C, .tpk 2.0.3. A imagem mostra, na aba NMR, o cabecalho do grupo "Other SDR" com fileiras cujo nome (formatter do addon) diz "FHD | REMUX | SDR" e "FHD | SDR"; so a ultima diz "N/A | SDR" (essa realmente nao declara resolucao). CAUSA (lida no codigo, sem teste ainda): o grupo vem de grupoRes (src/streams.c:2105) que usa s->altura ou os selos r-4k/r-1080/r-720; a altura sai de stream_parse.c:281-283, que so procura os numeros 2160/1440/1080/720/480 e 4k/uhd, e badges_detectar (badges.c:40-42) so tem 1080p/1080i/1080. A palavra FHD sozinha (comum em formatter de AIOStreams) nao casa, entao altura=0 e o grupo e Outras (GRUPO_NOME, streams.c:2072). O app ja conhece FHD para canal ao vivo (nv_res_do_texto, livetv_regras.h:38) mas nao usa no filme/serie. NAO e ordenacao (nivelHdr, MP4 primeiro da LG e perfil 5 nao entram: e a Samsung .tpk e o problema e o grupo, nao a ordem dentro dele). Nao e configuracao (fonteregra.h trata auto-play, nao grupos). Cuidado no conserto: nv_res_do_texto aceita "hd" solto como 720, o que casaria DTS-HD; copiar so fhd/fullhd/full hd. Candidato a 2.0.4 (muda so o parser, 2 linhas + teste), decisao do dono. SUSPEITA: o JSON bruto do autor pode ter a resolucao em outro campo; sem o log/JSON da fonte nao foi provado.
 - **#403**: Existe em parte: o cartao de proximo episodio (posplay.c, player_regra_proximo player.c:2192) so sobe nos creditos/ultimos segundos (marcador de creditos ou intro_fim_estimado, 50 s) e no fim; se o autor dispensa com Voltar ou pula os creditos, a dispensa gruda (posplay.c:104 e 257) e o unico caminho e o botao Episodios da fileira de controles (player.c:2846-2851, abre a lista). Nao ha botao Proximo na fileira de controles, nem durante a reproducao fora da janela. Codigo comum a todas as plataformas (LG, Samsung, Android); canal ao vivo tem Canal +/- (AV_B_PROX), nao conta. Conferido no codigo, sem prova em TV.
 - **#404**: Namer03, S95C, 2.0.3: Continuar assistindo registra títulos que ele não deu play; ele acha que é o debrid ou os amigos. SUSPEITA: debrid não escreve no Continuar; vem da conta Nuvio (outros apps/aparelhos) ou do Trakt/Simkl (qualquer app ligado). Sem log.
+- **#405**: mackojanko, QE65Q80A, 2.0.3: a busca rapida nao mostra Silo (2023); a busca do menu mostra. Log ABB125. Sem causa ainda.
+- **#406**: mackojanko: subir/descer na pagina do titulo passa nota por nota; pede que as notas sejam um bloco unico.
+- **#407**: mackojanko, QE65Q80A, 2.0.3: acima do Play o foco abre o menu do topo; ele acha que nao deveria abrir. Sem log.
 
 ## Já lançado
 

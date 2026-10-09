@@ -8101,20 +8101,22 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "aberta",
+   "status": "consertada-nao-lancada",
    "release": "-",
-   "conserto": [],
+   "conserto": [
+    "28aa5c4b (merge em integracao/2.0.3.1; teste tests/legconta378.sh)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": "2026-10-08",
     "ultimo_comentario_por": "ghbarker",
     "ultima_nossa": null
    },
-   "proximo_passo": "responder / pedir log (ghbarker confirmou com +1)",
+   "proximo_passo": "responder ao autor quando a 2.0.4 sair",
    "notas": "",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/378",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.5"
+   "alvo": "2.0.4"
   },
   {
    "numero": 379,
@@ -8319,20 +8321,22 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "aberta",
+   "status": "consertada-nao-lancada",
    "release": "-",
-   "conserto": [],
+   "conserto": [
+    "beab28ec (merge em integracao/2.0.3.1; teste tests/poster_modelo_longo.sh)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": null,
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder / pedir log: o campo de log veio vazio",
+   "proximo_passo": "responder ao autor quando a 2.0.4 sair",
    "notas": "QN74F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito \"2.02\"). Ao colocar a URL de cartaz própria (pelo celular e à mão) e apertar \"Concluído\", volta para as opções sem gravar a URL. Mesmo autor do #388 e do #389. Não investigado. Relação com a URL de cartaz longa do #361 (2.0.3) não conferida: SUSPEITA.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/390",
    "criada_em": "2026-10-09",
-   "alvo": "2.0.5"
+   "alvo": "2.0.4"
   },
   {
    "numero": 392,
@@ -8344,7 +8348,8 @@
    "release": "2.0.4",
    "conserto": [
     "bb583b60 (agente/2031-ordemperfil)",
-    "9023ebdb (agente/2031-ordemperfil)"
+    "9023ebdb (agente/2031-ordemperfil)",
+    "bdd49eb6 (merge em integracao/2.0.3.1)"
    ],
    "ultima_resposta": {
     "nos": false,
@@ -8352,7 +8357,7 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "integrar agente/2031-ordemperfil na 2.0.4 e responder ao autor com a causa",
+   "proximo_passo": "responder ao autor com a causa quando a 2.0.4 sair",
    "notas": "Samsung .tpk Tizen 6.0, v2.0.3 (rawldon, log VV8JG2): ao trocar de perfil e voltar, a ordem das fileiras da Home muda (coleções, catálogos e Continuar assistindo). CAUSA PROVADA pelo log VV8JG2: o build da Home registra os catálogos dos add-ons do perfil anterior no arquivo de ordem do perfil novo, e isso expulsa fileiras. Conserto em agente/2031-ordemperfil (teste bb583b60, conserto 9023ebdb: a lista de add-ons do perfil que saiu não é registrada no arquivo do perfil novo), ainda não integrado. Mesma queixa do #294, que persiste na 2.0.3.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/392",
    "criada_em": "2026-10-09",
@@ -8422,6 +8427,27 @@
    "alvo": "2.1"
   },
   {
+   "estado_github": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.5",
+   "numero": 400,
+   "titulo": "feature-request: allow using default addon sources sort order",
+   "plataforma": "all",
+   "tipo": "feature",
+   "status": "aberta",
+   "proximo_passo": "responder: hoje nao existe; opcao \"manter a ordem do add-on\" na aba de cada add-on, para a 2.0.5",
+   "notas": "Vidhin05 (tambem a discussao #376): quer a ordem do AIOStreams (ranked stream expressions). Hoje a lista sempre agrupa por resolucao e ordena do maior arquivo para o menor, uma aba por add-on (texto de ajuda em idioma_tab.h). As opcoes de ordem existentes valem so para o automatico.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/400"
+  },
+  {
    "numero": 401,
    "titulo": "Long update time on Homebrew channel (15 mins +)",
    "estado_github": "aberta",
@@ -8448,20 +8474,22 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "aberta",
+   "status": "consertada-nao-lancada",
    "release": "-",
-   "conserto": [],
+   "conserto": [
+    "ca8f29b4 (merge em integracao/2.0.3.1; teste tests/fhd402.sh)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": null,
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "postar o rascunho (EN); conserto pequeno em src/stream_parse.c:281 (e badges.c:40-42): FHD/FULLHD sem numero nao dao altura, e a fonte cai em Outras",
+   "proximo_passo": "responder ao autor quando a 2.0.4 sair",
    "notas": "Namer03, S95C, .tpk 2.0.3. A imagem mostra, na aba NMR, o cabecalho do grupo \"Other SDR\" com fileiras cujo nome (formatter do addon) diz \"FHD | REMUX | SDR\" e \"FHD | SDR\"; so a ultima diz \"N/A | SDR\" (essa realmente nao declara resolucao). CAUSA (lida no codigo, sem teste ainda): o grupo vem de grupoRes (src/streams.c:2105) que usa s->altura ou os selos r-4k/r-1080/r-720; a altura sai de stream_parse.c:281-283, que so procura os numeros 2160/1440/1080/720/480 e 4k/uhd, e badges_detectar (badges.c:40-42) so tem 1080p/1080i/1080. A palavra FHD sozinha (comum em formatter de AIOStreams) nao casa, entao altura=0 e o grupo e Outras (GRUPO_NOME, streams.c:2072). O app ja conhece FHD para canal ao vivo (nv_res_do_texto, livetv_regras.h:38) mas nao usa no filme/serie. NAO e ordenacao (nivelHdr, MP4 primeiro da LG e perfil 5 nao entram: e a Samsung .tpk e o problema e o grupo, nao a ordem dentro dele). Nao e configuracao (fonteregra.h trata auto-play, nao grupos). Cuidado no conserto: nv_res_do_texto aceita \"hd\" solto como 720, o que casaria DTS-HD; copiar so fhd/fullhd/full hd. Candidato a 2.0.4 (muda so o parser, 2 linhas + teste), decisao do dono. SUSPEITA: o JSON bruto do autor pode ter a resolucao em outro campo; sem o log/JSON da fonte nao foi provado.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/402",
    "criada_em": "2026-10-09",
-   "alvo": "2.0.5"
+   "alvo": "2.0.4"
   },
   {
    "numero": 403,
@@ -8504,6 +8532,69 @@
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/404",
    "criada_em": "2026-10-09",
    "alvo": "2.0.5"
+  },
+  {
+   "estado_github": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.5",
+   "numero": 405,
+   "titulo": "Quick search doesn't list all results",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "proximo_passo": "ler o log ABB125 e comparar a busca rapida (canal -) com a busca do menu para \"Silo\"",
+   "notas": "mackojanko, QE65Q80A, 2.0.3: a busca rapida nao mostra Silo (2023); a busca do menu mostra. Log ABB125. Sem causa ainda.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/405"
+  },
+  {
+   "estado_github": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.5",
+   "numero": 406,
+   "titulo": "Passing through ratings on title page",
+   "plataforma": "Samsung .tpk",
+   "tipo": "feature",
+   "status": "aberta",
+   "proximo_passo": "decidir com o dono: notas da pagina do titulo como um bloco so na navegacao vertical",
+   "notas": "mackojanko: subir/descer na pagina do titulo passa nota por nota; pede que as notas sejam um bloco unico.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/406"
+  },
+  {
+   "estado_github": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.5",
+   "numero": 407,
+   "titulo": "Top menu open when scrolling up on the title page",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "proximo_passo": "reproduzir no .tpk: cima a partir do Play na pagina do titulo abre o menu do topo (o mesmo do canal +)",
+   "notas": "mackojanko, QE65Q80A, 2.0.3: acima do Play o foco abre o menu do topo; ele acha que nao deveria abrir. Sem log.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/407"
   }
  ],
  "fora_do_github": [
@@ -8755,7 +8846,7 @@
   },
   {
    "release": "2.0.4",
-   "situacao": "hotfix (antes chamado 2.0.3.1; sai como 2.0.4 porque webOS e Tizen exigem x.y.z) em andamento; temporadas (#372 parte 1) e busca do guia (#344, primeira rodada) integradas em integracao/2.0.3.1 (21077ab5), sem tag",
+   "situacao": "hotfix (antes chamado 2.0.3.1; sai como 2.0.4 porque webOS e Tizen exigem x.y.z) em revisao no PR #408 (so revisao); tudo abaixo integrado em integracao/2.0.3.1 menos o Dolby Vision perfil 5, sem tag",
    "descricao": "Hotfix sobre a 2.0.3 (já publicada na tag v2.0.3) com as causas achadas em 09/10.",
    "itens": [
     {
@@ -8782,7 +8873,7 @@
     },
     {
      "nome": "Ordem da Home ao trocar de perfil (#392, #294)",
-     "porque": "PENDENTE, conserto pronto em branch e não integrado. CAUSA PROVADA pelo log VV8JG2 (.tpk Tizen 6.0, v2.0.3): o build da Home registra os catálogos de add-ons do perfil anterior no arquivo de ordem do perfil novo e expulsa fileiras. Teste bb583b60, conserto 9023ebdb.",
+     "porque": "INTEGRADO em integracao/2.0.3.1 (merge bdd49eb6). CAUSA PROVADA pelo log VV8JG2 (.tpk Tizen 6.0, v2.0.3): o build da Home registra os catálogos de add-ons do perfil anterior no arquivo de ordem do perfil novo e expulsa fileiras. Teste bb583b60, conserto 9023ebdb.",
      "issues": [
       392,
       294
@@ -8794,12 +8885,26 @@
     },
     {
      "nome": "Queda do webOS 3 na sonda do adaptador DTS",
-     "porque": "PENDENTE, em branch e não integrado: a sonda do adaptador DTS responde uma vez por processo (00b4a937) e a libplayerAPIs fica na memória (RTLD_NODELETE, 65491e7b); a explicação do mecanismo é SUSPEITA, não certeza (1d7264c1). Sem issue no mapa.",
+     "porque": "INTEGRADO em integracao/2.0.3.1 (merge 09ce19a0): a sonda do adaptador DTS responde uma vez por processo (00b4a937) e a libplayerAPIs fica na memória (RTLD_NODELETE, 65491e7b); a explicação do mecanismo é SUSPEITA, não certeza (1d7264c1). Sem issue no mapa.",
      "issues": [],
      "origem": "investigação 09/10",
      "branches": [
       "agente/2031-webos3"
      ]
+    },
+    {
+     "nome": "Fontes com FHD sem numero caem em Outras (#402)",
+     "porque": "INTEGRADO em integracao/2.0.3.1 (merge ca8f29b4; teste tests/fhd402.sh, revisado por Codex e OpenCode). CAUSA lida no codigo: stream_parse.c:281-283 e badges.c:40-42 nao reconhecem FHD/FULLHD sem numero, entao altura=0 e o grupo vira Outras (streams.c:2105). Conserto de 2 linhas mais teste; candidato a entrar na 2.0.4 se o dono quiser. Nao e a ordenacao nem uma configuracao.",
+     "issues": [
+      402
+     ],
+     "origem": "agente 09/10"
+    },
+    {
+     "nome": "Legendas \"Da conta\" e modelo de URL do poster (#378, #390)",
+     "porque": "INTEGRADO em integracao/2.0.3.1 (merges 28aa5c4b e beab28ec), cada um com teste que falhava antes do conserto.",
+     "issues": "",
+     "origem": ""
     },
     {
      "nome": "Dolby Vision perfil 5 na LG: decisão pendente (HDR10 ou MP4 primeiro)",
@@ -8946,14 +9051,6 @@
      "origem": "agente 09/10"
     },
     {
-     "nome": "Fontes com FHD sem numero caem em Outras (#402)",
-     "porque": "CAUSA lida no codigo: stream_parse.c:281-283 e badges.c:40-42 nao reconhecem FHD/FULLHD sem numero, entao altura=0 e o grupo vira Outras (streams.c:2105). Conserto de 2 linhas mais teste; candidato a entrar na 2.0.4 se o dono quiser. Nao e a ordenacao nem uma configuracao.",
-     "issues": [
-      402
-     ],
-     "origem": "agente 09/10"
-    },
-    {
      "nome": "Botao Proximo episodio na fileira de controles do player (#403)",
      "porque": "Hoje so o cartao na janela de creditos/fim (dispensa gruda) e a lista pelo botao Episodios. Sugestao: acao de proximo episodio na fileira (ou atalho) para serie, reaproveitando player_proximo_episodio e o pedido de app.c:4424. Vai junto com o proximo episodio automatico. Sugestao do agente, nao aprovado pelo dono.",
      "issues": [
@@ -8967,6 +9064,12 @@
      "issues": [
       401
      ]
+    },
+    {
+     "nome": "Novos de 09/10: ordem do add-on, busca rapida, notas em bloco, menu do topo (#400, #405, #406, #407)",
+     "porque": "Triagem 09/10 sem conserto: #400 pedido (opcao de manter a ordem do add-on), #405 bug com log ABB125, #406 pedido, #407 bug sem log, todos do Samsung menos o #400.",
+     "issues": "",
+     "origem": ""
     }
    ]
   },
