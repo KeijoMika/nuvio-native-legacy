@@ -733,19 +733,19 @@ object NvPlayer {
             }
         }
     }
-    // MStar (decoder OMX.MS.*, ex.: caixas Shinon): o hwcomposer deles refaz o
-    // overlay de video a cada GONE/VISIBLE ("Overlay 0 size changed") e a tela
-    // pisca/trava. A recriacao existe por causa da TCL; la nao e necessaria.
-    private val mstar: Boolean by lazy {
+    // Familias que nao recriam a superficie no HDR (RecriaHdr.kt): MStar e
+    // Amlogic. A recriacao existe por causa da TCL; nelas so custa.
+    private val semRecriar: Boolean by lazy {
         try {
-            val r = android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).codecInfos
-                .any { !it.isEncoder && it.name.startsWith("OMX.MS.") }
-            Log.i(TAG, "[player] decoders MStar (OMX.MS.*): $r")
-            r
+            val nomes = android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).codecInfos
+                .filter { !it.isEncoder }.map { it.name }
+            val f = RecriaHdr.dispensa(nomes)
+            Log.i(TAG, "[player] recriar superficie no HDR: ${f?.let { "nao ($it)" } ?: "sim"}")
+            f != null
         } catch (e: Throwable) { false }
     }
     private fun recriarSuperficie(atrasoMs: Long) {
-        if (mstar) return
+        if (semRecriar) return
         principal.removeCallbacks(recriar)
         principal.postDelayed(recriar, atrasoMs)
     }
@@ -782,7 +782,7 @@ object NvPlayer {
     }
     private fun avaliarEstavel() {
         if (!quadroVisto || estavelEmitido) return
-        val hdr = ultHdr.isNotEmpty() && ultHdr != "none" && !mstar
+        val hdr = ultHdr.isNotEmpty() && ultHdr != "none" && !semRecriar
         principal.removeCallbacks(estavelRun)
         if (hdr && !hdrSegundaFeita) return   // a segunda recriacao chama de novo
         principal.postDelayed(estavelRun, 150L)
