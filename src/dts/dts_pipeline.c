@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include "dts_pipeline.h"
+#include "../webosver.h"
 #include "adapter/adapter.h"
 #include <dlfcn.h>
 #include <stdlib.h>
@@ -64,28 +65,9 @@ fail:
 static pthread_mutex_t sondaTrava = PTHREAD_MUTEX_INITIALIZER;
 static int sondaResposta[3] = {-1, -1, -1};
 static int sondaPosicao(int major) { return major == 0 ? 0 : major == 3 ? 1 : 2; }
-/* webOS da TV pelo nyx (o /etc/starfish-release falta nas TVs de 2017, e o
- * video.c cai no 4 nelas). 0 = nao deu para saber. NUVIO_DTS_WEBOS_MAJOR e
- * dos testes. Chamada com a trava. */
-static int sondaWebos(void) {
-  static int v = -1;
-  const char *forcado = getenv("NUVIO_DTS_WEBOS_MAJOR");
-  char buf[4096];
-  const char *p;
-  FILE *f;
-  size_t n;
-  if (forcado && *forcado) return atoi(forcado);
-  if (v >= 0) return v;
-  v = 0;
-  f = fopen("/var/run/nyx/os_info.json", "rb");
-  if (!f) return v;
-  n = fread(buf, 1, sizeof buf - 1, f); buf[n] = 0;
-  fclose(f);
-  p = strstr(buf, "\"webos_release\"");
-  if (p && (p = strchr(p + 15, ':')) && (p = strchr(p, '"'))) v = atoi(p + 1);
-  if (v < 0) v = 0;
-  return v;
-}
+/* webOS da TV: a fonte unica do webosver.c (nyx, depois starfish-release).
+ * 0 = nao deu para saber. */
+static int sondaWebos(void) { return nv_webos_major(); }
 static int sondar(int major) {
   const DtsAdapter *api;
   void *lib = open_adapter(major, &api);

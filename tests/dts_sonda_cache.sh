@@ -13,13 +13,15 @@ g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Itests/dts_pipeli
 # So o adaptador do webOS 3, como na TV de 2017: o do webOS 4 falta e falha.
 g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Isrc/dts/adapter -Itests/dts_pipeline_sdk \
   src/dts/adapter/starfish.cpp "$tmp/js.o" -o "$tmp/good/dts-starfish-webos3.so" -ldl -pthread
-cc -std=c11 -Wall -Wextra -Werror -Isrc tests/dts_sonda_cache.c src/dts/dts_pipeline.c -ldl -pthread -o "$tmp/test"
+cc -std=c11 -Wall -Wextra -Werror -Isrc tests/dts_sonda_cache.c src/dts/dts_pipeline.c src/webosver.c -ldl -pthread -o "$tmp/test"
 mkdir -p "$tmp/vazia"
 ruim=0
 # conta as linhas "adapter load failed" e "firmware adapter ready" de uma rodada
 rodar() { # nome  webos  sim|nao  pasta  falhas-esperadas  prontos-esperados
   local nome=$1 webos=$2 quer=$3 pasta=$4 qf=$5 qp=$6 falhas prontos
-  if ! NUVIO_DTS_WEBOS_MAJOR="$webos" LD_LIBRARY_PATH="$tmp/native" "$tmp/test" "$quer" "$pasta" > "$tmp/saida" 2>&1; then
+  rm -f "$tmp/os_info.json"
+  if [ "$webos" != 0 ]; then printf '{"webos_release":"%s.0.0"}' "$webos" > "$tmp/os_info.json"; fi
+  if ! LD_LIBRARY_PATH="$tmp/native" "$tmp/test" "$quer" "$pasta" "$tmp/os_info.json" > "$tmp/saida" 2>&1; then
     echo "FALHA: $nome: o programa recusou"; cat "$tmp/saida"; ruim=1; return
   fi
   falhas=$(grep -c 'adapter load failed' "$tmp/saida" || true)
