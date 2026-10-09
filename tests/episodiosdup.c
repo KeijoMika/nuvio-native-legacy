@@ -511,6 +511,39 @@ int main(void) {
     assert(!strcmp(cat_episodio(0, 0)->vid, "tt13293588:1:1"));
     fakeMetaExterno = 0;
     puts("ok  empate: a lista de arquivos nao ganha nem com a ficha do addon preferida");
+    // EMPATE ACIMA DO CORTE DE 1200: o Cinemeta conhece 1300 episodios (publica
+    // 1200) e a lista de arquivos os MESMOS 1300, de tras para a frente, em 4
+    // variantes. 1300 contra os 1200 PUBLICADOS nao e "saber mais": a conta e
+    // de distintos contra distintos, e a lista continua a do Cinemeta.
+    k = (size_t)snprintf(cine, cap, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                         "\"name\":\"Serie\",\"description\":\"S.\",\"videos\":[");
+    for (ep = 1; ep <= 1300; ep++)
+      k += (size_t)snprintf(cine + k, cap - k,
+                            "%s{\"id\":\"tt13293588:1:%d\",\"season\":1,\"episode\":%d,"
+                            "\"name\":\"C%d\"}", ep > 1 ? "," : "", ep, ep, ep);
+    snprintf(cine + k, cap - k, "]}}");
+    k = (size_t)snprintf(maior, cap, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                         "\"name\":\"Serie\",\"videos\":[");
+    for (i = 0; i < 5200; i++)
+      k += (size_t)snprintf(maior + k, cap - k,
+                            "%s{\"id\":\"z%d\",\"season\":1,\"episode\":%d,"
+                            "\"name\":\"Serie.S01E%04d.z%d.mkv\"}", i ? "," : "",
+                            i, 1300 - i % 1300, 1300 - i % 1300, i / 1300);
+    snprintf(maior + k, cap - k, "]}}");
+    assert(k < cap - 8);
+    assert(desc_meta_n_episodios(cine) == 1300 && desc_meta_n_episodios(maior) == 1300);
+    nFake = 0; nRotas = 0; addonMeta = 1; addonTipo = "/series/";
+    cineSerie = cine; addonResp = maior;
+    limparCacheMeta();
+    catalogoCom("tt13293588", "series", "Serie");
+    abrir();
+    printf("1300 contra 1300x4: primeiro id %s, %d episodios\n",
+           cat_episodio(0, 0)->vid, cat_n_episodios(0));
+    assert(cat_n_episodios(0) == VIDEOS_MAX);
+    assert(!strcmp(cat_episodio(0, 0)->vid, "tt13293588:1:1"));
+    assert(!strcmp(cat_episodio(0, VIDEOS_MAX - 1)->vid, "tt13293588:1:1200"));
+    assert(!strcmp(cat_episodio(0, 0)->nome, "C1"));
+    puts("ok  empate acima do corte de 1200: a lista de arquivos nao ganha");
     nFake = 0; nRotas = 0;
     addonMeta = 0; cineSerie = NULL; addonResp = NULL;
     limparCacheMeta();
