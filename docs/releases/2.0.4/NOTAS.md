@@ -11,6 +11,9 @@
 - Sources labelled only "FHD" or "Full HD" (no "1080" in the name, as some AIOStreams formats write it) are now grouped under 1080p instead of "Other" (#402).
 - **Custom poster URL template is saved again** (#390). Long templates (up to 400 characters) and API keys with uppercase letters are kept as typed; before, anything past 299 characters was cut and the key was lowercased, so the template was rejected without saving. A template whose finished address could not fit is refused when you save it, with a message.
 - Subtitle and audio languages set to "From account" now apply even when this TV has protected local settings, and switching profile no longer carries the previous profile's languages over (#378).
+- Android boxes with Amlogic chips (Mecool KM7 SE and similar): HDR videos no longer recreate the video surface at the start. On low-memory boxes that recreation could crash the app or freeze the box when a 4K HDR episode started.
+- 2017 LG TVs: a read error on the secondary version file no longer throws away the webOS version already read from the main one.
+- Custom poster URL template that is too long once filled in now says so, instead of the generic "invalid template" message.
 
 ## Notes
 
