@@ -8134,7 +8134,7 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder / pedir log (sem resposta)",
-   "notas": "",
+   "notas": " 09/10: .tpk S90C, 2.0.2: no fim do filme/episodio o player fica pausado no ultimo segundo em vez de voltar. SUSPEITA: o evento de fim (tpk evento 4) nao chega ou chega antes do ultimo quadro; conferir no log as linhas [video] tpk evento perto do fim.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/379",
    "criada_em": "2026-10-08",
    "alvo": "2.0.5"
@@ -8268,7 +8268,7 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder pedindo o codigo do log logo depois de acontecer; com o log, conferir pausa longa do quadro ([quadro] pior=) no momento do OK",
-   "notas": "S95C, .wgt, Nuvio 2.0.2, autor Namer03. Aleatório, sem padrão exato: na Biblioteca, ao abrir um dos 3 primeiros títulos, o item é selecionado na hora (como um toque longo) em vez de abrir a ficha. Sem log. SUSPEITA, não lida no código: o OK sendo lido como segurar (repetição de tecla do controle novo da Samsung); conferir o tratamento de toque longo da Biblioteca. LIDO 09/10 (biblioteca.c:957-971 e 1079): KEYDOWN arma okDesde com SDL_GetTicks() e biblioteca_atualizar abre o menu quando passam NV_HOLD_MS sem KEYUP processado. SUSPEITA: no .wgt o fio principal trava quando os primeiros cartazes decodificam (longtasks de varios segundos ja medidas no Tizen web); o KEYUP chega atrasado e o limiar vence antes dele, por isso acontece nos 3 primeiros. Conserto possivel (2.0.5): nao disparar o segurar no quadro que veio depois de uma pausa longa, deixando os eventos pendentes chegarem; o mesmo padrao existe em home.c, busca.c, ctxmenu.c, avisos.c, entao o conserto deve ficar num ajudante comum.",
+   "notas": "S95C, .wgt, Nuvio 2.0.2, autor Namer03. Aleatório, sem padrão exato: na Biblioteca, ao abrir um dos 3 primeiros títulos, o item é selecionado na hora (como um toque longo) em vez de abrir a ficha. Sem log. SUSPEITA, não lida no código: o OK sendo lido como segurar (repetição de tecla do controle novo da Samsung); conferir o tratamento de toque longo da Biblioteca. LIDO 09/10 (biblioteca.c:957-971 e 1079): KEYDOWN arma okDesde com SDL_GetTicks() e biblioteca_atualizar abre o menu quando passam NV_HOLD_MS sem KEYUP processado. SUSPEITA: no .wgt o fio principal trava quando os primeiros cartazes decodificam (longtasks de varios segundos ja medidas no Tizen web); o KEYUP chega atrasado e o limiar vence antes dele, por isso acontece nos 3 primeiros. Conserto possivel (2.0.5): nao disparar o segurar no quadro que veio depois de uma pausa longa, deixando os eventos pendentes chegarem; o mesmo padrao existe em home.c, busca.c, ctxmenu.c, avisos.c, entao o conserto deve ficar num ajudante comum. VIDEO do autor (9 s, visto 09/10): em sequencia, OK em 4 cartazes da fileira de cima de Salvos; em 3 deles o menu do cartaz (Remove from Saved / Mark as watched...) abre em menos de ~0,5 s, com as capas ja carregadas; no 4o (Horimiya) abre a ficha. Isso ENFRAQUECE a suspeita da pausa longa (as capas ja estavam prontas) e aponta para o KEYUP do OK nao ser reconhecido no .wgt (codigo de tecla do keyup diferente do keydown, ou keyup que nao chega), o que faria todo OK virar segurar. Precisa do log com as linhas de tecla.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/387",
    "criada_em": "2026-10-09",
    "alvo": "2.0.5"
