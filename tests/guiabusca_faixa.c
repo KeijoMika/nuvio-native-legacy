@@ -79,13 +79,13 @@ int main(void) {
     n = epg_faixa(g, agora, agora + 6 * 3600, q, 24);
     for (k = 0; k < n; k++) if (strstr(q[k].titulo, "Show 23")) achou++;
     assert(achou == 1);
-    // lotes: o programa #30 so aparece avancando a janela, como faz buscaFazer
-    { EpgProg lote[24]; time_t de = agora; int r, achou30 = 0, total = 0;
+    // lotes por POSICAO (epg_faixa_desde), como faz buscaFazer
+    { EpgProg lote[24]; int r, achou30 = 0, total = 0;
       for (r = 0; r < 16; r++) {
-        int m = epg_faixa(g, de, agora + 6 * 3600, lote, 24), z;
-        for (z = 0; z < m; z++) { total++; if (strstr(lote[z].titulo, "Show 30")) achou30++; }
-        if (m < 24 || lote[m - 1].fim <= de) break;
-        de = lote[m - 1].fim;
+        int m = epg_faixa_desde(g, agora, agora + 6 * 3600, total, lote, 24), z;
+        for (z = 0; z < m; z++) if (strstr(lote[z].titulo, "Show 30")) achou30++;
+        total += m;
+        if (m < 24) break;
       }
       assert(total == 37 && achou30 == 1); } }
   puts("epg_faixa: retorno limitado ao cap; programa #30 achado em lotes");
