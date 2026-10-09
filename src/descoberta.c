@@ -6986,7 +6986,8 @@ static void completarFicha(CatItem *d, const MetaFontes *mf, const char *tipo) {
 // nela, a da primeira fonte que tem. Mescla episodio a episodio (still, data,
 // duracao, so vazios) apenas quando as duas listas falam o mesmo id — IMDb.
 // Devolve 1 quando os episodios publicados sao de um addon (o TMDB, depois, so
-// preenche o que faltar neles).
+// preenche o que faltar neles). Lista de ARQUIVOS mantida devolve 0: o nome
+// dela nao e texto que valha proteger da traducao.
 static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *serie,
                                const MetaFontes *mf, TempsPub *tp) {
   int i, fonte = -1, outro = -1, mesmoId = idbase_e_imdb(serie);
@@ -7028,7 +7029,9 @@ static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *ser
                     outro >= 0 ? mf->corpo[outro] : NULL,
                     arq[fonte] ? DESC_MESCLA_TEXTO : DESC_MESCLA_VAZIOS, tp);
   arte_reserva_episodios(serie, mf->corpo[fonte]);
-  return !mf->cine[fonte];
+  // Lista de arquivos nao e "texto do addon" (como em episodiosDoAddon): com 1
+  // o TMDB so preencheria vazios e os nomes de arquivo que sobraram ficariam.
+  return !mf->cine[fonte] && !arq[fonte];
 }
 
 // PRE-BUSCA QUE CEDE. O fio de episodios e um so (epItem, epAlvoId...): uma
