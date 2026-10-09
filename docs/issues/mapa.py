@@ -35,6 +35,9 @@ def valida_validacoes():
         if not isinstance(v.get('issues',[]),list): sys.exit(f"ERRO: validacao {k}: issues precisa ser lista")
 valida()
 valida_validacoes()
+for k,d in enumerate(J.get('decisoes',[])):
+    if d.get('estado','pendente') not in ('pendente','decidida'): sys.exit(f"ERRO: decisao {k} com estado '{d.get('estado')}' (pendente ou decidida)")
+    if d.get('estado')=='decidida' and not (d.get('decisao') and d.get('data') and d.get('quem')): sys.exit(f"ERRO: decisao {k} decidida sem decisao/data/quem")
 def vk(t): return [int(p) for p in re.findall(r'\d+',t)]
 def grupo(r):
     s,rel=r['status'],r['release']
@@ -67,7 +70,7 @@ L.append(f"# Mapa vivo das issues\n\nBase: `{J['base']}` (integracao/2.0.3.1, qu
 L.append("""## Como atualizar
 
 1. Chegou issue nova, ou um conserto entrou numa branch/tag: edite **uma** entrada em `docs/issues/mapa.json` (procure por `"numero": N`) e rode `python3 docs/issues/mapa.py`, que valida e reescreve este arquivo. Sem o script, edite a linha equivalente aqui.
-2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4` = hotfix em integracao/2.0.3.1, `2.0.5 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.4`, `2.0.5`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json.
+2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4` = hotfix em integracao/2.0.3.1, `2.0.5 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.4`, `2.0.5`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json; decisão tem `estado` (`pendente` ou `decidida`) e, decidida, `decisao`, `data` e `quem`.
 3. Vocabulário de `status`: `aberta`, `respondida`, `consertada-nao-lancada`, `lancada`, `por-desenho`, `fora-do-escopo`, `precisa-log`, `duplicada`. Extra: `fechada-sem-resposta` (issue fechada sem nenhum comentário).
 4. Regra de honestidade: só vale `consertada-nao-lancada`/`lancada` com commit na ref. "Lançado" = commit contido numa tag `v*`. Sem commit, escreva "suspeita" ou "sem commit" em `conserto`/`notas`. "Lançada" em issue antiga sem commit com `#N` quer dizer: a nossa resposta cita uma versão que existe como tag (ver nota na linha).
 5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4 (o plano que hoje é a 2.0.5; a linha 2.0.3.1 é que saiu como 2.0.4), não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
@@ -100,8 +103,12 @@ for x in J.get('nao_fechar_ainda',[]):
     r=next(i for i in R if i['numero']==x['numero'])
     L.append(f"| [#{r['numero']}]({r['url']}) | {cell(r['titulo'])[:60]} | {cell(x['motivo'])} |")
 L.append("\n## Decisões para o dono\n")
-for k,d in enumerate(J['decisoes'],1):
+L.append("### Pendentes\n")
+for k,d in enumerate([d for d in J['decisoes'] if d.get('estado','pendente')=='pendente'],1):
     L.append(f"{k}. {d['pergunta']} Recomendação: {d['recomendacao']}")
+L.append("\n### Decididas\n")
+for d in sorted([d for d in J['decisoes'] if d.get('estado')=='decidida'], key=lambda d:d['data'], reverse=True):
+    L.append(f"- {d['data']} ({d['quem']}): {d['pergunta']} **{d['decisao']}**")
 L.append('')
 c=collections.Counter(r['status'] for r in R)
 L.append("## Resumo\n\nPor status:\n\n| Status | Qtd |\n|---|---|")
