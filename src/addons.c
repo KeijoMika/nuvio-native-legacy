@@ -271,15 +271,18 @@ static int pedidoCoube(int i, int w, size_t tam) {
 // --- leitura do arquivo de configuracao -------------------------------------
 
 // Perfil cuja conta mandou a lista atual; 0 = pacote ou nada. Ver addons.h.
+// Lida pela descoberta (outro fio) e escrita pelo sync: atomica.
 static int perfilLista;
-void addons_marcar_da_conta(int perfil) { perfilLista = perfil > 0 ? perfil : 0; }
-int  addons_perfil_da_lista(void) { return perfilLista; }
+void addons_marcar_da_conta(int perfil) {
+  __atomic_store_n(&perfilLista, perfil > 0 ? perfil : 0, __ATOMIC_SEQ_CST);
+}
+int  addons_perfil_da_lista(void) { return __atomic_load_n(&perfilLista, __ATOMIC_SEQ_CST); }
 
 int addons_carregar(const char *dirArte) {
   // A linha e nome<TAB>url<TAB>colunas: a URL inteira mais folga para o resto.
   char caminho[600], linha[NV_ADDON_URL_MAX + 256];
   FILE *f;
-  perfilLista = 0;
+  addons_marcar_da_conta(0);
   snprintf(caminho, sizeof caminho, "%s/addons.txt", dirArte ? dirArte : ".");
   f = fopen(caminho, "r");
   if (!f) { printf("[addons] sem %s\n", caminho); return 0; }
@@ -452,7 +455,7 @@ int addons_exportar(AddonRemoto *saida, int max) {
 void addons_esquecer(void) {
   memset(addon, 0, sizeof addon);
   nAddon = 0;
-  perfilLista = 0;
+  addons_marcar_da_conta(0);
   listaMudou();
   printf("[addons] lista esquecida (saiu da conta)\n");
 }
