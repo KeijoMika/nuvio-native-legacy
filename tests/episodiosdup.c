@@ -544,6 +544,55 @@ int main(void) {
     assert(!strcmp(cat_episodio(0, VIDEOS_MAX - 1)->vid, "tt13293588:1:1200"));
     assert(!strcmp(cat_episodio(0, 0)->nome, "C1"));
     puts("ok  empate acima do corte de 1200: a lista de arquivos nao ganha");
+    // CATALOGO PRIMEIRO COM TRES FONTES: lista de arquivos (20), addon de
+    // verdade (10), Cinemeta (12). A lista de arquivos fica (sabe mais), e o
+    // nome do Cinemeta tem de entrar por cima mesmo com outra fonte no meio.
+    {
+      static char dez[2048], doze[2048];
+      size_t kk;
+      kk = (size_t)snprintf(dez, sizeof dez, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                            "\"name\":\"Serie\",\"videos\":[");
+      for (ep = 1; ep <= 10; ep++)
+        kk += (size_t)snprintf(dez + kk, sizeof dez - kk,
+                               "%s{\"id\":\"d%d\",\"season\":1,\"episode\":%d,\"name\":\"D%d\"}",
+                               ep > 1 ? "," : "", ep, ep, ep);
+      snprintf(dez + kk, sizeof dez - kk, "]}}");
+      kk = (size_t)snprintf(doze, sizeof doze, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                            "\"name\":\"Serie\",\"description\":\"S.\",\"videos\":[");
+      for (ep = 1; ep <= 12; ep++)
+        kk += (size_t)snprintf(doze + kk, sizeof doze - kk,
+                               "%s{\"id\":\"tt13293588:1:%d\",\"season\":1,\"episode\":%d,"
+                               "\"name\":\"C%d\"}", ep > 1 ? "," : "", ep, ep, ep);
+      snprintf(doze + kk, sizeof doze - kk, "]}}");
+      k = (size_t)snprintf(maior, cap, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                           "\"name\":\"Serie\",\"videos\":[");
+      for (i = 0; i < 80; i++)
+        k += (size_t)snprintf(maior + k, cap - k,
+                              "%s{\"id\":\"v%d\",\"season\":1,\"episode\":%d,"
+                              "\"name\":\"Serie.S01E%02d.v%d.mkv\"}", i ? "," : "",
+                              i, i % 20 + 1, i % 20 + 1, i / 20);
+      snprintf(maior + k, cap - k, "]}}");
+      addonMeta = 0; addonResp = NULL; cineSerie = doze;
+      nFake = 2;
+      fake[0] = (FakeAddon){ "Fontes", "https://fx.test/SEGREDO", "org.fx", "tt", 0 };
+      fake[1] = (FakeAddon){ "Meta", "https://mt.test/SEGREDO", "org.mt", "tt", 0 };
+      nRotas = 0;
+      rota("fx.test/SEGREDO/meta/series/tt13293588.json", maior);
+      rota("mt.test/SEGREDO/meta/series/tt13293588.json", dez);
+      limparCacheMeta();
+      catalogoDe("tt13293588", "series", "Serie", "org.fx");
+      abrir();
+      assert(pediu("fx.test/SEGREDO") && pediu("mt.test/SEGREDO") && pediu("cinemeta"));
+      printf("tres fontes: %d episodios, primeiro nome '%s'\n",
+             cat_n_episodios(0), cat_episodio(0, 0)->nome);
+      assert(cat_n_episodios(0) == 20);
+      for (i = 0; i < 12; i++) {
+        char esperado[8];
+        snprintf(esperado, sizeof esperado, "C%d", i + 1);
+        assert(!strcmp(cat_episodio(0, i)->nome, esperado));
+      }
+      puts("ok  catalogo primeiro: nome do Cinemeta entra mesmo com outra fonte no meio");
+    }
     nFake = 0; nRotas = 0;
     addonMeta = 0; cineSerie = NULL; addonResp = NULL;
     limparCacheMeta();
