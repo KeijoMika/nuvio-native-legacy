@@ -8875,6 +8875,16 @@
    "conserto": [],
    "proximo_passo": "pedir o código do log (Ajustes > Sobre > Enviar registro) logo depois de abrir um filme; com o log, ver a linha [tv] e o caminho do vídeo (DTS, hdr, player) no webOS 3",
    "notas": "A mesma pessoa usa a C1 sem problema. Em 09/10 não há sessão da 32LJ600B no D1 (busca por LJ600 e por host=webos-3 desde o id 64500); há outras webOS 3.9.3 na 2.0.3 com \"arranque queda\" (65SJ800V 65304/65363/65374, OLED55B7P 65317). A 2.0.4 já leva a queda do webOS 3 no 2º vídeo (09ce19a0) e a leitura estrita da versão (webosver), mas nada prova que seja este defeito."
+  },
+  {
+   "id": "pedido-perfil-simkl",
+   "titulo": "Pedido: \"Meu perfil\" e status funcionando sem Trakt (usa Simkl e dá erro); sugere Telegram/Discord",
+   "plataforma": "all",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "proximo_passo": "2.0.5: perfil com Simkl (stats do Simkl, ou montado do histórico local + Simkl) e mensagem certa quando só o Simkl está ligado; Telegram/Discord é decisão do dono",
+   "notas": "LIDO 09/10: a tela Meu perfil chama só trakt_perfil (src/app.c carregarPerfil, ~350) e, sem Trakt, mostra \"Trakt desconectado. Vincule a conta para ver seu perfil.\" (app.c ~3273) mesmo com o Simkl conectado. perfil.c só mostra Simkl na linha de contas (~770). \"Status\" do relato não está claro (status de amigos/assistindo agora também vem do Trakt)."
   }
  ],
  "base_roadmap": "21077ab5",
@@ -9945,6 +9955,15 @@
    "ref": "NuvioMedia/NuvioTV 6adf0251; APK sha256 09865e1a…",
    "resultado": "passou",
    "evidencia": "/Volumes/ExternalSSD/tmp/nuvio-oficial/relatorio.md (oficial preserva a ordem interna do add-on; não recria a superfície no HDR; buffer padrão 50 s; plugins até 10 scrapers)"
+  },
+  {
+   "data": "2026-10-09 21:00",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Leitura do código: o perfil depende só do Trakt (relato de usuário com Simkl)",
+   "issues": [],
+   "ref": "integracao/2.0.3.1",
+   "resultado": "passou",
+   "evidencia": "src/app.c carregarPerfil -> trakt_perfil; sem trakt_ativo() o estado é \"Trakt desconectado\""
   }
  ]
 }
