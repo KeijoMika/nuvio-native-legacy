@@ -5581,10 +5581,10 @@
   {
    "numero": 256,
    "titulo": "Add Autoplay for Next Episode & Allow Customizable \"Up Next\" Card Trigger Time",
-   "estado_github": "aberta",
+   "estado_github": "fechada",
    "plataforma": "?",
    "tipo": "feature",
-   "status": "aberta",
+   "status": "respondida",
    "release": "-",
    "conserto": [],
    "ultima_resposta": {
@@ -5593,11 +5593,10 @@
     "ultimo_comentario_por": "Snake47xx",
     "ultima_nossa": "2026-10-06"
    },
-   "proximo_passo": "responder (novo pedido: card no canto e autoplay mesmo após dispensar)",
-   "notas": "Parte do pedido tem relação com #331 (contagem estilo Netflix, em agente/203-331 = 2.0.4). Ajuste de tempo do card \"ainda não existe\" (nossa resposta).",
+   "proximo_passo": "nada (fechada pelo autor em 09/10); a opção de ajustar o tempo do card segue só como recurso no roadmap 2.0.4",
+   "notas": "Parte do pedido tem relação com #331 (contagem estilo Netflix, em agente/203-331 = 2.0.4). Ajuste de tempo do card \"ainda não existe\" (nossa resposta). Fechada pelo autor em 09/10 (COMPLETED) depois de confirmar que o card aparece nos créditos e o próximo episódio toca sozinho; o pedido de ajuste de tempo fica sem issue própria (roadmap 2.0.4, item do próximo episódio automático).",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/256",
-   "criada_em": "2026-10-05",
-   "alvo": "2.0.4"
+   "criada_em": "2026-10-05"
   },
   {
    "numero": 257,
@@ -6585,25 +6584,25 @@
    "estado_github": "aberta",
    "plataforma": "?",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "e52fae3f (2.0.3)",
-    "6269f306 (2.0.3)",
-    "b65c3324 (2.0.3)",
-    "73ce1648 (2.0.3)"
+    "e52fae3f (v2.0.3)",
+    "6269f306 (v2.0.3)",
+    "b65c3324 (v2.0.3)",
+    "73ce1648 (v2.0.3)"
    ],
    "ultima_resposta": {
-    "nos": true,
-    "data": "2026-10-07",
-    "ultimo_comentario_por": "iqui27",
+    "nos": false,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "Namer03",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "responder: confirmar que a abertura da fonte e a queda foram resolvidas; abrir triagem do desenho do ASS (sombra/anel, cor alterada, legenda grande lenta, um trecho fora de sincronia) na 2.0.4",
+   "notas": "O defeito do relato original (fonte com ASS que não abre e cai no CDN) está corrigido na 2.0.3: o autor confirma em 09/10 \"got them working now\". DECISÃO: a issue segue aberta no mapa, com status lancada e alvo 2.0.4, porque o autor trouxe sintomas NOVOS no mesmo fio: todas as legendas ASS com sombra/anel e cor diferente da original (exemplo do Stremio com anel branco), legendas grandes/avançadas lentas (baixo fps) e um clipe fora de sincronia (vídeos e captura anexados, não vistos por nós). SUSPEITA, sem leitura de código nem log: desenho do libass (sombra/contorno/cor) e custo de desenho das legendas grandes na TV. Se o dono preferir, fechar a #308 como resolvida e abrir issue nova para o desenho.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/308",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3"
+   "alvo": "2.0.4"
   },
   {
    "numero": 309,
@@ -7052,7 +7051,7 @@
     "ultima_nossa": null
    },
    "proximo_passo": "responder (sem resposta nossa)",
-   "notas": "",
+   "notas": "09/10: SUSPEITA de mesma raiz do #372 (temporadas/episódios errados pelo catálogo do Nuvio primeiro, regressão 9677065b), não confirmada; se o conserto de agente/2031-temporadas (2.0.3.1) resolver, vale também aqui.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/328",
    "criada_em": "2026-10-07",
    "alvo": "2.0.3"
@@ -7427,11 +7426,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "ler log AX1R49 e responder",
-   "notas": "Log code no corpo; sem resposta nossa.",
+   "proximo_passo": "conserto em andamento em agente/2031-guiabusca; responder com a causa quando o hotfix 2.0.3.1 sair",
+   "notas": "CAUSA PROVADA (09/10) por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, EpgProg ps[24] enquanto epg_faixa/xtepg_faixa devolvem o total). Existe desde a v1.7.0, continua na 2.0.3 e vale para todas as plataformas com o guia. Conserto em agente/2031-guiabusca, alvo 2.0.3.1.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/344",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.4"
+   "alvo": "2.0.3.1"
   },
   {
    "numero": 345,
@@ -7662,13 +7661,13 @@
     "9af09e0c (2.0.3)"
    ],
    "ultima_resposta": {
-    "nos": true,
-    "data": "2026-10-08",
-    "ultimo_comentario_por": "iqui27",
+    "nos": false,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "aimquestion",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "pedir log (já pedido em 08/10)",
-   "notas": "d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config \"quanto à frente\" planejada 2.0.4 (sem commit).",
+   "proximo_passo": "ler o log T5JF2G (09/10) e confirmar a leitura abaixo; se for isso, pedir novo log na 2.0.3",
+   "notas": "d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config \"quanto à frente\" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo \"a seguir da conta\" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar).",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/356",
    "criada_em": "2026-10-08",
    "alvo": "2.0.3"
@@ -7722,25 +7721,24 @@
   {
    "numero": 359,
    "titulo": "🐛 Bug Report: Floating Sidebar Overlaps/Interferes With Content",
-   "estado_github": "aberta",
+   "estado_github": "fechada",
    "plataforma": "?",
    "tipo": "bug",
-   "status": "consertada-nao-lancada",
+   "status": "lancada",
    "release": "2.0.3",
    "conserto": [
-    "1860216b (2.0.3)"
+    "1860216b (v2.0.3)"
    ],
    "ultima_resposta": {
-    "nos": true,
-    "data": "2026-10-08",
-    "ultimo_comentario_por": "iqui27",
+    "nos": false,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "rawldon",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "nada (aguardar release 2.0.3)",
-   "notas": "",
+   "proximo_passo": "nada (fechada)",
+   "notas": "Fechada pelo autor em 09/10 com \"Fixed\". 1860216b está na tag v2.0.3.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/359",
-   "criada_em": "2026-10-08",
-   "alvo": "2.0.3"
+   "criada_em": "2026-10-08"
   },
   {
    "numero": 360,
@@ -8042,11 +8040,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder / pedir log (sem resposta)",
-   "notas": "",
+   "proximo_passo": "conserto em andamento em agente/2031-temporadas; responder ao autor com a causa quando o hotfix 2.0.3.1 sair",
+   "notas": "CAUSA PROVADA (09/10): regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo em 1-2 temporadas: Bleach no Nuvio {1:366,2:50} contra S1-16 no Cinemeta) somada a um defeito antigo: as abas de temporada saem do corpo do Nuvio mesmo quando a lista de episódios é a do add-on (descoberta.c ~7069-7087, detail.c ~742-765). O log BZB857 (2.0.3, webOS) prova. A teoria do autor sobre o Trakt está errada. Conserto em agente/2031-temporadas, alvo 2.0.3.1. Relacionado: #328 (episódios duplicados), SUSPEITA de mesma raiz, não confirmada. A parte SIMKL do título não foi tratada.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/372",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.4"
+   "alvo": "2.0.3.1"
   },
   {
    "numero": 373,
@@ -8059,12 +8057,12 @@
    "conserto": [],
    "ultima_resposta": {
     "nos": false,
-    "data": "2026-10-08",
+    "data": "2026-10-09",
     "ultimo_comentario_por": "Namer03",
     "ultima_nossa": null
    },
-   "proximo_passo": "responder (autor deu mais detalhes)",
-   "notas": "",
+   "proximo_passo": "responder (autor deu mais detalhes em 08 e 09/10; pedir log com o código)",
+   "notas": "Namer03 (09/10): o botão azul do controle abre o menu de retomar, mas no controle novo da Samsung é difícil de alcançar, então ele mantém o pedido de um jeito mais fácil de voltar ao player, mantendo a ilha. Ao escolher \"Retomar\", o app recarregou a fonte em vez de retomar, ou o clique não registrou. Suposição do autor, sem prova: \"manter o vídeo pronto ao sair\" pode estar quebrado (08/10: voltar pelo caminho início > cartaz > ver título > retomar exigiu reabrir a fonte). Sem log lido por nós; precisa de mais testes e logs.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/373",
    "criada_em": "2026-10-08",
    "alvo": "2.0.4"
@@ -8138,20 +8136,23 @@
    "estado_github": "aberta",
    "plataforma": "LG",
    "tipo": "bug",
-   "status": "aberta",
-   "release": "-",
-   "conserto": [],
+   "status": "lancada",
+   "release": "2.0.3",
+   "conserto": [
+    "9ee093ac (v2.0.3)",
+    "b03b86db (v2.0.3)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": "2026-10-09",
     "ultimo_comentario_por": "Namer03",
     "ultima_nossa": null
    },
-   "proximo_passo": "causa achada nos logs do autor (limite de 8000 blocos do coletor de ASS embutido); aguarda o branch agente/203-384; responder ao autor com a causa",
-   "notas": "LG C5, webOS 26, Nuvio 2.0.2; Re:Zero S1 (Seadex): legenda embutida do ep. 3 funcionou, a do ep. 4 parou de aparecer depois da abertura. O autor (Vidhin05) JÁ mandou dois códigos de log no corpo (DDRROH e 98ZQED), ainda não lidos por nós; por isso o status é aberta e não precisa-log. Um comentário do próprio autor fala de \"quedas de conexão e falhas de rede, talvez queda do debrid\": relato solto, sem log próprio, tratar como segundo sintoma e checar nos mesmos logs. Namer03 (não é do projeto) respondeu \"mesma coisa do #308, sai na 2.0.3\": SUSPEITA, o #308 é legenda que bloqueia a fonte, o sintoma aqui (legenda some no meio) pode ser outro; não confirmado. Candidatos já na 2.0.3: #269 (legenda embutida) e #335 (ASS). ALVO 2.0.4 = triagem: pode virar 2.0.3 se os logs mostrarem que é o #308. CAUSA ACHADA (09/10, nos logs do próprio autor): NÃO é o #308 e NÃO está corrigido na 2.0.3 até agora. O coletor de ASS embutido indexa no máximo 8000 blocos (MKVASS_MAX_PONTOS, src/mkvass.c:61) NA ORDEM DO ARQUIVO; numa release com muito typeset (letreiros, karaokê) os 8000 acabam logo depois da abertura, e o resto do episódio fica sem legenda (log: \"cobertura=7360-217270ms\" com exatamente 8000 eventos). O branch agente/203-384 trabalha nisso; o alvo continua 2.0.4 a menos que esse branch entre na 2.0.3. Próximo passo: integrar agente/203-384 (ou deixar para a 2.0.4) e avisar o autor. O comentário de \"queda do debrid\" segue sem log próprio.",
+   "proximo_passo": "responder: corrigido na 2.0.3 (índice cobre a faixa inteira; janela do playhead)",
+   "notas": "LG C5, webOS 26, Nuvio 2.0.2; Re:Zero S1 (Seadex): legenda embutida do ep. 3 funcionou, a do ep. 4 parou de aparecer depois da abertura. O autor (Vidhin05) JÁ mandou dois códigos de log no corpo (DDRROH e 98ZQED), ainda não lidos por nós; por isso o status é aberta e não precisa-log. Um comentário do próprio autor fala de \"quedas de conexão e falhas de rede, talvez queda do debrid\": relato solto, sem log próprio, tratar como segundo sintoma e checar nos mesmos logs. Namer03 (não é do projeto) respondeu \"mesma coisa do #308, sai na 2.0.3\": SUSPEITA, o #308 é legenda que bloqueia a fonte, o sintoma aqui (legenda some no meio) pode ser outro; não confirmado. Candidatos já na 2.0.3: #269 (legenda embutida) e #335 (ASS). ALVO 2.0.4 = triagem: pode virar 2.0.3 se os logs mostrarem que é o #308. CAUSA ACHADA (09/10, nos logs do próprio autor): NÃO é o #308 e NÃO está corrigido na 2.0.3 até agora. O coletor de ASS embutido indexa no máximo 8000 blocos (MKVASS_MAX_PONTOS, src/mkvass.c:61) NA ORDEM DO ARQUIVO; numa release com muito typeset (letreiros, karaokê) os 8000 acabam logo depois da abertura, e o resto do episódio fica sem legenda (log: \"cobertura=7360-217270ms\" com exatamente 8000 eventos). O branch agente/203-384 trabalha nisso; o alvo continua 2.0.4 a menos que esse branch entre na 2.0.3. Próximo passo: integrar agente/203-384 (ou deixar para a 2.0.4) e avisar o autor. O comentário de \"queda do debrid\" segue sem log próprio. CORRIGIDO (09/10): o conserto de agente/203-384 entrou na 2.0.3 (merge 2b4c3cea; b03b86db teste e 9ee093ac conserto, ambos contidos na tag v2.0.3): o índice cobre a faixa inteira e a faixa grande é colhida só na janela do playhead, sem carga extra no CDN. O texto acima sobre \"não está corrigido\" e \"alvo 2.0.4\" é histórico. A \"queda do debrid\" do autor segue sem log próprio.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/384",
    "criada_em": "2026-10-09",
-   "alvo": "2.0.4"
+   "alvo": "ja-lancada"
   },
   {
    "numero": 385,
@@ -8174,6 +8175,155 @@
    "proximo_passo": "responder ao autor: não é regressão da 2.0.2, é bloqueio do nó/IP do TorBox (outro aparelho/outra rede ou trocar de nó confirma); a pausa de conexão recusada saiu na 2.0.3; na 2.0.4, conferir a verificação paralela de fontes e o vazamento de eventos do trailer no .tpk",
    "notas": "LOG LIDO (09/10, registro 64551, 2.0.2): a plataforma é tizen-tpk, NÃO .wgt (formulário errado; a linha [tv] com a versão do Tizen não aparece no trecho). O que o log prova: (1) a fonte escolhida a mão, um link de loja do TorBox via StremThru, não chegou a abrir: o \"vídeo de 129 s\" NÃO era placa do provedor, era o TRAILER do IMDb (\"tpk evento 1 (129036)\" vem sempre depois de \"[trailer] ... no fundo com som\" e aparece até sem episódio aberto). No log 1 o evento de duração do trailer chegou depois de \"abrir: url ao pipeline\" e o posplay o leu como duração do episódio (\"[posplay] duracao suspeita: pipeline diz 129s, catalogo diz 2820s\"). CORREÇÃO de leitura de 09/10: a hipótese de placa do provedor está descartada. (2) Com o vídeo aberto, toda conexão nova nossa ao nó do CDN do TorBox foi recusada na hora: 11 vezes \"Failed to connect to <nó tb-cdn> port 443: Connection refused\" (curl 7), vindas da pré-busca do mkvass (5 Ranges, cada um repetido em conexão nova, \"3 conexao(oes) extra(s)\", 13 a 15 s) e da sonda do MKV pela rede. (3) Cerca de 5 s depois o player da Samsung perde a conexão dele (ConnectionFailed, 0xfe6c0026), entra na reconexão 1/3 e 2/3 e o Prepare falha. (4) Numa segunda tentativa o player caiu em 5,6 s SEM nenhum pedido nosso antes; então o nó recusa por conta própria, e não está provado que as nossas conexões extras causam a queda. (5) No mesmo log, um add-on https (4KHDHub) abriu e tocou, a pré-busca leu o cabeçalho em 684 ms e parou (3 legendas, nenhuma em coreano). VEREDITO: a recusa é do lado do TorBox/CDN (um nó só, sempre o mesmo). Do nosso lado havia um endurecimento pequeno, não provado como causa: a pausa do leitor lateral da #308 (b65c3324, já na 2.0.3) só disparava com curl 28, 429 e 5xx; conexão recusada (curl 7) continuava sendo repetida 5 vezes em conexão nova com o vídeo aberto, e a sonda do MKV também insistia. Esse endurecimento entrou na 2.0.3 (ver VEREDITO FINAL). Histórico da triagem anterior, feita sem log e achando que era .wgt: PLATAFORMA NÃO CONFIRMADA (.wgt declarado; pode ser .tpk40: um UT8000 com Tizen 5.5 também roda o .tpk 4/5). Perguntar qual arquivo ele instalou (.wgt ou .tpk). Sem log. HIPÓTESE #308 ENFRAQUECIDA (09/10): o autor pôs o idioma da legenda em coreano (nenhuma faixa é escolhida) e \"caiu na hora de novo\". Lido no código (483a73b8): no .wgt a pré-busca do mkvass NEM EXISTE (player.c:1548, #ifndef __EMSCRIPTEN__) e, sem faixa escolhida, a automática dá LING_AUTO_NADA e o mkvass não colhe nada por Range; o que roda em TODO MKV no .wgt é só a sonda do cabeçalho (video_tizen.c lerMkv -> mkv_faixas_e_caps: um trecho inicial, mais um ou dois Ranges se Tracks/Chapters ficarem fora dele), uma vez por abertura. Logo, no .wgt, sem legenda ligada o app não enche o CDN de pedidos. SE FOR O .tpk40 a conta muda um pouco: lá a pré-busca existe (NV_TPK não é Emscripten) e roda em todo MKV com idioma de legenda definido diferente de \"none\" (prebuscaCabe, player.c), mas quando nenhuma faixa casa com o idioma (coreano) o fio termina depois do cabeçalho, um Range (mkvass.h); somam-se a sonda do cabeçalho (video_tpk.c) e os capítulos do capmkv (uma janela de 320 KB, 4 s depois de abrir, capmkv.c). Continua sendo meia dúzia de pedidos por abertura, não uma colheita. O que pesa no .tpk é o caso COM legenda: lá toda legenda embutida de TEXTO (não só ASS) vai para o overlay do app e é colhida por Range (faixas.c, FX_TEXTO_OVERLAY=1 só no .tpk), então antes de trocar para coreano a #308 encaixa melhor no .tpk40 do que no .wgt. Resta, sem prova, o bloqueio do CDN do debrid àquele IP/conta ainda valendo de antes. Alvo volta para 2.0.4 (triagem); plano: as três suspeitas da triagem no fim desta nota. Hipótese anterior, mantida para registro: provavelmente coberta pelo conserto da #308 que já está na 2.0.3 (b65c3324 leitor lateral mais gentil: menos Ranges, uma conexão, pausa quando o CDN aperta; 73ce1648). Namer03 comentou (09/10) que a leitura da legenda embutida enche o CDN do TorBox de pedidos; bate com o relato: o CDN do debrid passa a recusar, o vídeo reconecta em laço e TODA fonte de debrid falha, enquanto add-on https segue. CONDIÇÃO: no .wgt o mkvass (leitura por Range) só entra para legenda embutida ASS/SSA (faixas.c: FX_TEXTO_OVERLAY é 1 só no .tpk; SRT/texto embutido a TV desenha), e ele roda no .wgt (tizen.sh compila com NV_ASS_LIBASS, video_tizen.c tem a sonda do MKV). Então só é a #308 se o usuário estava com uma faixa ASS embutida ligada num MKV: perguntar isso (título, se a legenda era embutida, se desligando a embutida a queda some). Não medido quantos Ranges o mkvass fazia no .wgt antes do b65c3324, e nenhum registro .wgt do D1 mostra o laço. Se persistir na 2.0.3, volta para precisa-log com as suspeitas abaixo (plano 2.0.4). Triagem anterior: Samsung UT8000 (Tizen 5.5), .wgt, Nuvio 2.0.2; sem log. Relato: VOD de debrid cai no meio com \"reconectando\" em laço; depois TODA fonte dá \"não deu para carregar\", só add-on https segue tocando. Triagem (09/10) no D1 e no código, sem TV: NÃO provado. No D1 (.wgt, ~32 mil ids recentes, ~300 registros) só 2 registros (2 pessoas, ambos 2.0.1) mostram a reconexão de VOD começar (\"conexao caiu ... tentativa 1/3\"), nenhum chega a \"reconexao: desistiu\" e nenhum tem o par \"queda e depois toda fonte falha\"; os outros ~25 registros com PLAYER_ERROR_CONNECTION_FAILED são falha de abertura de uma fonte, e a próxima fonte abriu (sem envenenamento). Código: a reconexão do .wgt (video_tizen.c:1180-1215, video_reconexao.h) são 3 tentativas por queda, e o contador zera 10 s depois do ponto da queda, então rede instável gera laço de \"reconectando\" por desenho; o 2.0.3 só mexeu na reconexão de TV ao vivo (#302/#350), VOD não mudou. Descartado por leitura: negcache (só 4 APIs de metadados), flag offline (redesaude.c só pinta a ilha), pool de threads (strict=0, [fios] estável nos logs), lista de fontes recusadas (zera a cada lista nova), XHR síncrono (estado por fio). \"Só o https funciona\" contraria um AVPlay quebrado (os dois passam por ele) e aponta para a conta do debrid/links do host, que é do lado de lá. SUSPEITA, não provada: (1) o open de reconexão não tem prazo: se o prepareAsync nunca responder, video_reconectando() fica 1 e tentarProximaFonteVOD (app.c) volta cedo, então fica \"reconectando\" sem fim; (2) a op \"abrir\" do JS faz stop() e close() no MESMO try (video_tizen.c:264-267): se o stop() levantar, o close() não roda e o próximo open() falha; (3) debrid.c marca conta sem plano para a SESSÃO inteira (semPlano), mas só com corpo \"PLAN_RESTRICTED/not premium\", não com 429. Essas três ficam como plano da 2.0.4 se a 2.0.3 não resolver. VEREDITO FINAL (09/10, segundo log, HSV8YA): NÃO é regressão da 2.0.2. É bloqueio do nó/IP do TorBox: o player falhou com ZERO pedidos nossos no Comet, no StremThru Torz e no Torrentio, e o 4KHDHub tocou. O conserto que saiu na 2.0.3 é a pausa da leitura lateral quando o host do vídeo recusa conexão (agente/203-385, commits c29c6f96 teste e 4151683c conserto; na tag v2.0.3). SUSPEITA ABERTA: a 2.0.2 passou a verificar fontes em paralelo por padrão (45deaa14, 2c399b99), o que segue redirecionamentos dos add-ons até nós do TorBox várias de uma vez; sem prova, a conferir na 2.0.4. BUG SEPARADO (SUSPEITA, alvo 2.0.4): eventos do trailer vazando para a sessão do episódio no .tpk (duração e eventos do trailer lidos como se fossem do episódio, o \"duracao suspeita 129s\" do log 1); ver o item de roadmap da 2.0.4.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/385",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 382,
+   "titulo": "No internet error despite having internet",
+   "estado_github": "aberta",
+   "plataforma": "LG",
+   "tipo": "bug",
+   "status": "precisa-log",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "pedir log (o formulário veio sem código); perguntar se a TV está em Wi-Fi ou cabo e se o aviso some sozinho em quanto tempo",
+   "notas": "LG 50UT8050PSB, Nuvio 2.0.2 (.ipk). Relato: depois de ligar a TV a frio aparece \"sem internet\" mesmo com internet, some, volta várias vezes até parar de vez. O campo de log ficou sem código. SUSPEITA, sem prova: o aviso nasce do teste de rede do app (redesaude) logo após o boot, quando a rede da TV ainda sobe; não lido no código nem em log.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/382",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 383,
+   "titulo": "[port] subtitle memory same as nuvio",
+   "estado_github": "aberta",
+   "plataforma": "all",
+   "tipo": "feature",
+   "status": "lancada",
+   "release": "2.0.3",
+   "conserto": [
+    "a89987c1 (v2.0.3)"
+   ],
+   "ultima_resposta": {
+    "nos": false,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "base08",
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder: a 2.0.3 lembra a legenda escolhida a mão por perfil (a mesma faixa ou idioma nos episódios do mesmo título); pedir que confirme se cobre o que o Nuvio faz",
+   "notas": "Pedido: a legenda lembrar a faixa entre episódios (referência: NuvioMedia/NuvioTVSmart#1025). SUSPEITA de que a 2.0.3 já cobre: legmemoria (a89987c1, na tag v2.0.3) guarda por perfil a faixa exata por título (imdb sem temporada/episódio, então vale para os episódios da série) e a última escolha a mão em outro título; só a escolha manual grava. Não conferido contra a regra exata do Nuvio nem testado em TV; se o autor disser que falta algo (por exemplo lembrar por idioma de áudio), reabrir como 2.0.4. O comentário de base08 (não é do projeto) só concorda.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/383",
+   "criada_em": "2026-10-09",
+   "alvo": "ja-lancada"
+  },
+  {
+   "numero": 386,
+   "titulo": "[bug] glitchy info in playback at the top left when pressing left right",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder / pedir log: o vídeo anexado mostra o defeito; o campo de log veio vazio",
+   "notas": "S95C, .tpk, Nuvio 2.0.2, autor Namer03. Passos: abrir vídeo, mostrar a interface do player, apertar esquerda/direita; informação \"glitchada\" no canto superior esquerdo (ver vídeo anexado, não assistido por nós). Sem log. Causa desconhecida.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/386",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 387,
+   "titulo": "[bug] instant long press in library",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .wgt",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder / pedir log: o vídeo anexado mostra o defeito; o campo de log veio vazio",
+   "notas": "S95C, .wgt, Nuvio 2.0.2, autor Namer03. Aleatório, sem padrão exato: na Biblioteca, ao abrir um dos 3 primeiros títulos, o item é selecionado na hora (como um toque longo) em vez de abrir a ficha. Sem log. SUSPEITA, não lida no código: o OK sendo lido como segurar (repetição de tecla do controle novo da Samsung); conferir o tratamento de toque longo da Biblioteca.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/387",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 388,
+   "titulo": "Profile picture on side bar is squashed",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder / pedir captura de tela e log",
+   "notas": "QN70F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito \"2.02\"). A foto do perfil na barra lateral aparece achatada. Sem log nem imagem. Não investigado no código.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/388",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 389,
+   "titulo": "Card depth effect",
+   "estado_github": "aberta",
+   "plataforma": "Samsung (tpk/wgt?)",
+   "tipo": "feature",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder: pedir exemplo do efeito de profundidade desejado (sombra, inclinação, escala no foco)",
+   "notas": "Pedido de efeito de profundidade em cartões, trailers e elenco. Não existe opção com esse nome. SUSPEITA de alvo: futuro, sem plano nem aprovação do dono; pode ser ligado à Biblioteca/Glass UI da 2.1.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/389",
+   "criada_em": "2026-10-09",
+   "alvo": "futuro"
+  },
+  {
+   "numero": 390,
+   "titulo": "Custom poster source not setting",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder / pedir log: o campo de log veio vazio",
+   "notas": "QN74F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito \"2.02\"). Ao colocar a URL de cartaz própria (pelo celular e à mão) e apertar \"Concluído\", volta para as opções sem gravar a URL. Mesmo autor do #388 e do #389. Não investigado. Relação com a URL de cartaz longa do #361 (2.0.3) não conferida: SUSPEITA.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/390",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
   }
@@ -8239,6 +8389,46 @@
    "situacao": "congelada (integracao/2.0.3, ainda não lançada)",
    "descricao": "Só entra o que já está em integracao/2.0.3. Lista completa em docs/releases/2.0.3/NOTAS.md; o mapa abaixo marca cada issue aberta com conserto lá. Inclui #361 (URL de cartaz longa).",
    "itens": []
+  },
+  {
+   "release": "2.0.3.1",
+   "situacao": "hotfix em andamento; nada integrado",
+   "descricao": "Hotfix sobre a 2.0.3 (já publicada na tag v2.0.3) com as causas achadas em 09/10.",
+   "itens": [
+    {
+     "nome": "Temporadas e episódios errados (#372, #328)",
+     "porque": "CAUSA PROVADA: regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo, Bleach {1:366,2:50} contra S1-16 no Cinemeta) e defeito antigo das abas de temporada vindas do corpo do Nuvio mesmo quando a lista do add-on vence (descoberta.c ~7069-7087, detail.c ~742-765). Log BZB857 (2.0.3, webOS). #328 é SUSPEITA de mesma raiz.",
+     "issues": [
+      372,
+      328
+     ],
+     "origem": "logs dos autores, 09/10",
+     "branches": [
+      "agente/2031-temporadas"
+     ]
+    },
+    {
+     "nome": "Queda ao pesquisar na TV ao vivo (#344)",
+     "porque": "CAUSA PROVADA por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, ps[24] com epg_faixa/xtepg_faixa devolvendo o total), desde a v1.7.0, todas as plataformas com o guia.",
+     "issues": [
+      344
+     ],
+     "origem": "log do autor, 09/10",
+     "branches": [
+      "agente/2031-guiabusca"
+     ]
+    },
+    {
+     "nome": "Dolby Vision perfil 5 na LG: decisão pendente (HDR10 ou MP4 primeiro)",
+     "porque": "Duas branches de alternativas; a decisão espera o teste do dono na C9. Entra no hotfix só se for escolhida.",
+     "issues": [],
+     "origem": "dono, 09/10; decisão pendente",
+     "branches": [
+      "agente/2031-dvp5-hdr10",
+      "agente/2031-dvp5-mp4"
+     ]
+    }
+   ]
   },
   {
    "release": "2.0.4",
@@ -8316,8 +8506,8 @@
       379,
       306,
       337,
-      384,
-      385
+      385,
+      308
      ]
     },
     {

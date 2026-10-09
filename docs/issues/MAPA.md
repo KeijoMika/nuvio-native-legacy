@@ -1,11 +1,11 @@
 # Mapa vivo das issues
 
-Base: `80fc8e6d` (integracao/2.0.3). Atualizado em 2026-10-09. 356 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `80fc8e6d` (integracao/2.0.3). Atualizado em 2026-10-09. 363 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
 1. Chegou issue nova, ou um conserto entrou numa branch/tag: edite **uma** entrada em `docs/issues/mapa.json` (procure por `"numero": N`) e rode `python3 docs/issues/mapa.py`, que valida e reescreve este arquivo. Sem o script, edite a linha equivalente aqui.
-2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.4`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json.
+2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.3.1`, `2.0.4`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json.
 3. Vocabulário de `status`: `aberta`, `respondida`, `consertada-nao-lancada`, `lancada`, `por-desenho`, `fora-do-escopo`, `precisa-log`, `duplicada`. Extra: `fechada-sem-resposta` (issue fechada sem nenhum comentário).
 4. Regra de honestidade: só vale `consertada-nao-lancada`/`lancada` com commit na ref. "Lançado" = commit contido numa tag `v*`. Sem commit, escreva "suspeita" ou "sem commit" em `conserto`/`notas`. "Lançada" em issue antiga sem commit com `#N` quer dizer: a nossa resposta cita uma versão que existe como tag (ver nota na linha).
 5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4, não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
@@ -20,6 +20,14 @@ Alvo de cada issue aberta e os recursos por versão. Alvos são decisão de plan
 Só entra o que já está em integracao/2.0.3. Lista completa em docs/releases/2.0.3/NOTAS.md; o mapa abaixo marca cada issue aberta com conserto lá. Inclui #361 (URL de cartaz longa).
 
 
+### 2.0.3.1 - hotfix em andamento; nada integrado
+
+Hotfix sobre a 2.0.3 (já publicada na tag v2.0.3) com as causas achadas em 09/10.
+
+- **Temporadas e episódios errados (#372, #328)** (#372, #328): CAUSA PROVADA: regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo, Bleach {1:366,2:50} contra S1-16 no Cinemeta) e defeito antigo das abas de temporada vindas do corpo do Nuvio mesmo quando a lista do add-on vence (descoberta.c ~7069-7087, detail.c ~742-765). Log BZB857 (2.0.3, webOS). #328 é SUSPEITA de mesma raiz. Origem: logs dos autores, 09/10. Branches: `agente/2031-temporadas`.
+- **Queda ao pesquisar na TV ao vivo (#344)** (#344): CAUSA PROVADA por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, ps[24] com epg_faixa/xtepg_faixa devolvendo o total), desde a v1.7.0, todas as plataformas com o guia. Origem: log do autor, 09/10. Branches: `agente/2031-guiabusca`.
+- **Dolby Vision perfil 5 na LG: decisão pendente (HDR10 ou MP4 primeiro)**: Duas branches de alternativas; a decisão espera o teste do dono na C9. Entra no hotfix só se for escolhida. Origem: dono, 09/10; decisão pendente. Branches: `agente/2031-dvp5-hdr10`, `agente/2031-dvp5-mp4`.
+
 ### 2.0.4 - planejada; já tem branches agente/203-3xx e agente/204-*, nada integrado
 
 Pequenos recursos de player e Biblioteca que já têm código fora da 2.0.3, mais triagem dos bugs sem conserto (pedir log).
@@ -30,7 +38,7 @@ Pequenos recursos de player e Biblioteca que já têm código fora da 2.0.3, mai
 - **Catálogos da conta, sync de add-ons, fonte recusada, P2P por formato** (#358, #365, #360, #364, #349): Branches agente/204-conta-catalogos, 204-sync-addons, 204-fonte-recusada prontos ou quase.
 - **Samsung: DTS/TrueHD escondido (fase 1)** (#313): Plano e spike em agente/204-samsung-dts (docs/plans); fase 1 já planejada para a 2.0.4.
 - **Android: fileiras ilimitadas na Home, armazenamento rotativo do P2P** (#334): agente/204-fileiras-android e agente/203-334-janela (janela de streaming do P2P) existem e ficaram fora da 2.0.3 por risco.
-- **Triagem de bugs sem conserto e dois pedidos pequenos (#306, #337)** (#288, #315, #316, #344, #345, #346, #353, #357, #367, #372, #373, #378, #379, #306, #337, #384, #385): Todos aguardam log do autor; entram na 2.0.4 se o log aparecer a tempo, senão escorregam.
+- **Triagem de bugs sem conserto e dois pedidos pequenos (#306, #337)** (#288, #315, #316, #344, #345, #346, #353, #357, #367, #372, #373, #378, #379, #306, #337, #385, #308): Todos aguardam log do autor; entram na 2.0.4 se o log aparecer a tempo, senão escorregam.
 - **Binge group: lembrar também a fonte que o automático tocou (#310)** (#310): Pedido (a) do #310. A revisão de código mostrou que a escolha manual de outro episódio já aplica o binge group; a lacuna era só a fonte escolhida à mão ser lembrada. O dono aprovou em 09/10 ("sim vamos adicionar na 2.0.4") lembrar também o binge group da fonte que o automático tocou. Código em agente/204-binge (29d2c248, 02753401, 6345e9ff), não integrado. Origem: dono 09/10. Branches: `agente/204-binge`.
 - **Trailer vazando para a sessão do episódio no .tpk (#385)** (#385): SUSPEITA, sem conserto. No log do #385 (.tpk, 2.0.2), "tpk evento 1 (129036)" vem sempre depois de "[trailer] ... no fundo com som" e aparece até sem episódio aberto; no log 1 o evento de duração do trailer chegou depois de "abrir: url ao pipeline" e o posplay o leu como duração do episódio ("duracao suspeita 129s"). Conferir se os eventos do player do trailer (duração, fim, erro) são descartados ao abrir o episódio. Separado da recusa de conexão do TorBox, que foi bloqueio do nó/IP (conserto da pausa na 2.0.3). Origem: logs do #385, 09/10.
 
@@ -78,13 +86,14 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 
 | Alvo | Qtd | Issues |
 |---|---|---|
-| 2.0.3 | 36 | #246, #266, #269, #280, #283, #284, #286, #294, #302, #305, #308, #311, #312, #317, #318, #319, #320, #321, #322, #323, #328, #330, #332, #334, #335, #339, #340, #341, #350, #356, #359, #361, #363, #368, #369, #370 |
-| 2.0.4 | 33 | #256, #288, #306, #310, #313, #315, #316, #326, #329, #331, #337, #338, #344, #345, #346, #349, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #372, #373, #378, #379, #384, #385 |
+| 2.0.3 | 34 | #246, #266, #269, #280, #283, #284, #286, #294, #302, #305, #311, #312, #317, #318, #319, #320, #321, #322, #323, #328, #330, #332, #334, #335, #339, #340, #341, #350, #356, #361, #363, #368, #369, #370 |
+| 2.0.3.1 | 2 | #344, #372 |
+| 2.0.4 | 35 | #288, #306, #308, #310, #313, #315, #316, #326, #329, #331, #337, #338, #345, #346, #349, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #373, #378, #379, #382, #385, #386, #387, #388, #390 |
 | 2.1 | 3 | #250, #333, #374 |
 | 2.2 | 0 |  |
-| futuro | 7 | #135, #260, #304, #342, #343, #347, #348 |
+| futuro | 8 | #135, #260, #304, #342, #343, #347, #348, #389 |
 | nao vamos fazer | 4 | #292, #307, #324, #354 |
-| ja-lancada | 9 | #144, #252, #287, #290, #293, #296, #298, #300, #303 |
+| ja-lancada | 11 | #144, #252, #287, #290, #293, #296, #298, #300, #303, #383, #384 |
 
 ## Decisões para o dono
 
@@ -109,12 +118,12 @@ Por status:
 
 | Status | Qtd |
 |---|---|
-| lancada | 233 |
-| consertada-nao-lancada | 44 |
-| aberta | 26 |
-| respondida | 21 |
+| lancada | 237 |
+| consertada-nao-lancada | 42 |
+| aberta | 29 |
+| respondida | 22 |
 | por-desenho | 14 |
-| precisa-log | 7 |
+| precisa-log | 8 |
 | fechada-sem-resposta | 6 |
 | fora-do-escopo | 3 |
 | duplicada | 2 |
@@ -123,20 +132,20 @@ Por release (grupo de planejamento):
 
 | Grupo | Qtd |
 |---|---|
-| lançadas em tag v* (qualquer versão) | 233 |
-| sem release | 69 |
-| 2.0.3 (integracao/2.0.3) | 38 |
+| lançadas em tag v* (qualquer versão) | 237 |
+| sem release | 74 |
+| 2.0.3 (integracao/2.0.3) | 36 |
 | 2.0.4 (branches) | 11 |
 | futuro (2.1/2.2) | 5 |
 
-Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18.
+Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18, 2.0.3: 4.
 
-Abertas no GitHub: 92. Fechadas: 264.
-Abertas sem nenhum comentário nosso: 39.
+Abertas no GitHub: 97. Fechadas: 266.
+Abertas sem nenhum comentário nosso: 46.
 
 ## Sai na 2.0.3 (integracao/2.0.3, ainda não lançada)
 
-38 issues.
+36 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -149,7 +158,6 @@ Abertas sem nenhum comentário nosso: 39.
 | [#294](https://github.com/iqui27/nuvio-native-legacy/issues/294) | 🐛 Home collection order resets after switching profiles | ? | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | 66e6ae9e, 26d845c6, abd0770a | nós 10-07 | nada (aguardar release 2.0.3) |
 | [#302](https://github.com/iqui27/nuvio-native-legacy/issues/302) | Live TV issue persists with 2.1 tpk65 | Samsung .tpk | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | 6c4d3863, 8fea5018, 0021b573 | nós 10-08 | postar correção |
 | [#305](https://github.com/iqui27/nuvio-native-legacy/issues/305) | Hide player ui when pressing up | ? | feature | consertada-nao-lancada | 2.0.3 | 2.0.3 | 98bee79f | nós 10-07 | nada (aguardar release 2.0.3) |
-| [#308](https://github.com/iqui27/nuvio-native-legacy/issues/308) | [bug] subtitles block source | ? | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | e52fae3f, 6269f306, b65c3324 | nós 10-07 | nada (aguardar release 2.0.3) |
 | [#311](https://github.com/iqui27/nuvio-native-legacy/issues/311) | [suggestion] option to disable "from nuvio search" | ? | feature | consertada-nao-lancada | 2.0.3 | 2.0.3 | 607b25bf, a86e55c2, 0d5ca11b | nós 10-08 | avisar Namer03 quando sair (prometido: "I'll ping") |
 | [#312](https://github.com/iqui27/nuvio-native-legacy/issues/312) | few minor bugs, none affect use | LG | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | a86e55c2, 317cb179 | nós 10-08 | postar correção |
 | [#317](https://github.com/iqui27/nuvio-native-legacy/issues/317) | App doesn't  open on my LG webOS Tv UK6550PSB | LG | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | 9a17b810, 8cf12920, d423b051 | nós 10-07 | nada (aguardar release 2.0.3) |
@@ -169,8 +177,7 @@ Abertas sem nenhum comentário nosso: 39.
 | [#340](https://github.com/iqui27/nuvio-native-legacy/issues/340) | Quicker Seek/skipping | ? | feature | consertada-nao-lancada | 2.0.3 | 2.0.3 | bc63d8ca | sem comentários | responder (sem resposta nossa) |
 | [#341](https://github.com/iqui27/nuvio-native-legacy/issues/341) | Aspect Ratio / Crop feature to fill screen does not work on  | Samsung .tpk | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | beb5007a | sem comentários | responder (sem resposta nossa; pedir teste) |
 | [#350](https://github.com/iqui27/nuvio-native-legacy/issues/350) | Major bug | Samsung .tpk | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | 4b8ba24b | autor 10-08 | postar correção |
-| [#356](https://github.com/iqui27/nuvio-native-legacy/issues/356) | Upcoming shows not appearing in continue watching | ? | bug | precisa-log | 2.0.3 | 2.0.3 | d47a78c8, 9af09e0c | nós 10-08 | pedir log (já pedido em 08/10) |
-| [#359](https://github.com/iqui27/nuvio-native-legacy/issues/359) | 🐛 Bug Report: Floating Sidebar Overlaps/Interferes With Cont | ? | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | 1860216b | nós 10-08 | nada (aguardar release 2.0.3) |
+| [#356](https://github.com/iqui27/nuvio-native-legacy/issues/356) | Upcoming shows not appearing in continue watching | ? | bug | precisa-log | 2.0.3 | 2.0.3 | d47a78c8, 9af09e0c | autor 10-09 | ler o log T5JF2G (09/10) e confirmar a leitura abaixo; se for isso, pedir novo log na 2.0. |
 | [#361](https://github.com/iqui27/nuvio-native-legacy/issues/361) | Poster URL Max Character Length Too Short | all | feature | consertada-nao-lancada | 2.0.3 | 2.0.3 | 9ac3531d, 2220b019, 81f7128b | sem comentários | responder (sem resposta nossa); avisar quando a 2.0.3 sair |
 | [#363](https://github.com/iqui27/nuvio-native-legacy/issues/363) | Unable to Send Recommendation to a Friend | Android | bug | consertada-nao-lancada | 2.0.3 | 2.0.3 | 54cf2fab, 9bb93887, 08e58b14 | autor 10-08 | nada (aguardar release 2.0.3) |
 | [#368](https://github.com/iqui27/nuvio-native-legacy/issues/368) | Tab enhancement | ? | feature | consertada-nao-lancada | 2.0.3 | 2.0.3 | dbec4f44, 1af6067e | nós 10-08 | postar correção |
@@ -198,11 +205,12 @@ Notas:
 - **#322**: b8d110de: up next removível + opção para desligar (cita "#203" = versão).
 - **#323**: Tudo integrado em 2.0.3. O SIGSEGV em verificarOuParar (Conferencia na pilha) está consertado por 696afa74, que veio no merge 1b6c9a89: a Conferencia vai para o heap com contagem e é solta pelo último fio. f349c2f7/4d22e4f7 são uma versão anterior do mesmo conserto (sem liberar) e não precisam entrar; SANITIZE=1 tests/fonteparalela.sh passa em c3c1032e.
 - **#327**: Fechada no GitHub antes do release 2.0.3.
+- **#328**: 09/10: SUSPEITA de mesma raiz do #372 (temporadas/episódios errados pelo catálogo do Nuvio primeiro, regressão 9677065b), não confirmada; se o conserto de agente/2031-temporadas (2.0.3.1) resolver, vale também aqui.
 - **#332**: SUSPEITA: relato Sony BRAVIA preso em "rede _preparar"; commits citados são os do #266. A resposta final do dono fala de outro assunto (contorno do vidro dos pôsteres, citado como "corrigido para a próxima versão"). teste-shield-266.2 não resolveu segundo EzequielS04.
 - **#334**: Limite de P2P e limpeza integrados em 2.0.3 (d3ca720b, c3e19d00, merge 891a72a9 de agente/203-334b; agente/203-334 tem os mesmos dois commits com outro hash). Só a janela de streaming ("armazenamento rotativo", prometido como planejado: d453fd1c e 8e09dad2 em agente/203-334-janela) NÃO está integrada; alvo 2.0.4 para essa parte.
 - **#341**: SUSPEITA: nenhum commit cita #341; beb5007a "tpk 4/5: botão de aspecto/zoom do player passa a ter efeito" está na 2.0.3 e NOTAS cita "aspect/zoom button on Tizen 4/5".
 - **#350**: Rascunho de correção: nome do ajuste é "OK no card"; "Ver detalhes" no menu de segurar sai na 2.0.3. Autor relatou depois filme travando durante TV ao vivo: responder.
-- **#356**: d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config "quanto à frente" planejada 2.0.4 (sem commit).
+- **#356**: d47a78c8 (Cinemeta antes da ficha Nuvio, 2.0.3) cobre uma suspeita, sem confirmação. Config "quanto à frente" planejada 2.0.4 (sem commit). LOG T5JF2G (autor, 09/10): leitura informada pelo coordenador, SUSPEITA e sem conserto: a fileira Continuar Assistindo é montada antes de a lista de vistos da conta chegar e não é refeita depois (o passo "a seguir da conta" nunca aparece no log). Precisa de log da 2.0.3 para confirmar. Alvo 2.0.3 mantido (a tag já saiu: reavaliar para 2.0.3.1/2.0.4 se o log da 2.0.3 confirmar).
 - **#361**: NOTAS 2.0.3: posters com URL longa (>~500 caracteres) chegam inteiros ao fundo, detalhe, Salvos e conta (merge 9ac3531d, agente/203-361). Pedido original pedia limite maior; URL de fundo/logo longa demais é descartada com linha de log.
 - **#368**: Rascunho de correção: ocultar add-ons no guia sai na 2.0.3, não na 2.0.2; busca espera 300 ms.
 - **#369**: Parcial: tailandês (712557ca) e ocultar não lançados (5f04c36b). Os outros itens do relatório de 9: sem commit identificado.
@@ -255,14 +263,13 @@ Notas:
 
 ## Aberta sem plano
 
-34 issues.
+38 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
 | [#135](https://github.com/iqui27/nuvio-native-legacy/issues/135) | Looking for testers: experimental Hisense VIDAA port (Hisens | VIDAA | feature | respondida | - | futuro | faacf493, 08d21c20, a81639d2 | autor 10-06 | responder (feedback do gabo748 em 06/10 sem retorno) |
 | [#144](https://github.com/iqui27/nuvio-native-legacy/issues/144) | Align UI with nuvioTV (android) | Android | feature | respondida | - | ja-lancada | e1a31298, b7d10412, 581b2f82 | autor 10-08 | nada (autor disse que não vê mais os problemas; pode fechar) |
 | [#252](https://github.com/iqui27/nuvio-native-legacy/issues/252) | Add default audio language setting for anime | ? | feature | por-desenho | - | ja-lancada | - | autor 10-08 | nada (autor confirmou que funciona; pode fechar) |
-| [#256](https://github.com/iqui27/nuvio-native-legacy/issues/256) | Add Autoplay for Next Episode & Allow Customizable "Up Next" | ? | feature | aberta | - | 2.0.4 | - | autor 10-08 | responder (novo pedido: card no canto e autoplay mesmo após dispensar) |
 | [#288](https://github.com/iqui27/nuvio-native-legacy/issues/288) | Profile selection background is grainy dark video | LG? (TCL C6K no formulário) | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log (sem resposta) |
 | [#292](https://github.com/iqui27/nuvio-native-legacy/issues/292) | GoogleTV performance UPDATE | Android | question | por-desenho | - | nao vamos fazer | - | sem comentários | nada |
 | [#304](https://github.com/iqui27/nuvio-native-legacy/issues/304) | Apple tv dynamic homeacreen | ? | feature | aberta | - | futuro | - | sem comentários | responder (sem resposta) |
@@ -275,7 +282,7 @@ Notas:
 | [#333](https://github.com/iqui27/nuvio-native-legacy/issues/333) | Arabic language | all | feature | duplicada | 2.1 | 2.1 | - | autor 10-07 | responder (apontar #250/#260; sem resposta nossa) |
 | [#337](https://github.com/iqui27/nuvio-native-legacy/issues/337) | Be able to hide the "skip" intro button | ? | feature | aberta | - | 2.0.4 | - | sem comentários | responder (sem resposta) |
 | [#342](https://github.com/iqui27/nuvio-native-legacy/issues/342) | Add an optional "Skip Scene" floating button for explicit co | all | feature | aberta | - | futuro | - | sem comentários | responder (sem resposta) |
-| [#344](https://github.com/iqui27/nuvio-native-legacy/issues/344) | Live TV search crash | Android | bug | aberta | - | 2.0.4 | - | sem comentários | ler log AX1R49 e responder |
+| [#344](https://github.com/iqui27/nuvio-native-legacy/issues/344) | Live TV search crash | Android | bug | aberta | - | 2.0.3.1 | - | sem comentários | conserto em andamento em agente/2031-guiabusca; responder com a causa quando o hotfix 2.0. |
 | [#345](https://github.com/iqui27/nuvio-native-legacy/issues/345) | Audio non-existent on startup | Android | bug | aberta | - | 2.0.4 | - | sem comentários | ler log DEPCJ0 e responder |
 | [#346](https://github.com/iqui27/nuvio-native-legacy/issues/346) | Continue Watching unselectable | Android | bug | aberta | - | 2.0.4 | - | sem comentários | ler log e responder |
 | [#347](https://github.com/iqui27/nuvio-native-legacy/issues/347) | [suggestion] search by microphone | ? | feature | aberta | - | futuro | - | sem comentários | responder (sem resposta) |
@@ -287,39 +294,50 @@ Notas:
 | [#365](https://github.com/iqui27/nuvio-native-legacy/issues/365) | 🐛 Bug Report: Ghost Catalogs Still Remain in “Not on Home Sc | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log (sem resposta) |
 | [#366](https://github.com/iqui27/nuvio-native-legacy/issues/366) | [Feature request] Optional setting to hide watched movies fr | ? | feature | aberta | - | 2.0.4 | - | sem comentários | responder (sem resposta) |
 | [#367](https://github.com/iqui27/nuvio-native-legacy/issues/367) | [Bug][webOS] Audio control sometimes opens Subtitles on firs | LG | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log (sem resposta) |
-| [#372](https://github.com/iqui27/nuvio-native-legacy/issues/372) | [Bug] Incorrect Season/Episode Metadata Mapping for TV Anime | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log (sem resposta) |
-| [#373](https://github.com/iqui27/nuvio-native-legacy/issues/373) | [bug] missing info after continue watching | Samsung .tpk | bug | aberta | - | 2.0.4 | - | autor 10-08 | responder (autor deu mais detalhes) |
+| [#372](https://github.com/iqui27/nuvio-native-legacy/issues/372) | [Bug] Incorrect Season/Episode Metadata Mapping for TV Anime | Samsung .tpk | bug | aberta | - | 2.0.3.1 | - | sem comentários | conserto em andamento em agente/2031-temporadas; responder ao autor com a causa quando o h |
+| [#373](https://github.com/iqui27/nuvio-native-legacy/issues/373) | [bug] missing info after continue watching | Samsung .tpk | bug | aberta | - | 2.0.4 | - | autor 10-09 | responder (autor deu mais detalhes em 08 e 09/10; pedir log com o código) |
 | [#374](https://github.com/iqui27/nuvio-native-legacy/issues/374) | [port] sync subtitles by line "auto sync" | ? | feature | aberta | - | 2.1 | - | sem comentários | responder (sem resposta) |
 | [#378](https://github.com/iqui27/nuvio-native-legacy/issues/378) | “From Account” subtitle setting defaults to “NONE” on playba | Samsung .tpk | bug | aberta | - | 2.0.4 | - | autor 10-08 | responder / pedir log (ghbarker confirmou com +1) |
 | [#379](https://github.com/iqui27/nuvio-native-legacy/issues/379) | Movie or TV show at the end never return to homescreen. | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log (sem resposta) |
-| [#384](https://github.com/iqui27/nuvio-native-legacy/issues/384) | Embedded ASS subtitles stopped rendering after anime intro | LG | bug | aberta | - | 2.0.4 | - | autor 10-09 | causa achada nos logs do autor (limite de 8000 blocos do coletor de ASS embutido); aguarda |
+| [#382](https://github.com/iqui27/nuvio-native-legacy/issues/382) | No internet error despite having internet | LG | bug | precisa-log | - | 2.0.4 | - | sem comentários | pedir log (o formulário veio sem código); perguntar se a TV está em Wi-Fi ou cabo e se o a |
+| [#386](https://github.com/iqui27/nuvio-native-legacy/issues/386) | [bug] glitchy info in playback at the top left when pressing | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log: o vídeo anexado mostra o defeito; o campo de log veio vazio |
+| [#387](https://github.com/iqui27/nuvio-native-legacy/issues/387) | [bug] instant long press in library | Samsung .wgt | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log: o vídeo anexado mostra o defeito; o campo de log veio vazio |
+| [#388](https://github.com/iqui27/nuvio-native-legacy/issues/388) | Profile picture on side bar is squashed | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir captura de tela e log |
+| [#389](https://github.com/iqui27/nuvio-native-legacy/issues/389) | Card depth effect | Samsung (tpk/wgt?) | feature | aberta | - | futuro | - | sem comentários | responder: pedir exemplo do efeito de profundidade desejado (sombra, inclinação, escala no |
+| [#390](https://github.com/iqui27/nuvio-native-legacy/issues/390) | Custom poster source not setting | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | responder / pedir log: o campo de log veio vazio |
 
 Notas:
 
 - **#135**: Porte experimental VIDAA; issue de chamada de testadores. Commits faacf493 (2.0.2) e feat/vidaa.
 - **#144**: Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#252**: Opção já existe: Ajustes > Idiomas e legendas > Idioma do áudio. Alvo ja-lancada: a opção já existe.
-- **#256**: Parte do pedido tem relação com #331 (contagem estilo Netflix, em agente/203-331 = 2.0.4). Ajuste de tempo do card "ainda não existe" (nossa resposta).
 - **#288**: Formulário diz LG webOS mas o modelo é TCL C6K: plataforma incerta.
 - **#292**: Aviso nosso (virou issue a partir da discussão #291): resolução da interface em 4K deixa o Android lento. Alvo nao vamos fazer: é aviso/pergunta, não há mudança de código planejada (ver decisões).
 - **#307**: SUSPEITA de fora-do-escopo: pedido de .ipa, app é C/SDL para TVs. O dono decide.
 - **#310**: REABERTA em 09/10 pelo autor (Namer03) com novo comentário; no GitHub o estado é aberta (motivo REOPENED), então a issue volta ao mapa como aberta com alvo. A regex/exigir/preferir da 2.0.2 continua entregue (sem commit #310). Três pedidos novos: (a) JÁ NÃO É BUG (revisão de código em 09/10): a abertura manual de outro episódio já aplica o binge group (teste 29d2c248 passa sem conserto); a lacuna real era que só a fonte ESCOLHIDA À MÃO era lembrada. FEATURE 2.0.4, origem dono 09/10 ("sim vamos adicionar na 2.0.4"): lembrar também o binge group da fonte que o automático tocou. Branch agente/204-binge (29d2c248, 02753401, 6345e9ff), ainda não integrado. (b) FEATURE, alvo 2.1: "reusar último link" + "Last Link Cache Duration". Não existe cache de link: fontepref guarda só a identidade da fonte (bingeGroup, provedor, trilha) por título e perfil, por 180 dias, e resolve a URL de novo (fontepref.h:112-140 diz isso de propósito); fontecache é prefetch de lista com validade de 30 s (fontecache.h:166, FONTECACHE_VALIDADE_MS). Guardar a URL exige arquivo novo, validade configurável, linha nos Ajustes e queda para a busca quando o link de debrid (assinado, expira em minutos) falhar: médio, com risco de tocar link morto; por isso 2.1. (c) FEATURE, alvo 2.1: regex separada por tipo (filmes / séries / anime) e modo preferir x exigir por tipo. Hoje há UMA regex e UM modo para tudo: padrao único em fonteregra.c:15, FonteRegraCfg com um regexModo (fonteregra.h:47), um único modo em ajustes.c:1301 (V_FONTE_REGEX), um fonteregra.txt por TV com cópia por perfil, e a chave do oficial stream_auto_play_regex é uma só na conta (sync). Por tipo pede três regex compiladas, três modos, arquivo e blob novos sem quebrar o sync com o oficial, três linhas a mais nos Ajustes e uma regra para dizer o que é anime (o app não tem esse tipo hoje: suspeita, não conferido): grande; por isso 2.1. ALVO da issue = 2.0.4 (o mais cedo, pelo item (a), agora recurso); (b) e (c) só saem na 2.1.
 - **#324**: Relatório automático de triagem de logs (comentários nossos); não é bug. Alvo nao vamos fazer: não é bug nem pedido.
 - **#333**: Duplicata de #250 (Arabic). Comentário no commit c824675c (v1.0.1) é falso positivo.
-- **#344**: Log code no corpo; sem resposta nossa.
+- **#344**: CAUSA PROVADA (09/10) por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, EpgProg ps[24] enquanto epg_faixa/xtepg_faixa devolvem o total). Existe desde a v1.7.0, continua na 2.0.3 e vale para todas as plataformas com o guia. Conserto em agente/2031-guiabusca, alvo 2.0.3.1.
 - **#345**: Log code no corpo; sem resposta nossa.
 - **#346**: Sem resposta nossa. Possível relação com #373 (Samsung).
 - **#353**: Os 2 comentários nossos na issue são relatórios de triagem automática, não resposta ao autor.
 - **#354**: SUSPEITA: versão desktop está fora do escopo (app é para TVs).
 - **#357**: Zidoo Z9X 8K (Android 11) fecha ao abrir; Ugoos AM9 Pro. Autor comentou que não achou o aparelho no relatório #324 e não consegue enviar log.
 - **#365**: Autor diz que o problema principal da Home foi resolvido; fantasmas permanecem em "Fora da Home". Relacionado a #358.
-- **#384**: LG C5, webOS 26, Nuvio 2.0.2; Re:Zero S1 (Seadex): legenda embutida do ep. 3 funcionou, a do ep. 4 parou de aparecer depois da abertura. O autor (Vidhin05) JÁ mandou dois códigos de log no corpo (DDRROH e 98ZQED), ainda não lidos por nós; por isso o status é aberta e não precisa-log. Um comentário do próprio autor fala de "quedas de conexão e falhas de rede, talvez queda do debrid": relato solto, sem log próprio, tratar como segundo sintoma e checar nos mesmos logs. Namer03 (não é do projeto) respondeu "mesma coisa do #308, sai na 2.0.3": SUSPEITA, o #308 é legenda que bloqueia a fonte, o sintoma aqui (legenda some no meio) pode ser outro; não confirmado. Candidatos já na 2.0.3: #269 (legenda embutida) e #335 (ASS). ALVO 2.0.4 = triagem: pode virar 2.0.3 se os logs mostrarem que é o #308. CAUSA ACHADA (09/10, nos logs do próprio autor): NÃO é o #308 e NÃO está corrigido na 2.0.3 até agora. O coletor de ASS embutido indexa no máximo 8000 blocos (MKVASS_MAX_PONTOS, src/mkvass.c:61) NA ORDEM DO ARQUIVO; numa release com muito typeset (letreiros, karaokê) os 8000 acabam logo depois da abertura, e o resto do episódio fica sem legenda (log: "cobertura=7360-217270ms" com exatamente 8000 eventos). O branch agente/203-384 trabalha nisso; o alvo continua 2.0.4 a menos que esse branch entre na 2.0.3. Próximo passo: integrar agente/203-384 (ou deixar para a 2.0.4) e avisar o autor. O comentário de "queda do debrid" segue sem log próprio.
+- **#372**: CAUSA PROVADA (09/10): regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo em 1-2 temporadas: Bleach no Nuvio {1:366,2:50} contra S1-16 no Cinemeta) somada a um defeito antigo: as abas de temporada saem do corpo do Nuvio mesmo quando a lista de episódios é a do add-on (descoberta.c ~7069-7087, detail.c ~742-765). O log BZB857 (2.0.3, webOS) prova. A teoria do autor sobre o Trakt está errada. Conserto em agente/2031-temporadas, alvo 2.0.3.1. Relacionado: #328 (episódios duplicados), SUSPEITA de mesma raiz, não confirmada. A parte SIMKL do título não foi tratada.
+- **#373**: Namer03 (09/10): o botão azul do controle abre o menu de retomar, mas no controle novo da Samsung é difícil de alcançar, então ele mantém o pedido de um jeito mais fácil de voltar ao player, mantendo a ilha. Ao escolher "Retomar", o app recarregou a fonte em vez de retomar, ou o clique não registrou. Suposição do autor, sem prova: "manter o vídeo pronto ao sair" pode estar quebrado (08/10: voltar pelo caminho início > cartaz > ver título > retomar exigiu reabrir a fonte). Sem log lido por nós; precisa de mais testes e logs.
+- **#382**: LG 50UT8050PSB, Nuvio 2.0.2 (.ipk). Relato: depois de ligar a TV a frio aparece "sem internet" mesmo com internet, some, volta várias vezes até parar de vez. O campo de log ficou sem código. SUSPEITA, sem prova: o aviso nasce do teste de rede do app (redesaude) logo após o boot, quando a rede da TV ainda sobe; não lido no código nem em log.
+- **#386**: S95C, .tpk, Nuvio 2.0.2, autor Namer03. Passos: abrir vídeo, mostrar a interface do player, apertar esquerda/direita; informação "glitchada" no canto superior esquerdo (ver vídeo anexado, não assistido por nós). Sem log. Causa desconhecida.
+- **#387**: S95C, .wgt, Nuvio 2.0.2, autor Namer03. Aleatório, sem padrão exato: na Biblioteca, ao abrir um dos 3 primeiros títulos, o item é selecionado na hora (como um toque longo) em vez de abrir a ficha. Sem log. SUSPEITA, não lida no código: o OK sendo lido como segurar (repetição de tecla do controle novo da Samsung); conferir o tratamento de toque longo da Biblioteca.
+- **#388**: QN70F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito "2.02"). A foto do perfil na barra lateral aparece achatada. Sem log nem imagem. Não investigado no código.
+- **#389**: Pedido de efeito de profundidade em cartões, trailers e elenco. Não existe opção com esse nome. SUSPEITA de alvo: futuro, sem plano nem aprovação do dono; pode ser ligado à Biblioteca/Glass UI da 2.1.
+- **#390**: QN74F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito "2.02"). Ao colocar a URL de cartaz própria (pelo celular e à mão) e apertar "Concluído", volta para as opções sem gravar a URL. Mesmo autor do #388 e do #389. Não investigado. Relação com a URL de cartaz longa do #361 (2.0.3) não conferida: SUSPEITA.
 
 ## Já lançado
 
-233 issues.
+237 issues.
 
-### Lançadas e ainda abertas no GitHub (8)
+### Lançadas e ainda abertas no GitHub (11)
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -331,6 +349,9 @@ Notas:
 | [#298](https://github.com/iqui27/nuvio-native-legacy/issues/298) | The Arabic subtitles | Samsung (Tizen 6) | feature | lancada | 2.0.2 | ja-lancada | sem commit | autor 10-07 | responder (autor informou Tizen 6; dizer em qual versão testar) |
 | [#300](https://github.com/iqui27/nuvio-native-legacy/issues/300) | Default Aspect Ratio Option | ? | feature | lancada | 2.0.2 | ja-lancada | sem commit | nós 10-07 | nada (pode fechar) |
 | [#303](https://github.com/iqui27/nuvio-native-legacy/issues/303) | how to remove continue watching from opening screen | ? | feature | lancada | 2.0.2 | ja-lancada | 1300a834 | nós 10-07 | nada (pode fechar) |
+| [#308](https://github.com/iqui27/nuvio-native-legacy/issues/308) | [bug] subtitles block source | ? | bug | lancada | 2.0.3 | 2.0.4 | e52fae3f, 6269f306, b65c3324 | autor 10-09 | responder: confirmar que a abertura da fonte e a queda foram resolvidas; abrir triagem do  |
+| [#384](https://github.com/iqui27/nuvio-native-legacy/issues/384) | Embedded ASS subtitles stopped rendering after anime intro | LG | bug | lancada | 2.0.3 | ja-lancada | 9ee093ac, b03b86db | autor 10-09 | responder: corrigido na 2.0.3 (índice cobre a faixa inteira; janela do playhead) |
+| [#383](https://github.com/iqui27/nuvio-native-legacy/issues/383) | [port] subtitle memory same as nuvio | all | feature | lancada | 2.0.3 | ja-lancada | a89987c1 | autor 10-09 | responder: a 2.0.3 lembra a legenda escolhida a mão por perfil (a mesma faixa ou idioma no |
 
 Notas:
 
@@ -342,8 +363,11 @@ Notas:
 - **#298**: #273 (legendas árabes, 546c7418/57e24174) está na 2.0.2; #335 refina na 2.0.3. Nossa resposta de 07/10 disse "próxima release"; já estava na 2.0.2. Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#300**: Resposta cita 2.0.2; nenhum commit cita #300. Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#303**: Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
+- **#308**: O defeito do relato original (fonte com ASS que não abre e cai no CDN) está corrigido na 2.0.3: o autor confirma em 09/10 "got them working now". DECISÃO: a issue segue aberta no mapa, com status lancada e alvo 2.0.4, porque o autor trouxe sintomas NOVOS no mesmo fio: todas as legendas ASS com sombra/anel e cor diferente da original (exemplo do Stremio com anel branco), legendas grandes/avançadas lentas (baixo fps) e um clipe fora de sincronia (vídeos e captura anexados, não vistos por nós). SUSPEITA, sem leitura de código nem log: desenho do libass (sombra/contorno/cor) e custo de desenho das legendas grandes na TV. Se o dono preferir, fechar a #308 como resolvida e abrir issue nova para o desenho.
+- **#384**: LG C5, webOS 26, Nuvio 2.0.2; Re:Zero S1 (Seadex): legenda embutida do ep. 3 funcionou, a do ep. 4 parou de aparecer depois da abertura. O autor (Vidhin05) JÁ mandou dois códigos de log no corpo (DDRROH e 98ZQED), ainda não lidos por nós; por isso o status é aberta e não precisa-log. Um comentário do próprio autor fala de "quedas de conexão e falhas de rede, talvez queda do debrid": relato solto, sem log próprio, tratar como segundo sintoma e checar nos mesmos logs. Namer03 (não é do projeto) respondeu "mesma coisa do #308, sai na 2.0.3": SUSPEITA, o #308 é legenda que bloqueia a fonte, o sintoma aqui (legenda some no meio) pode ser outro; não confirmado. Candidatos já na 2.0.3: #269 (legenda embutida) e #335 (ASS). ALVO 2.0.4 = triagem: pode virar 2.0.3 se os logs mostrarem que é o #308. CAUSA ACHADA (09/10, nos logs do próprio autor): NÃO é o #308 e NÃO está corrigido na 2.0.3 até agora. O coletor de ASS embutido indexa no máximo 8000 blocos (MKVASS_MAX_PONTOS, src/mkvass.c:61) NA ORDEM DO ARQUIVO; numa release com muito typeset (letreiros, karaokê) os 8000 acabam logo depois da abertura, e o resto do episódio fica sem legenda (log: "cobertura=7360-217270ms" com exatamente 8000 eventos). O branch agente/203-384 trabalha nisso; o alvo continua 2.0.4 a menos que esse branch entre na 2.0.3. Próximo passo: integrar agente/203-384 (ou deixar para a 2.0.4) e avisar o autor. O comentário de "queda do debrid" segue sem log próprio. CORRIGIDO (09/10): o conserto de agente/203-384 entrou na 2.0.3 (merge 2b4c3cea; b03b86db teste e 9ee093ac conserto, ambos contidos na tag v2.0.3): o índice cobre a faixa inteira e a faixa grande é colhida só na janela do playhead, sem carga extra no CDN. O texto acima sobre "não está corrigido" e "alvo 2.0.4" é histórico. A "queda do debrid" do autor segue sem log próprio.
+- **#383**: Pedido: a legenda lembrar a faixa entre episódios (referência: NuvioMedia/NuvioTVSmart#1025). SUSPEITA de que a 2.0.3 já cobre: legmemoria (a89987c1, na tag v2.0.3) guarda por perfil a faixa exata por título (imdb sem temporada/episódio, então vale para os episódios da série) e a última escolha a mão em outro título; só a escolha manual grava. Não conferido contra a regra exata do Nuvio nem testado em TV; se o autor disser que falta algo (por exemplo lembrar por idioma de áudio), reabrir como 2.0.4. O comentário de base08 (não é do projeto) só concorda.
 
-### Lançadas e fechadas (225)
+### Lançadas e fechadas (226)
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -572,6 +596,7 @@ Notas:
 | [#289](https://github.com/iqui27/nuvio-native-legacy/issues/289) | Eliminate “OK” button on profile pin entry | all | feature | lancada | 2.0.2 | - | 3eb5aef5 | nós 10-07 | nada (fechada) |
 | [#295](https://github.com/iqui27/nuvio-native-legacy/issues/295) | Profile picker background — “Profile art” option not working | Samsung .tpk | bug | lancada | 2.0.2 | - | 881f7cae | nós 10-07 | nada (fechada) |
 | [#297](https://github.com/iqui27/nuvio-native-legacy/issues/297) |  Issue: P2P stream stops due to full TV storage. | Samsung .tpk | bug | lancada | 2.0.2 | - | 325f4e2b, 1b6a5439 | nós 10-07 | nada (fechada) |
+| [#359](https://github.com/iqui27/nuvio-native-legacy/issues/359) | 🐛 Bug Report: Floating Sidebar Overlaps/Interferes With Cont | ? | bug | lancada | 2.0.3 | - | 1860216b | autor 10-09 | nada (fechada) |
 
 Notas:
 
@@ -675,10 +700,11 @@ Notas:
 - **#277**: Sem commit #277; versão 2.0.1 citada na nossa resposta.
 - **#278**: Sem commit #278; versão 2.0.1 citada na nossa resposta.
 - **#282**: Sem commit #282; versão 2.0.1 citada na nossa resposta.
+- **#359**: Fechada pelo autor em 09/10 com "Fixed". 1860216b está na tag v2.0.3.
 
 ## Fechado sem conserto (por-desenho, fora-do-escopo, duplicada, respondida, sem resposta)
 
-37 issues.
+38 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -712,6 +738,7 @@ Notas:
 | [#242](https://github.com/iqui27/nuvio-native-legacy/issues/242) | API QUESTION | ? | question | respondida | - | - | - | nós 10-06 | nada (fechada) |
 | [#248](https://github.com/iqui27/nuvio-native-legacy/issues/248) | Catalog sequencing mismatched | Samsung .tpk | bug | por-desenho | - | - | - | autor 10-04 | nada (fechada) |
 | [#254](https://github.com/iqui27/nuvio-native-legacy/issues/254) | Home row does not update properly after installing/removing  | Samsung .tpk | bug | respondida | 2.0.0 | - | - | nós 10-06 | nada (fechada) |
+| [#256](https://github.com/iqui27/nuvio-native-legacy/issues/256) | Add Autoplay for Next Episode & Allow Customizable "Up Next" | ? | feature | respondida | - | - | - | autor 10-08 | nada (fechada pelo autor em 09/10); a opção de ajustar o tempo do card segue só como recur |
 | [#257](https://github.com/iqui27/nuvio-native-legacy/issues/257) | FYI: included in Tizen Community Packages | Samsung (tpk/wgt?) | meta | respondida | - | - | - | nós 10-06 | nada (fechada) |
 | [#267](https://github.com/iqui27/nuvio-native-legacy/issues/267) | No blue button on newer Samsung remote | Samsung (tpk/wgt?) | feature | por-desenho | - | - | - | autor 10-06 | nada (fechada) |
 | [#270](https://github.com/iqui27/nuvio-native-legacy/issues/270) | 📊 Relatório de logs | ? | meta | por-desenho | - | - | d560db8c, 666428cc | nós 10-07 | nada (relatório automático de logs) |
@@ -733,6 +760,7 @@ Notas:
 - **#217**: Contribuidor oferece PRs de build em Linux; resposta aceita.
 - **#248**: Resposta diz que é comportamento da plataforma Tizen.
 - **#254**: Resposta: busca atualiza ao mudar add-ons na 2.0; a parte da Home não confirmada.
+- **#256**: Parte do pedido tem relação com #331 (contagem estilo Netflix, em agente/203-331 = 2.0.4). Ajuste de tempo do card "ainda não existe" (nossa resposta). Fechada pelo autor em 09/10 (COMPLETED) depois de confirmar que o card aparece nos créditos e o próximo episódio toca sozinho; o pedido de ajuste de tempo fica sem issue própria (roadmap 2.0.4, item do próximo episódio automático).
 - **#267**: Resposta: CH+/CH- já atribuídos.
 - **#279**: Tizen não tem API pública para trocar a taxa de atualização.
 - **#309**: Já existe: Fontes e add-ons > Texto da fonte.
