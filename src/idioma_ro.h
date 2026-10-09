@@ -5030,6 +5030,7 @@
   T("mistério", "mister"),
   T("mitologia", "mitologie"),
   T("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}", "model nevalid: folosiți http(s):// și {imdb}, {tmdb}, {type} sau {tipo_tmdb}"),
+  T("modelo longo demais: o endereço pronto passa de 512 caracteres", "șablon prea lung: adresa finală depășește 512 caractere"),
   T("monstros", "monștri"),
   T("mostrar", "arată"),
   T("motor desta TV · versão %s", "motorul acestui televizor · versiunea %s"),

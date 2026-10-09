@@ -5030,6 +5030,7 @@
   T("mistério", "таємниця"),
   T("mitologia", "міфологія"),
   T("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}", "недійсний шаблон: використовуйте http(s):// і {imdb}, {tmdb}, {type} або {tipo_tmdb}"),
+  T("modelo longo demais: o endereço pronto passa de 512 caracteres", "шаблон задовгий: готова адреса перевищує 512 символів"),
   T("monstros", "монстри"),
   T("mostrar", "показати"),
   T("motor desta TV · versão %s", "рушій цього телевізора · версія %s"),

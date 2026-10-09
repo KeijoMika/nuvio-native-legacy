@@ -5031,6 +5031,7 @@
   T("mistério", "skrivnost"),
   T("mitologia", "mitologija"),
   T("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}", "neveljavna predloga: uporabite http(s):// in {imdb}, {tmdb}, {type} ali {tipo_tmdb}"),
+  T("modelo longo demais: o endereço pronto passa de 512 caracteres", "predloga je predolga: končni naslov presega 512 znakov"),
   T("monstros", "pošast"),
   T("mostrar", "prikaži"),
   T("motor desta TV · versão %s", "pogon tega televizorja · različica %s"),

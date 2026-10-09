@@ -5031,6 +5031,7 @@
   T("mistério", "misteri"),
   T("mitologia", "mitologi"),
   T("modelo inválido: use http(s):// e {imdb}, {tmdb}, {type} ou {tipo_tmdb}", "templat tidak valid: gunakan http(s):// dan {imdb}, {tmdb}, {type} atau {tipo_tmdb}"),
+  T("modelo longo demais: o endereço pronto passa de 512 caracteres", "templat terlalu panjang: alamat akhirnya lebih dari 512 karakter"),
   T("monstros", "monster"),
   T("mostrar", "tampilkan"),
   T("motor desta TV · versão %s", "mesin TV ini · versi %s"),
