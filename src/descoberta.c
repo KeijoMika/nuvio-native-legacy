@@ -6250,16 +6250,72 @@ int desc_meta_tem_temporadas(const char *corpo) {
   return 0;
 }
 
-// Quantos videos com temporada > 0 a resposta do /meta traz.
-int desc_meta_n_episodios(const char *corpo) {
+// CONJUNTO DE (temporada, episodio) JA VISTOS num videos[]. Um addon de FONTES
+// pode responder o /meta com um video por ARQUIVO de torrent (relato de TV LG,
+// Breaking Bad: 18529 entradas para 62 episodios), entao contar e cortar tem de
+// ser sobre episodios DISTINTOS. Enderecamento aberto, dobra ao passar de meia
+// carga: O(n) no corpo inteiro, 64 KB para os 18529 do relato.
+typedef struct { unsigned long long *v; unsigned cap, n; } EpSet;
+
+static unsigned epSetCasa(const EpSet *s, unsigned long long k) {
+  unsigned i = (unsigned)((k * 0x9E3779B97F4A7C15ull) >> 40) & (s->cap - 1);
+  while (s->v[i] && s->v[i] != k) i = (i + 1) & (s->cap - 1);
+  return i;
+}
+
+// 1 = par novo (entrou); 0 = repetido. Sem memoria responde "novo": o pior
+// caso e o de antes do conjunto existir.
+static int epSetNovo(EpSet *s, int t, int e) {
+  unsigned long long k = ((unsigned long long)(unsigned)t << 32) | (unsigned)e;
+  unsigned i;
+  if (!s->v) {
+    s->cap = 1024; s->n = 0;
+    s->v = calloc(s->cap, sizeof *s->v);
+    if (!s->v) return 1;
+  } else if (s->n * 2 >= s->cap) {
+    EpSet g = { calloc((size_t)s->cap * 2, sizeof *s->v), s->cap * 2, s->n };
+    if (!g.v) return 1;
+    for (i = 0; i < s->cap; i++)
+      if (s->v[i]) g.v[epSetCasa(&g, s->v[i])] = s->v[i];
+    free(s->v);
+    *s = g;
+  }
+  i = epSetCasa(s, k);
+  if (s->v[i]) return 0;
+  s->v[i] = k; s->n++;
+  return 1;
+}
+
+// Quantos episodios DISTINTOS (temporada > 0) a resposta do /meta traz; em
+// `brutos` (opcional), quantos videos com temporada > 0, repeticoes incluidas.
+// Video sem numero de episodio nao e repeticao de outro (regra do #328): cada
+// um conta.
+static int metaContarEpisodios(const char *corpo, int *brutos) {
   const char *v = corpo ? js_array(corpo, NULL, "videos") : NULL;
-  int n = 0;
+  EpSet set = { 0 };
+  int n = 0, b = 0;
   while (v) {
     const char *f = js_fim(v);
-    if (videoTemporada(v, f) > 0) n++;
+    int t = videoTemporada(v, f);
+    if (t > 0) {
+      int e = (int)js_num(v, f, "episode", 0);
+      b++;
+      if (e <= 0 || epSetNovo(&set, t, e)) n++;
+    }
     v = js_prox(f);
   }
+  free(set.v);
+  if (brutos) *brutos = b;
   return n;
+}
+
+int desc_meta_n_episodios(const char *corpo) { return metaContarEpisodios(corpo, NULL); }
+
+// O videos[] e uma lista de ARQUIVOS, nao de episodios? Em media mais de tres
+// entradas por episodio so acontece em addon de fontes (o agregador de anime
+// do #328 repete uma ou duas vezes). Lista pequena nunca e recusada.
+static int metaListaDeArquivos(int distintos, int brutos) {
+  return brutos >= 60 && brutos > distintos * 3;
 }
 
 // Em par com CAT_EP_MAX (catalogo.c): um titulo que caiba no store nao pode
@@ -6271,15 +6327,21 @@ int desc_meta_n_episodios(const char *corpo) {
 static int parsearEpisodios(const char *corpo, CatEp *eps, int max) {
   int n = 0;
   const char *p = js_array(corpo, NULL, "videos");
+  EpSet set = { 0 };
   while (p && n < max) {
     const char *f = js_fim(p);
     int t = videoTemporada(p, f);
-    if (t > 0) {
+    int ne = t > 0 ? (int)js_num(p, f, "episode", 0) : 0;
+    // Repeticao sai JA AQUI, antes do corte de `max`: descartada so depois de
+    // ordenar, as 1200 vagas iam para copias dos primeiros episodios e o resto
+    // da serie nem era lido. Fica o primeiro da resposta; sem numero de
+    // episodio nao e repeticao.
+    if (t > 0 && (ne <= 0 || epSetNovo(&set, t, ne))) {
       CatEp *e = &eps[n];
       char d[24] = "";
       memset(e, 0, sizeof *e);
       e->temporada = t;
-      e->episodio = (int)js_num(p, f, "episode", 0);
+      e->episodio = ne;
       js_texto(p, f, "name", e->nome, sizeof e->nome);
       // O id do video (cat_id_stream): e ele que se manda aos addons de fonte
       // quando o titulo nao e do IMDb. Addon que usa "title" no lugar de "name"
@@ -6302,6 +6364,7 @@ static int parsearEpisodios(const char *corpo, CatEp *eps, int max) {
     }
     p = js_prox(f);
   }
+  free(set.v);
   for (int i = 1; i < n; i++) {
     CatEp k = eps[i];
     int j;
@@ -6445,9 +6508,18 @@ static int episodiosDoAddon(int alvoItem, const char *serie, const char *titulo,
   int melhor = 0, i, n = addons_n(), usouTexto = 0;
   for (i = 0; i < n; i++) {
     char *c2 = metaDoAddon(i, "series", serie);
-    int n2;
+    int n2, brutos = 0;
     if (!c2) continue;
-    n2 = desc_meta_n_episodios(c2);
+    // Episodios DISTINTOS: pela contagem bruta, a lista de arquivos de um addon
+    // de fontes (18529 "episodios" contra 62) ganhava de qualquer lista real.
+    n2 = metaContarEpisodios(c2, &brutos);
+    if (metaListaDeArquivos(n2, brutos)) {
+      printf("[desc] %s: %s respondeu %d videos para %d episodios (lista de arquivos); "
+             "nao serve de lista de episodios\n", titulo, addons_nome(i), brutos, n2);
+      fflush(stdout);
+      free(c2);
+      continue;
+    }
     if (n2 > melhor) {
       free(melhorCorpo);
       melhorCorpo = c2; melhor = n2; melhorNome = addons_nome(i);
