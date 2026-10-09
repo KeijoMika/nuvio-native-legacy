@@ -497,6 +497,8 @@ typedef enum {
   // Automatico (o de sempre) ou 2/4/8/16 GB, sempre deixando 512 MB livres.
   // LOCAL (o disco e desta TV). No fim: valor[]/CHAVE[] posicionais.
   AJ_P2P_LIMITE,
+  // #400: LOCAL, deste aparelho. No fim: valor[]/CHAVE[] posicionais.
+  AJ_FONTE_ORDEM_ADDON,
   AJ_N
 } OpcaoId;
 
@@ -508,6 +510,7 @@ static const char *V_ICONE_APP[ICONEAPP_N] = {
   "Original", "Fênix", "N verde-água", "TV laranja", "N pixel",
   "Play tricolor", "Arco", "TV viva", "Clube retrô", "Arcade N",
 };
+static const char *V_FONTE_ORDEM_ADDON[] = { "Por qualidade", "Do addon" };
 static const char *V_QUALIDADE[] = { "Automática", "4K", "1080p", "720p" };
 static const char *V_LIGA[]      = { "Ligado", "Desligado" };
 // Medidor de desempenho NA ILHA DO RELOGIO (desempenho.h, 03/10). O indice e o
@@ -1321,6 +1324,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Mostrar a fonte nos resultados da busca", V_LIGA, 2),   // local: buscaOrigemLocal
   ESC("Layout dos Ajustes",              V_LAYOUT_AJUSTES, 2),   // local: ajustesLayoutLocal (#339)
   ESC("Limite de espaço do P2P",         V_P2P_LIMITE, 5),   // local: p2pLimiteLocal (#334)
+  ESC("Ordem das fontes", V_FONTE_ORDEM_ADDON, 2), // local (#400)
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -1544,6 +1548,7 @@ static const char *CHAVE[] = {
   "buscaNuvioLocal", "buscaOrigemLocal",
   "ajustesLayoutLocal",
   "p2pLimiteLocal",
+  "fonteOrdemLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -1909,6 +1914,7 @@ int ajustes_proporcao_padrao(void) { int v = valor[AJ_PROPORCAO_PADRAO]; return 
 int ajustes_brilho_player(void)    { int v = valor[AJ_BRILHO_PLAYER]; return v < 0 || v > 3 ? 1 : v; }
 void ajustes_espelhar_enquetes(int ligado) { int n = ligado ? 0 : 1; if (valor[AJ_ENQUETES] != n) { valor[AJ_ENQUETES] = n; AJ_COM_ORIGEM(AJLOG_CENTRAL, gravar()); } }
 int ajustes_fonte_hdr(void)        { int v = valor[AJ_FONTE_HDR]; return v < 0 || v > 2 ? 0 : v; }
+int ajustes_fonte_ordem_addon(void)   { return valor[AJ_FONTE_ORDEM_ADDON] == 1; }
 int ajustes_fonte_texto_addon(void)   { return valor[AJ_FONTE_TEXTO] == 1; }
 // "Logo do titulo" (dono, 03/10, em teste): o layout do Nuvio com a logo do
 // conteudo no lugar do nome escrito em cada linha. Indice 2: o 0 e o 1 ja
@@ -4006,7 +4012,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_FONTE_AQUECER:
     case AJ_FONTE_CONFERIR_VARIAS:
     case AJ_FONTE_PREPARAR:
-    case AJ_FONTE_TEXTO:
+    case AJ_FONTE_TEXTO: case AJ_FONTE_ORDEM_ADDON:
     case AJ_SALVOS_DEST:
     case AJ_EPG_PAIS:       /* pais da grade: por aparelho, o web nao tem */
     // Arte do destaque: o web nao tem as chaves (heroFundoLocal,
@@ -5245,6 +5251,7 @@ static const char *ajudaOpcao(int op) {
     case AJ_LOGO_APP: return "O símbolo que o Nuvio mostra na abertura e nas telas de entrada. Novo é o play em degradê; Clássico é a TV retrô de sempre. Vale só nesta TV.";
     case AJ_ABERTURA: return "Como o logo some quando o app abre. Padrão para um instante, aproxima e esmaece; Só esmaece não aproxima; Direto abre a Home sem parar. Vale só nesta TV.";
     case AJ_FONTE_HDR: return "Preferir: fontes com HDR ou Dolby Vision vêm na frente. Indiferente: o formato não conta. Evitar: prefere SDR na mesma resolução. O Dolby Vision só entra se estiver ligado em Imagem e som; perfil 5 sem HDR10 fica atrás do HDR10, porque sai com cores erradas fora de TV Dolby Vision. Só vale para a escolha automática.";
+    case AJ_FONTE_ORDEM_ADDON: return "Por qualidade: as fontes vêm agrupadas por resolução, da maior para a menor, e do maior arquivo para o menor. Do addon: cada addon na ordem em que você o instalou, e as fontes de cada um na ordem em que ele mandou — para quem já ordena no AIOStreams. A escolha automática não muda.";
     case AJ_FONTE_TEXTO: return "Do Nuvio: o nome do título em cima e os logos de qualidade embaixo. Do addon: o nome e a descrição exatamente como o addon manda — para quem já formata o texto no AIOStreams. Logo do título: a logo do título no lugar do nome escrito.";
     case AJ_FONTE_PRAZO: return "As fontes aparecem na lista assim que cada add-on responde. A escolha automática não espera o mais lento: sai quando já há uma fonte boa ou depois deste tempo. Com uma fonte escolhida antes neste título, o add-on dela é sempre esperado.";
     case AJ_FONTE_TOCAR_CONFERINDO: return "Abre o player com a primeira fonte do automático na hora em que a conferência dela começa, em vez de esperar o resultado. Se a conferência reprovar a fonte, volta a esperar e segue para a próxima, sem baixar a qualidade. Torrent e fonte que precisa ser resolvida antes seguem o caminho de sempre.";
@@ -7321,7 +7328,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_DV_MKV:
     case AJ_LEG_FORCADA:
     case AJ_AUD_LINGUA: case AJ_PAUSA_OVERLAY: case AJ_PLR_CLASSIF: case AJ_FONTE_MANUAL:
-    case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_SELOS_CORES: case AJ_FONTE_TOCAR_CONFERINDO: case AJ_FONTE_AQUECER: case AJ_FONTE_CONFERIR_VARIAS: case AJ_FONTE_PREPARAR:
+    case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_FONTE_ORDEM_ADDON: case AJ_SELOS_CORES: case AJ_FONTE_TOCAR_CONFERINDO: case AJ_FONTE_AQUECER: case AJ_FONTE_CONFERIR_VARIAS: case AJ_FONTE_PREPARAR:
     case AJ_FONTE_PRIORIDADE: case AJ_FONTE_HDR:
     case AJ_SELOS_PACOTE:
     case AJ_REACAO_CREDITOS:

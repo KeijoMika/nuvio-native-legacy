@@ -134,6 +134,8 @@ int ajustes_fonte_manual(void);
 // primeira fonte na ordem do addon e confere SO ela. 0 = "Melhor fonte", a
 // regra de pontuacao de streams.c. Ver fonteauto.h.
 int ajustes_fonte_primeira(void);
+// #400: ordem visual do addon, local; nao altera autoplay.
+int ajustes_fonte_ordem_addon(void);
 // 1 = a folha de Fontes mostra o nome e a descricao do addon como vieram.
 int ajustes_fonte_texto_addon(void);
 int ajustes_fonte_texto_logo(void);

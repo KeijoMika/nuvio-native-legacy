@@ -2491,11 +2491,11 @@ static void porLinha(int i, float *y, int automatica) {
 // Tamanho para ordenar: desconhecido (0) vai para o fim do grupo.
 static long tamanhoOrdem(int i) { return lista[i].tamanhoMB > 0 ? lista[i].tamanhoMB : -1; }
 
-// A LISTA (dono, 02/10): a fonte "Melhor para esta TV" e a PRIMEIRA linha,
+// POR QUALIDADE (dono, 02/10): a fonte "Melhor para esta TV" e a PRIMEIRA linha,
 // sozinha e sem cabecalho — o selo dela ja diz o que ela e —, e cada grupo
 // vem do MAIOR arquivo para o menor. Tamanho e o que mais separa duas fontes
-// do mesmo grupo de qualidade (Remux de 60 GB contra encode de 4 GB), e a
-// ordem do addon nao e a de ninguem que esta escolhendo.
+// do mesmo grupo de qualidade (Remux de 60 GB contra encode de 4 GB).
+// "Do addon" (#400) preserva ORD sem aplicar esta organizacao.
 static int *grupoTmp;
 static int *grupoFitTmp;
 static int grupoTmpCap;
@@ -2520,6 +2520,18 @@ static void montar(int automatica) {
     for (k = 0; k < needed; k++) {
       ordem[k] = -2-k; linhaY[k] = y; linhaH[k] = FOLHA_LINHA_H;
       y += linhaH[k] + FOLHA_LINHA_GAP;
+    }
+    alturaTotal = y;
+    return;
+  }
+  // #400: ordem visual do addon, sem promover, agrupar ou particionar fontes.
+  // A folha chama montar() a cada desenho: mudar o ajuste vale no proximo quadro.
+  if (ajustes_fonte_ordem_addon()) {
+    memset(secN, 0, sizeof secN);
+    nOrdem = 0;
+    for (k = 0; k < n; k++) {
+      i = ORD(k);
+      if (passaFiltro(i)) porLinha(i, &y, automatica);
     }
     alturaTotal = y;
     return;
