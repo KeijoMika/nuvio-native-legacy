@@ -306,6 +306,99 @@ int main(void) {
                        "{\"id\":\"y\",\"season\":1,\"name\":\"Y\"},"
                        "{\"id\":\"z\",\"season\":1,\"name\":\"Z\"}]}", e, 16);
   assert(n == 3);
+  // --- LISTA DE ARQUIVOS DE ADDON DE FONTE NO LUGAR DOS EPISODIOS (2.0.3.1) ---
+  // Relato de TV LG na 2.0.2 (Breaking Bad): um addon de FONTES respondia o
+  // /meta com um video por ARQUIVO de torrent — 18529 entradas, quase todas
+  // repeticoes dos mesmos (temporada, episodio). Ganhava da lista de 62 por
+  // contagem BRUTA, o corte de 1200 valia sobre as repeticoes e a pagina
+  // mostrava "Episodio 1" em todos os cartoes, "1200 de 1200 assistidos".
+  {
+    static const int porTemp[5] = { 7, 13, 13, 13, 16 };   // 62 episodios
+    size_t cap = 4u << 20, k = 0;
+    char *cine = malloc(cap), *arq = malloc(cap), *maior = malloc(cap);
+    int t, ep, i, total = 0;
+    assert(cine && arq && maior);
+    k = (size_t)snprintf(cine, cap, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                         "\"name\":\"Serie\",\"description\":\"S.\",\"videos\":[");
+    for (t = 1; t <= 5; t++)
+      for (ep = 1; ep <= porTemp[t - 1]; ep++, total++)
+        k += (size_t)snprintf(cine + k, cap - k,
+                              "%s{\"id\":\"tt13293588:%d:%d\",\"season\":%d,\"episode\":%d,"
+                              "\"name\":\"T%dE%d\"}", total ? "," : "", t, ep, t, ep, t, ep);
+    snprintf(cine + k, cap - k, "]}}");
+    assert(total == 62);
+    // 18000 arquivos, todos repeticoes de T1E1..T1E7.
+    k = (size_t)snprintf(arq, cap, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                         "\"name\":\"Serie\",\"videos\":[");
+    for (i = 0; i < 18000; i++)
+      k += (size_t)snprintf(arq + k, cap - k,
+                            "%s{\"id\":\"arq%d\",\"season\":1,\"episode\":%d,"
+                            "\"name\":\"Serie.S01E%02d.1080p.mkv\"}", i ? "," : "",
+                            i, i % 7 + 1, i % 7 + 1);
+    snprintf(arq + k, cap - k, "]}}");
+    assert(k < cap - 8);
+
+    nFake = 0; nRotas = 0; addonMeta = 1; addonTipo = "/series/";
+    fakeMetaExterno = 0; fakeSoCinemeta = 0; fakeIdioma = "en-US";
+    cineSerie = cine;
+    addonResp = arq;
+    limparCacheMeta();
+    catalogoCom("tt13293588", "series", "Serie");
+    abrir();
+    assert(pediu("addon.test/SEGREDO/meta/series/tt13293588.json"));
+    printf("lista de arquivos: %d episodios, %d abas\n",
+           cat_n_episodios(0), cat_item(0)->nTemporadas);
+    assert(cat_n_episodios(0) == 62);
+    assert(cat_item(0)->nTemporadas == 5);
+    assert(cat_episodio(0, 0)->episodio == 1 && cat_episodio(0, 1)->episodio == 2);
+    assert(cat_episodio(0, 61)->temporada == 5 && cat_episodio(0, 61)->episodio == 16);
+    puts("ok  lista de arquivos de addon de fonte nao troca a lista de episodios");
+    assert(desc_meta_n_episodios(cine) == 62);
+    assert(desc_meta_n_episodios(arq) == 7);          // distintos, nao 18000
+
+    // O corte de VIDEOS_MAX vale sobre episodios DISTINTOS: 1300 repeticoes de
+    // T1E1 na frente nao gastam as vagas dos outros.
+    k = (size_t)snprintf(maior, cap, "{\"videos\":[");
+    for (i = 0; i < 1300; i++)
+      k += (size_t)snprintf(maior + k, cap - k, "%s{\"id\":\"r%d\",\"season\":1,\"episode\":1}",
+                            i ? "," : "", i);
+    for (ep = 2; ep <= 80; ep++)
+      k += (size_t)snprintf(maior + k, cap - k, ",{\"id\":\"e%d\",\"season\":1,\"episode\":%d}", ep, ep);
+    snprintf(maior + k, cap - k, "]}");
+    {
+      CatEp *g = malloc(sizeof(CatEp) * VIDEOS_MAX);
+      assert(g);
+      n = parsearEpisodios(maior, g, VIDEOS_MAX);
+      assert(n == 80);
+      assert(!strcmp(g[0].vid, "r0") && g[79].episodio == 80);
+      free(g);
+    }
+    puts("ok  corte de 1200 sobre episodios distintos");
+
+    // Addon LEGITIMO com mais episodios DISTINTOS (e algumas repeticoes, #328)
+    // continua ganhando: 62 + a temporada 6 com 10, cada episodio duas vezes.
+    k = (size_t)snprintf(maior, cap, "{\"meta\":{\"id\":\"tt13293588\",\"type\":\"series\","
+                         "\"name\":\"Serie\",\"videos\":[");
+    total = 0;
+    for (t = 1; t <= 6; t++)
+      for (ep = 1; ep <= (t == 6 ? 10 : porTemp[t - 1]); ep++)
+        for (i = 0; i < 2; i++, total++)
+          k += (size_t)snprintf(maior + k, cap - k,
+                                "%s{\"id\":\"m%d\",\"season\":%d,\"episode\":%d,\"name\":\"M\"}",
+                                total ? "," : "", total, t, ep);
+    snprintf(maior + k, cap - k, "]}}");
+    assert(desc_meta_n_episodios(maior) == 72);
+    addonResp = maior;
+    limparCacheMeta();
+    catalogoCom("tt13293588", "series", "Serie");
+    abrir();
+    assert(cat_n_episodios(0) == 72);
+    assert(cat_item(0)->nTemporadas == 6);
+    puts("ok  addon com mais episodios distintos continua ganhando");
+    addonMeta = 0; cineSerie = NULL; addonResp = NULL;
+    limparCacheMeta();
+    free(cine); free(arq); free(maior);
+  }
   puts("episodiosdup: ok");
   return 0;
 }
