@@ -9,6 +9,8 @@
 - 2017 LG TVs (webOS 3.9) are no longer treated as webOS 4: the version now comes from the TV's own `webos_release` (the same one the log's `[tv]` line shows), so Dolby Vision in MKV, which needs webOS 4, stays off on them.
 - Switching profile and coming back no longer rearranges the Home rows (collections, catalogs, Continue Watching): the other profile's addon catalogs are no longer registered into the profile you return to (#392).
 - Sources labelled only "FHD" or "Full HD" (no "1080" in the name, as some AIOStreams formats write it) are now grouped under 1080p instead of "Other" (#402).
+- **Custom poster URL template is saved again** (#390). Long templates (up to 400 characters) and API keys with uppercase letters are kept as typed; before, anything past 299 characters was cut and the key was lowercased, so the template was rejected without saving. A template whose finished address could not fit is refused when you save it, with a message.
+- Subtitle and audio languages set to "From account" now apply even when this TV has protected local settings, and switching profile no longer carries the previous profile's languages over (#378).
 
 ## Notes
 
