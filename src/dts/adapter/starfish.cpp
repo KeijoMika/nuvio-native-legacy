@@ -35,11 +35,12 @@ struct Native {
     return out != nullptr;
   }
   bool open() {
-    /* RTLD_NODELETE: a sonda roda a cada video e fecha a lib no fim. No
-     * webOS 3 a libplayerAPIs e quem traz GLib/GObject/GStreamer para o
-     * processo, e elas sobem fios ao carregar; o dlclose as descarregava
-     * com os fios rodando e a 2a sonda da sessao caia (SIGSEGV com pc fora
-     * de qualquer modulo, 65SJ800V/OLED55B7P). Carregada uma vez, fica. */
+    /* RTLD_NODELETE: a sonda abria e fechava a lib a cada video. No webOS 3
+     * a 2a sonda da sessao caia (SIGSEGV com pc fora de qualquer modulo,
+     * libgobject/libplayerAPIs na pilha; 65SJ800V/OLED55B7P). Suspeita: o
+     * dlclose descarregava dependencias dela que o processo nao tinha
+     * (GObject, GStreamer e outras; a GLib o video.c ja abre por conta)
+     * com fios delas ainda rodando. Carregada uma vez, fica. */
     lib = dlopen("libplayerAPIs.so", RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
     if (!lib) lib = dlopen("libplayerAPIs.so.1", RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
     if (!lib) {
