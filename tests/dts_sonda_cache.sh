@@ -14,11 +14,24 @@ g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Itests/dts_pipeli
 g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Isrc/dts/adapter -Itests/dts_pipeline_sdk \
   src/dts/adapter/starfish.cpp "$tmp/js.o" -o "$tmp/good/dts-starfish-webos3.so" -ldl -pthread
 cc -std=c11 -Wall -Wextra -Werror -Isrc tests/dts_sonda_cache.c src/dts/dts_pipeline.c -ldl -pthread -o "$tmp/test"
-LD_LIBRARY_PATH="$tmp/native" "$tmp/test" "$tmp/good" > "$tmp/saida" 2>&1
-falhas=$(grep -c 'adapter load failed' "$tmp/saida" || true)
-prontos=$(grep -c 'firmware adapter ready' "$tmp/saida" || true)
-if [ "$falhas" = 1 ] && [ "$prontos" = 1 ]; then
-  echo "PASSA: 5 sondas, 1 tentativa (webos4 falhou 1x, webos3 pronto 1x)"
-else
-  echo "FALHA: 5 sondas carregaram o adaptador de novo (webos4 falhou ${falhas}x, webos3 pronto ${prontos}x)"; exit 1
-fi
+mkdir -p "$tmp/vazia"
+ruim=0
+# conta as linhas "adapter load failed" e "firmware adapter ready" de uma rodada
+rodar() { # nome  webos  sim|nao  pasta  falhas-esperadas  prontos-esperados
+  local nome=$1 webos=$2 quer=$3 pasta=$4 qf=$5 qp=$6 falhas prontos
+  if ! NUVIO_DTS_WEBOS_MAJOR="$webos" LD_LIBRARY_PATH="$tmp/native" "$tmp/test" "$quer" "$pasta" > "$tmp/saida" 2>&1; then
+    echo "FALHA: $nome: o programa recusou"; cat "$tmp/saida"; ruim=1; return
+  fi
+  falhas=$(grep -c 'adapter load failed' "$tmp/saida" || true)
+  prontos=$(grep -c 'firmware adapter ready' "$tmp/saida" || true)
+  if [ "$falhas" = "$qf" ] && [ "$prontos" = "$qp" ]; then echo "ok: $nome (falhou ${falhas}x, pronto ${prontos}x)"
+  else echo "FALHA: $nome: falhou ${falhas}x (esperado $qf), pronto ${prontos}x (esperado $qp)"; ruim=1; fi
+}
+# Cada sonda automatica de verdade tenta o webos4 e depois o webos3.
+rodar "webOS 3, sim guardado: 5 sondas, 1 carga"            3 sim "$tmp/good"  1 1
+rodar "webOS 4, sim guardado: 5 sondas, 1 carga"            4 sim "$tmp/good"  1 1
+rodar "webOS 3, nao guardado: 5 sondas, 1 tentativa"        3 nao "$tmp/vazia" 2 0
+# No webOS 4+ um nao pode ser passageiro: nao desliga o DTS ate reabrir o app.
+rodar "webOS 4, nao NAO guardado: 5 sondas, 5 tentativas"   4 nao "$tmp/vazia" 10 0
+rodar "webOS desconhecido, nao NAO guardado: 5 tentativas"  0 nao "$tmp/vazia" 10 0
+if [ "$ruim" = 0 ]; then echo "PASSA: resposta da sonda guardada como combinado"; else exit 1; fi
