@@ -70,16 +70,41 @@ static int contem(const char *s, const char *termo) {
   return 0;
 }
 
-// "FHD"/"Full HD" como token do name (#402). Nao o "hd" solto do
-// nv_res_do_texto ("DTS-HD" viraria 720), e nao depois de '-': "x265-FHD" e
-// grupo de release, nao resolucao.
+// "FHD"/"Full HD" como ROTULO SOLTO do formatador (#402): AIOStreams e afins
+// escrevem "FHD | REMUX | SDR" ou "FHD \u2022 REMUX". Aceita so se:
+//  - os dois lados sao inicio/fim de linha, espaco, '|', '\u2022' ou '\u00b7'
+//    (nunca '.', '_', '-', '/', '[' — isso e nome de arquivo ou URL);
+//  - e o primeiro rotulo da linha, ou encosta num '|' / bullet (pulando
+//    espaco). "The FHD Story" e frase, nao rotulo;
+//  - o texto nao tem "://".
+// Nao o "hd" solto do nv_res_do_texto ("DTS-HD" viraria 720).
+static int ehSepFhd(const char *a, const char *ini, int antes) {
+  const unsigned char *u = (const unsigned char *)a;
+  if (antes) {
+    if (a == ini || u[-1] == '\n' || u[-1] == ' ' || u[-1] == '\t' || u[-1] == '|') return 1;
+    if (a - ini >= 3 && u[-3] == 0xE2 && u[-2] == 0x80 && u[-1] == 0xA2) return 1;
+    return a - ini >= 2 && u[-2] == 0xC2 && u[-1] == 0xB7;
+  }
+  return !*u || *u == '\n' || *u == ' ' || *u == '\t' || *u == '|' ||
+         (u[0] == 0xE2 && u[1] == 0x80 && u[2] == 0xA2) || (u[0] == 0xC2 && u[1] == 0xB7);
+}
+static int ehRotuloSep(const unsigned char *u) {   // '|' ou bullet comecando em u
+  return *u == '|' || (u[0] == 0xE2 && u[1] == 0x80 && u[2] == 0xA2) ||
+         (u[0] == 0xC2 && u[1] == 0xB7);
+}
 static int fhdNoNome(const char *s) {
-  static const char *const t[] = {"fhd", "fullhd", "full hd", "full-hd", "full.hd"};
+  static const char *const t[] = {"fhd", "fullhd", "full hd", "full-hd"};
+  if (strstr(s, "://")) return 0;
   for (const char *p = s; *p; p++)
     for (size_t i = 0; i < sizeof t / sizeof t[0]; i++) {
       size_t n = strlen(t[i]);
-      if ((p == s || (!isalnum((unsigned char)p[-1]) && p[-1] != '-')) &&
-          !strncasecmp(p, t[i], n) && !isalnum((unsigned char)p[n])) return 1;
+      if (strncasecmp(p, t[i], n) || !ehSepFhd(p, s, 1) || !ehSepFhd(p + n, s, 0)) continue;
+      const char *a = p, *d = p + n;
+      while (a > s && (a[-1] == ' ' || a[-1] == '\t')) a--;
+      while (*d == ' ' || *d == '\t') d++;
+      if (a == s || a[-1] == '\n' || ehRotuloSep((const unsigned char *)d)) return 1;
+      if (a[-1] == '|' || (a - s >= 3 && (unsigned char)a[-1] == 0xA2 && (unsigned char)a[-2] == 0x80) ||
+          (a - s >= 2 && (unsigned char)a[-1] == 0xB7 && (unsigned char)a[-2] == 0xC2)) return 1;
     }
   return 0;
 }
@@ -261,6 +286,13 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
     if ((s.infoHash[0] || !strncmp(s.url, "http", 4)) &&
         strlen(s.url) < sizeof s.url - 1) {
       js_texto(p, fim, "name", s.rotulo, sizeof s.rotulo);
+      // So o name da PROPRIA fonte, inteiro, conta para o FHD (#402): o
+      // rotulo de 192 bytes pode cortar "...FHDx" em "...FHD", e o provedor
+      // entra no lugar do name que falta mais abaixo.
+      int fhd = 0;
+      { char nome[1024];
+        if (js_texto(p, fim, "name", nome, sizeof nome) && strlen(nome) < sizeof nome - 1)
+          fhd = fhdNoNome(nome); }
       js_texto_linhas(p, fim, "description", s.descricao, sizeof s.descricao);
       js_texto_linhas(p, fim, "title", titulo, sizeof titulo);
       js_texto(p, fim, "filename", s.arquivo, sizeof s.arquivo);
@@ -303,9 +335,9 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
       // so como sigla no name ("FHD | REMUX | SDR"). Vale so na FALTA de
       // resolucao escrita em qualquer campo, e so do name: descricao e
       // filename trazem URL ("https://fhd...") e grupo de release ("x265-FHD").
-      // altura 0 ja garante que o texto nao deu nenhum selo r-*: todos os
-      // tokens de resolucao do badges_detectar contem 2160/1080/720 ou 4k/uhd.
-      if (!s.altura && fhdNoNome(s.rotulo)) {
+      // E nunca ao lado de outro selo de resolucao que o badges_detectar ja deu.
+      if (!s.altura && fhd &&
+          !(s.badges & (badges_bit("r-4k") | badges_bit("r-1080") | badges_bit("r-720")))) {
         s.altura = 1080;
         s.badges |= badges_bit("r-1080");
       }
