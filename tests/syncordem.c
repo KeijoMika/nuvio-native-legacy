@@ -179,11 +179,16 @@ static int segurarCol, puxandoCol;
 // legenda, e o que sync.c faz com ele fica anotado (stubs mais abaixo).
 static int modoBlob, blobsAplicados;
 static char idiomasConta[512];
+static const char *legContaValor = "en";   // valor da legenda no proximo blob
+static int idiomasChamadas;
 char *sessao_rpc(const char *funcao, const char *corpo, int *st) {
   *st = 200;
   if (modoBlob && !strcmp(funcao, "sync_pull_profile_settings_blob"))
-    return strdup("[{\"settings_json\":{\"features\":{\"player_settings\":{"
-                  "\"subtitle_preferred_language\":{\"type\":\"string\",\"value\":\"en\"}}}}}]");
+  { char b[256];
+    snprintf(b, sizeof b, "[{\"settings_json\":{\"features\":{\"player_settings\":{"
+             "\"subtitle_preferred_language\":{\"type\":\"string\",\"value\":\"%s\"}}}}}]",
+             legContaValor);
+    return strdup(b); }
   if (modoAddons && !strcmp(funcao, "sync_push_addons")) {
     pthread_mutex_lock(&trava);
     snprintf(ultimoPush, sizeof ultimoPush, "%s", corpo);
@@ -284,7 +289,10 @@ int  addons_exportar(AddonRemoto *s, int m) {
 void agenda_esquecer(void) {}
 void lembrete_esquecer_todos(void) {}
 int  ajustes_aplicar_blob(const char *j) { (void)j; blobsAplicados++; return 0; }
-void ajustes_idiomas_da_conta(const char *b) { snprintf(idiomasConta, sizeof idiomasConta, "%s", b ? b : ""); }
+void ajustes_idiomas_da_conta(const char *b) {
+  idiomasChamadas++;
+  snprintf(idiomasConta, sizeof idiomasConta, "%s", b ? b : "");
+}
 void ajustes_definir_ocultar_nao_lancados(int l) { (void)l; }
 int  ajustes_mesclar_blob(const char *b, char **s) { (void)b; *s = NULL; return 0; }
 void ajustes_tmdb_idioma_relatar(const char *b) { (void)b; }
@@ -512,6 +520,16 @@ int main(int argc, char **argv) {
     confere("blob protegido nao aplicado", blobsAplicados == 0);
     confere("idiomas da conta entregues mesmo protegido",
             strstr(idiomasConta, "subtitle_preferred_language") && strstr(idiomasConta, "\"en\""));
+    // Revisao P2: troca de perfil solta o blob (sync_reaplicar_ajustes) e o
+    // do perfil novo, do MESMO tamanho, tende a cair no mesmo endereco. A
+    // deteccao de "blob novo" pelo ponteiro pulava os idiomas dele.
+    { sync_reaplicar_ajustes();
+      confere("troca de perfil limpa os idiomas da conta", idiomasChamadas >= 2 && !idiomasConta[0]);
+      sync_proteger_ajustes_locais();
+      legContaValor = "pt";
+      ciclo();
+      confere("blob do perfil novo entrega os idiomas dele",
+              strstr(idiomasConta, "\"pt\"") != NULL); }
     printf("%s\n", falhas ? "FALHOU" : "PASSOU");
     return falhas ? 1 : 0;
   }

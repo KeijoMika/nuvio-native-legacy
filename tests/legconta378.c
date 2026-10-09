@@ -86,6 +86,30 @@ int main(void) {
   ajustes_aplicar_blob(blob("none"));
   confere("conta \"none\" sem escolha a mao: nenhuma", liga(legmem_preferencia(ling_legenda(), NULL, "", &origem), emb, 4) == LING_AUTO_NADA);
 
+  printf("-- troca de perfil: A com en/fr/es, B sem as chaves (revisao P2)\n");
+  ling_local_legenda(""); ling_local_legenda2(""); ling_local_audio("");
+  ajustes_idiomas_da_conta("{\"features\":{\"player_settings\":{"
+    "\"subtitle_preferred_language\":\"en\",\"subtitle_secondary_language\":\"fr\","
+    "\"preferred_audio_language\":\"es\"}}}");
+  confere("perfil A: legenda en, secundaria fr, audio es",
+          !strcmp(ling_legenda(), "en") && !strcmp(ling_legenda2(), "fr") && !strcmp(ling_audio(), "es"));
+  ajustes_idiomas_da_conta("{}");
+  confere("blob do B sem as chaves: nada do A sobra",
+          !ling_legenda()[0] && !ling_legenda2()[0] && !ling_audio()[0]);
+  ajustes_idiomas_da_conta("{\"features\":{\"player_settings\":{"
+    "\"subtitle_preferred_language\":\"en\",\"preferred_audio_language\":\"es\"}}}");
+  ajustes_aplicar_blob("{\"features\":{}}");
+  confere("blob APLICADO sem as chaves tambem limpa", !ling_legenda()[0] && !ling_audio()[0]);
+  ajustes_idiomas_da_conta("{\"features\":{\"player_settings\":{"
+    "\"subtitle_preferred_language\":\"en\",\"preferred_audio_language\":\"es\"}}}");
+  ajustes_idiomas_da_conta(NULL);                  // sync_reaplicar_ajustes (troca de perfil)
+  confere("troca de perfil limpa os idiomas da conta antes do blob novo",
+          !ling_legenda()[0] && !ling_audio()[0]);
+  ling_local_audio("de");
+  ajustes_idiomas_da_conta("{}");
+  confere("a escolha local de audio sobrevive a limpeza", !strcmp(ling_audio(), "de"));
+  ling_local_audio("");
+
   printf("%s\n", falhas ? "FALHOU" : "PASSOU");
   return falhas ? 1 : 0;
 }
