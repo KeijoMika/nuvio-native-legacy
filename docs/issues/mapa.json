@@ -1,6 +1,6 @@
 {
  "atualizado_em": "2026-10-09",
- "base": "a740ea73",
+ "base": "21077ab5",
  "nota": "Status: aberta, respondida, consertada-nao-lancada, lancada, por-desenho, fora-do-escopo, precisa-log, duplicada (+ fechada-sem-resposta, usado só em issues fechadas sem nenhum comentário).",
  "itens": [
   {
@@ -6325,7 +6325,7 @@
     "ultima_nossa": "2026-10-07"
    },
    "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
-   "notas": "Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. PERSISTE NA 2.0.3 (09/10): a #392 relata a mesma reordenação ao trocar de perfil em v2.0.3 (.tpk Tizen 6.0); investigação em agente/2031-ordemperfil.",
+   "notas": "Parte na 2.0.2 (b4186acd); 66e6ae9e/26d845c6/abd0770a na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. PERSISTE NA 2.0.3 (09/10): a #392 relata a mesma reordenação ao trocar de perfil em v2.0.3 (.tpk Tizen 6.0); investigação em agente/2031-ordemperfil. Conserto do #392 (2.0.3.1): bb583b60, 9023ebdb em agente/2031-ordemperfil, não integrado.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/294",
    "criada_em": "2026-10-06",
    "alvo": "2.0.3.1"
@@ -6766,7 +6766,7 @@
   {
    "numero": 317,
    "titulo": "App doesn't  open on my LG webOS Tv UK6550PSB",
-   "estado_github": "aberta",
+   "estado_github": "fechada",
    "plataforma": "LG",
    "tipo": "bug",
    "status": "lancada",
@@ -6786,16 +6786,15 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
-   "notas": "LG webOS 4 com pouca RAM; partes na 2.0.2 (0fcfa601, 937f8e6b). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
+   "proximo_passo": "-",
+   "notas": "LG webOS 4 com pouca RAM; partes na 2.0.2 (0fcfa601, 937f8e6b). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. FECHADA no GitHub pelo coordenador em 09/10. Origem: dono 09/10.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/317",
-   "criada_em": "2026-10-07",
-   "alvo": "ja-lancada"
+   "criada_em": "2026-10-07"
   },
   {
    "numero": 318,
    "titulo": "screen flickers and stops responding when pressing OK (android tv)",
-   "estado_github": "aberta",
+   "estado_github": "fechada",
    "plataforma": "Android",
    "tipo": "bug",
    "status": "lancada",
@@ -6815,11 +6814,10 @@
     "ultimo_comentario_por": "mo7AmMeD64",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
-   "notas": "Tudo integrado em 2.0.3. O relator de queda nativa no Android < 12 (c8793c11 em agente/203-318-play) entrou como 142ae407, o mesmo commit com outro hash; tests/queda.sh passa em c3c1032e. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
+   "proximo_passo": "-",
+   "notas": "Tudo integrado em 2.0.3. O relator de queda nativa no Android < 12 (c8793c11 em agente/203-318-play) entrou como 142ae407, o mesmo commit com outro hash; tests/queda.sh passa em c3c1032e. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. FECHADA no GitHub pelo coordenador em 09/10. Origem: dono 09/10.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/318",
-   "criada_em": "2026-10-07",
-   "alvo": "ja-lancada"
+   "criada_em": "2026-10-07"
   },
   {
    "numero": 319,
@@ -7049,11 +7047,11 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "responder (sem resposta nossa)",
-   "notas": "09/10: SUSPEITA de mesma raiz do #372 (temporadas/episódios errados pelo catálogo do Nuvio primeiro, regressão 9677065b), não confirmada; se o conserto de agente/2031-temporadas (2.0.3.1) resolver, vale também aqui. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
+   "proximo_passo": "responder ao autor; reavaliar com a parte 2 do #372 (2.0.4); o conserto de duplicados da 2.0.3 não prova a mesma raiz",
+   "notas": "09/10: SUSPEITA de mesma raiz do #372 (numeração de temporadas/episódios do catálogo do Nuvio primeiro, regressão 9677065b), não confirmada. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. DECISÃO (dono 09/10): mantém a nota de mesma raiz e vai para a 2.0.4 junto da parte 2 do #372 (numeração Cinemeta + camada de tradução). O conserto de episódios duplicados da 2.0.3 (9c5d0027, 7edab4b0) já saiu, mas o autor não o testou e a parte 1 do #372 (2.0.3.1) só mexe nas abas de temporada, então não há base para dizer que a 2.0.3 já fecha o caso. Origem: dono 09/10.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/328",
    "criada_em": "2026-10-07",
-   "alvo": "2.0.3.1"
+   "alvo": "2.0.4"
   },
   {
    "numero": 329,
@@ -7416,17 +7414,21 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "aberta",
-   "release": "-",
-   "conserto": [],
+   "status": "consertada-nao-lancada",
+   "release": "2.0.3.1",
+   "conserto": [
+    "9d78c75a (integracao/2.0.3.1)",
+    "8dd273f3 (integracao/2.0.3.1)",
+    "c9af64b1 (integracao/2.0.3.1)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": null,
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "conserto em andamento em agente/2031-guiabusca; responder com a causa quando o hotfix 2.0.3.1 sair",
-   "notas": "CAUSA PROVADA (09/10) por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, EpgProg ps[24] enquanto epg_faixa/xtepg_faixa devolvem o total). Existe desde a v1.7.0, continua na 2.0.3 e vale para todas as plataformas com o guia. Conserto em agente/2031-guiabusca, alvo 2.0.3.1.",
+   "proximo_passo": "responder com a causa quando o hotfix 2.0.3.1 sair",
+   "notas": "CAUSA PROVADA (09/10) por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, EpgProg ps[24] enquanto epg_faixa/xtepg_faixa devolvem o total). Existe desde a v1.7.0, continua na 2.0.3 e vale para todas as plataformas com o guia. Conserto em agente/2031-guiabusca, alvo 2.0.3.1. Primeira rodada integrada em integracao/2.0.3.1 (merge c9af64b1; teste 9d78c75a falhava com ASan, conserto 8dd273f3); ainda sem tag v*.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/344",
    "criada_em": "2026-10-08",
    "alvo": "2.0.3.1"
@@ -8030,20 +8032,26 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "aberta",
-   "release": "-",
-   "conserto": [],
+   "status": "consertada-nao-lancada",
+   "release": "2.0.3.1",
+   "conserto": [
+    "038a7dc7 (integracao/2.0.3.1)",
+    "c2112b61 (integracao/2.0.3.1)",
+    "a120b67c (integracao/2.0.3.1)",
+    "167310e6 (integracao/2.0.3.1)",
+    "8eb5ce90 (integracao/2.0.3.1)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": null,
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "conserto em andamento em agente/2031-temporadas; responder ao autor com a causa quando o hotfix 2.0.3.1 sair",
-   "notas": "CAUSA PROVADA (09/10): regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo em 1-2 temporadas: Bleach no Nuvio {1:366,2:50} contra S1-16 no Cinemeta) somada a um defeito antigo: as abas de temporada saem do corpo do Nuvio mesmo quando a lista de episódios é a do add-on (descoberta.c ~7069-7087, detail.c ~742-765). O log BZB857 (2.0.3, webOS) prova. A teoria do autor sobre o Trakt está errada. Conserto em agente/2031-temporadas, alvo 2.0.3.1. Relacionado: #328 (episódios duplicados), SUSPEITA de mesma raiz, não confirmada. A parte SIMKL do título não foi tratada.",
+   "proximo_passo": "parte 1 (abas de temporada) sai na 2.0.3.1: responder ao autor com a causa quando sair; parte 2 (numeracao Cinemeta/TVDB + camada de traducao) na 2.0.4; a parte SIMKL do titulo segue sem tratamento",
+   "notas": "CAUSA PROVADA (09/10): regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo em 1-2 temporadas: Bleach no Nuvio {1:366,2:50} contra S1-16 no Cinemeta) somada a um defeito antigo: as abas de temporada saem do corpo do Nuvio mesmo quando a lista de episódios é a do add-on (descoberta.c ~7069-7087, detail.c ~742-765). O log BZB857 (2.0.3, webOS) prova. A teoria do autor sobre o Trakt está errada.  Relacionado: #328 (episódios duplicados), mesma raiz (numeração). A parte SIMKL do título não foi tratada. DECISÃO DO DONO (09/10), duas partes. PARTE 1, conserto na 2.0.3.1: as abas de temporada saem da lista de episódios publicada (não da ficha do Nuvio) e a cauda de enriquecimento do detalhe não repõe abas velhas; integrada em integracao/2.0.3.1 (merge 21077ab5; 038a7dc7, c2112b61, a120b67c, 167310e6, 8eb5ce90), ainda sem tag v*. PARTE 2, 2.0.4, opção (b): lista de episódios na numeração Cinemeta/TVDB mais uma camada de tradução por número absoluto do episódio para o progresso/scrobble do Trakt, a conta Nuvio, o Simkl, os ids de \"a seguir\"/Continuar assistindo e as marcas de visto (vistonao/vistoep). Como a issue tem um alvo só, o alvo é 2.0.4 (parte aberta). Origem: dono 09/10.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/372",
    "criada_em": "2026-10-08",
-   "alvo": "2.0.3.1"
+   "alvo": "2.0.4"
   },
   {
    "numero": 373,
@@ -8327,6 +8335,30 @@
    "alvo": "2.0.4"
   },
   {
+   "numero": 392,
+   "titulo": "Profile switching still rearrange my home screen",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "consertada-nao-lancada",
+   "release": "2.0.3.1",
+   "conserto": [
+    "bb583b60 (agente/2031-ordemperfil)",
+    "9023ebdb (agente/2031-ordemperfil)"
+   ],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "integrar agente/2031-ordemperfil na 2.0.3.1 e responder ao autor com a causa",
+   "notas": "Samsung .tpk Tizen 6.0, v2.0.3 (rawldon, log VV8JG2): ao trocar de perfil e voltar, a ordem das fileiras da Home muda (coleções, catálogos e Continuar assistindo). CAUSA PROVADA pelo log VV8JG2: o build da Home registra os catálogos dos add-ons do perfil anterior no arquivo de ordem do perfil novo, e isso expulsa fileiras. Conserto em agente/2031-ordemperfil (teste bb583b60, conserto 9023ebdb: a lista de add-ons do perfil que saiu não é registrada no arquivo do perfil novo), ainda não integrado. Mesma queixa do #294, que persiste na 2.0.3.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/392",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.3.1"
+  },
+  {
    "numero": 394,
    "titulo": "ASS subtitles: lag on large tracks, shadow/color shift, occasional desync (.tpk)",
    "estado_github": "aberta",
@@ -8402,7 +8434,7 @@
    "notas": "Nada encontrado em commits, docs, notas de release ou issues (buscas por \"80 GB\"/\"80GB\"). Não preencher sem a fonte."
   }
  ],
- "base_roadmap": "a740ea73",
+ "base_roadmap": "21077ab5",
  "roadmap": [
   {
    "release": "2.0.3",
@@ -8412,35 +8444,55 @@
   },
   {
    "release": "2.0.3.1",
-   "situacao": "hotfix em andamento; nada integrado",
+   "situacao": "hotfix em andamento; temporadas (#372 parte 1) e busca do guia (#344, primeira rodada) integradas em integracao/2.0.3.1 (21077ab5), sem tag",
    "descricao": "Hotfix sobre a 2.0.3 (já publicada na tag v2.0.3) com as causas achadas em 09/10.",
    "itens": [
     {
-     "nome": "Temporadas e episódios errados (#372, #328)",
-     "porque": "CAUSA PROVADA: regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo, Bleach {1:366,2:50} contra S1-16 no Cinemeta) e defeito antigo das abas de temporada vindas do corpo do Nuvio mesmo quando a lista do add-on vence (descoberta.c ~7069-7087, detail.c ~742-765). Log BZB857 (2.0.3, webOS). #328 é SUSPEITA de mesma raiz.",
+     "nome": "Temporadas: abas da lista publicada (#372 parte 1)",
+     "porque": "INTEGRADO em integracao/2.0.3.1 (merge 21077ab5; 038a7dc7, c2112b61, a120b67c, 167310e6, 8eb5ce90), sem tag v*. CAUSA PROVADA: regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo, Bleach {1:366,2:50} contra S1-16 no Cinemeta) e defeito antigo das abas de temporada vindas do corpo do Nuvio mesmo quando a lista do add-on vence (descoberta.c ~7069-7087, detail.c ~742-765). Log BZB857 (2.0.3, webOS). A parte 2 (numeração) foi para a 2.0.4. #328 saiu daqui: vai para a 2.0.4.",
      "issues": [
-      372,
-      328
+      372
      ],
-     "origem": "logs dos autores, 09/10",
+     "origem": "logs dos autores, 09/10; decisão do dono 09/10",
      "branches": [
-      "agente/2031-temporadas"
+      "agente/2031-temporadas (integrada)"
      ]
     },
     {
-     "nome": "Queda ao pesquisar na TV ao vivo (#344)",
-     "porque": "CAUSA PROVADA por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, ps[24] com epg_faixa/xtepg_faixa devolvendo o total), desde a v1.7.0, todas as plataformas com o guia.",
+     "nome": "Queda ao pesquisar na TV ao vivo (#344), primeira rodada",
+     "porque": "INTEGRADO em integracao/2.0.3.1 (merge c9af64b1; teste 9d78c75a, conserto 8dd273f3), sem tag v*. CAUSA PROVADA por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, ps[24] com epg_faixa/xtepg_faixa devolvendo o total), desde a v1.7.0, todas as plataformas com o guia.",
      "issues": [
       344
      ],
      "origem": "log do autor, 09/10",
      "branches": [
-      "agente/2031-guiabusca"
+      "agente/2031-guiabusca (integrada)"
+     ]
+    },
+    {
+     "nome": "Ordem da Home ao trocar de perfil (#392, #294)",
+     "porque": "PENDENTE, conserto pronto em branch e não integrado. CAUSA PROVADA pelo log VV8JG2 (.tpk Tizen 6.0, v2.0.3): o build da Home registra os catálogos de add-ons do perfil anterior no arquivo de ordem do perfil novo e expulsa fileiras. Teste bb583b60, conserto 9023ebdb.",
+     "issues": [
+      392,
+      294
+     ],
+     "origem": "log do autor, 09/10",
+     "branches": [
+      "agente/2031-ordemperfil"
+     ]
+    },
+    {
+     "nome": "Queda do webOS 3 na sonda do adaptador DTS",
+     "porque": "PENDENTE, em branch e não integrado: a sonda do adaptador DTS responde uma vez por processo (00b4a937) e a libplayerAPIs fica na memória (RTLD_NODELETE, 65491e7b); a explicação do mecanismo é SUSPEITA, não certeza (1d7264c1). Sem issue no mapa.",
+     "issues": [],
+     "origem": "investigação 09/10",
+     "branches": [
+      "agente/2031-webos3"
      ]
     },
     {
      "nome": "Dolby Vision perfil 5 na LG: decisão pendente (HDR10 ou MP4 primeiro)",
-     "porque": "Duas branches de alternativas; a decisão espera o teste do dono na C9. Entra no hotfix só se for escolhida.",
+     "porque": "Pendente: duas branches de alternativas; a decisão espera o teste do dono na C9. Entra no hotfix só se for escolhida.",
      "issues": [],
      "origem": "dono, 09/10; decisão pendente",
      "branches": [
@@ -8545,6 +8597,25 @@
      "porque": "SUSPEITA, sem conserto. No log do #385 (.tpk, 2.0.2), \"tpk evento 1 (129036)\" vem sempre depois de \"[trailer] ... no fundo com som\" e aparece até sem episódio aberto; no log 1 o evento de duração do trailer chegou depois de \"abrir: url ao pipeline\" e o posplay o leu como duração do episódio (\"duracao suspeita 129s\"). Conferir se os eventos do player do trailer (duração, fim, erro) são descartados ao abrir o episódio. Separado da recusa de conexão do TorBox, que foi bloqueio do nó/IP (conserto da pausa na 2.0.3). Origem: logs do #385, 09/10.",
      "issues": [
       385
+     ]
+    },
+    {
+     "nome": "Numeração de temporadas Cinemeta + camada de tradução (#372 parte 2)",
+     "porque": "Opção (b) escolhida pelo dono: lista de episódios na numeração Cinemeta/TVDB mais uma camada de tradução por número absoluto do episódio para o progresso/scrobble do Trakt, a conta Nuvio, o Simkl, os ids de \"a seguir\"/Continuar assistindo e as marcas de visto (vistonao/vistoep). A parte 1 (abas de temporada) sai na 2.0.3.1. #328 acompanha: mesma raiz suspeita.",
+     "issues": [
+      372,
+      328
+     ],
+     "origem": "dono 09/10",
+     "branches": []
+    },
+    {
+     "nome": "CI com ASan/TSan nos testes de host (+ ASan do app inteiro por candidata a release, helpers de buffer limitado)",
+     "porque": "Alternativa sem Rust do estudo: SANITIZE=1 e SANITIZE=thread nos 152 + 29 testes que já aceitam, falhando o PR; roteiro fixo com ASan no app inteiro por release candidate; helpers de buffer limitado (nv_cpy, nv_slice). Cobre os bugs de memória do ranking a custo de horas, sem tocar em alvo de TV. Referência: docs/plans/rust-piloto.md (\"alternativas sem Rust\", seção 5).",
+     "issues": [],
+     "origem": "dono 09/10",
+     "branches": [
+      "docs/plans/rust-piloto.md"
      ]
     }
    ]
@@ -8653,7 +8724,7 @@
     },
     {
      "nome": "Plano de refatoração geral",
-     "porque": "docs/plans/refatoracao-geral.md (branch agente/refatoracao-plano, 0dc06334): 23 mudanças pequenas, cada uma com porteiro de teste. Fazer depois da 2.0.3 sair e fora da 2.0.4, para não misturar refatoração com os recursos acima. Itens 01-04 (apagar morto, deduplicar Biblioteca) vão melhor junto do redesign da Biblioteca.",
+     "porque": "docs/plans/refatoracao-geral.md (branch agente/refatoracao-plano, 0dc06334): 23 mudanças pequenas, cada uma com porteiro de teste. Fazer depois da 2.0.3 sair e fora da 2.0.4, para não misturar refatoração com os recursos acima. Itens 01-04 (apagar morto, deduplicar Biblioteca) vão melhor junto do redesign da Biblioteca. Ordem com o Rust (dono 09/10): o porte Rust de fonteparalela+streams vem depois do piloto e deve ser coordenado com os itens do plano que tocam streams.c.",
      "issues": [],
      "origem": "suspeita (sugestão do agente, não aprovado)",
      "branches": [
@@ -8668,6 +8739,24 @@
      ],
      "origem": "suspeita (sugestão do agente, não aprovado)",
      "branches": []
+    },
+    {
+     "nome": "Piloto Rust 'mkvcore' (no_std, atrás de -DNV_RUST_MKVCORE, com fallback C) — piloto de toolchain",
+     "porque": "Experimento de toolchain nos 5 alvos com flag por alvo e fallback C (reversível trocando uma variável de build); flag desligada por padrão no primeiro candidato. Estimativa de 3 a 4 semanas, SUSPEITA. Referência: docs/plans/rust-piloto.md (seção 4).",
+     "issues": [],
+     "origem": "dono 09/10",
+     "branches": [
+      "docs/plans/rust-piloto.md"
+     ]
+    },
+    {
+     "nome": "Portar fonteparalela+streams e o publicador do catálogo (se o piloto passar)",
+     "porque": "Só depois do piloto mkvcore passar os guards nos 5 alvos; é onde está o ganho real de Rust segundo o estudo, mas o custo é de meses (SUSPEITA). Coordenar com o plano de refatoração geral, que também mexe em streams.c. Referência: docs/plans/rust-piloto.md (seção 6).",
+     "issues": [],
+     "origem": "dono 09/10",
+     "branches": [
+      "docs/plans/rust-piloto.md"
+     ]
     }
    ]
   },
@@ -8934,18 +9023,6 @@
    "confirmacao": "correcao do texto publicada 09/10; autor nao respondeu"
   },
   {
-   "numero": 317,
-   "resposta": "Glad it opens now! The fix is included in the regular 2.0.3 release, so you don't need the test build anymore. Please reopen if anything breaks.",
-   "confirmado": true,
-   "confirmacao": "o autor confirmou que abre com o build de teste (07/10)"
-  },
-  {
-   "numero": 318,
-   "resposta": "Thanks for testing the build! The fix for the flicker/freeze after pressing OK is in 2.0.3. Please reopen if it comes back.",
-   "confirmado": true,
-   "confirmacao": "o autor testou o teste-318.3 e deu retorno (08/10)"
-  },
-  {
    "numero": 319,
    "resposta": "Thanks for the log! 2.0.3 fixes the home rows not refreshing (rows of switched-off add-ons are now cleaned up properly). Please reopen if it still happens.",
    "confirmado": false,
@@ -9059,7 +9136,7 @@
   },
   {
    "numero": 328,
-   "motivo": "Entra na secao 2.0.3.1 como suspeita da mesma raiz do #372 (lista de episodios do Nuvio primeiro); o commit da 2.0.3 nao cobre a causa provada."
+   "motivo": "Vai para a 2.0.4 com a parte 2 do #372 (numeração Cinemeta + camada de tradução): suspeita de mesma raiz, não confirmada; o commit de duplicados da 2.0.3 não cobre a causa provada. Autor não testou."
   },
   {
    "numero": 341,
@@ -9096,6 +9173,10 @@
   {
    "numero": 356,
    "motivo": "precisa-log: leitura do log T5JF2G indica causa nao coberta pela 2.0.3; precisa de log novo."
+  },
+  {
+   "numero": 392,
+   "motivo": "Conserto em agente/2031-ordemperfil, ainda não integrado nem lançado (2.0.3.1)."
   }
  ]
 }
