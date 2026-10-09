@@ -63,6 +63,11 @@ int main(void) {
   fil_definir_perfil(1);                 // B -> A, account of A not answered yet
   fil_n();                               // loads A's file from disk
   passada("addonB");                     // stale writers: tag still says B
+  { // the Home mirror (home.c) draws the rows built from that stale list
+    static char ks[40][96]; const char *ch[40];
+    for (int i = 0; i < 40; i++) { snprintf(ks[i], sizeof ks[i], "addonB_movie_new%d", i); ch[i] = ks[i]; }
+    fil_espelhar_ordem(ch, ch, 40);
+  }
   fil_gravar_registro();
   fil_teste_recarregar();
 
