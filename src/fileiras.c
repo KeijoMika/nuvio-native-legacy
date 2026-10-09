@@ -776,6 +776,14 @@ unsigned fil_perfil_geracao(void) {
   unsigned g; pthread_mutex_lock(&trava); g = perfilGeracao; pthread_mutex_unlock(&trava); return g;
 }
 
+int fil_lista_e_deste_perfil(int perfilDaLista) {
+  int r;
+  pthread_mutex_lock(&trava);
+  r = perfilDaLista <= 0 || perfilDaLista == perfil;
+  pthread_mutex_unlock(&trava);
+  return r;
+}
+
 void fil_definir_perfil(int p) {
   pthread_mutex_lock(&trava);
   if (p < 0) p = 0;

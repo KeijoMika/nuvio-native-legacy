@@ -3470,10 +3470,19 @@ static int ordenarCandidatos(Decl *decls, int nDecl, int *ordem, int nFixas,
     // conhecidos — a tela de Ajustes precisa deles para dizer de onde a
     // fileira vem. `-1` em itens porque nesta altura nenhum catalogo foi
     // pedido ainda; quem sabe a contagem e home.c.
-    for (k = 0; k < nOrdem && k < FIL_MAX; k++)
-      fil_registrar(decls[ordem[k]].chave, decls[ordem[k]].titulo,
-                    decls[ordem[k]].nomeAddon, decls[ordem[k]].tipo, -1);
-    fil_gravar_registro();
+    // #392: so com a lista de addons DESTE perfil. Logo depois de uma troca a
+    // lista ainda e a do perfil que saiu (a conta responde alguns segundos
+    // depois); registra-la despejava as fileiras do perfil novo e acrescentava
+    // as do outro ("a ordem da Home muda quando volto ao principal").
+    if (fil_lista_e_deste_perfil(addons_perfil_da_lista())) {
+      for (k = 0; k < nOrdem && k < FIL_MAX; k++)
+        fil_registrar(decls[ordem[k]].chave, decls[ordem[k]].titulo,
+                      decls[ordem[k]].nomeAddon, decls[ordem[k]].tipo, -1);
+      fil_gravar_registro();
+    } else {
+      printf("[fileiras] lista de addons ainda e de outro perfil: nada registrado\n");
+      fflush(stdout);
+    }
   }
 
   // TETO DE FILEIRAS: o numero escolhido em Ajustes (7 de fabrica),

@@ -186,6 +186,7 @@ int   fil_linha_oculta(int i)              { (void)i; return 0; }
 int   fil_linha_tipo(int i)                { (void)i; return FIL_TIPO_AUTO; }
 int   fil_linha_tam(int i)                 { (void)i; return FIL_TAM_PADRAO; }
 void  fil_gravar_registro(void)            { }
+int   fil_lista_e_deste_perfil(int p)       { (void)p; return 1; }
 int   fil_podar_catalogos(const char *const *ids, const char *const *bases, int n,
                           int perfilDaLista) {
   (void)ids; (void)bases; (void)n; (void)perfilDaLista; return 0; }
