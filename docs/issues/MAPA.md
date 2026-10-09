@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 375 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 376 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -104,7 +104,7 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 |---|---|---|
 | 2.0.3 | 5 | #246, #280, #283, #334, #356 |
 | 2.0.4 | 6 | #294, #344, #378, #390, #392, #402 |
-| 2.0.5 | 48 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #379, #382, #385, #386, #387, #388, #393, #394, #400, #401, #403, #404, #405, #406, #407 |
+| 2.0.5 | 49 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #379, #382, #385, #386, #387, #388, #393, #394, #400, #401, #403, #404, #405, #406, #407, #410 |
 | 2.1 | 4 | #250, #333, #374, #397 |
 | 2.2 | 0 |  |
 | futuro | 8 | #135, #260, #304, #342, #343, #347, #348, #389 |
@@ -184,7 +184,7 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 268 |
-| aberta | 33 |
+| aberta | 34 |
 | respondida | 24 |
 | consertada-nao-lancada | 17 |
 | por-desenho | 14 |
@@ -198,7 +198,7 @@ Por release (grupo de planejamento):
 | Grupo | Qtd |
 |---|---|
 | lançadas em tag v* (qualquer versão) | 268 |
-| sem release | 83 |
+| sem release | 84 |
 | 2.0.5 (branches) | 11 |
 | 2.0.3 lançada, com pendência | 5 |
 | futuro (2.1/2.2) | 5 |
@@ -206,8 +206,8 @@ Por release (grupo de planejamento):
 
 Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18, 2.0.3: 35.
 
-Abertas no GitHub: 106. Fechadas: 269.
-Abertas sem nenhum comentário nosso: 56.
+Abertas no GitHub: 107. Fechadas: 269.
+Abertas sem nenhum comentário nosso: 57.
 
 ## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)
 
@@ -291,7 +291,7 @@ Notas:
 
 ## Aberta sem plano
 
-47 issues.
+48 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -342,6 +342,7 @@ Notas:
 | [#405](https://github.com/iqui27/nuvio-native-legacy/issues/405) | Quick search doesn't list all results | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | ler o log ABB125 e comparar a busca rapida (canal -) com a busca do menu para "Silo" |
 | [#406](https://github.com/iqui27/nuvio-native-legacy/issues/406) | Passing through ratings on title page | Samsung .tpk | feature | aberta | - | 2.0.5 | - | sem comentários | decidir com o dono: notas da pagina do titulo como um bloco so na navegacao vertical |
 | [#407](https://github.com/iqui27/nuvio-native-legacy/issues/407) | Top menu open when scrolling up on the title page | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | reproduzir no .tpk: cima a partir do Play na pagina do titulo abre o menu do topo (o mesmo |
+| [#410](https://github.com/iqui27/nuvio-native-legacy/issues/410) | Settings interface lower resolution; glass, depth, edge glow | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relev |
 
 Notas:
 
@@ -379,6 +380,7 @@ Notas:
 - **#405**: mackojanko, QE65Q80A, 2.0.3: a busca rapida nao mostra Silo (2023); a busca do menu mostra. Log ABB125. Sem causa ainda.
 - **#406**: mackojanko: subir/descer na pagina do titulo passa nota por nota; pede que as notas sejam um bloco unico.
 - **#407**: mackojanko, QE65Q80A, 2.0.3: acima do Play o foco abre o menu do topo; ele acha que nao deveria abrir. Sem log.
+- **#410**: Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor.
 
 ## Já lançado
 
@@ -881,6 +883,10 @@ Quem validou o quê, em que ref, com que resultado e onde está a prova; mais re
 
 | Data | Quem | O que | Issues | Ref | Resultado | Evidência |
 |---|---|---|---|---|---|---|
+| 2026-10-09 20:40 | Codex gpt-6-astra (revisão estática) | OpenSubtitles "sem resposta": versão só-leitura, rodadas 2 e 3 | - | agente/204-sostream | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/sostream2-codex.txt e sostream3-codex.txt (P2 de leitura sem sincronização e 200 vazio corrigidos; último P2 = republicação pela descoberta, corrigido com atômico em fonte; limite documentado: sonda terminando depois do resumo) |
+| 2026-10-09 20:35 | Claude Opus 5.5 (sessão de coordenação) | Teste do add-on só de legenda com a sonda terminando no meio da busca (reproduz "OpenSubtitles v3 não respondeu" da TCL) | - | ee2c64eb (FAIL) -> agente/204-sostream (PASS) | passou | tests/addonslista.sh: 2 pedidos de stream e motivo "OpenSubtitles v3 não respondeu" antes; 1 pedido e motivo vazio depois; autoplay_alvo e addonurl rc=0 |
+| 2026-10-09 20:30 | Codex gpt-6-astra (pesquisa) | Estudo do app oficial NuvioTV Android 1.1.0-beta.5 (add-ons, plugins, ordem das fontes, player, abertura, HDR) | #400 | NuvioMedia/NuvioTV 6adf0251; APK sha256 09865e1a… | passou | /Volumes/ExternalSSD/tmp/nuvio-oficial/relatorio.md (oficial preserva a ordem interna do add-on; não recria a superfície no HDR; buffer padrão 50 s; plugins até 10 scrapers) |
+| 2026-10-09 20:20 | Codex gpt-6-astra (revisão estática) | OpenSubtitles "sem resposta": 1a versão (manifesto lido no fio da busca) | - | 4f5780ba (agente/204-sostream, descartado) | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/sostream-codex.txt (P1 corrida no parser do manifesto; P2 tentativa em andamento; P2 cancelamento) |
 | 2026-10-09 19:40 | Claude Opus 5.5 (sessão de coordenação) | Logs da KM7 SE do relato do Reddit (15 sessões) e contagem de quedas nativas no Android por versão (D1 ids 62000..66300) | - | v2.0.2 e v2.0.3 (Android) | inconclusivo | D1 66008/66017 (ExoPlayer AudioTrack.getTimestamp), 65736 (GC da ART); Android geral: 2.0.2 70/391 e 219/1192 com queda, 2.0.3 25/400; KM7: 2.0.2 4/49, 2.0.3 5/13; arquivos em /Volumes/ExternalSSD/tmp/km7 |
 | 2026-10-09 19:30 | Claude Opus 5.5 (sessão de coordenação) | Busca da sessão da LG 32LJ600B (webOS 3) do relato do Reddit no D1 | - | v2.0.3 (webOS) | inconclusivo | D1 id>64500: nenhuma linha com LJ600; webOS 3.9.3 na 2.0.3: 65SJ800V (65304, 65363, 65374 arranque queda), OLED55B7P (65317), 49UJ6300 (66016) |
 | 2026-10-09 19:25 | Claude Opus 5.5 (sessão de coordenação) | Instalação da 2.0.4 (com KM7, consertos do #408) na TCL e na C9: abre, linha [tv] app=2.0.4, sem queda | - | APK de 06419b6b; ipk de bed3534c | passou | TCL logcat: "[player] recriar superficie no HDR: sim" (TCL segue recriando); C9 /tmp/nuvio.log: OLED65C9PSA webos-4.10.2 app=2.0.4, 0 SIGSEGV |
