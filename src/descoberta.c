@@ -6250,16 +6250,85 @@ int desc_meta_tem_temporadas(const char *corpo) {
   return 0;
 }
 
-// Quantos videos com temporada > 0 a resposta do /meta traz.
-int desc_meta_n_episodios(const char *corpo) {
+// CONJUNTO DE (temporada, episodio) JA VISTOS num videos[]. Um addon de FONTES
+// pode responder o /meta com um video por ARQUIVO de torrent (relato de TV LG,
+// Breaking Bad: 18529 entradas para 62 episodios), entao contar e cortar tem de
+// ser sobre episodios DISTINTOS. Enderecamento aberto, dobra ao passar de meia
+// carga: O(n) no corpo inteiro. Memoria pelos pares DISTINTOS, nao pelas
+// entradas: 8 KiB (1024 casas) ate 511 pares, o caso do relato (62); 18 mil
+// pares distintos chegam a 512 KiB, com 768 KiB no instante da copia.
+typedef struct { unsigned long long *v; unsigned cap, n; } EpSet;
+
+static unsigned epSetCasa(const EpSet *s, unsigned long long k) {
+  unsigned i = (unsigned)((k * 0x9E3779B97F4A7C15ull) >> 40) & (s->cap - 1);
+  while (s->v[i] && s->v[i] != k) i = (i + 1) & (s->cap - 1);
+  return i;
+}
+
+// 1 = par novo (entrou); 0 = repetido. A chave e procurada ANTES de crescer:
+// faltar memoria para a tabela maior nao pode transformar em "novo" um par que
+// ja esta nela. Sem crescer, os pares novos seguem entrando ate sobrar uma casa
+// vazia (a que encerra a sondagem); so dai em diante o par que nao coube
+// responde "novo" sem ser guardado — o pior caso e o de antes do conjunto.
+static int epSetNovo(EpSet *s, int t, int e) {
+  unsigned long long k = ((unsigned long long)(unsigned)t << 32) | (unsigned)e;
+  unsigned i;
+  if (!s->v) {
+    s->cap = 1024; s->n = 0;
+    s->v = calloc(s->cap, sizeof *s->v);
+    if (!s->v) return 1;
+  }
+  i = epSetCasa(s, k);
+  if (s->v[i]) return 0;
+  if (s->n * 2 >= s->cap) {
+    EpSet g = { calloc((size_t)s->cap * 2, sizeof *s->v), s->cap * 2, s->n };
+    if (g.v) {
+      unsigned j;
+      for (j = 0; j < s->cap; j++)
+        if (s->v[j]) g.v[epSetCasa(&g, s->v[j])] = s->v[j];
+      free(s->v);
+      *s = g;
+      i = epSetCasa(s, k);
+    } else if (s->n + 2 > s->cap) return 1;   // cheia: fica a casa vazia
+  }
+  s->v[i] = k; s->n++;
+  return 1;
+}
+
+// Quantos episodios DISTINTOS (temporada > 0) a resposta do /meta traz; em
+// `brutos` (opcional), quantos videos com temporada > 0, repeticoes incluidas.
+// Video sem numero de episodio nao e repeticao de outro (regra do #328): cada
+// um conta.
+static int metaContarEpisodios(const char *corpo, int *brutos) {
   const char *v = corpo ? js_array(corpo, NULL, "videos") : NULL;
-  int n = 0;
+  EpSet set = { 0 };
+  int n = 0, b = 0;
   while (v) {
     const char *f = js_fim(v);
-    if (videoTemporada(v, f) > 0) n++;
+    int t = videoTemporada(v, f);
+    if (t > 0) {
+      int e = (int)js_num(v, f, "episode", 0);
+      b++;
+      if (e <= 0 || epSetNovo(&set, t, e)) n++;
+    }
     v = js_prox(f);
   }
+  free(set.v);
+  if (brutos) *brutos = b;
   return n;
+}
+
+int desc_meta_n_episodios(const char *corpo) { return metaContarEpisodios(corpo, NULL); }
+
+// O videos[] e uma lista de ARQUIVOS, nao de episodios? Em media mais de tres
+// entradas por episodio so acontece em addon de fontes (o agregador de anime
+// do #328 repete uma ou duas vezes). Lista pequena nunca e.
+// Ser lista de arquivos NAO descarta o corpo por si so: ele perde o empate e a
+// preferencia pela ficha do addon, e so e recusado quando nao conhece MAIS
+// episodios distintos que a lista com que disputa (episodiosDoAddon,
+// episodiosDoCatalogo).
+static int metaListaDeArquivos(int distintos, int brutos) {
+  return brutos >= 60 && brutos > distintos * 3;
 }
 
 // Em par com CAT_EP_MAX (catalogo.c): um titulo que caiba no store nao pode
@@ -6271,15 +6340,21 @@ int desc_meta_n_episodios(const char *corpo) {
 static int parsearEpisodios(const char *corpo, CatEp *eps, int max) {
   int n = 0;
   const char *p = js_array(corpo, NULL, "videos");
+  EpSet set = { 0 };
   while (p && n < max) {
     const char *f = js_fim(p);
     int t = videoTemporada(p, f);
-    if (t > 0) {
+    int ne = t > 0 ? (int)js_num(p, f, "episode", 0) : 0;
+    // Repeticao sai JA AQUI, antes do corte de `max`: descartada so depois de
+    // ordenar, as 1200 vagas iam para copias dos primeiros episodios e o resto
+    // da serie nem era lido. Fica o primeiro da resposta; sem numero de
+    // episodio nao e repeticao.
+    if (t > 0 && (ne <= 0 || epSetNovo(&set, t, ne))) {
       CatEp *e = &eps[n];
       char d[24] = "";
       memset(e, 0, sizeof *e);
       e->temporada = t;
-      e->episodio = (int)js_num(p, f, "episode", 0);
+      e->episodio = ne;
       js_texto(p, f, "name", e->nome, sizeof e->nome);
       // O id do video (cat_id_stream): e ele que se manda aos addons de fonte
       // quando o titulo nao e do IMDb. Addon que usa "title" no lugar de "name"
@@ -6302,6 +6377,7 @@ static int parsearEpisodios(const char *corpo, CatEp *eps, int max) {
     }
     p = js_prox(f);
   }
+  free(set.v);
   for (int i = 1; i < n; i++) {
     CatEp k = eps[i];
     int j;
@@ -6442,19 +6518,45 @@ static int episodiosDoAddon(int alvoItem, const char *serie, const char *titulo,
                             const char *corpoCine, int nCine, int aplicar, TempsPub *tp) {
   char *melhorCorpo = NULL;
   const char *melhorNome = "";
-  int melhor = 0, i, n = addons_n(), usouTexto = 0;
+  int melhor = 0, melhorArq = 0, i, n = addons_n(), usouTexto = 0;
   for (i = 0; i < n; i++) {
     char *c2 = metaDoAddon(i, "series", serie);
-    int n2;
+    int n2, brutos = 0, arq;
     if (!c2) continue;
-    n2 = desc_meta_n_episodios(c2);
-    if (n2 > melhor) {
+    // Episodios DISTINTOS: pela contagem bruta, a lista de arquivos de um addon
+    // de fontes (18529 "episodios" contra 62) ganhava de qualquer lista real.
+    n2 = metaContarEpisodios(c2, &brutos);
+    arq = metaListaDeArquivos(n2, brutos);
+    // LISTA DE ARQUIVOS SO ENTRA SE SOUBER MAIS EPISODIOS que o Cinemeta (20 em
+    // 4 variantes contra 12: os 8 a mais nao se perdem). No empate ou com menos
+    // ela nao serve nem de lista nem de texto: o "nome" dela e nome de arquivo.
+    if (arq && n2 <= nCine) {
+      printf("[desc] %s: %s respondeu %d videos para %d episodios (lista de arquivos) "
+             "contra %d do Cinemeta; nao serve de lista de episodios\n",
+             titulo, addons_nome(i), brutos, n2, nCine);
+      fflush(stdout);
+      free(c2);
+      continue;
+    }
+    // Entre addons, mais episodios ganha; no empate, a lista de verdade tira a
+    // de arquivos.
+    if (n2 > melhor || (n2 == melhor && melhorArq && !arq)) {
       free(melhorCorpo);
-      melhorCorpo = c2; melhor = n2; melhorNome = addons_nome(i);
+      melhorCorpo = c2; melhor = n2; melhorArq = arq; melhorNome = addons_nome(i);
     } else free(c2);
   }
   if (!melhorCorpo) return 0;
-  if (melhor > nCine || (aplicar && melhor >= nCine)) {
+  if (melhorArq) {
+    // So chegou aqui por saber MAIS episodios. A lista e dela; o texto nao:
+    // o nome do Cinemeta entra por cima nos episodios que os dois tem, e o
+    // texto do addon nao conta como aplicado (o TMDB segue podendo traduzir).
+    printf("[desc] %s: %s tem %d episodios (lista de arquivos) contra %d do Cinemeta; "
+           "usando a lista do addon com os nomes do Cinemeta\n",
+           titulo, melhorNome, melhor, nCine);
+    fflush(stdout);
+    publicarEpisodios(melhorCorpo, alvoItem, titulo, corpoCine, DESC_MESCLA_TEXTO, tp);
+    arte_reserva_episodios(serie, melhorCorpo);
+  } else if (melhor > nCine || (aplicar && melhor >= nCine)) {
     printf("[desc] %s: %s tem %d episodios contra %d do Cinemeta; usando a lista do addon\n",
            titulo, melhorNome, melhor, nCine);
     fflush(stdout);
@@ -6884,20 +6986,52 @@ static void completarFicha(CatItem *d, const MetaFontes *mf, const char *tipo) {
 // nela, a da primeira fonte que tem. Mescla episodio a episodio (still, data,
 // duracao, so vazios) apenas quando as duas listas falam o mesmo id — IMDb.
 // Devolve 1 quando os episodios publicados sao de um addon (o TMDB, depois, so
-// preenche o que faltar neles).
+// preenche o que faltar neles). Lista de ARQUIVOS mantida devolve 0: o nome
+// dela nao e texto que valha proteger da traducao.
 static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *serie,
                                const MetaFontes *mf, TempsPub *tp) {
-  int i, fonte = -1, outro = -1;
-  for (i = 0; i < mf->n; i++)
-    if (desc_meta_n_episodios(mf->corpo[i]) > 0) { if (fonte < 0) fonte = i; else if (outro < 0) outro = i; }
+  int i, fonte = -1, outro = -1, mesmoId = idbase_e_imdb(serie);
+  int nEp[META_FONTES_MAX], arq[META_FONTES_MAX];
+  for (i = 0; i < mf->n; i++) {
+    int brutos = 0;
+    nEp[i] = metaContarEpisodios(mf->corpo[i], &brutos);
+    arq[i] = metaListaDeArquivos(nEp[i], brutos);
+    if (nEp[i] > 0 && fonte < 0) fonte = i;
+  }
   if (fonte < 0) return 0;
+  // LISTA DE ARQUIVOS NA BASE (addon de fontes que tambem publica catalogo): a
+  // base manda no texto da ficha, mas a lista dela so fica quando conhece MAIS
+  // episodios distintos que as outras fontes. Senao vale a maior lista de
+  // verdade. So entre listas do mesmo espaco de ids (item do IMDb): "kitsu:1"
+  // e uma temporada, e a serie inteira do Cinemeta nao a substitui.
+  if (arq[fonte] && mesmoId) {
+    int melhor = -1;
+    for (i = 0; i < mf->n; i++)
+      if (i != fonte && !arq[i] && nEp[i] >= nEp[fonte] && (melhor < 0 || nEp[i] > nEp[melhor]))
+        melhor = i;
+    if (melhor >= 0) {
+      printf("[desc] %s: %s respondeu uma lista de arquivos com %d episodios; "
+             "usando os %d de %s\n", titulo, mf->nome[fonte], nEp[fonte], nEp[melhor],
+             mf->nome[melhor]);
+      fflush(stdout);
+      fonte = melhor;
+    }
+  }
   // Mesmo espaco de ids: a lista do IMDb (Cinemeta) sobre uma de addon so faz
-  // sentido quando o item tambem e do IMDb.
-  if (outro >= 0 && !(idbase_e_imdb(serie) && mf->cine[outro])) outro = -1;
+  // sentido quando o item tambem e do IMDb. Procura o Cinemeta entre TODAS as
+  // outras fontes: parar na primeira com episodios deixava a lista sem
+  // complemento quando havia outro addon no meio.
+  for (i = 0; mesmoId && i < mf->n && outro < 0; i++)
+    if (i != fonte && nEp[i] > 0 && mf->cine[i]) outro = i;
+  // Lista de arquivos que ficou (sabe mais episodios): o nome dela e nome de
+  // arquivo, entao o do Cinemeta entra por cima nos episodios que os dois tem.
   publicarEpisodios(mf->corpo[fonte], alvoItem, titulo,
-                    outro >= 0 ? mf->corpo[outro] : NULL, DESC_MESCLA_VAZIOS, tp);
+                    outro >= 0 ? mf->corpo[outro] : NULL,
+                    arq[fonte] ? DESC_MESCLA_TEXTO : DESC_MESCLA_VAZIOS, tp);
   arte_reserva_episodios(serie, mf->corpo[fonte]);
-  return !mf->cine[fonte];
+  // Lista de arquivos nao e "texto do addon" (como em episodiosDoAddon): com 1
+  // o TMDB so preencheria vazios e os nomes de arquivo que sobraram ficariam.
+  return !mf->cine[fonte] && !arq[fonte];
 }
 
 // PRE-BUSCA QUE CEDE. O fio de episodios e um so (epItem, epAlvoId...): uma
@@ -7038,6 +7172,10 @@ static void *buscarEps(void *u) {
     // TMDB divide a serie em outras temporadas (One Piece), e por elas que o
     // still do TMDB e achado (artereserva.h).
     arte_reserva_episodios(serie, corpo);
+    // A disputa e de distintos contra distintos, os dois do corpo INTEIRO: o
+    // nCine publicado para em VIDEOS_MAX, e contra ele uma lista com os mesmos
+    // 1300 episodios "sabia mais" (1300 > 1200).
+    if (nCine >= VIDEOS_MAX) nCine = desc_meta_n_episodios(corpo);
     epsDoAddon = episodiosDoAddon(alvoItem, serie, it->titulo, corpo, nCine, aplicar, &tp);
   }
   // O MAPA DE EPISODIOS VISTOS NAO E PEDIDO AQUI, e essa linha existe para dizer
