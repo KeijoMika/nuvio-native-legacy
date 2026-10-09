@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 static int fails;
 #define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); fails++; } } while (0)
 static void grava(const char *caminho, const char *txt) {
@@ -32,7 +34,7 @@ int main(int argc, char **argv) {
   // sem nyx: starfish
   CHECK(com(d, NULL, "Rockhopper release 5.1.0-2 (x)\n") == 5);
   CHECK(!strcmp(nv_webos_fonte(), "starfish"));
-  CHECK(!strncmp(nv_webos_starfish_linha(), "Rockhopper release 5", 20));
+  { char l[64]; nv_webos_starfish_linha(l, sizeof l); CHECK(!strncmp(l, "Rockhopper release 5", 20)); }
   // nyx malformado cai no starfish
   CHECK(com(d, "{\"webos_release\":null}", "x release 4.5.1\n") == 4);
   // nenhum dos dois: desconhecida
@@ -94,6 +96,18 @@ int main(int argc, char **argv) {
   CHECK(nv_webos_major() == 0);
 #endif
   { char l[64]; com(d, NULL, "Rockhopper release 5.1.0\n"); nv_webos_starfish_linha(l, sizeof l); CHECK(!strncmp(l, "Rockhopper", 10)); }
+  { // erro de leitura (diretorio onde devia haver arquivo): desconhecida e NAO guardada
+    char dir[300], arq[300];
+    snprintf(dir, sizeof dir, "%s/os_info.json", d);
+    snprintf(arq, sizeof arq, "%s/starfish-release", d);
+    remove(dir); remove(arq);
+    mkdir(dir, 0700);
+    nv_webos_testar(dir, arq);
+    CHECK(nv_webos_major() == 0);
+    rmdir(dir);
+    grava(dir, "{\"webos_release\":\"3.9.3\"}");
+    CHECK(nv_webos_major() == 3);        // sem nv_webos_testar: tentou de novo
+  }
   if (!fails) puts("webosver ok");
   return fails != 0;
 }

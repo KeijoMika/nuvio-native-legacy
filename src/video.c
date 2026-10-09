@@ -723,7 +723,9 @@ static int webosMaior(void) {
   v = nv_webos_major();
   if (!lido) {
     lido = 1;
-    printf("[video] starfish-release: %s\n", nv_webos_starfish_linha()[0] ? nv_webos_starfish_linha() : "(sem arquivo)");
+    char sf[128];
+    nv_webos_starfish_linha(sf, sizeof sf);
+    printf("[video] starfish-release: %s\n", sf[0] ? sf : "(sem arquivo)");
     printf("[video] webos major=%d fonte=%s\n", v, nv_webos_fonte());
     fflush(stdout);
   }
@@ -2663,13 +2665,15 @@ static int dtsLiberadoNestaTv(void) {
 // Dolby Vision in MKV: the Settings option, then what this TV can do. webOS 3
 // is out (no proof of the BUFFERSTREAM audio path there); two app deaths with
 // the path open turn it off on this TV, the same counter as DTS conversion.
+// webOS 3 fica fora; desconhecida chega aqui ja como o chute do webosMaior().
+static int dvVersaoLiberada(int maior) { return maior >= 4; }
 static int dvLiberadoNestaTv(void) {
   int forcado = 0;
 #ifdef NV_DTS_DEBUG
   forcado = access("/tmp/nuvio-dv-forcar", F_OK) == 0;
 #endif
   if (!dts_playback_enabled() || (!ajustes_dv_mkv() && !forcado)) return 0;
-  if (webosMaior() < 4) {
+  if (!dvVersaoLiberada(webosMaior())) {
     printf("[dv] Dolby Vision in MKV unavailable on webOS %d\n", webosMaior()); fflush(stdout);
     return 0;
   }
