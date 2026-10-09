@@ -5,13 +5,13 @@ import json,os,re,collections,sys
 D=os.path.dirname(os.path.abspath(__file__))
 J=json.load(open(os.path.join(D,'mapa.json')))
 R=J['itens']
-ALVOS=('2.0.3','2.0.3.1','2.0.4','2.1','2.2','futuro','nao vamos fazer','ja-lancada')
+ALVOS=('2.0.3','2.0.4','2.0.5','2.1','2.2','futuro','nao vamos fazer','ja-lancada')
 def valida():
     # falha alto: issue ABERTA sem alvo valido nao gera o mapa
     ruins=[f"#{r['numero']} ({r.get('alvo','<sem alvo>')})" for r in R if r['estado_github']=='aberta' and r.get('alvo') not in ALVOS]
     if ruins: sys.exit('ERRO: issue aberta sem alvo valido (use '+', '.join(ALVOS)+'): '+', '.join(ruins))
     nr={x['release'] for x in J['roadmap']}
-    for a in ('2.0.3','2.0.3.1','2.0.4','2.1','2.2','futuro','nao vamos fazer'):
+    for a in ('2.0.3','2.0.4','2.0.5','2.1','2.2','futuro','nao vamos fazer'):
         if a not in nr: sys.exit('ERRO: roadmap sem a secao '+a)
     for r in R:
         if r['estado_github']=='aberta' and r['alvo']=='2.0.3' and r['status']=='aberta': sys.exit(f"ERRO: #{r['numero']} alvo 2.0.3 mas sem conserto (status aberta)")
@@ -30,6 +30,7 @@ def grupo(r):
     s,rel=r['status'],r['release']
     if s!='lancada' and rel.startswith('2.0.3'): return '203'
     if rel.startswith('2.0.4'): return '204'
+    if rel.startswith('2.0.5'): return '205'
     if rel.startswith(('2.1','2.2','futuro')) and s not in ('lancada','duplicada'): return 'fut'
     if s=='lancada': return 'ok'
     if r['estado_github']=='aberta': return 'sem'
@@ -52,14 +53,14 @@ def notas(rs):
     ls=[f"- **#{r['numero']}**: {r['notas']}" for r in rs if r['notas']]
     return ('\n\nNotas:\n\n'+'\n'.join(ls)) if ls else ''
 L=[]
-L.append(f"# Mapa vivo das issues\n\nBase: `{J['base']}` (integracao/2.0.3.1; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em {J['atualizado_em']}. {len(R)} issues (abertas e fechadas) de iqui27/nuvio-native-legacy.\n")
+L.append(f"# Mapa vivo das issues\n\nBase: `{J['base']}` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em {J['atualizado_em']}. {len(R)} issues (abertas e fechadas) de iqui27/nuvio-native-legacy.\n")
 L.append("""## Como atualizar
 
 1. Chegou issue nova, ou um conserto entrou numa branch/tag: edite **uma** entrada em `docs/issues/mapa.json` (procure por `"numero": N`) e rode `python3 docs/issues/mapa.py`, que valida e reescreve este arquivo. Sem o script, edite a linha equivalente aqui.
-2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.3.1`, `2.0.4`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json.
+2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4` = hotfix em integracao/2.0.3.1, `2.0.5 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.4`, `2.0.5`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json.
 3. Vocabulário de `status`: `aberta`, `respondida`, `consertada-nao-lancada`, `lancada`, `por-desenho`, `fora-do-escopo`, `precisa-log`, `duplicada`. Extra: `fechada-sem-resposta` (issue fechada sem nenhum comentário).
 4. Regra de honestidade: só vale `consertada-nao-lancada`/`lancada` com commit na ref. "Lançado" = commit contido numa tag `v*`. Sem commit, escreva "suspeita" ou "sem commit" em `conserto`/`notas`. "Lançada" em issue antiga sem commit com `#N` quer dizer: a nossa resposta cita uma versão que existe como tag (ver nota na linha).
-5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4, não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
+5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4 (o plano que hoje é a 2.0.5; a linha 2.0.3.1 é que saiu como 2.0.4), não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
 6. Próximo passo "postar correção": há rascunhos em `/Volumes/ExternalSSD/tmp/203-respostas-correcao.md` (#302 #350 #286 #312 #368 #360); o dono decide. Correção conhecida: "Dolby Vision in MKV" é DESLIGADO por padrão (a resposta do #312 disse ligado).
 """)
 L.append("## Roadmap\n\nAlvo de cada issue aberta e os recursos por versão. Alvos são decisão de planejamento, não promessa pública; os pontos marcados SUSPEITA não têm confirmação.\n")
@@ -99,7 +100,8 @@ for r in R:
     rel=r['release']
     if r['status']=='lancada': rc['lançadas em tag v* (qualquer versão)']+=1
     elif rel.startswith('2.0.3'): rc['2.0.3 lançada, com pendência']+=1
-    elif rel.startswith('2.0.4'): rc['2.0.4 (branches)']+=1
+    elif rel.startswith('2.0.4'): rc['2.0.4 (hotfix, sem tag)']+=1
+    elif rel.startswith('2.0.5'): rc['2.0.5 (branches)']+=1
     elif rel.startswith(('2.1','2.2','futuro')): rc['futuro (2.1/2.2)']+=1
     else: rc['sem release']+=1
 L.append("\nPor release (grupo de planejamento):\n\n| Grupo | Qtd |\n|---|---|")
@@ -108,7 +110,7 @@ rl=collections.Counter(r['release'] for r in R if r['status']=='lancada')
 L.append("\nLançadas por versão: "+', '.join(f"{k}: {v}" for k,v in sorted(rl.items(),key=lambda kv:vk(kv[0])))+".")
 ab=sum(1 for r in R if r['estado_github']=='aberta'); L.append(f"\nAbertas no GitHub: {ab}. Fechadas: {len(R)-ab}.")
 L.append(f"Abertas sem nenhum comentário nosso: {sum(1 for r in R if r['estado_github']=='aberta' and not r['ultima_resposta']['ultima_nossa'])}.\n")
-sec=[('203','## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)'),('204','## Planejado na 2.0.4 (com branch)'),('fut','## Futuro (2.1, 2.2, depois)'),('sem','## Aberta sem plano'),('ok','## Já lançado'),('fech','## Fechado sem conserto (por-desenho, fora-do-escopo, duplicada, respondida, sem resposta)')]
+sec=[('203','## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)'),('204','## 2.0.4 (hotfix em integracao/2.0.3.1, sem tag)'),('205','## Planejado na 2.0.5 (com branch)'),('fut','## Futuro (2.1, 2.2, depois)'),('sem','## Aberta sem plano'),('ok','## Já lançado'),('fech','## Fechado sem conserto (por-desenho, fora-do-escopo, duplicada, respondida, sem resposta)')]
 for k,t in sec:
     rs=G.get(k,[])
     L.append(f"{t}\n\n{len(rs)} issues.\n")
