@@ -42,18 +42,50 @@ static const char *string(const char *p, const char **ini, const char **fim, int
   }
   return NULL;
 }
-// Pula um valor aninhado ({...} ou [...]) em p; devolve depois dele ou NULL.
-static const char *aninhado(const char *p) {
-  int prof = 0;
-  for (; *p; p++) {
-    if (*p == '"') {
-      const char *a, *b; int e;
-      if (!(p = string(p, &a, &b, &e))) return NULL;
-      p--;
-    } else if (*p == '{' || *p == '[') prof++;
-    else if (*p == '}' || *p == ']') { if (--prof == 0) return p + 1; }
+static int digito(char c) { return c >= '0' && c <= '9'; }
+// Primitivo JSON: true, false, null ou numero valido. Devolve depois dele ou NULL.
+static const char *primitivo(const char *p) {
+  static const char *const lit[] = { "true", "false", "null" };
+  for (int i = 0; i < 3; i++) {
+    size_t n = strlen(lit[i]);
+    if (!strncmp(p, lit[i], n) && !((p[n] >= 'a' && p[n] <= 'z') || digito(p[n]))) return p + n;
   }
-  return NULL;
+  if (*p == '-') p++;
+  if (*p == '0') p++;
+  else if (digito(*p)) while (digito(*p)) p++;
+  else return NULL;
+  if (*p == '.') { if (!digito(*++p)) return NULL; while (digito(*p)) p++; }
+  if (*p == 'e' || *p == 'E') {
+    p++; if (*p == '+' || *p == '-') p++;
+    if (!digito(*p)) return NULL;
+    while (digito(*p)) p++;
+  }
+  return p;
+}
+// Valida e pula um valor JSON inteiro (p ja sem espaco). Cada fechador tem de
+// ser do tipo do abridor; fundo maximo 16 (alem disso: invalido).
+static const char *valor(const char *p, int prof) {
+  if (*p == '"') { const char *a, *b; int e; return string(p, &a, &b, &e); }
+  if (*p == '{' || *p == '[') {
+    char fecha = *p == '{' ? '}' : ']';
+    if (prof >= 16) return NULL;
+    p = pula(p + 1);
+    if (*p == fecha) return p + 1;
+    for (;;) {
+      if (fecha == '}') {
+        const char *a, *b; int e;
+        if (*p != '"' || !(p = string(p, &a, &b, &e))) return NULL;
+        p = pula(p);
+        if (*p++ != ':') return NULL;
+        p = pula(p);
+      }
+      if (!(p = valor(p, prof + 1))) return NULL;
+      p = pula(p);
+      if (*p == ',') { p = pula(p + 1); continue; }
+      return *p == fecha ? p + 1 : NULL;
+    }
+  }
+  return primitivo(p);
 }
 
 int nv_webos_parse_nyx(const char *json) {
@@ -69,7 +101,10 @@ int nv_webos_parse_nyx(const char *json) {
     const char *ki, *kf, *vi, *vf;
     int ke, ve, casa, vv = 0;
     if (*p != '"' || !(p = string(p, &ki, &kf, &ke))) return 0;
-    casa = !ke && (size_t)(kf - ki) == sizeof chave - 1 && !memcmp(ki, chave, sizeof chave - 1);
+    // Chave com barra (\u005f etc.) nao e decodificada: o documento todo vira
+    // desconhecido, para uma duplicata escrita com escape nunca passar batida.
+    if (ke) return 0;
+    casa = (size_t)(kf - ki) == sizeof chave - 1 && !memcmp(ki, chave, sizeof chave - 1);
     p = pula(p);
     if (*p++ != ':') return 0;
     p = pula(p);
@@ -80,11 +115,7 @@ int nv_webos_parse_nyx(const char *json) {
         memcpy(b, vi, (size_t)(vf - vi)); b[vf - vi] = 0;
         vv = versaoMaior(b);
       }
-    } else if (*p == '{' || *p == '[') {
-      if (!(p = aninhado(p))) return 0;
-    } else {
-      while (*p && *p != ',' && *p != '}' && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n') p++;
-    }
+    } else if (!(p = valor(p, 1))) return 0;
     if (casa) {
       if (achou && vv != v) return 0;     // duplicata que nao concorda
       achou = 1; v = vv;
