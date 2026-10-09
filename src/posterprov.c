@@ -165,9 +165,23 @@ static int marcador(const char *p, size_t k) {
   return (k == 6 && !strncmp(p, "{imdb}", 6)) || (k == 6 && !strncmp(p, "{tmdb}", 6)) ||
          (k == 6 && !strncmp(p, "{type}", 6)) || (k == 11 && !strncmp(p, "{tipo_tmdb}", 11));
 }
+// Pior caso de cada marcador montado (posterprov_montar_url): {imdb} vira o
+// Ident.tt (ate 23), {tmdb} um long (ate 19 digitos), {type} "series" (6),
+// {tipo_tmdb} "movie" (5). O modelo que, no pior caso, passaria de PP_URL_MAX
+// e recusado ao salvar — salvo, nunca montaria e o card voltaria em silencio
+// ao cartaz normal (#390).
+#define PP_MAX_IMDB 23
+#define PP_MAX_TMDB 19
+static size_t montado_max(const char *p, size_t k) {
+  if (k == 6 && !strncmp(p, "{imdb}", 6)) return PP_MAX_IMDB;
+  if (k == 6 && !strncmp(p, "{tmdb}", 6)) return PP_MAX_TMDB;
+  if (k == 6) return 6;                                   // {type}: "series"
+  return 5;                                               // {tipo_tmdb}: "movie"
+}
 int posterprov_modelo_valido(const char *modelo) {
   const char *p;
   int achou = 0;
+  size_t pior = 0;
   if (!modelo || strlen(modelo) >= PP_MODELO_MAX) return 0;
   if (strncmp(modelo, "http://", 7) && strncmp(modelo, "https://", 8)) return 0;
   for (p = modelo; *p; p++) {
@@ -176,11 +190,14 @@ int posterprov_modelo_valido(const char *modelo) {
     if (*p == '{') {
       const char *f = strchr(p, '}');
       if (!f || !marcador(p, (size_t)(f - p + 1))) return 0;
+      pior += montado_max(p, (size_t)(f - p + 1));
       achou = 1;
       p = f;
+    } else {
+      pior++;
     }
   }
-  return achou;
+  return achou && pior < PP_URL_MAX;
 }
 
 // ---------------------------------------------------------------- montagem
