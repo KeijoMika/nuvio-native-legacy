@@ -88,6 +88,25 @@ static int ehSepFhd(const char *a, const char *ini, int antes) {
   return !*u || *u == '\n' || *u == ' ' || *u == '\t' || *u == '|' ||
          (u[0] == 0xE2 && u[1] == 0x80 && u[2] == 0xA2) || (u[0] == 0xC2 && u[1] == 0xB7);
 }
+// Prefixo da linha feito so de SIMBOLO/emoji e espaco, e curto (ate 2 simbolos):
+// "\u23f3 FHD", "\u26a1 FHD". So os blocos de simbolo do UTF-8 contam — E2 xx xx
+// (U+2000..U+2FFF: setas, relogios, raios) e F0 9F xx xx (emoji), com EF B8 8F
+// (seletor de variacao) junto. Letra de outro alfabeto (Cirilico D0/D1, CJK
+// E3..E9) e palavra, nao rotulo: "Фильм FHD" e "我的 FHD" continuam frase.
+static int prefixoSoSimbolos(const char *ini, const char *fim) {
+  const unsigned char *u = (const unsigned char *)ini, *f = (const unsigned char *)fim;
+  int simbolos = 0;
+  while (u < f) {
+    if (*u == ' ' || *u == '\t') { u++; continue; }
+    if (f - u >= 3 && u[0] == 0xEF && u[1] == 0xB8 && u[2] == 0x8F) { u += 3; continue; }
+    if (f - u >= 3 && u[0] == 0xE2 && (u[1] & 0xC0) == 0x80 && (u[2] & 0xC0) == 0x80) u += 3;
+    else if (f - u >= 4 && u[0] == 0xF0 && u[1] == 0x9F && (u[2] & 0xC0) == 0x80 &&
+             (u[3] & 0xC0) == 0x80) u += 4;
+    else return 0;
+    if (++simbolos > 2) return 0;
+  }
+  return simbolos > 0;
+}
 static int ehRotuloSep(const unsigned char *u) {   // '|' ou bullet comecando em u
   return *u == '|' || (u[0] == 0xE2 && u[1] == 0x80 && u[2] == 0xA2) ||
          (u[0] == 0xC2 && u[1] == 0xB7);
@@ -111,9 +130,7 @@ static int fhdNoNome(const char *s) {
       // AIOStreams e rotulo; uma palavra ASCII antes ("The FHD") continua frase.
       { const char *ls = a;
         while (ls > s && ls[-1] != '\n') ls--;
-        const char *q = ls;
-        while (q < a && ((unsigned char)*q >= 0x80 || *q == ' ' || *q == '\t')) q++;
-        if (q == a && ls < a) return 1; }
+        if (prefixoSoSimbolos(ls, a)) return 1; }
     }
   return 0;
 }

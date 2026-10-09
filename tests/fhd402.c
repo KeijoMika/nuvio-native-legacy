@@ -93,13 +93,19 @@ int main(void) {
       "{\"url\":\"https://example.invalid/j\",\"name\":\"\xE2\x8F\xB3 FHD\"},"
       "{\"url\":\"https://example.invalid/k\",\"name\":\"\xE2\x9A\xA1 FHD | REMUX\"},"
       "{\"url\":\"https://example.invalid/l\",\"name\":\"[RD+] AIOStreams\\nFHD\"},"
-      "{\"url\":\"https://example.invalid/m\",\"name\":\"Movie\xE1\x80\xA2 FHD\"}"
+      "{\"url\":\"https://example.invalid/m\",\"name\":\"Movie\xE1\x80\xA2 FHD\"},"
+      "{\"url\":\"https://example.invalid/n\",\"name\":\"\xE6\x88\x91\xE7\x9A\x84 FHD \xE6\x95\x85\xE4\xBA\x8B\"},"
+      "{\"url\":\"https://example.invalid/o\",\"name\":\"\xD0\xA4\xD0\xB8\xD0\xBB\xD1\x8C\xD0\xBC FHD\"},"
+      "{\"url\":\"https://example.invalid/p\",\"name\":\"\xF0\x9F\x8E\xAC FHD\"}"
       "]}", "fixture", &v);
-    if (n != 4) { printf("FAIL contagem revisao 3: %d\n", n); return 1; }
+    if (n != 7) { printf("FAIL contagem revisao 3: %d\n", n); return 1; }
     caso(&v[0], 1080, 1, "emoji + FHD (AIOStreams)");
     caso(&v[1], 1080, 1, "emoji + FHD | REMUX");
     caso(&v[2], 1080, 1, "FHD sozinho na 2a linha do name");
     caso(&v[3], 0, 0, "caractere U+1022 nao e bullet");
+    caso(&v[4], 0, 0, "frase CJK antes de FHD");
+    caso(&v[5], 0, 0, "palavra cirilica antes de FHD");
+    caso(&v[6], 1080, 1, "emoji de 4 bytes + FHD");
     free(v); }
   if (falhas) { printf("FAIL #402: %d caso(s)\n", falhas); return 1; }
   puts("PASS #402: FHD/Full HD agrupam como 1080p.");
