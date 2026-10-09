@@ -6581,7 +6581,7 @@
   {
    "numero": 308,
    "titulo": "[bug] subtitles block source",
-   "estado_github": "aberta",
+   "estado_github": "fechada",
    "plataforma": "?",
    "tipo": "bug",
    "status": "lancada",
@@ -6598,11 +6598,10 @@
     "ultimo_comentario_por": "Namer03",
     "ultima_nossa": "2026-10-07"
    },
-   "proximo_passo": "responder: confirmar que a abertura da fonte e a queda foram resolvidas; abrir triagem do desenho do ASS (sombra/anel, cor alterada, legenda grande lenta, um trecho fora de sincronia) na 2.0.4",
-   "notas": "O defeito do relato original (fonte com ASS que não abre e cai no CDN) está corrigido na 2.0.3: o autor confirma em 09/10 \"got them working now\". DECISÃO: a issue segue aberta no mapa, com status lancada e alvo 2.0.4, porque o autor trouxe sintomas NOVOS no mesmo fio: todas as legendas ASS com sombra/anel e cor diferente da original (exemplo do Stremio com anel branco), legendas grandes/avançadas lentas (baixo fps) e um clipe fora de sincronia (vídeos e captura anexados, não vistos por nós). SUSPEITA, sem leitura de código nem log: desenho do libass (sombra/contorno/cor) e custo de desenho das legendas grandes na TV. Se o dono preferir, fechar a #308 como resolvida e abrir issue nova para o desenho.",
+   "proximo_passo": "nada (fechada 09/10; renderizacao ASS segue na #394)",
+   "notas": "O defeito do relato original (fonte com ASS que não abre e cai no CDN) está corrigido na 2.0.3: o autor confirma em 09/10 \"got them working now\". DECISÃO: a issue segue aberta no mapa, com status lancada e alvo 2.0.4, porque o autor trouxe sintomas NOVOS no mesmo fio: todas as legendas ASS com sombra/anel e cor diferente da original (exemplo do Stremio com anel branco), legendas grandes/avançadas lentas (baixo fps) e um clipe fora de sincronia (vídeos e captura anexados, não vistos por nós). SUSPEITA, sem leitura de código nem log: desenho do libass (sombra/contorno/cor) e custo de desenho das legendas grandes na TV. Se o dono preferir, fechar a #308 como resolvida e abrir issue nova para o desenho. FECHADA 09/10 com OK do dono: o problema original saiu na 2.0.3; os sintomas novos de renderizacao ASS (sombra/anel, cor, lentidao, dessincronia) foram para a #394.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/308",
-   "criada_em": "2026-10-07",
-   "alvo": "2.0.4"
+   "criada_em": "2026-10-07"
   },
   {
    "numero": 309,
@@ -6692,8 +6691,8 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "postar correção",
-   "notas": "Nossa resposta disse que \"Dolby Vision in MKV\" vem LIGADO por padrão: ERRADO, é DESLIGADO (docs 203-dvmkv-decisao.md; ajustes_ux_padrao.inc). Resumo traduzido e \"All sources\" saem na 2.0.3, não na 2.0.2. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
+   "proximo_passo": "nada (correcao publicada 09/10: Dolby Vision em MKV vem DESLIGADO por padrao); pode fechar com a 2.0.3",
+   "notas": "Nossa resposta disse que \"Dolby Vision in MKV\" vem LIGADO por padrão: ERRADO, é DESLIGADO (docs 203-dvmkv-decisao.md; ajustes_ux_padrao.inc). Resumo traduzido e \"All sources\" saem na 2.0.3, não na 2.0.2. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. 09/10: correcao publicada na issue (DV em MKV desligado por padrao), com OK do dono.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/312",
    "criada_em": "2026-10-07",
    "alvo": "ja-lancada"
@@ -8131,6 +8130,50 @@
    "alvo": "2.0.4"
   },
   {
+   "numero": 382,
+   "titulo": "No internet error despite having internet",
+   "estado_github": "aberta",
+   "plataforma": "LG",
+   "tipo": "bug",
+   "status": "precisa-log",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "pedir log (o formulário veio sem código); perguntar se a TV está em Wi-Fi ou cabo e se o aviso some sozinho em quanto tempo",
+   "notas": "LG 50UT8050PSB, Nuvio 2.0.2 (.ipk). Relato: depois de ligar a TV a frio aparece \"sem internet\" mesmo com internet, some, volta várias vezes até parar de vez. O campo de log ficou sem código. SUSPEITA, sem prova: o aviso nasce do teste de rede do app (redesaude) logo após o boot, quando a rede da TV ainda sobe; não lido no código nem em log.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/382",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 383,
+   "titulo": "[port] subtitle memory same as nuvio",
+   "estado_github": "aberta",
+   "plataforma": "all",
+   "tipo": "feature",
+   "status": "lancada",
+   "release": "2.0.3",
+   "conserto": [
+    "a89987c1 (v2.0.3)"
+   ],
+   "ultima_resposta": {
+    "nos": false,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "base08",
+    "ultima_nossa": null
+   },
+   "proximo_passo": "responder: a 2.0.3 lembra a legenda escolhida a mão por perfil (a mesma faixa ou idioma nos episódios do mesmo título); pedir que confirme se cobre o que o Nuvio faz",
+   "notas": "Pedido: a legenda lembrar a faixa entre episódios (referência: NuvioMedia/NuvioTVSmart#1025). SUSPEITA de que a 2.0.3 já cobre: legmemoria (a89987c1, na tag v2.0.3) guarda por perfil a faixa exata por título (imdb sem temporada/episódio, então vale para os episódios da série) e a última escolha a mão em outro título; só a escolha manual grava. Não conferido contra a regra exata do Nuvio nem testado em TV; se o autor disser que falta algo (por exemplo lembrar por idioma de áudio), reabrir como 2.0.4. O comentário de base08 (não é do projeto) só concorda.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/383",
+   "criada_em": "2026-10-09",
+   "alvo": "ja-lancada"
+  },
+  {
    "numero": 384,
    "titulo": "Embedded ASS subtitles stopped rendering after anime intro",
    "estado_github": "aberta",
@@ -8177,50 +8220,6 @@
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/385",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
-  },
-  {
-   "numero": 382,
-   "titulo": "No internet error despite having internet",
-   "estado_github": "aberta",
-   "plataforma": "LG",
-   "tipo": "bug",
-   "status": "precisa-log",
-   "release": "-",
-   "conserto": [],
-   "ultima_resposta": {
-    "nos": false,
-    "data": null,
-    "ultimo_comentario_por": null,
-    "ultima_nossa": null
-   },
-   "proximo_passo": "pedir log (o formulário veio sem código); perguntar se a TV está em Wi-Fi ou cabo e se o aviso some sozinho em quanto tempo",
-   "notas": "LG 50UT8050PSB, Nuvio 2.0.2 (.ipk). Relato: depois de ligar a TV a frio aparece \"sem internet\" mesmo com internet, some, volta várias vezes até parar de vez. O campo de log ficou sem código. SUSPEITA, sem prova: o aviso nasce do teste de rede do app (redesaude) logo após o boot, quando a rede da TV ainda sobe; não lido no código nem em log.",
-   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/382",
-   "criada_em": "2026-10-09",
-   "alvo": "2.0.4"
-  },
-  {
-   "numero": 383,
-   "titulo": "[port] subtitle memory same as nuvio",
-   "estado_github": "aberta",
-   "plataforma": "all",
-   "tipo": "feature",
-   "status": "lancada",
-   "release": "2.0.3",
-   "conserto": [
-    "a89987c1 (v2.0.3)"
-   ],
-   "ultima_resposta": {
-    "nos": false,
-    "data": "2026-10-09",
-    "ultimo_comentario_por": "base08",
-    "ultima_nossa": null
-   },
-   "proximo_passo": "responder: a 2.0.3 lembra a legenda escolhida a mão por perfil (a mesma faixa ou idioma nos episódios do mesmo título); pedir que confirme se cobre o que o Nuvio faz",
-   "notas": "Pedido: a legenda lembrar a faixa entre episódios (referência: NuvioMedia/NuvioTVSmart#1025). SUSPEITA de que a 2.0.3 já cobre: legmemoria (a89987c1, na tag v2.0.3) guarda por perfil a faixa exata por título (imdb sem temporada/episódio, então vale para os episódios da série) e a última escolha a mão em outro título; só a escolha manual grava. Não conferido contra a regra exata do Nuvio nem testado em TV; se o autor disser que falta algo (por exemplo lembrar por idioma de áudio), reabrir como 2.0.4. O comentário de base08 (não é do projeto) só concorda.",
-   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/383",
-   "criada_em": "2026-10-09",
-   "alvo": "ja-lancada"
   },
   {
    "numero": 386,
@@ -8324,6 +8323,27 @@
    "proximo_passo": "responder / pedir log: o campo de log veio vazio",
    "notas": "QN74F, Tizen 9.0, .tpk, Nuvio 2.0.2 (escrito \"2.02\"). Ao colocar a URL de cartaz própria (pelo celular e à mão) e apertar \"Concluído\", volta para as opções sem gravar a URL. Mesmo autor do #388 e do #389. Não investigado. Relação com a URL de cartaz longa do #361 (2.0.3) não conferida: SUSPEITA.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/390",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 394,
+   "titulo": "ASS subtitles: lag on large tracks, shadow/color shift, occasional desync (.tpk)",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": true,
+    "data": "2026-10-09",
+    "ultimo_comentario_por": "iqui27",
+    "ultima_nossa": "2026-10-09"
+   },
+   "proximo_passo": "investigar renderizacao libass no .tpk (sombra/anel, cor, lentidao em faixa grande, dessincronia ocasional)",
+   "notas": "Aberta pelo dono em 09/10 ao fechar a #308: depois da 2.0.3 o Namer03 (.tpk S95C) viu as legendas ASS funcionando, mas com sombra/anel e cor alterada em relacao ao original, lentidao (fps baixo) em legenda grande/avancada e um clipe fora de sincronia. Causa nao investigada (suspeita: renderizacao libass/composicao no .tpk). Alvo 2.0.4.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/394",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
   }
@@ -8854,13 +8874,6 @@
    ]
   },
   {
-   "pergunta": "#308: fechar como resolvida e abrir issue nova só para o desenho do ASS, ou manter a #308 aberta?",
-   "recomendacao": "Fechar a #308 (o problema original, legenda que bloqueia a fonte, está corrigido na 2.0.3; o autor disse \"got them working now\") e abrir uma issue nova só para o desenho do ASS: sombra/anel, cores diferentes da original, lentidão com legendas grandes e um trecho fora de sincronia. Decisão do dono.",
-   "issues": [
-    308
-   ]
-  },
-  {
    "pergunta": "Fechar com a 2.0.3 (bloco acima): fechar já as issues sem confirmação do autor ou esperar o retorno?",
    "recomendacao": "Fechar já #317 e #318 (autores confirmaram). As demais, esperar alguns dias pelo retorno; a resposta curta já pede para reabrir se persistir, então fechar também é aceitável.",
    "issues": [
@@ -8913,6 +8926,12 @@
    "resposta": "The search options (including turning off \"from Nuvio\" results) are in 2.0.3, under Settings > Sources & add-ons. Thanks for the idea, and reopen if you can't find them.",
    "confirmado": false,
    "confirmacao": "o autor perguntou onde ficava a opcao; nao confirmou na 2.0.3"
+  },
+  {
+   "numero": 312,
+   "resposta": "The Dolby Vision correction is posted above: Dolby Vision in MKV is off by default in 2.0.3 (Settings > Playback > More options). Thanks, and reopen if anything is still off.",
+   "confirmado": false,
+   "confirmacao": "correcao do texto publicada 09/10; autor nao respondeu"
   },
   {
    "numero": 317,
@@ -9039,10 +9058,6 @@
    "motivo": "Mesmo autor do #302: filme travando durante a TV ao vivo ainda sem resposta; fechar so depois de resolver esse ponto."
   },
   {
-   "numero": 312,
-   "motivo": "Nossa resposta publica disse que Dolby Vision em MKV vem LIGADO por padrao (e DESLIGADO); corrigir o texto antes de fechar."
-  },
-  {
    "numero": 328,
    "motivo": "Entra na secao 2.0.3.1 como suspeita da mesma raiz do #372 (lista de episodios do Nuvio primeiro); o commit da 2.0.3 nao cobre a causa provada."
   },
@@ -9057,10 +9072,6 @@
   {
    "numero": 383,
    "motivo": "SUSPEITA de que a 2.0.3 cobre o pedido (memoria por perfil/titulo); pedir ao autor que confirme que bate com o Nuvio antes de fechar."
-  },
-  {
-   "numero": 308,
-   "motivo": "Original resolvido na 2.0.3 (o autor disse \"got them working now\"), mas ele trouxe sintomas novos de desenho do ASS no mesmo fio; ver decisao para o dono."
   },
   {
    "numero": 385,
