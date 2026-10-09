@@ -89,7 +89,7 @@ function safeUrl(u) { return /^https?:\/\//.test(u || "") ? u : null; }
 function sv(v) { return v == null || v === "" ? "" : String(v); }
 
 var D, ITENS, BY = {}, F = { q: "", plat: "", status: "", alvo: "", estado: "", extra: "", sort: "numero", dir: -1 };
-var ALVO_ORDEM = ["2.0.3.1", "2.0.4", "2.1", "2.2", "futuro", "nao vamos fazer", "ja-lancada"];
+var ALVO_ORDEM = ["2.0.4", "2.0.5", "2.1", "2.2", "futuro", "nao vamos fazer", "ja-lancada"];
 var SEM_ALVO = "(sem alvo)";
 
 function alvoDe(i) { return i.alvo ? String(i.alvo) : SEM_ALVO; }
