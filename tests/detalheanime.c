@@ -274,6 +274,20 @@ static void limparCacheMeta(void) {
   metaNegLimpar();
 }
 
+// /meta de serie com `nt` temporadas de cont[t] episodios (ids "<tt>:T:E"),
+// no formato que o Nuvio e o Cinemeta mandam, so com os campos que o parser le.
+static void corpoSerie(char *b, size_t n, const char *tt, const int *cont, int nt) {
+  size_t k = (size_t)snprintf(b, n, "{\"meta\":{\"id\":\"%s\",\"type\":\"series\","
+                              "\"name\":\"Serie\",\"videos\":[", tt);
+  int t, e, prim = 1;
+  for (t = 0; t < nt; t++)
+    for (e = 1; e <= cont[t] && k < n; e++, prim = 0)
+      k += (size_t)snprintf(b + k, n - k, "%s{\"id\":\"%s:%d:%d\",\"season\":%d,\"episode\":%d,"
+                            "\"name\":\"E%d\"}", prim ? "" : ",", tt, t + 1, e, t + 1, e, e);
+  if (k < n) snprintf(b + k, n - k, "]}}");
+  assert(k + 4 < n);
+}
+
 static void catalogoCom(const char *imdb, const char *tipo, const char *titulo) {
   CatItem it;
   memset(&it, 0, sizeof it);
@@ -1162,6 +1176,30 @@ int main(void) {
     nFake = 0; nRotas = 0; addonMeta = 0;
     limparCacheMeta();
   }
+  // 30) #372: AS ABAS DE TEMPORADA SAEM DA LISTA PUBLICADA. Log 2.0.3 (webOS):
+  //   [desc] The Apothecary Diaries: AIOMetadata tem 72 episodios contra 60 do
+  //   Cinemeta; usando a lista do addon ... 1 temporadas
+  // A ficha do Nuvio (TMDB) junta tudo na temporada 1; o addon tem 1, 2 e 3.
+  // A lista do addon era publicada, mas as abas vinham do corpo do Nuvio: uma
+  // aba so, e detail.c so mostra episodio de temporada que tem aba.
+  { static char nuvio60[16384], addon72[16384];
+    int s2 = 0, i;
+    corpoSerie(nuvio60, sizeof nuvio60, "tt0000372", (const int[]){60}, 1);
+    corpoSerie(addon72, sizeof addon72, "tt0000372", (const int[]){24, 24, 24}, 3);
+    limparCacheMeta(); nRotas = 0; nFake = 0; metaprov_zerar_pausa();
+    rota("catalog.nuvio.tv", nuvio60);
+    rota("v3-cinemeta", NULL);
+    addonMeta = 1; addonResp = addon72; addonTipo = "/series/";
+    catalogoCom("tt0000372", "series", "The Apothecary Diaries");
+    abrir();
+    assert(cat_n_episodios(0) == 72);
+    assert(cat_item(0)->nTemporadas == 3);
+    assert(cat_item(0)->temporadas[0] == 1 && cat_item(0)->temporadas[2] == 3);
+    for (i = 0; i < cat_n_episodios(0); i++) if (cat_episodio(0, i)->temporada == 2) s2++;
+    assert(s2 == 24);
+    puts("ok  #372: abas de temporada da lista publicada (addon 3 temporadas sobre Nuvio 1)");
+    addonMeta = 0; addonResp = NULL; nRotas = 0; limparCacheMeta(); }
+
   puts("detalheanime: tudo ok");
   return 0;
 }
