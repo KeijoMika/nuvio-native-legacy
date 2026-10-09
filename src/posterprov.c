@@ -167,9 +167,7 @@ static int marcador(const char *p, size_t k) {
 }
 // Pior caso de cada marcador montado (posterprov_montar_url): {imdb} vira o
 // Ident.tt (ate 23), {tmdb} um long (ate 19 digitos), {type} "series" (6),
-// {tipo_tmdb} "movie" (5). O modelo que, no pior caso, passaria de PP_URL_MAX
-// e recusado ao salvar — salvo, nunca montaria e o card voltaria em silencio
-// ao cartaz normal (#390).
+// {tipo_tmdb} "movie" (5). So posterprov_modelo_cabe() usa: ver o .h.
 #define PP_MAX_IMDB 23
 #define PP_MAX_TMDB 19
 static size_t montado_max(const char *p, size_t k) {
@@ -178,7 +176,9 @@ static size_t montado_max(const char *p, size_t k) {
   if (k == 6) return 6;                                   // {type}: "series"
   return 5;                                               // {tipo_tmdb}: "movie"
 }
-int posterprov_modelo_valido(const char *modelo) {
+// Regras de sintaxe; com `pior` nao nulo, soma tambem o tamanho montado no
+// pior caso.
+static int modelo_sintaxe(const char *modelo, size_t *pior_out) {
   const char *p;
   int achou = 0;
   size_t pior = 0;
@@ -197,7 +197,15 @@ int posterprov_modelo_valido(const char *modelo) {
       pior++;
     }
   }
-  return achou && pior < PP_URL_MAX;
+  if (pior_out) *pior_out = pior;
+  return achou;
+}
+int posterprov_modelo_valido(const char *modelo) {
+  return modelo_sintaxe(modelo, NULL);
+}
+int posterprov_modelo_cabe(const char *modelo) {
+  size_t pior = 0;
+  return modelo_sintaxe(modelo, &pior) && pior < PP_URL_MAX;
 }
 
 // ---------------------------------------------------------------- montagem

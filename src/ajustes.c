@@ -3411,7 +3411,7 @@ static void pstDefinir(int op, const char *texto) {
       pstCopia(pstChave, sizeof pstChave, b);
       break; }
     case AJ_POSTER_MODELO:
-      if (b[0] && !posterprov_modelo_valido(b)) { pstAviso = PST_MODELO_RUIM; return; }
+      if (b[0] && !posterprov_modelo_cabe(b)) { pstAviso = PST_MODELO_RUIM; return; }
       pstCopia(pstModelo, sizeof pstModelo, b);
       break;
   }

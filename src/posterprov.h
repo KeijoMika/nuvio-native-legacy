@@ -82,6 +82,11 @@ int posterprov_extra_normalizar(const char *entrada, char *out, size_t n);
 // Modelo livre: http(s)://, so os marcadores {imdb} {tmdb} {type} {tipo_tmdb},
 // pelo menos um deles. 1 se valido.
 int posterprov_modelo_valido(const char *modelo);
+// Para o que a pessoa DIGITA agora: valido e, no pior caso de cada marcador,
+// a URL montada cabe em PP_URL_MAX — senao o modelo seria salvo e nunca
+// montaria (#390). Nao vale para o que ja esta gravado em posteres.txt: ali
+// so posterprov_modelo_valido(), e a montagem recusa a URL real grande demais.
+int posterprov_modelo_cabe(const char *modelo);
 
 // ---------------------------------------------------------------- montagem
 // URL do cartaz de UM titulo. `imdb` e o id do item ("tt0111161", "tmdb:278",
