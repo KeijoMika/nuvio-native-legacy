@@ -15,7 +15,7 @@ g++ -std=c++11 -fPIC -shared -fno-gnu-unique -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -I
   tests/dts_pipeline_native.cpp "$tmp/fio.o" "$tmp/js.o" -o "$tmp/native/libplayerAPIs.so" -pthread
 g++ -std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -Isrc -Isrc/dts/adapter -Itests/dts_pipeline_sdk \
   src/dts/adapter/starfish.cpp "$tmp/js.o" -o "$tmp/good/dts-starfish-webos3.so" -ldl -pthread
-cc -std=c11 -Wall -Wextra -Werror -Isrc tests/dts_sonda_repetida.c src/dts/dts_pipeline.c -ldl -pthread -o "$tmp/test"
+cc -std=c11 -Wall -Wextra -Werror -Isrc tests/dts_sonda_repetida.c src/dts/dts_pipeline.c src/webosver.c -ldl -pthread -o "$tmp/test"
 rc=0
 LD_LIBRARY_PATH="$tmp/native" "$tmp/test" "$tmp/good" > "$tmp/saida" 2>&1 || rc=$?
 cat "$tmp/saida"
