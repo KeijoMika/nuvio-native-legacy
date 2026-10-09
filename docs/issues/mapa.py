@@ -24,7 +24,17 @@ def valida():
         r=por[n]
         if r['estado_github']!='aberta' or r['status']!='lancada': sys.exit(f"ERRO: #{n} em 'fechar com a 2.0.3' precisa estar aberta no GitHub e com status lancada")
     if set(fc)&set(nf): sys.exit('ERRO: issue em fechar_203 e em nao_fechar_ainda: '+str(sorted(set(fc)&set(nf))))
+RESULTADOS=('passou','falhou','inconclusivo','nao-reproduziu','pendente')
+def valida_validacoes():
+    # cada validacao diz quem fez, o que, em que ref, o resultado e onde esta a prova
+    for k,v in enumerate(J.get('validacoes',[])):
+        falta=[c for c in ('data','quem','o_que','ref','resultado','evidencia') if not v.get(c)]
+        if falta: sys.exit(f"ERRO: validacao {k} sem {', '.join(falta)}")
+        if v['resultado'] not in RESULTADOS: sys.exit(f"ERRO: validacao {k} com resultado '{v['resultado']}' (use {', '.join(RESULTADOS)})")
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?',v['data']): sys.exit(f"ERRO: validacao {k} com data '{v['data']}' (AAAA-MM-DD [HH:MM])")
+        if not isinstance(v.get('issues',[]),list): sys.exit(f"ERRO: validacao {k}: issues precisa ser lista")
 valida()
+valida_validacoes()
 def vk(t): return [int(p) for p in re.findall(r'\d+',t)]
 def grupo(r):
     s,rel=r['status'],r['release']
@@ -61,7 +71,8 @@ L.append("""## Como atualizar
 3. Vocabulário de `status`: `aberta`, `respondida`, `consertada-nao-lancada`, `lancada`, `por-desenho`, `fora-do-escopo`, `precisa-log`, `duplicada`. Extra: `fechada-sem-resposta` (issue fechada sem nenhum comentário).
 4. Regra de honestidade: só vale `consertada-nao-lancada`/`lancada` com commit na ref. "Lançado" = commit contido numa tag `v*`. Sem commit, escreva "suspeita" ou "sem commit" em `conserto`/`notas`. "Lançada" em issue antiga sem commit com `#N` quer dizer: a nossa resposta cita uma versão que existe como tag (ver nota na linha).
 5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4 (o plano que hoje é a 2.0.5; a linha 2.0.3.1 é que saiu como 2.0.4), não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
-6. Próximo passo "postar correção": há rascunhos em `/Volumes/ExternalSSD/tmp/203-respostas-correcao.md` (#302 #350 #286 #312 #368 #360); o dono decide. Correção conhecida: "Dolby Vision in MKV" é DESLIGADO por padrão (a resposta do #312 disse ligado).
+6. Auditoria: TODA validação (teste FAIL->PASS, revisão de Codex/OpenCode/ultrareview, teste na TV, leitura de log) entra em `validacoes` no json, com `data` (AAAA-MM-DD [HH:MM]), `quem` (pessoa ou agente e modelo), `o_que`, `issues` (lista, pode ser vazia), `ref` (commit, branch ou build testado), `resultado` (`passou`, `falhou`, `inconclusivo`, `nao-reproduziu`, `pendente`) e `evidencia` (arquivo, log, PR ou id do registro). Uma validação que falhou fica registrada mesmo depois do conserto: a seguinte aponta o conserto. O gerador recusa entrada sem esses campos.
+7. Próximo passo "postar correção": há rascunhos em `/Volumes/ExternalSSD/tmp/203-respostas-correcao.md` (#302 #350 #286 #312 #368 #360); o dono decide. Correção conhecida: "Dolby Vision in MKV" é DESLIGADO por padrão (a resposta do #312 disse ligado).
 """)
 L.append("## Roadmap\n\nAlvo de cada issue aberta e os recursos por versão. Alvos são decisão de planejamento, não promessa pública; os pontos marcados SUSPEITA não têm confirmação.\n")
 for x in J['roadmap']:
@@ -119,6 +130,12 @@ for k,t in sec:
         L.append(f"### Lançadas e ainda abertas no GitHub ({len(a)})\n\n"+tab(a)+notas(a)+f"\n\n### Lançadas e fechadas ({len(f)})\n\n"+tab(f)+notas([r for r in f if r['notas']])+"\n")
     else:
         L.append(tab(rs)+notas(rs)+"\n")
+V=sorted(J.get('validacoes',[]),key=lambda v:v['data'],reverse=True)
+L.append("## Auditoria de validações\n\nQuem validou o quê, em que ref, com que resultado e onde está a prova; mais recente primeiro. Registro começa em 2026-10-09; validações anteriores estão só nos commits e nas notas.\n")
+L.append("| Data | Quem | O que | Issues | Ref | Resultado | Evidência |\n|---|---|---|---|---|---|---|")
+for v in V:
+    L.append(f"| {v['data']} | {cell(v['quem'])} | {cell(v['o_que'])} | "+(', '.join('#'+str(n) for n in v.get('issues',[])) or '-')+f" | {cell(v['ref'])} | {v['resultado']} | {cell(v['evidencia'])} |")
+L.append('')
 L.append("## Fora do GitHub (Reddit)\n")
 for o in J['fora_do_github']:
     L.append(f"### {o['titulo']}\n\n- Plataforma: {o['plataforma']}\n- Status: {o['status']}\n- Release: {o['release']}\n- Conserto: "+('; '.join(o['conserto']) if o['conserto'] else 'nenhum encontrado')+f"\n- Próximo passo: {o['proximo_passo']}\n- Notas: {o['notas']}\n")

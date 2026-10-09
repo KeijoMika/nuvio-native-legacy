@@ -9647,5 +9647,127 @@
    "numero": 392,
    "motivo": "Conserto em agente/2031-ordemperfil, ainda não integrado nem lançado (2.0.4)."
   }
+ ],
+ "validacoes": [
+  {
+   "data": "2026-10-09 18:15",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Teste do APK 2.0.4 na TCL do dono: Home, página do título, The Mentalist S1E2 tocando 3+ min, avanço no vídeo, relógio da legenda e RSS estáveis",
+   "issues": [],
+   "ref": "APK 2.0.4 de 18:03 (integracao/2.0.3.1 antes do merge do #402)",
+   "resultado": "passou",
+   "evidencia": "logcat da TCL 192.168.1.128 (sem queda no buffer de crash; [relogio] estável; rss ~600 MB)"
+  },
+  {
+   "data": "2026-10-09 18:25",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Relato do Reddit \"2.0.3 trava ao tocar série (Android TV)\": varredura das 40 sessões 2.0.3 Android mais recentes no D1",
+   "issues": [],
+   "ref": "v2.0.3",
+   "resultado": "nao-reproduziu",
+   "evidencia": "D1 registro 66138..66221; quadros de 10-75 s (66213, 66219) são app em segundo plano (ev=); 66144 pausou e perdeu a superfície; erros 2001/2004 em 66220 são canais ao vivo"
+  },
+  {
+   "data": "2026-10-09 17:42",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "Revisão r4 do #402: prefixo só de símbolo antes de FHD",
+   "issues": [
+    402
+   ],
+   "ref": "824e9e9d (agente/204-fhd402)",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/402r4-codex.txt (P2: letras georgianas U+2D0B/U+2D04 aceitas como símbolo); conserto em b781dae1"
+  },
+  {
+   "data": "2026-10-09 18:30",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Teste do #402 com letras de U+2C00..U+2FFF antes de FHD: falha antes do conserto, passa depois; stream_parser segue passando",
+   "issues": [
+    402
+   ],
+   "ref": "077fd275 (teste, FAIL) -> b781dae1 (conserto, PASS)",
+   "resultado": "passou",
+   "evidencia": "tests/fhd402.sh rc=1 em 077fd275, rc=0 em b781dae1; tests/stream_parser.sh rc=0"
+  },
+  {
+   "data": "2026-10-09 18:33",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "Revisão r5 do #402 (faixa E2 80..AF)",
+   "issues": [
+    402
+   ],
+   "ref": "b781dae1",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/402r5-codex.txt (no findings)"
+  },
+  {
+   "data": "2026-10-09 18:36",
+   "quem": "OpenCode glm-5.3 (revisão estática)",
+   "o_que": "Revisão r5 do #402 (faixa E2 80..AF)",
+   "issues": [
+    402
+   ],
+   "ref": "b781dae1",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/402r5-opencode.txt (dois P3: borda U+2BFF sem teste e comentário; resolvidos em eb9f3226)"
+  },
+  {
+   "data": "2026-10-09 18:38",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Integração da 2.0.4 depois dos merges do #402 e das notas: testes-alvo",
+   "issues": [
+    402
+   ],
+   "ref": "68e89c70 (integracao/2.0.3.1)",
+   "resultado": "passou",
+   "evidencia": "tests/fhd402.sh e tests/stream_parser.sh rc=0 no worktree nv-2031-int"
+  },
+  {
+   "data": "2026-10-09 18:40",
+   "quem": "ultrareview (nuvem, multiagente)",
+   "o_que": "Revisão do PR #408 (2.0.4 sobre v2.0.3)",
+   "issues": [
+    344,
+    372,
+    378,
+    390,
+    392,
+    402
+   ],
+   "ref": "68e89c70",
+   "resultado": "pendente",
+   "evidencia": "https://github.com/iqui27/nuvio-native-legacy/pull/408"
+  },
+  {
+   "data": "2026-10-09 18:43",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Build do .ipk da LG 2.0.4 com as chaves do local.properties (o primeiro saiu sem chaves e foi descartado)",
+   "issues": [],
+   "ref": "68e89c70",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/tmp/b204-lg.log sem \"aviso: vazio\"; space.nuvio.native.legacy_2.0.4_arm.ipk em nv-2031-int"
+  },
+  {
+   "data": "2026-10-09 18:50",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Log ABB125 do #405 (busca rápida sem Silo) lido",
+   "issues": [
+    405
+   ],
+   "ref": "v2.0.3 (.tpk)",
+   "resultado": "inconclusivo",
+   "evidencia": "D1 registro 66134: nenhuma linha da busca rápida"
+  },
+  {
+   "data": "2026-10-09 19:05",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Vídeo do #387 (menu do cartaz abre em vez da página do título) e 30 logs .tpk recentes procurando OK sem mapa",
+   "issues": [
+    387
+   ],
+   "ref": "v2.0.2/v2.0.3 (.tpk)",
+   "resultado": "inconclusivo",
+   "evidencia": "vídeo do autor: menu em 3 de 4 OKs, <0,5 s, capas já carregadas; logs D1 .tpk: só volume/power/exit sem mapa, o OK está mapeado; NV_HOLD_MS=700 (layout.h:119); a Biblioteca não loga o segurar"
+  }
  ]
 }

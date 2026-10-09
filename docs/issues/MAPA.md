@@ -9,7 +9,8 @@ Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v
 3. Vocabulário de `status`: `aberta`, `respondida`, `consertada-nao-lancada`, `lancada`, `por-desenho`, `fora-do-escopo`, `precisa-log`, `duplicada`. Extra: `fechada-sem-resposta` (issue fechada sem nenhum comentário).
 4. Regra de honestidade: só vale `consertada-nao-lancada`/`lancada` com commit na ref. "Lançado" = commit contido numa tag `v*`. Sem commit, escreva "suspeita" ou "sem commit" em `conserto`/`notas`. "Lançada" em issue antiga sem commit com `#N` quer dizer: a nossa resposta cita uma versão que existe como tag (ver nota na linha).
 5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4 (o plano que hoje é a 2.0.5; a linha 2.0.3.1 é que saiu como 2.0.4), não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
-6. Próximo passo "postar correção": há rascunhos em `/Volumes/ExternalSSD/tmp/203-respostas-correcao.md` (#302 #350 #286 #312 #368 #360); o dono decide. Correção conhecida: "Dolby Vision in MKV" é DESLIGADO por padrão (a resposta do #312 disse ligado).
+6. Auditoria: TODA validação (teste FAIL->PASS, revisão de Codex/OpenCode/ultrareview, teste na TV, leitura de log) entra em `validacoes` no json, com `data` (AAAA-MM-DD [HH:MM]), `quem` (pessoa ou agente e modelo), `o_que`, `issues` (lista, pode ser vazia), `ref` (commit, branch ou build testado), `resultado` (`passou`, `falhou`, `inconclusivo`, `nao-reproduziu`, `pendente`) e `evidencia` (arquivo, log, PR ou id do registro). Uma validação que falhou fica registrada mesmo depois do conserto: a seguinte aponta o conserto. O gerador recusa entrada sem esses campos.
+7. Próximo passo "postar correção": há rascunhos em `/Volumes/ExternalSSD/tmp/203-respostas-correcao.md` (#302 #350 #286 #312 #368 #360); o dono decide. Correção conhecida: "Dolby Vision in MKV" é DESLIGADO por padrão (a resposta do #312 disse ligado).
 
 ## Roadmap
 
@@ -873,6 +874,24 @@ Notas:
 - **#279**: Tizen não tem API pública para trocar a taxa de atualização.
 - **#309**: Já existe: Fontes e add-ons > Texto da fonte.
 - **#325**: Duplicata de #250/#260.
+
+## Auditoria de validações
+
+Quem validou o quê, em que ref, com que resultado e onde está a prova; mais recente primeiro. Registro começa em 2026-10-09; validações anteriores estão só nos commits e nas notas.
+
+| Data | Quem | O que | Issues | Ref | Resultado | Evidência |
+|---|---|---|---|---|---|---|
+| 2026-10-09 19:05 | Claude Opus 5.5 (sessão de coordenação) | Vídeo do #387 (menu do cartaz abre em vez da página do título) e 30 logs .tpk recentes procurando OK sem mapa | #387 | v2.0.2/v2.0.3 (.tpk) | inconclusivo | vídeo do autor: menu em 3 de 4 OKs, <0,5 s, capas já carregadas; logs D1 .tpk: só volume/power/exit sem mapa, o OK está mapeado; NV_HOLD_MS=700 (layout.h:119); a Biblioteca não loga o segurar |
+| 2026-10-09 18:50 | Claude Opus 5.5 (sessão de coordenação) | Log ABB125 do #405 (busca rápida sem Silo) lido | #405 | v2.0.3 (.tpk) | inconclusivo | D1 registro 66134: nenhuma linha da busca rápida |
+| 2026-10-09 18:43 | Claude Opus 5.5 (sessão de coordenação) | Build do .ipk da LG 2.0.4 com as chaves do local.properties (o primeiro saiu sem chaves e foi descartado) | - | 68e89c70 | passou | /Volumes/ExternalSSD/tmp/b204-lg.log sem "aviso: vazio"; space.nuvio.native.legacy_2.0.4_arm.ipk em nv-2031-int |
+| 2026-10-09 18:40 | ultrareview (nuvem, multiagente) | Revisão do PR #408 (2.0.4 sobre v2.0.3) | #344, #372, #378, #390, #392, #402 | 68e89c70 | pendente | https://github.com/iqui27/nuvio-native-legacy/pull/408 |
+| 2026-10-09 18:38 | Claude Opus 5.5 (sessão de coordenação) | Integração da 2.0.4 depois dos merges do #402 e das notas: testes-alvo | #402 | 68e89c70 (integracao/2.0.3.1) | passou | tests/fhd402.sh e tests/stream_parser.sh rc=0 no worktree nv-2031-int |
+| 2026-10-09 18:36 | OpenCode glm-5.3 (revisão estática) | Revisão r5 do #402 (faixa E2 80..AF) | #402 | b781dae1 | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/402r5-opencode.txt (dois P3: borda U+2BFF sem teste e comentário; resolvidos em eb9f3226) |
+| 2026-10-09 18:33 | Codex gpt-6-astra (revisão estática) | Revisão r5 do #402 (faixa E2 80..AF) | #402 | b781dae1 | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/402r5-codex.txt (no findings) |
+| 2026-10-09 18:30 | Claude Opus 5.5 (sessão de coordenação) | Teste do #402 com letras de U+2C00..U+2FFF antes de FHD: falha antes do conserto, passa depois; stream_parser segue passando | #402 | 077fd275 (teste, FAIL) -> b781dae1 (conserto, PASS) | passou | tests/fhd402.sh rc=1 em 077fd275, rc=0 em b781dae1; tests/stream_parser.sh rc=0 |
+| 2026-10-09 18:25 | Claude Opus 5.5 (sessão de coordenação) | Relato do Reddit "2.0.3 trava ao tocar série (Android TV)": varredura das 40 sessões 2.0.3 Android mais recentes no D1 | - | v2.0.3 | nao-reproduziu | D1 registro 66138..66221; quadros de 10-75 s (66213, 66219) são app em segundo plano (ev=); 66144 pausou e perdeu a superfície; erros 2001/2004 em 66220 são canais ao vivo |
+| 2026-10-09 18:15 | Claude Opus 5.5 (sessão de coordenação) | Teste do APK 2.0.4 na TCL do dono: Home, página do título, The Mentalist S1E2 tocando 3+ min, avanço no vídeo, relógio da legenda e RSS estáveis | - | APK 2.0.4 de 18:03 (integracao/2.0.3.1 antes do merge do #402) | passou | logcat da TCL 192.168.1.128 (sem queda no buffer de crash; [relogio] estável; rss ~600 MB) |
+| 2026-10-09 17:42 | Codex gpt-6-astra (revisão estática) | Revisão r4 do #402: prefixo só de símbolo antes de FHD | #402 | 824e9e9d (agente/204-fhd402) | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/402r4-codex.txt (P2: letras georgianas U+2D0B/U+2D04 aceitas como símbolo); conserto em b781dae1 |
 
 ## Fora do GitHub (Reddit)
 
