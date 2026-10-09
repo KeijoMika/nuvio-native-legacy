@@ -73,7 +73,7 @@ int main(void) {
     { EpgProg ps24[24]; int m = epg_faixa(g, agora, agora + 6 * 3600, ps24, 24), z, c = 0;
       for (z = 0; z < m; z++) if (ps24[z].titulo && strstr(ps24[z].titulo, "Show")) c++;
       assert(c == 24); }
-    assert(epg_faixa(g, agora, agora + 6 * 3600, NULL, 0) == 40);                 // contagem
+    assert(epg_faixa(g, agora, agora + 6 * 3600, NULL, 0) == 37);                 // contagem (6 h = 36 + 1 que atravessa o inicio)
     assert(epg_faixa(g, agora, agora + 6 * 3600, q, 24) == 24);                   // cap
     assert(epg_faixa(g, agora, agora + 6 * 3600, q, 0) == 0);
     n = epg_faixa(g, agora, agora + 6 * 3600, q, 24);
@@ -87,7 +87,7 @@ int main(void) {
         if (m < 24 || lote[m - 1].fim <= de) break;
         de = lote[m - 1].fim;
       }
-      assert(total == 40 && achou30 == 1); } }
+      assert(total == 37 && achou30 == 1); } }
   puts("epg_faixa: retorno limitado ao cap; programa #30 achado em lotes");
   // Xtream: XE_PROG (12) programas de 10 min guardados.
   xtepg_querer("xtream:1");

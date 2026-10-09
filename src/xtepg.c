@@ -244,10 +244,10 @@ int xtepg_proximo(const char *id, time_t t, int k, EpgProg *p) {
 int xtepg_faixa(const char *id, time_t de, time_t ate, EpgProg *out, int cap) {
   XeEnt *e = id ? achar(id) : NULL;
   int i, n = 0;
-  if (!e || e->estado != XE_OK || ate <= de) return 0;
-  for (i = 0; i < e->n; i++)
+  if (!e || e->estado != XE_OK || ate <= de || (out && cap <= 0)) return 0;
+  for (i = 0; i < e->n && (!out || n < cap); i++)
     if (e->p[i].fim > de && e->p[i].ini < ate) {
-      if (out && n < cap) copiar(&e->p[i], &out[n]);
+      if (out) copiar(&e->p[i], &out[n]);
       n++;
     }
   return n;
