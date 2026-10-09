@@ -36,6 +36,7 @@ static void limpar(void) {
   dados_apagar(novcartao_arquivo());
   dados_apagar(N202_ARQ);
   dados_apagar(N201_ARQ);
+  dados_apagar("novidades-203.txt");
   dados_apagar("novidades-20-guia.txt");
   novaSessao();
 }
@@ -75,6 +76,21 @@ static void vindoDa202(void) {
   quadroHome(1, 0, 0);
   assert(!novcartao_aberto() && !novidades202_aberto() && !novidades201_aberto());
   puts("PASS: vindo da 2.0.2: abre uma vez, grava a marca, nao volta");
+}
+
+// A marca da 2.0.3 nao pode esconder o hotfix; a nova marca so vem ao fechar.
+static void vindoDa203(void) {
+  limpar();
+  dados_gravar("novidades-20-guia.txt", "1\n");
+  dados_gravar("novidades-203.txt", "1\n");
+  quadroHome(1, 0, 0);
+  assert(novcartao_aberto() && !existe("novidades-204.txt"));
+  tecla(SDLK_ESCAPE);
+  assert(existe("novidades-203.txt") && existe("novidades-204.txt"));
+  novaSessao();
+  quadroHome(1, 0, 0);
+  assert(!novcartao_aberto());
+  puts("PASS: vindo da 2.0.3: marca independente, abre uma vez");
 }
 
 static void correnteAntigos(void) {
@@ -161,20 +177,18 @@ static void plataformas(void) {
   int lg, tpk, wgt, and;
   novcartao_teste_plataforma(NOV_LG);
   lg = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 2);          // a tela do Dolby Vision e os Ajustes
+  assert(novcartao_cenas() == 3);
   novcartao_teste_plataforma(NOV_TPK);
   tpk = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 1);          // sem a tela do Dolby Vision
+  assert(novcartao_cenas() == 3);
   novcartao_teste_plataforma(NOV_WGT);
   wgt = novcartao_itens_visiveis();
+  assert(novcartao_cenas() == 3);
   novcartao_teste_plataforma(NOV_ANDROID);
   and = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 1);
-  // LG: + Dolby Vision em MKV e o ponteiro; Android: + a abertura no ponto
-  // salvo; Samsung (.tpk e .wgt) ve so o que e de todas.
-  assert(lg == wgt + 2);
-  assert(and == wgt + 1);
-  assert(tpk == wgt);
+  assert(novcartao_cenas() == 3);
+  assert(lg == 3 && tpk == 3 && wgt == 3 && and == 3);
+  assert(novcartao_paginas() == 2);  // hotfix curto + apoio
   novcartao_teste_plataforma(0);
   printf("PASS: itens por plataforma: LG %d, .tpk %d, .wgt %d, Android %d\n", lg, tpk, wgt, and);
 }
@@ -184,9 +198,11 @@ int main(void) {
   if (!dir || !dir[0]) return 2;
   dados_iniciar(dir);
   if (strcmp(dados_dir(), dir)) return 2;
-  assert(!strcmp(novcartao_versao(), "2.0.3"));
+  assert(!strcmp(novcartao_versao(), "2.0.4"));
+  assert(!strcmp(novcartao_arquivo(), "novidades-204.txt"));
   instalacaoNova();
   vindoDa202();
+  vindoDa203();
   correnteAntigos();
   portaDaHome();
   paginas();
