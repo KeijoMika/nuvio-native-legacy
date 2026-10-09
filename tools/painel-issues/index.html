@@ -43,6 +43,19 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)
 .lst>div{border-top:1px solid var(--line);padding:9px 0}.lst>div:first-child{border-top:0}
 .lst p{margin:3px 0;overflow-wrap:anywhere}.lst .rec{color:var(--mut)}
 .q{font-style:normal}
+.dec{border-top:1px solid var(--line);padding:10px 0}.lst>.dec:first-child{border-top:0}
+.dec.feita{opacity:.65}
+.resp{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 6px}
+.resp button{min-height:44px;min-width:96px;font:inherit;font-weight:600;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--tx);cursor:pointer}
+.resp button.on.sim{background:var(--ok);color:var(--bg);border-color:var(--ok)}
+.resp button.on.nao{background:var(--bad);color:var(--bg);border-color:var(--bad)}
+.resp button:focus-visible,.dec textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.dec textarea{width:100%;min-height:72px;resize:vertical;background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit}
+.dec .linha{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+.dec .env{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--ac);background:var(--ac2);color:var(--tx);font:inherit;font-weight:600;cursor:pointer}
+.dec .env[disabled]{opacity:.5;cursor:default}
+.dec .ctr,.dec .est{color:var(--mut);font-size:12.5px}.dec .est.bad{color:var(--bad)}.dec .est.ok{color:var(--ok)}
+.aviso{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12.5px}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 input,select{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;min-width:0}
 input[type=search]{flex:1 1 220px}
@@ -200,15 +213,69 @@ function renderRoadmap() {
   });
 }
 
-function renderListas() {
-  var dec = document.getElementById("decisoes"); dec.textContent = "";
-  (D.decisoes || []).forEach(function (x) {
-    var d = el("div", null, [el("p", { class: "q", text: sv(x.pergunta) })]);
-    if (x.recomendacao) d.appendChild(el("p", { class: "rec", text: "Recomendacao: " + x.recomendacao }));
-    var l = el("div"); (x.issues || []).forEach(function (n) { l.appendChild(el("span", { class: "tag ac" }, [issueLink(n)])); }); d.appendChild(l);
-    dec.appendChild(d);
+var API = "api/respostas", RESP = {}, API_OK = false;
+function atual(id) { var r = RESP[id]; return r && r.historico && r.historico.length ? r.historico[r.historico.length - 1] : null; }
+function quandoFmt(q) { return sv(q).replace("T", " ").slice(0, 16); }
+function cardDecisao(x) {
+  var feita = !!x.aplicada_em, a = x.id ? atual(x.id) : null;
+  var d = el("div", { class: "dec" + (feita ? " feita" : "") }, [el("p", { class: "q", text: sv(x.pergunta) })]);
+  if (x.recomendacao) d.appendChild(el("p", { class: "rec", text: "Recomendacao: " + x.recomendacao }));
+  var l = el("div"); (x.issues || []).forEach(function (n) { l.appendChild(el("span", { class: "tag ac" }, [issueLink(n)])); });
+  if (feita) l.appendChild(el("span", { class: "tag ok", text: "aplicada em " + x.aplicada_em }));
+  else if (a) l.appendChild(el("span", { class: "tag warn", text: "respondida, a aplicar" }));
+  d.appendChild(l);
+  if (a) d.appendChild(el("p", { class: "rec", text: "Resposta do dono: " + (a.resposta === "sim" ? "SIM" : "NAO") + (a.nota ? " - " + a.nota : "") + " (" + quandoFmt(a.quando) + ")" }));
+  if (feita || !API_OK || !x.id) return d;
+  var escolha = a ? a.resposta : "", enviando = false;
+  var bS = el("button", { type: "button", class: "sim", text: "Sim" }), bN = el("button", { type: "button", class: "nao", text: "Nao" });
+  var ta = el("textarea", { maxlength: "2000", rows: "3", placeholder: "informacao adicional (opcional)", "aria-label": "Informacao adicional" });
+  ta.value = a ? a.nota || "" : "";
+  var ctr = el("span", { class: "ctr" }), est = el("span", { class: "est" });
+  var env = el("button", { type: "button", class: "env", text: a ? "Alterar resposta" : "Enviar" });
+  function marca() {
+    bS.className = "sim" + (escolha === "sim" ? " on" : ""); bN.className = "nao" + (escolha === "nao" ? " on" : "");
+    bS.setAttribute("aria-pressed", String(escolha === "sim")); bN.setAttribute("aria-pressed", String(escolha === "nao"));
+    ctr.textContent = ta.value.length + "/2000";
+    bS.disabled = bN.disabled = ta.disabled = enviando; env.disabled = enviando || !escolha;
+  }
+  bS.addEventListener("click", function () { if (enviando) return; escolha = "sim"; marca(); });
+  bN.addEventListener("click", function () { if (enviando) return; escolha = "nao"; marca(); });
+  ta.addEventListener("input", function () { if (!enviando) marca(); });
+  env.addEventListener("click", function () {
+    if (enviando || !escolha) return;
+    enviando = true; marca(); est.className = "est"; est.textContent = "enviando...";
+    fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: x.id, resposta: escolha, nota: ta.value }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.erro || ("HTTP " + r.status)); return j; }); })
+      .then(function (j) {
+        var h = (RESP[x.id] || (RESP[x.id] = { historico: [] })).historico; h.push(j.registro);
+        enviando = false;
+        if (d.parentNode) d.parentNode.replaceChild(cardDecisao(x), d);
+      }).catch(function (e) { enviando = false; est.className = "est bad"; est.textContent = "nao enviou: " + e.message; marca(); });
   });
-  if (!(D.decisoes || []).length) dec.appendChild(el("div", { class: "vazio", text: "Nenhuma decisao pendente." }));
+  d.appendChild(el("div", { class: "resp" }, [bS, bN]));
+  d.appendChild(ta);
+  d.appendChild(el("div", { class: "linha" }, [env, ctr, est]));
+  marca();
+  return d;
+}
+function renderDecisoes() {
+  var dec = document.getElementById("decisoes"); dec.textContent = "";
+  var todas = D.decisoes || [];
+  if (!API_OK) dec.appendChild(el("div", { class: "aviso", text: "Respostas indisponiveis agora (API fora do ar): painel somente leitura." }));
+  var pend = todas.filter(function (x) { return !x.aplicada_em; }), feitas = todas.filter(function (x) { return x.aplicada_em; });
+  pend.forEach(function (x) { dec.appendChild(cardDecisao(x)); });
+  if (!pend.length) dec.appendChild(el("div", { class: "vazio", text: "Nenhuma decisao pendente." }));
+  if (feitas.length) {
+    dec.appendChild(el("p", { class: "sub", text: "Aplicadas (" + feitas.length + ")" }));
+    feitas.forEach(function (x) { dec.appendChild(cardDecisao(x)); });
+  }
+}
+function carregaRespostas() {
+  return fetch(API, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (j) { RESP = j.respostas || {}; API_OK = true; }).catch(function () { RESP = {}; API_OK = false; });
+}
+
+function renderListas() {
 
   var fe = document.getElementById("fechar"); fe.textContent = "";
   (D.fechar_203 || []).forEach(function (x) {
@@ -412,6 +479,7 @@ function init(d) {
   app.appendChild(el("div", { id: "cnt", class: "cnt" }));
   app.appendChild(el("div", { class: "scroll" }, [el("table", { id: "tbl" })]));
   renderAll(); renderRoadmap(); renderListas(); renderAuditoria(); renderFora();
+  carregaRespostas().then(renderDecisoes);
 }
 
 fetch("data.json", { cache: "no-store" }).then(function (r) {

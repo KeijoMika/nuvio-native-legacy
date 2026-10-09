@@ -25,3 +25,25 @@ containers; aborta se a 8094 estiver ocupada por outra coisa. Padrao de worktree
 
 Somente LAN (`http://192.168.1.20:8094`) ou Tailscale. Nao expor publicamente:
 as notas contem detalhes internos.
+
+## Respostas do dono (Sim/Nao + informacao adicional)
+
+Cada decisao em `docs/issues/mapa.json` tem um `id` estavel (`dec-...`); o painel mostra
+Sim/Nao, texto (2000 caracteres) e Enviar, e permite alterar ate a decisao ser marcada
+`aplicada_em` (AAAA-MM-DD, preenchido pela coordenacao). Sem a API, o painel fica so leitura.
+
+- API: `api/servidor.py` (stdlib), `POST/GET /api/respostas`, grava `/data/respostas/respostas.json` (no ZimaOS: `/DATA/AppData/nuvio-painel/respostas/`; o `html/` entra no container so leitura, e a API roda sem root)
+  (historico por id, ultima = atual). **Sem autenticacao**: so LAN/Tailscale, como o painel;
+  a defesa e o cabecalho Origin (origens do painel) + Content-Type JSON.
+- Origens aceitas: `PAINEL_ORIGENS` (lista separada por virgula; padrao `http://192.168.1.20:8094,http://100.77.116.81:8094`).
+  Outros ambientes: `PAINEL_DATA_JSON`, `PAINEL_RESPOSTAS`, `PAINEL_HOST`, `PAINEL_PORTA`.
+- Implantar (precisa de OK do dono): `api/implantar.sh` mostra o plano; `--aplicar` executa. Nenhum container existente
+  e apagado ou renomeado: os novos tem nome versionado, o nginx antigo so e parado e e religado se algo falhar ou o
+  script for interrompido; reexecutar religa o ultimo bom primeiro. `api/implantar.sh --limpar` remove os parados antigos.
+  A API roda como uid 1000 (a pasta `respostas/` recebe chown); `respostas.json` do caminho antigo e copiado para `respostas/`.
+  Uma execucao por vez (trava `.deploy.lock` com pid; dono morto = retomada). Os antigos seguem servindo ate a troca; durante
+  a validacao na porta temporaria o alias `nuvio-painel-api` aponta para a API antiga e a nova (a nova ja passou pelo readiness).
+- Testes: `tests/api-respostas.sh` (API, mapa.py) e `tests/implantar-shim.sh` (deploy com docker falso).
+- Ler as respostas: `tools/painel-issues/respostas.sh baixar` -> `docs/issues/respostas-dono.json`;
+  depois `python3 docs/issues/mapa.py` mostra "resposta do dono" no MAPA.md. `publicar.sh` ja baixa antes de gerar.
+- Teste local: `tools/painel-issues/tests/api-respostas.sh`.
