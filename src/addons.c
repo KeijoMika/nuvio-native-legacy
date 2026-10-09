@@ -1639,7 +1639,9 @@ static void capacidadesDoManifesto(int i, const char *corpo) {
       free(trecho); } }
   lerDeclaracaoMeta(i, corpo, r);
   addon[i].catalogo = cat;
-  addon[i].fonte    = str;
+  // Atomico: a descoberta pode republicar o manifesto (addons_manifesto_lido)
+  // enquanto um fio da busca le fonte em semStreamSondado.
+  __atomic_store_n(&addon[i].fonte, str, __ATOMIC_RELAXED);
   addon[i].legenda  = leg;
   addon[i].meta     = met;
   // Publica DEPOIS das capacidades: quem le sondado com acquire (semStreamSondado,
@@ -1864,7 +1866,8 @@ typedef struct {
 // LEITURA dos campos que a sonda publica: o balde dele sai da segunda chance e
 // do resumo (nao conta como consultado, mudo nem vazio).
 static int semStreamSondado(int i) {
-  return __atomic_load_n(&addon[i].sondado, __ATOMIC_ACQUIRE) && !addon[i].fonte;
+  return __atomic_load_n(&addon[i].sondado, __ATOMIC_ACQUIRE) &&
+         !__atomic_load_n(&addon[i].fonte, __ATOMIC_RELAXED);
 }
 
 // O QUE A ULTIMA BUSCA REAL VIU, para a folha de fontes vazia dizer a causa
