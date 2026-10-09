@@ -94,6 +94,7 @@ tr.det td{background:var(--card);padding:12px 16px}
 <header>
   <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M8 15l3-4 3 2 5-6"/></svg><span>Nuvio Legacy — issues e roadmap</span></h1>
   <div class="sub" id="meta">carregando...</div>
+  <div class="sub atualiz"><span id="atualiz">atualizado há 0 s</span> <span class="atualiz" id="falha" hidden></span></div>
 </header>
 <main id="app"></main>
 <script>
@@ -610,23 +611,14 @@ function renderFora() {
   });
 }
 
-function init(d) {
-  D = d; ITENS = Array.isArray(d.itens) ? d.itens : [];
-  ITENS.forEach(function (i) { BY[i.numero] = i; });
-  var m = d.meta || {};
-  var partes = [];
-  if (m.commit) partes.push("commit " + m.commit + (m.assunto ? " - " + m.assunto : ""));
-  if (m.branch) partes.push("branch " + m.branch);
-  if (m.mapa_atualizado_em) partes.push("mapa de " + m.mapa_atualizado_em);
-  if (m.gerado_em) partes.push("gerado em " + m.gerado_em.replace("T", " ").slice(0, 19));
-  document.getElementById("meta").textContent = partes.join("  |  ") || "sem metadados";
-
+function esqueleto() {
   var app = document.getElementById("app");
+  app.textContent = "";
   function sec(titulo, id, cls) { app.appendChild(el("h2", { text: titulo })); var b = el("div", { id: id, class: cls || "" }); app.appendChild(b); return b; }
   sec("Resumo", "kpis", "kpis");
   sec("Distribuicao", "bars", "grid2");
   sec("Roadmap por release", "roadmap", "cards");
-  app.appendChild(el("h2", { text: "Decisoes pendentes" })); app.appendChild(el("div", { id: "decisoes", class: "panel lst" }));
+  app.appendChild(el("h2", { text: "Decisoes do dono" })); app.appendChild(el("div", { id: "decisoes", class: "panel lst" }));
   app.appendChild(el("div", { class: "grid2" }, [
     el("div", null, [el("h2", { text: "Fechar com a 2.0.3" }), el("div", { id: "fechar", class: "panel lst" })]),
     el("div", null, [el("h2", { text: "Nao fechar ainda" }), el("div", { id: "naofechar", class: "panel lst" })])
@@ -637,15 +629,78 @@ function init(d) {
   app.appendChild(el("div", { id: "tools", class: "tools" }));
   app.appendChild(el("div", { id: "chips", class: "tools" }));
   app.appendChild(el("div", { id: "cnt", class: "cnt" }));
-  app.appendChild(el("div", { class: "scroll" }, [el("table", { id: "tbl" })]));
-  renderAll(); renderRoadmap(); renderListas(); renderAuditoria(); renderFora();
-  carregaRespostas().then(renderDecisoes);
+  app.appendChild(el("div", { class: "scroll", id: "scroll-tabela" }, [el("table", { id: "tbl" })]));
 }
+function meta() {
+  var m = (D && D.meta) || {}, partes = [];
+  if (m.commit) partes.push("commit " + m.commit + (m.assunto ? " - " + m.assunto : ""));
+  if (m.branch) partes.push("branch " + m.branch);
+  if (m.mapa_atualizado_em) partes.push("mapa de " + m.mapa_atualizado_em);
+  if (m.gerado_em) partes.push("gerado em " + m.gerado_em.replace("T", " ").slice(0, 19));
+  document.getElementById("meta").textContent = partes.join("  |  ") || "sem metadados";
+}
+function aplicaDados(d) {
+  D = d; BY = {}; ITENS = Array.isArray(d.itens) ? d.itens : [];
+  ITENS.forEach(function (i) { BY[i.numero] = i; });
+  meta();
+  renderAll(); renderRoadmap(); renderListas(); renderAuditoria(); renderFora();
+  return carregaRespostas().then(renderDecisoes);
+}
+function init(d) { ASSINATURA = JSON.stringify(d); esqueleto(); return aplicaDados(d); }
 
-fetch("data.json", { cache: "no-store" }).then(function (r) {
-  if (!r.ok) throw new Error("HTTP " + r.status);
-  return r.json();
-}).then(init).catch(function (e) {
+// Recarrega sem perder o que o dono esta digitando nem o scroll.
+// fn pode devolver promise: a restauracao so acontece depois do redesenho
+// assincrono dos cartoes de decisao.
+function preserva(fn) {
+  var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+  var caixas = [].slice.call(document.querySelectorAll(".scroll")).map(function (c) { return [c.id, c.scrollTop]; });
+  var a = document.activeElement;
+  var id = a && a.tagName === "TEXTAREA" ? a.getAttribute("data-dec") : null;
+  var pos = a && a.selectionStart;
+  return Promise.resolve(fn()).then(function () {
+    // foco primeiro e sem rolar: senao o foco puxa a pagina para o textarea
+    if (id) {
+      var t = document.querySelector('textarea[data-dec="' + id.replace(/"/g, "") + '"]');
+      if (t) {
+        try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
+        try { t.setSelectionRange(pos, pos); } catch (e) { /* sem cursor */ }
+      }
+    }
+    caixas.forEach(function (p) {
+      var c = document.getElementById(p[0]);
+      if (c) c.scrollTop = p[1];
+    });
+    window.scrollTo(0, y);
+  });
+}
+function relogio() {
+  var s = Math.max(0, Math.round((Date.now() - ULTIMA) / 1000)), m = Math.floor(s / 60);
+  document.getElementById("atualiz").textContent = m > 0 ? "atualizado há " + m + " min" : "atualizado há " + s + " s";
+}
+function buscaMapa() {
+  return fetch("data.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  });
+}
+function recarrega() {
+  return buscaMapa().then(function (d) {
+    if (JSON.stringify(d) === ASSINATURA) { ULTIMA = Date.now(); relogio(); return; }
+    return preserva(function () { return aplicaDados(d); }).then(function () {
+      ASSINATURA = JSON.stringify(d); ULTIMA = Date.now(); relogio();
+    });
+  }).catch(function (e) {
+    ULTIMA = Date.now(); relogio();
+    var av = document.getElementById("falha");
+    if (av) { av.textContent = "ultima recarga falhou: " + e.message; av.hidden = false; }
+  });
+}
+function ligaRelogio() {
+  relogio();
+  setInterval(relogio, 1000);
+  setInterval(recarrega, 30000);   // tempo real: data.json + /api/respostas a cada 30 s
+}
+buscaMapa().then(init).then(ligaRelogio).catch(function (e) {
   document.getElementById("meta").textContent = "Erro ao carregar data.json: " + e.message + " (rode gerar.py e sirva a pasta site/ por HTTP)";
 });
 </script>
