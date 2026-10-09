@@ -421,6 +421,9 @@ static char *ajustesBlob;
 // do perfil seguinte, do mesmo tamanho, cai no endereco que
 // sync_reaplicar_ajustes acabou de soltar (#378, revisao).
 static unsigned ajustesBlobGeracao;
+// DE QUAL PERFIL e o blob (#378, revisao): o ciclo do perfil anterior pode
+// entregar o dele DEPOIS da troca (sync_reaplicar_ajustes ja soltou o velho).
+static int ajustesBlobPerfil = -1;
 static int  temAjustesBlob;
 static int  aplicarAjustes = 1;
 // Flag em disco: a pessoa ja mudou ajustes nesta TV depois do ultimo
@@ -1243,6 +1246,7 @@ static int puxarAjustesPerfil(const char *corpo) {
             free(ajustesBlob);
             ajustesBlob = novo;
             ajustesBlobGeracao++;
+            ajustesBlobPerfil = perfilDoCiclo;
             temAjustesBlob = aplicarAjustes;
             ok = 1;
             printf("[sync] blob de ajustes: %d bytes\n", (int)n);
@@ -1767,6 +1771,12 @@ void sync_passo(unsigned agoraMs) {
     free(bibBlob);     bibBlob = NULL;     temBibBlob = 0;
     free(vistosBlob);  vistosBlob = NULL;  temVistosBlob = 0;
     temAjustesBlob = 0;
+    // O blob que o ciclo descartado trouxe e do perfil anterior: nao fica
+    // como base da costura nem como "Da conta" do perfil novo (#378).
+    if (ajustesBlob && ajustesBlobPerfil != perfis_ativo()) {
+      free(ajustesBlob);
+      ajustesBlob = NULL;
+    }
     syncprog_esquecer();
     pedidoComFioVivo = 0;
     sync_iniciar();
@@ -1947,7 +1957,8 @@ void sync_passo(unsigned agoraMs) {
       // audio da conta nao sao ajuste desta TV: sao o que "Da conta" quer
       // dizer, e linguas.c ja nao os deixa passar por cima da escolha local.
       // Sem isto, quem mexeu em QUALQUER ajuste ficava com "Da conta" = nada.
-      if (!blobAplicado) ajustes_idiomas_da_conta(ajustesBlob);
+      if (!blobAplicado && ajustesBlobPerfil == perfis_ativo())
+        ajustes_idiomas_da_conta(ajustesBlob);
     } }
   spMarcar(SP_AJUSTES);
   // Progresso da conta: progresso.c decide linha a linha (pendente local vence,

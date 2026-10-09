@@ -3791,7 +3791,11 @@ static void idiomasDoBlob(const char *json, const char *fim) {
     else if (!strcmp(texto, "null")) texto[0] = 0;
     M[k].aplica(texto);
   }
-  printf("[ajustes] idiomas da conta: legenda=\"%s\" audio=\"%s\"\n",
+  // A CONTA e o que VALE separados (#378): antes so saia o em vigor, que com
+  // escolha local nesta TV nao dizia nada sobre a conta.
+  printf("[ajustes] idiomas da conta: legenda=\"%s\" legenda2=\"%s\" audio=\"%s\"; "
+         "em vigor: legenda=\"%s\" audio=\"%s\"\n",
+         ling_conta_legenda_valor(), ling_conta_legenda2_valor(), ling_conta_audio_valor(),
          ling_legenda(), ling_audio());
   fflush(stdout);
 }
