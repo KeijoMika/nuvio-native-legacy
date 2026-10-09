@@ -32,4 +32,4 @@ else
   MODO=limpar
 fi
 ssh "$HOST" bash -s -- "$BASE" "$MODO" < "$AQUI/implantar-remoto.sh"
-[ "$MODO" = deploy ] && echo "pronto: http://192.168.1.20:8094"
+if [ "$MODO" = deploy ]; then echo "pronto: http://192.168.1.20:8094"; fi

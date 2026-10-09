@@ -18,22 +18,25 @@ cat > "$SH/docker" <<'S'
 #!/usr/bin/env bash
 # estado: $ST/c/<nome> com "status porta"
 C="$ST/c"; mkdir -p "$C"
+cat >/dev/null   # se o script deixar o docker ler o stdin, o resto do script some
 st()   { cut -d' ' -f1 "$C/$1"; }
 porta(){ cut -d' ' -f2 "$C/$1"; }
 cmd="$1"; shift
 case "$cmd" in
   build) [ -z "${FALHA_BUILD:-}" ] ;;
   network) [ "$1" = create ] && touch "$ST/net" && exit 0; [ -f "$ST/net" ] ;;
-  ps) todos=0; ex=0
+  ps) unset s; todos=0; ex=0
       for a in "$@"; do [ "$a" = -a ] && todos=1; [ "$a" = status=exited ] && ex=1; done
-      for f in "$C"/*; do [ -e "$f" ] || continue; n="$(basename "$f")"
-        if [ $ex = 1 ]; then [ "$(st "$n")" = exited ] && echo "$n"
+      for f in "$C"/*; do [ -e "$f" ] || continue; n="$(basename "$f")"; s="$(cut -d' ' -f1 "$f")"
+        if [ $ex = 1 ]; then [ "$s" = exited ] && echo "$n"
         elif [ $todos = 1 ]; then echo "$n"
-        else [ "$(st "$n")" = running ] && echo "$n"; fi
-      done ;;
+        else [ "$s" = running ] && echo "$n"; fi
+        s=""
+      done; true ;;
   run) nome=""; p=""; rm=0
        while [ $# -gt 0 ]; do case "$1" in --name) nome="$2"; shift;; -p) p="$2"; shift;; --rm) rm=1;; esac; shift; done
        [ $rm = 1 ] && exit 0
+       [ -e "$C/$nome" ] && { echo "docker shim: nome em uso: $nome" >&2; exit 125; }
        porta8094=""; case "$p" in 8094:*) porta8094=1;; esac
        if [ -n "$porta8094" ]; then
          [ -n "${FALHA_PORTA:-}" ] && exit 125
@@ -58,17 +61,21 @@ S
 cat > "$SH/curl" <<'S'
 #!/usr/bin/env bash
 url="${@: -1}"; C="$ST/c"
+rodando() { for f in "$C"/*; do [ -e "$f" ] || continue; n="$(basename "$f")"; [ "$(cut -d' ' -f1 "$f")" = running ] || continue
+  case "$n" in "$1"*) [ -z "${2:-}" ] || [ "$(cut -d' ' -f2 "$f")" = "$2" ] && echo "$n";; esac; done; }
+api_up() { rodando nuvio-painel-api- | grep . >/dev/null; }
 case "$url" in
-  *:45678/*) [ -z "${FALHA_TEMP:-}" ] || exit 22 ;;
-  *:8094/*)  achou=0
-    for f in "$C"/*; do [ -e "$f" ] || continue; n="$(basename "$f")"
-      [ "$(cut -d' ' -f1 "$f")" = running ] && [ "$(cut -d' ' -f2 "$f")" = 8094 ] || continue
-      [ -n "${FALHA_POS:-}" ] && case "$n" in *"$TS"*) continue;; esac
-      achou=1; done
-    [ $achou = 1 ] || exit 22 ;;
+  *:45678/*) [ -z "${FALHA_TEMP:-}" ] || exit 22; ;;
+  *:8094/*)
+    ng=""; for n in $(rodando nuvio-painel 8094); do case "$n" in nuvio-painel-api*) ;; *) ng="$n";; esac; done
+    [ -n "$ng" ] || exit 22
+    [ -n "${FALHA_POS:-}" ] && case "$ng" in *"$TS"*) exit 22;; esac ;;
   *) exit 22 ;;
 esac
-case "$url" in */api/saude) echo '{"ok": true}';; esac
+case "$url" in
+  */api/saude) case "${ng:-versionado}" in nuvio-painel) exit 22;; esac   # nginx legado nao tem /api
+               api_up || exit 22; echo '{"ok": true}';;
+esac
 S
 chmod +x "$SH"/*
 
@@ -81,32 +88,32 @@ novo_cenario() { # recria base e estado: nginx legado servindo na 8094
 roda() { # TS [VAR=val...] -> rc
   local ts="$1"; shift
   ( export PATH="$SH:$PATH" TS="$ts"; for kv in "$@"; do export "$kv"; done
-    bash "$REMOTO" "$W/base" ) >"$W/out" 2>&1 && return 0 || return $?
+    export SUF=7; bash -s -- "$W/base" < "$REMOTO" ) >"$W/out" 2>&1 && return 0 || return $?
 }
 estado() { cat "$ST/c/$1" 2>/dev/null | cut -d' ' -f1 || true; }
 tem() { [ -e "$ST/c/$1" ]; }
 espera() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (esperado $2, veio $3)"; fi; }
-sem_novos() { ! ls "$ST/c" | grep -q -- "-$1$"; }
+sem_novos() { ! ls "$ST/c" | grep -- "-$1-7$" >/dev/null; }
 
 echo "== sucesso (com migracao de respostas.json)"
 novo_cenario; rc=0; roda 20260101000001 || rc=$?
 espera "deploy ok rc" 0 "$rc"
-espera "novo nginx rodando" running "$(estado nuvio-painel-20260101000001)"
+espera "novo nginx rodando" running "$(estado nuvio-painel-20260101000001-7)"
 espera "antigo parado, nao removido" exited "$(estado nuvio-painel)"
 [ -f "$W/base/respostas/respostas.json" ] && [ -f "$W/base/respostas.json" ] && ok "respostas.json copiado e antigo mantido" || bad "migracao"
-[ "$(cat "$W/base/.nginx-bom")" = nuvio-painel-20260101000001 ] && ok "marcador do ultimo bom" || bad "marcador"
+[ "$(cat "$W/base/.nginx-bom")" = nuvio-painel-20260101000001-7 ] && ok "marcador do ultimo bom" || bad "marcador"
 echo "== segundo deploy: antigos versionados so parados"
 rc=0; roda 20260101000002 || rc=$?
 espera "2o deploy rc" 0 "$rc"
-espera "1a versao parada" exited "$(estado nuvio-painel-20260101000001)"
-espera "1a API parada" exited "$(estado nuvio-painel-api-20260101000001)"
-espera "2a versao rodando" running "$(estado nuvio-painel-20260101000002)"
+espera "1a versao parada" exited "$(estado nuvio-painel-20260101000001-7)"
+espera "1a API parada" exited "$(estado nuvio-painel-api-20260101000001-7)"
+espera "2a versao rodando" running "$(estado nuvio-painel-20260101000002-7)"
 echo "== --limpar remove so os parados que nao sao o ultimo bom"
-rc=0; ( export PATH="$SH:$PATH" TS=x; bash "$REMOTO" "$W/base" limpar ) >"$W/out" 2>&1 || rc=$?
+rc=0; ( export PATH="$SH:$PATH" TS=x; bash -s -- "$W/base" limpar < "$REMOTO" ) >"$W/out" 2>&1 || rc=$?
 espera "limpar rc" 0 "$rc"
 tem nuvio-painel && bad "legado parado deveria sair" || ok "legado removido"
-tem nuvio-painel-20260101000001 && bad "1a versao parada deveria sair" || ok "versoes antigas removidas"
-espera "atual intacto" running "$(estado nuvio-painel-20260101000002)"
+tem nuvio-painel-20260101000001-7 && bad "1a versao parada deveria sair" || ok "versoes antigas removidas"
+espera "atual intacto" running "$(estado nuvio-painel-20260101000002-7)"
 
 echo "== falha no build: nada tocado"
 novo_cenario; rc=0; roda 20260101000003 FALHA_BUILD=1 || rc=$?
@@ -152,6 +159,26 @@ espera "antigo ficou parado" exited "$(estado nuvio-painel)"
 rc=0; roda 20260101000010 || rc=$?
 espera "reexecucao rc" 0 "$rc"
 grep -q "recuperado: nuvio-painel religado" "$W/out" && ok "religou o ultimo bom antes de tudo" || bad "nao recuperou primeiro"
-espera "novo servindo" running "$(estado nuvio-painel-20260101000010)"
+espera "novo servindo" running "$(estado nuvio-painel-20260101000010-7)"
+
+echo "== trava: segunda execucao sai na hora, trava velha e retomada"
+novo_cenario; mkdir "$W/base/.deploy.lock"; sleep 30 & DONO=$!; echo $DONO > "$W/base/.deploy.lock/pid"
+rc=0; roda 20260101000011 || rc=$?; kill $DONO 2>/dev/null || true
+[ "$rc" != 0 ] && grep -q "outra execucao" "$W/out" && ok "segunda execucao recusada (rc=$rc)" || bad "trava nao recusou"
+espera "nada tocado" running "$(estado nuvio-painel)"; [ -d "$W/base/.deploy.lock" ] && ok "trava do dono preservada" || bad "apagou trava alheia"
+echo 999999 > "$W/base/.deploy.lock/pid"; rc=0; roda 20260101000012 || rc=$?
+espera "trava velha retomada, deploy ok" 0 "$rc"; [ ! -d "$W/base/.deploy.lock" ] && ok "trava liberada ao fim" || bad "trava sobrou"
+
+echo "== recuperacao confere /api/saude: API parada e religada antes de tudo"
+echo "exited -" > "$ST/c/nuvio-painel-api-20260101000012-7"
+rc=0; roda 20260101000013 FALHA_BUILD=1 || rc=$?
+espera "API do ultimo bom religada" running "$(estado nuvio-painel-api-20260101000012-7)"
+grep -q "recuperado: nuvio-painel-api-20260101000012-7" "$W/out" && ok "mensagem de recuperacao da API" || bad "sem recuperacao da API"
+espera "nginx bom seguiu rodando" running "$(estado nuvio-painel-20260101000012-7)"
+
+echo "== falha limpa so o que esta execucao criou"
+novo_cenario; echo "running -" > "$ST/c/nuvio-painel-api-20260101000020-7"   # de outra execucao, mesmo nome-base
+rc=0; roda 20260101000014 FALHA_POS=1 || rc=$?
+tem nuvio-painel-api-20260101000020-7 && ok "container alheio preservado" || bad "apagou container alheio"
 
 [ "$FALHAS" = 0 ] && { echo "TUDO OK"; exit 0; } || { echo "$FALHAS falha(s)"; exit 1; }

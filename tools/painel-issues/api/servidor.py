@@ -93,11 +93,13 @@ def prontidao(cfg):
     except Erro as e:
         return e.msg
     pasta = os.path.dirname(os.path.abspath(cfg["respostas"]))
-    try:
-        os.close(tempfile.mkstemp(prefix=".saude.", dir=pasta)[0])
-        for n in os.listdir(pasta):
-            if n.startswith(".saude."):
-                os.unlink(os.path.join(pasta, n))
+    try:  # nome unico por chamada (mkstemp: aleatorio); remove so o proprio arquivo
+        fd, tmp = tempfile.mkstemp(prefix=".saude.", dir=pasta)
+        os.close(fd)
+        try:
+            os.unlink(tmp)
+        except FileNotFoundError:
+            pass
     except OSError:
         return "pasta de respostas nao gravavel"
     try:

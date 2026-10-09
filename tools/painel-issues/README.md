@@ -41,6 +41,8 @@ Sim/Nao, texto (2000 caracteres) e Enviar, e permite alterar ate a decisao ser m
   e apagado ou renomeado: os novos tem nome versionado, o nginx antigo so e parado e e religado se algo falhar ou o
   script for interrompido; reexecutar religa o ultimo bom primeiro. `api/implantar.sh --limpar` remove os parados antigos.
   A API roda como uid 1000 (a pasta `respostas/` recebe chown); `respostas.json` do caminho antigo e copiado para `respostas/`.
+  Uma execucao por vez (trava `.deploy.lock` com pid; dono morto = retomada). Os antigos seguem servindo ate a troca; durante
+  a validacao na porta temporaria o alias `nuvio-painel-api` aponta para a API antiga e a nova (a nova ja passou pelo readiness).
 - Testes: `tests/api-respostas.sh` (API, mapa.py) e `tests/implantar-shim.sh` (deploy com docker falso).
 - Ler as respostas: `tools/painel-issues/respostas.sh baixar` -> `docs/issues/respostas-dono.json`;
   depois `python3 docs/issues/mapa.py` mostra "resposta do dono" no MAPA.md. `publicar.sh` ja baixa antes de gerar.
