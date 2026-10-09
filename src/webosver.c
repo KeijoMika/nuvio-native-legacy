@@ -196,7 +196,10 @@ static int resolver(void) {
     v = nv_webos_parse_starfish(buf, linhaStarfish, sizeof linhaStarfish);
     if (!major && v) { major = v; fonte = "starfish"; }
   }
-  if (erro) { major = 0; fonte = "-"; return 0; }
+  // O nyx manda: com ele lido, um erro no starfish (fonte de reserva) so perde
+  // a linha do log. Sem versao e com erro, nada e guardado e a proxima
+  // pergunta tenta de novo.
+  if (erro && !(major && !strcmp(fonte, "nyx"))) { major = 0; fonte = "-"; return 0; }
   lido = 1;
   return 1;
 }
