@@ -710,6 +710,13 @@ static int perfil5(const Stream *s) {
   return 0;
 }
 
+#ifndef NV_STREAMS_LG
+#if !defined(NV_ANDROID) && !defined(NV_TPK) && !defined(__EMSCRIPTEN__) && !defined(NV_LINUX_DESKTOP)
+#define NV_STREAMS_LG 1
+#else
+#define NV_STREAMS_LG 0
+#endif
+#endif
 // Nivel de HDR que a fonte ENTREGA nesta TV: 4 Dolby Vision, 3 HDR10+, 2 HDR10,
 // 1 HDR generico/HLG, 0 SDR. Antes disto o HDR nem existia na pontuacao (so o
 // DV em MP4), e as duas opcoes de Ajustes "Dolby Vision"/"Dolby Atmos" nao
@@ -733,7 +740,17 @@ static int nivelHdr(const Stream *s) {
     toca = toca && (stream_e_mp4(s) || ajustes_dv_mkv());
 #endif
 #endif
-    if (perfil5(s)) { if (nivel < 1) nivel = 1; }
+    // LG, MP4: o perfil 5 toca como DV de verdade (webOS aciona o DV nativo no
+    // MP4), entao conta como DV e nao fica abaixo do HDR10. Em MKV a LG cai em
+    // HDR10 (IPT-PQ, cor lavada) e ele segue rebaixado; com DV desligado em
+    // Ajustes ou tela sem DV tambem. Samsung e Android: nada muda.
+    if (perfil5(s)) {
+#if NV_STREAMS_LG
+      if (ajustes_dolby_vision() && telaDv != 0 && stream_e_mp4(s)) nivel = 4;
+      else
+#endif
+      if (nivel < 1) nivel = 1;
+    }
     else if (toca) nivel = 4;
     // Tela SEM Dolby Vision (telaDv == 0 explicito, ex. Samsung): so o perfil 8
     // com base HDR10 toca como HDR10. DV sem perfil nem base declarada pode ser
@@ -873,13 +890,6 @@ long stream_pontos(const Stream *s) { return s ? pontos(s) : 0; }
 //     teto, StreamFit) ficam acima: so fontes do mesmo grupo e com as mesmas
 //     multas entram na comparacao;
 //   * Samsung (.tpk/.wgt), Android e o desktop Linux: nada muda.
-#ifndef NV_STREAMS_LG
-#if !defined(NV_ANDROID) && !defined(NV_TPK) && !defined(__EMSCRIPTEN__) && !defined(NV_LINUX_DESKTOP)
-#define NV_STREAMS_LG 1
-#else
-#define NV_STREAMS_LG 0
-#endif
-#endif
 static int lgMp4Primeiro(void) {
 #if NV_STREAMS_LG
   return !ajustes_fonte_manual() && ajustes_fonte_hdr() == 0 && ajustes_dolby_vision();
