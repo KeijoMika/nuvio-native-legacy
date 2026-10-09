@@ -55,6 +55,17 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)
 .dec .env{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--ac);background:var(--ac2);color:var(--tx);font:inherit;font-weight:600;cursor:pointer}
 .dec .env[disabled]{opacity:.5;cursor:default}
 .dec .ctr,.dec .est{color:var(--mut);font-size:12.5px}.dec .est.bad{color:var(--bad)}.dec .est.ok{color:var(--ok)}
+.ctx{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:7px 0}
+.ctx .rot{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px}
+.ctx p{margin:3px 0}
+.linha-issue{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid var(--line)}
+.linha-issue:first-of-type{border-top:0}
+.linha-issue .ti{overflow-wrap:anywhere;min-width:0}
+.rot-l{color:var(--mut)}
+.decidida{border-top:1px solid var(--line);padding:9px 0}.decidida:first-child{border-top:0}
+.decidida .quando{color:var(--mut);font-size:12.5px}
+.espera{color:var(--warn)}
+.atualiz{color:var(--mut)}
 .aviso{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12.5px}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 input,select{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;min-width:0}
@@ -102,6 +113,8 @@ function safeUrl(u) { return /^https?:\/\//.test(u || "") ? u : null; }
 function sv(v) { return v == null || v === "" ? "" : String(v); }
 
 var D, ITENS, BY = {}, F = { q: "", plat: "", status: "", alvo: "", estado: "", extra: "", sort: "numero", dir: -1 };
+var RASCUNHOS = {};   // o que o dono esta digitando, por id: sobrevive ao recarregamento
+var ULTIMA = Date.now(), ASSINATURA = "";
 var ALVO_ORDEM = ["2.0.4", "2.0.5", "2.1", "2.2", "futuro", "nao vamos fazer", "ja-lancada"];
 var SEM_ALVO = "(sem alvo)";
 
@@ -252,39 +265,127 @@ function renderRoadmap() {
 var API = "api/respostas", RESP = {}, API_OK = false;
 function atual(id) { var r = RESP[id]; return r && r.historico && r.historico.length ? r.historico[r.historico.length - 1] : null; }
 function quandoFmt(q) { return sv(q).replace("T", " ").slice(0, 16); }
+function issuesDa(x) { return (x.issues || []).map(Number).filter(function (n) { return !isNaN(n); }); }
+
+// Release afetada: campo `release` da decisao ou, na falta, o alvo das issues
+// ligadas. Sem os dois, a decisao nao tem release definida (nao inventa uma).
+function releaseDa(x) {
+  var ns = issuesDa(x), m = {};
+  ns.forEach(function (n) { var it = BY[n]; if (it && it.alvo) m[String(it.alvo)] = 1; });
+  var ks = Object.keys(m).sort();
+  return x.release ? String(x.release) : (ks.length ? ks.join(", ") : "");
+}
+function roadmapDe(x) {
+  // item de roadmap que cita alguma das issues ligadas
+  var ns = issuesDa(x), achados = [];
+  (D.roadmap || []).forEach(function (r) {
+    (r.itens || []).forEach(function (i) {
+      if ((i.issues || []).some(function (n) { return ns.indexOf(Number(n)) >= 0; })) achados.push([r, i]);
+    });
+  });
+  return achados;
+}
+function validacoesDe(x) {
+  var ns = issuesDa(x);
+  return (D.validacoes || []).filter(function (v) {
+    return (v.issues || []).some(function (n) { return ns.indexOf(Number(n)) >= 0; });
+  }).sort(function (a, b) { return sv(b.data).localeCompare(sv(a.data)); });
+}
+function bloco(rotulo) { var c = el("div", { class: "ctx" }); c.appendChild(el("p", { class: "rot", text: rotulo })); return c; }
+
+function contextoDecisao(x) {
+  var ns = issuesDa(x), frag = document.createDocumentFragment();
+
+  var rel = releaseDa(x);
+  var linha = el("p", { class: "rot-l" });
+  linha.appendChild(document.createTextNode("Release afetada: "));
+  linha.appendChild(el("b", { text: rel || "(defina o campo release ou ligue a decisao a uma issue)" }));
+  frag.appendChild(linha);
+
+  if (ns.length) {
+    var bi = bloco("Issues ligadas (" + ns.length + ")");
+    ns.forEach(function (n) {
+      var it = BY[n];
+      var l = el("div", { class: "linha-issue" }, [issueLink(n), el("span", { class: "ti", text: (it && it.titulo) || "(issue fora do mapa)" })]);
+      if (it) l.appendChild(el("span", { class: "tag " + (/lancada|consertada/.test(sv(it.status)) ? "ok" : "warn"), text: sv(it.status) }));
+      if (it && it.alvo) l.appendChild(el("span", { class: "tag ac", text: "alvo " + it.alvo }));
+      if (it) l.appendChild(el("span", { class: "tag", text: sv(it.plataforma) }));
+      bi.appendChild(l);
+    });
+    frag.appendChild(bi);
+  }
+
+  var rms = roadmapDe(x);
+  if (rms.length) {
+    var br = bloco("No roadmap");
+    rms.forEach(function (p) {
+      br.appendChild(el("p", { class: "rot-l" }, [
+        el("span", { class: "tag ac", text: p[0].release }),
+        document.createTextNode(" "),
+        tx(p[1].nome, "b")
+      ]));
+    });
+    frag.appendChild(br);
+  }
+
+  var vs = validacoesDe(x);
+  if (vs.length) {
+    var bv = bloco("Auditoria (" + vs.length + " validacoes)");
+    vs.forEach(function (v) {
+      var l = el("p", { class: "rot-l" }, [
+        el("span", { class: "tag " + (RES_TAG[v.resultado] || ""), text: sv(v.resultado) }),
+        document.createTextNode(" "), tx(v.o_que, "span"),
+        document.createTextNode(" — "), tx(sv(v.quem) + " em " + sv(v.data), "span", "rot-l")
+      ]);
+      bv.appendChild(l);
+    });
+    frag.appendChild(bv);
+  }
+  return frag;
+}
+
 function cardDecisao(x) {
   var feita = !!x.aplicada_em, a = x.id ? atual(x.id) : null;
-  var d = el("div", { class: "dec" + (feita ? " feita" : "") }, [el("p", { class: "q", text: sv(x.pergunta) })]);
-  if (x.recomendacao) d.appendChild(el("p", { class: "rec", text: "Recomendacao: " + x.recomendacao }));
-  var l = el("div"); (x.issues || []).forEach(function (n) { l.appendChild(el("span", { class: "tag ac" }, [issueLink(n)])); });
+  var d = el("div", { class: "dec" + (feita ? " feita" : "") }, [el("p", { class: "q" }, [tx(x.pergunta)])]);
+  if (x.recomendacao) d.appendChild(el("p", { class: "rec" }, [document.createTextNode("Recomendacao: "), tx(x.recomendacao)]));
+  d.appendChild(contextoDecisao(x));
+  var l = el("div");
+  l.appendChild(el("span", { class: "tag", text: x.id || "sem id" }));
   if (feita) l.appendChild(el("span", { class: "tag ok", text: "aplicada em " + x.aplicada_em }));
-  else if (a) l.appendChild(el("span", { class: "tag warn", text: "respondida, a aplicar" }));
+  else if (a) l.appendChild(el("span", { class: "tag warn", text: "aguardando a coordinacao aplicar" }));
   d.appendChild(l);
-  if (a) d.appendChild(el("p", { class: "rec", text: "Resposta do dono: " + (a.resposta === "sim" ? "SIM" : "NAO") + (a.nota ? " - " + a.nota : "") + " (" + quandoFmt(a.quando) + ")" }));
+  if (a) d.appendChild(el("p", { class: "rec" }, [
+    document.createTextNode("Resposta do dono: " + (a.resposta === "sim" ? "ACEITAR" : "NEGAR") + " em " + quandoFmt(a.quando)),
+    el("span", { class: "espera", text: feita ? "" : " — aguardando a coordenacao aplicar" })
+  ]));
+  if (a && a.nota) d.appendChild(el("p", { class: "rec" }, [document.createTextNode("Informacao adicional: "), tx(a.nota)]));
   if (feita || !API_OK || !x.id) return d;
-  var escolha = a ? a.resposta : "", enviando = false;
-  var bS = el("button", { type: "button", class: "sim", text: "Sim" }), bN = el("button", { type: "button", class: "nao", text: "Nao" });
-  var ta = el("textarea", { maxlength: "2000", rows: "3", placeholder: "informacao adicional (opcional)", "aria-label": "Informacao adicional" });
-  ta.value = a ? a.nota || "" : "";
+
+  var r = RASCUNHOS[x.id] || {}, escolha = a ? a.resposta : (r.escolha || ""), enviando = false;
+  var bS = el("button", { type: "button", class: "sim", text: "Aceitar" }), bN = el("button", { type: "button", class: "nao", text: "Negar" });
+  var ta = el("textarea", { maxlength: "2000", rows: "3", placeholder: "informacao adicional (opcional, vai junto da resposta)", "aria-label": "Informacao adicional" });
+  ta.setAttribute("data-dec", x.id);
+  ta.value = a ? a.nota || "" : (r.nota || "");
   var ctr = el("span", { class: "ctr" }), est = el("span", { class: "est" });
   var env = el("button", { type: "button", class: "env", text: a ? "Alterar resposta" : "Enviar" });
+  function guarda() { RASCUNHOS[x.id] = { escolha: escolha, nota: ta.value }; }
   function marca() {
     bS.className = "sim" + (escolha === "sim" ? " on" : ""); bN.className = "nao" + (escolha === "nao" ? " on" : "");
     bS.setAttribute("aria-pressed", String(escolha === "sim")); bN.setAttribute("aria-pressed", String(escolha === "nao"));
     ctr.textContent = ta.value.length + "/2000";
     bS.disabled = bN.disabled = ta.disabled = enviando; env.disabled = enviando || !escolha;
   }
-  bS.addEventListener("click", function () { if (enviando) return; escolha = "sim"; marca(); });
-  bN.addEventListener("click", function () { if (enviando) return; escolha = "nao"; marca(); });
-  ta.addEventListener("input", function () { if (!enviando) marca(); });
+  bS.addEventListener("click", function () { if (enviando) return; escolha = "sim"; guarda(); marca(); });
+  bN.addEventListener("click", function () { if (enviando) return; escolha = "nao"; guarda(); marca(); });
+  ta.addEventListener("input", function () { guarda(); if (!enviando) marca(); });
   env.addEventListener("click", function () {
     if (enviando || !escolha) return;
-    enviando = true; marca(); est.className = "est"; est.textContent = "enviando...";
+    enviando = true; guarda(); marca(); est.className = "est"; est.textContent = "enviando...";
     fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: x.id, resposta: escolha, nota: ta.value }) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.erro || ("HTTP " + r.status)); return j; }); })
       .then(function (j) {
         var h = (RESP[x.id] || (RESP[x.id] = { historico: [] })).historico; h.push(j.registro);
-        enviando = false;
+        delete RASCUNHOS[x.id]; enviando = false;
         if (d.parentNode) d.parentNode.replaceChild(cardDecisao(x), d);
       }).catch(function (e) { enviando = false; est.className = "est bad"; est.textContent = "nao enviou: " + e.message; marca(); });
   });
@@ -294,17 +395,37 @@ function cardDecisao(x) {
   marca();
   return d;
 }
+
+// Decisoes ja resolvidas no mapa (estado decidida ou aplicadas pela
+// coordenacao) vao para a lista "Decididas", com decisao, data e quem.
+function linhaDecidida(x) {
+  var d = el("div", { class: "decidida" });
+  d.appendChild(el("p", null, [tx(x.pergunta)]));
+  if (x.decisao) d.appendChild(el("p", { class: "rot-l" }, [document.createTextNode("Decisao: "), tx(x.decisao, "b")]));
+  var quando = x.aplicada_em ? "aplicada em " + x.aplicada_em : (x.data || "");
+  d.appendChild(el("p", { class: "quando" }, [
+    document.createTextNode((x.quem ? x.quem : "") + (quando ? " — " + quando : "")),
+    x.aplicada_em ? el("span", { class: "tag ok", text: "aplicada" }) : el("span", { class: "tag", text: "decidida" })
+  ]));
+  var a = x.id ? atual(x.id) : null;
+  if (a) d.appendChild(el("p", { class: "rec" }, [document.createTextNode("Resposta no painel: " + (a.resposta === "sim" ? "ACEITAR" : "NEGAR") + " em " + quandoFmt(a.quando) + (a.nota ? " — " : "")), a.nota ? tx(a.nota) : document.createTextNode("")]));
+  return d;
+}
 function renderDecisoes() {
   var dec = document.getElementById("decisoes"); dec.textContent = "";
   var todas = D.decisoes || [];
-  if (!API_OK) dec.appendChild(el("div", { class: "aviso", text: "Respostas indisponiveis agora (API fora do ar): painel somente leitura." }));
-  var pend = todas.filter(function (x) { return !x.aplicada_em; }), feitas = todas.filter(function (x) { return x.aplicada_em; });
+  if (!API_OK) dec.appendChild(el("div", { class: "aviso", text: "API de respostas fora do ar: painel somente leitura (o resto continua atualizando)." }));
+  var estaDecidida = function (x) { return !!x.aplicada_em || x.estado === "decidida"; };
+  var pend = todas.filter(function (x) { return !estaDecidida(x); });
+  var feitas = todas.filter(estaDecidida);
   pend.forEach(function (x) { dec.appendChild(cardDecisao(x)); });
   if (!pend.length) dec.appendChild(el("div", { class: "vazio", text: "Nenhuma decisao pendente." }));
-  if (feitas.length) {
-    dec.appendChild(el("p", { class: "sub", text: "Aplicadas (" + feitas.length + ")" }));
-    feitas.forEach(function (x) { dec.appendChild(cardDecisao(x)); });
-  }
+  dec.appendChild(el("p", { class: "sub", text: "Decididas (" + feitas.length + ")" }));
+  var lista = el("div", { id: "decididas", class: "panel lst" });
+  if (!feitas.length) lista.appendChild(el("div", { class: "vazio", text: "Nenhuma ainda." }));
+  feitas.sort(function (a, b) { return sv(b.aplicada_em || b.data).localeCompare(sv(a.aplicada_em || a.data)); })
+    .forEach(function (x) { lista.appendChild(linhaDecidida(x)); });
+  dec.appendChild(lista);
 }
 function carregaRespostas() {
   return fetch(API, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
