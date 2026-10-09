@@ -62,6 +62,38 @@ int main(int argc, char **argv) {
   // starfish malformado
   CHECK(com(d, NULL, "release abc\n") == 0);
   CHECK(com(d, NULL, "no release here\nRockhopper release 4.10.2-31\n") == 4);
+  // 1: major.minor exato
+  CHECK(com(d, "{\"webos_release\":\"3.9\"}", NULL) == 3);
+  CHECK(com(d, "{\"webos_release\":\"4.10\"}", NULL) == 4);
+  // 2: so a chave do nivel 1, documento fechado, duplicata conflitante = desconhecido
+  CHECK(com(d, "{\"old\":{\"webos_release\":\"5.0.0\"},\"webos_release\":\"3.9.3\"}", NULL) == 3);
+  CHECK(com(d, "{\"old\":{\"webos_release\":\"5.0.0\"}}", NULL) == 0);
+  CHECK(com(d, "{\"a\":[{\"webos_release\":\"5.0.0\"}],\"b\":\"x\"}", NULL) == 0);
+  CHECK(com(d, "{\"webos_release\":\"3.9.3\"", NULL) == 0);                    // sem fechar
+  CHECK(com(d, "{\"webos_release\":\"3.9.3\"} lixo", NULL) == 0);             // sobra
+  CHECK(com(d, "{\"webos_release\":\"3.9.3\"}  \n", NULL) == 3);              // so espaco
+  CHECK(com(d, "{\"webos_release\":\"3.9.3\",\"webos_release\":\"5.0.0\"}", NULL) == 0); // conflito
+  CHECK(com(d, "{\"webos_release\":\"3.9.3\",\"webos_release\":\"3.9.3\"}", NULL) == 3); // igual
+  CHECK(com(d, "{\"webos_release\":\"3.9.3\",\"webos_release\":null}", NULL) == 0);
+  CHECK(com(d, "{\"x\":\"a\\\"}b{\",\"webos_release\":\"3.9.3\"}", NULL) == 3); // aspas escapadas
+  CHECK(com(d, "[\"webos_release\",\"3.9.3\"]", NULL) == 0);
+  // 5: starfish com fronteira de palavra e terminador valido
+  CHECK(com(d, NULL, "prerelease 5.0\n") == 0);
+  CHECK(com(d, NULL, "Rockhopper release 5garbage\n") == 0);
+  CHECK(com(d, NULL, "Rockhopper release 5\n") == 5);
+  CHECK(com(d, NULL, "Rockhopper release 4.10.2-31 (x)\n") == 4);
+  {
+    static char longa[400];
+    memset(longa, 'a', sizeof longa); longa[sizeof longa - 1] = 0;
+    memcpy(longa + 250, "release 5.0", 11);       // numero cortado pelo limite da linha
+    CHECK(com(d, NULL, longa) == 0);
+  }
+  // 4/6: sem caminho e sem hook nao le nada; getters devolvem copia
+  nv_webos_testar(NULL, NULL);
+#ifndef NV_WEBOS
+  CHECK(nv_webos_major() == 0);
+#endif
+  { char l[64]; com(d, NULL, "Rockhopper release 5.1.0\n"); nv_webos_starfish_linha(l, sizeof l); CHECK(!strncmp(l, "Rockhopper", 10)); }
   if (!fails) puts("webosver ok");
   return fails != 0;
 }
