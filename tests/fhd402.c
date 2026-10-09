@@ -86,6 +86,20 @@ int main(void) {
                        "FHD Movies", &v);
     if (n != 1) { printf("FAIL contagem provedor: %d\n", n); return 1; }
     caso(&v[0], 0, 0, "sem name, provedor FHD Movies");
+    free(v);
+    // Revisao 3: o formato real do AIOStreams ("\u23f3 FHD", "\u26a1 FHD") e o rotulo
+    // sozinho na 2a linha do name, sem bullet depois.
+    n = stream_extrair("{\"streams\":["
+      "{\"url\":\"https://example.invalid/j\",\"name\":\"\xE2\x8F\xB3 FHD\"},"
+      "{\"url\":\"https://example.invalid/k\",\"name\":\"\xE2\x9A\xA1 FHD | REMUX\"},"
+      "{\"url\":\"https://example.invalid/l\",\"name\":\"[RD+] AIOStreams\\nFHD\"},"
+      "{\"url\":\"https://example.invalid/m\",\"name\":\"Movie\xE1\x80\xA2 FHD\"}"
+      "]}", "fixture", &v);
+    if (n != 4) { printf("FAIL contagem revisao 3: %d\n", n); return 1; }
+    caso(&v[0], 1080, 1, "emoji + FHD (AIOStreams)");
+    caso(&v[1], 1080, 1, "emoji + FHD | REMUX");
+    caso(&v[2], 1080, 1, "FHD sozinho na 2a linha do name");
+    caso(&v[3], 0, 0, "caractere U+1022 nao e bullet");
     free(v); }
   if (falhas) { printf("FAIL #402: %d caso(s)\n", falhas); return 1; }
   puts("PASS #402: FHD/Full HD agrupam como 1080p.");

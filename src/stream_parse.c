@@ -103,8 +103,17 @@ static int fhdNoNome(const char *s) {
       while (a > s && (a[-1] == ' ' || a[-1] == '\t')) a--;
       while (*d == ' ' || *d == '\t') d++;
       if (a == s || a[-1] == '\n' || ehRotuloSep((const unsigned char *)d)) return 1;
-      if (a[-1] == '|' || (a - s >= 3 && (unsigned char)a[-1] == 0xA2 && (unsigned char)a[-2] == 0x80) ||
+      if (a[-1] == '|' ||
+          (a - s >= 3 && (unsigned char)a[-1] == 0xA2 && (unsigned char)a[-2] == 0x80 &&
+           (unsigned char)a[-3] == 0xE2) ||
           (a - s >= 2 && (unsigned char)a[-1] == 0xB7 && (unsigned char)a[-2] == 0xC2)) return 1;
+      // So simbolos (emoji, bytes >= 0x80) e espaco antes na linha: "\u23f3 FHD" do
+      // AIOStreams e rotulo; uma palavra ASCII antes ("The FHD") continua frase.
+      { const char *ls = a;
+        while (ls > s && ls[-1] != '\n') ls--;
+        const char *q = ls;
+        while (q < a && ((unsigned char)*q >= 0x80 || *q == ' ' || *q == '\t')) q++;
+        if (q == a && ls < a) return 1; }
     }
   return 0;
 }
@@ -291,7 +300,7 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
       // entra no lugar do name que falta mais abaixo.
       int fhd = 0;
       { char nome[1024];
-        if (js_texto(p, fim, "name", nome, sizeof nome) && strlen(nome) < sizeof nome - 1)
+        if (js_texto_linhas(p, fim, "name", nome, sizeof nome) && strlen(nome) < sizeof nome - 1)
           fhd = fhdNoNome(nome); }
       js_texto_linhas(p, fim, "description", s.descricao, sizeof s.descricao);
       js_texto_linhas(p, fim, "title", titulo, sizeof titulo);
