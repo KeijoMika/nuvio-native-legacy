@@ -89,6 +89,27 @@ cat > "$M/respostas-dono.json" <<J
 J
 python3 "$M/mapa.py" >/dev/null && grep -q "Resposta do dono: NÃO\*\* Nota: so depois da 2.0.5" "$M/MAPA.md" && grep -q "respondida, a aplicar" "$M/MAPA.md" \
   && ok "mapa.py mostra a resposta" || bad "mapa.py mostra a resposta"
+# nota do dono e entrada nao confiavel: sem HTML nem link/imagem no MAPA.md
+python3 - "$M/respostas-dono.json" "$ID" <<'P'
+import json,sys
+nota='<img src=x onerror=alert(1)> [x](javascript:alert(1)) ![i](http://a/b.png) <http://evil>'
+json.dump({"versao":1,"respostas":{sys.argv[2]:{"historico":[{"resposta":"sim","nota":nota,"quando":"2026-10-09T12:00:00-03:00"}]}}},open(sys.argv[1],"w"))
+P
+python3 "$M/mapa.py" >/dev/null
+LN="$(grep -F "$ID" "$M/MAPA.md" | head -1)"
+case "$LN" in *"<img"*|*"](javascript"*|*"](http"*|*"<http"*) bad "nota vazou HTML/link no MAPA.md: $LN";; *) ok "nota escapada (sem <img, sem link markdown)";; esac
+case "$LN" in *"&lt;img"*) ok "HTML virou texto (&lt;)";; *) bad "esperava &lt;img";; esac
+
+# respostas.sh cai para o caminho antigo quando o novo nao existe (ssh falso)
+mkdir "$T/fakebin"; cat > "$T/fakebin/ssh" <<'S'
+#!/usr/bin/env bash
+for a in "$@"; do case "$a" in */respostas/respostas.json) exit 1;; */respostas.json) cat "$ANTIGO_FAKE"; exit 0;; esac; done; exit 1
+S
+chmod +x "$T/fakebin/ssh"; echo '{"versao":1,"respostas":{"dec-velho":{"historico":[]}}}' > "$T/antigo.json"
+RS2="$T/repo2"; mkdir -p "$RS2/docs/issues"
+rc=0; PATH="$T/fakebin:$PATH" ANTIGO_FAKE="$T/antigo.json" "$AQUI/../respostas.sh" baixar "$RS2" >/dev/null || rc=$?
+espera "respostas.sh cai para o caminho antigo" 0 "$rc"; grep -q dec-velho "$RS2/docs/issues/respostas-dono.json" && ok "conteudo do caminho antigo" || bad "conteudo antigo"
+
 # id que some sem ir para decisoes_ids_retirados => erro (compara com o HEAD de um git temporario)
 cp "$REPO/docs/issues/mapa.json" "$M/mapa.json"; rm -f "$M/respostas-dono.json"
 git -C "$M" init -q && git -C "$M" add mapa.json && git -C "$M" -c user.name=t -c user.email=t@t commit -qm base 2>/dev/null

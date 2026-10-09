@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """API minima das respostas do dono no painel de issues (so biblioteca padrao).
 
-  POST /api/respostas  {"id","resposta":"sim"|"nao","nota"?,"quando"?}
+  POST /api/respostas  {"id","resposta":"sim"|"nao","nota"?}  (o horario e do servidor)
   GET  /api/respostas  -> {"versao":1,"respostas":{id:{"historico":[...]}}}
   GET  /api/saude
 
@@ -15,7 +15,7 @@ Config por ambiente (ou argumentos de mesmo nome em minusculas):
   PAINEL_ORIGENS     origens aceitos, separados por virgula
   PAINEL_HOST/PORTA  [0.0.0.0] [8000]
 """
-import argparse, datetime, fcntl, json, os, re, tempfile, threading
+import argparse, datetime, fcntl, json, os, re, sys, tempfile, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 MAX_NOTA = 2000
@@ -69,17 +69,20 @@ def gravar(caminho, dados):
             os.fsync(f.fileno())
         os.chmod(tmp, 0o644)
         os.replace(tmp, caminho)
-        dfd = os.open(pasta, os.O_RDONLY)
-        try:
-            os.fsync(dfd)
-        finally:
-            os.close(dfd)
     except BaseException:
         try:
             os.unlink(tmp)
         except OSError:
             pass
         raise
+    try:  # o replace ja valeu: falha aqui so vai para o log, a escrita nao e desfeita
+        dfd = os.open(pasta, os.O_RDONLY)
+        try:
+            os.fsync(dfd)
+        finally:
+            os.close(dfd)
+    except OSError as e:
+        print("aviso: fsync da pasta falhou: %s" % e, file=sys.stderr, flush=True)
 
 
 def prontidao(cfg):
@@ -90,7 +93,12 @@ def prontidao(cfg):
     except Erro as e:
         return e.msg
     pasta = os.path.dirname(os.path.abspath(cfg["respostas"]))
-    if not (os.path.isdir(pasta) and os.access(pasta, os.W_OK | os.X_OK)):
+    try:
+        os.close(tempfile.mkstemp(prefix=".saude.", dir=pasta)[0])
+        for n in os.listdir(pasta):
+            if n.startswith(".saude."):
+                os.unlink(os.path.join(pasta, n))
+    except OSError:
         return "pasta de respostas nao gravavel"
     try:
         ler(cfg["respostas"])
@@ -103,7 +111,7 @@ def registrar(cfg, corpo):
     if not isinstance(corpo, dict):
         raise Erro(400, "corpo deve ser um objeto JSON")
     did, resp = corpo.get("id"), corpo.get("resposta")
-    nota, qc = corpo.get("nota", ""), corpo.get("quando")
+    nota = corpo.get("nota", "")
     if not isinstance(did, str) or not RE_ID.match(did) or len(did) > 80:
         raise Erro(400, "id invalido")
     if resp not in ("sim", "nao"):
@@ -112,16 +120,12 @@ def registrar(cfg, corpo):
         nota = ""
     if not isinstance(nota, str) or len(nota) > MAX_NOTA:
         raise Erro(400, "nota deve ser texto de ate %d caracteres" % MAX_NOTA)
-    if qc is not None and (not isinstance(qc, str) or len(qc) > 60):
-        raise Erro(400, "quando deve ser texto de ate 60 caracteres")
     dec = decisoes_publicadas(cfg["data_json"]).get(did)
     if dec is None:
         raise Erro(404, "decisao desconhecida")
     if dec.get("aplicada_em"):
         raise Erro(409, "decisao ja aplicada; nao aceita mais resposta")
     reg = {"resposta": resp, "nota": nota, "quando": agora()}
-    if qc:
-        reg["quando_cliente"] = qc
     with TRAVA:
         with open(cfg["respostas"] + ".lock", "a") as lk:
             fcntl.flock(lk, fcntl.LOCK_EX)
@@ -138,6 +142,7 @@ class H(BaseHTTPRequestHandler):
     cfg = {}
     protocol_version = "HTTP/1.1"
     server_version = "painel-respostas"
+    timeout = 15  # leitura de socket parada nao segura a thread para sempre
 
     def log_message(self, fmt, *a):
         pass

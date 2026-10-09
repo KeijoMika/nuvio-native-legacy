@@ -10,7 +10,11 @@ cmd="${1:-}"; REPO="${2:-$(cd "$AQUI/../.." && pwd)}"
 DEST="$REPO/docs/issues/respostas-dono.json"
 TMP="$(mktemp)"; trap 'rm -f "$TMP"' EXIT
 if [ -n "${PAINEL_RESPOSTAS_ARQUIVO:-}" ]; then cp "$PAINEL_RESPOSTAS_ARQUIVO" "$TMP"   # teste local
-else ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" cat "$REMOTO" > "$TMP"; fi
+else
+  ANTIGO="${REMOTO%/respostas/respostas.json}/respostas.json"  # caminho anterior a pasta respostas/
+  ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" cat "$REMOTO" > "$TMP" 2>/dev/null \
+    || ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" cat "$ANTIGO" > "$TMP"
+fi
 python3 - "$TMP" "$DEST" <<'PY'
 import json, os, sys, tempfile
 d = json.load(open(sys.argv[1], encoding="utf-8"))

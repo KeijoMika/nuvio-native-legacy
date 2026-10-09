@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gera docs/issues/MAPA.md a partir de docs/issues/mapa.json.
 Uso: python3 docs/issues/mapa.py   (edite so o json; o md e derivado)"""
-import json,os,re,collections,sys,subprocess
+import json,os,re,collections,sys,subprocess,html
 D=os.path.dirname(os.path.abspath(__file__))
 J=json.load(open(os.path.join(D,'mapa.json')))
 R=J['itens']
@@ -132,13 +132,17 @@ for x in J.get('nao_fechar_ainda',[]):
     r=next(i for i in R if i['numero']==x['numero'])
     L.append(f"| [#{r['numero']}]({r['url']}) | {cell(r['titulo'])[:60]} | {cell(x['motivo'])} |")
 L.append("\n## Decisões para o dono\n")
+def nota_md(s):
+    # texto do dono e entrada nao confiavel: sem HTML, sem link/imagem/formatacao do markdown
+    s=html.escape(' '.join(str(s).split()),quote=False)
+    return re.sub(r'([\\`*_\[\]()|!#~])',r'\\\1',s)
 def estado_dec(d):
     if d.get('aplicada_em'): return 'aplicada'
     return 'respondida, a aplicar' if d['id'] in RESP else 'pendente'
 def linha_resp(d):
     r=RESP.get(d['id'])
     if not r: return ''
-    nota=(' Nota: '+cell(r['nota'])+'.') if r.get('nota') else ''
+    nota=(' Nota: '+nota_md(r['nota'])+'.') if r.get('nota') else ''
     return f" **Resposta do dono: {'SIM' if r['resposta']=='sim' else 'NÃO'}**{nota} ({r.get('quando','?')[:10]})."
 pend=[d for d in J['decisoes'] if not d.get('aplicada_em')]
 for k,d in enumerate(pend,1):
