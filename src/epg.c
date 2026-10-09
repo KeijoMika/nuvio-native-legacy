@@ -1281,13 +1281,13 @@ int epg_total(int epg) {
 int epg_faixa(int epg, time_t de, time_t ate, EpgProg *out, int cap) {
   long m, topo;
   int n = 0;
-  if (epg < 0 || epg >= P.nCanais || ate <= de) return 0;
+  if (epg < 0 || epg >= P.nCanais || ate <= de || (out && cap <= 0)) return 0;
   pthread_mutex_lock(&trava);
   topo = P.canais[epg].evIni + P.canais[epg].evN;
   m = pubPrimeiroVivo(epg, de);           // primeiro com fim > de
   if (m >= 0)
-    for (; m < topo && P.evs[m].ini < ate; m++, n++)
-      if (out && n < cap) pubProg(m, &out[n]);
+    for (; m < topo && P.evs[m].ini < ate && (!out || n < cap); m++, n++)
+      if (out) pubProg(m, &out[n]);
   pthread_mutex_unlock(&trava);
   return n;
 }

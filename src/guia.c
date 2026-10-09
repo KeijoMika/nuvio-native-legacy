@@ -3963,13 +3963,22 @@ static void buscaFazer(const char *q) {
   if (!soDigito || strlen(agulha) > 3)
     for (i = 0; i < nCanais && buscaNP < G_BUSCA_PROGS; i++) {
       EpgProg ps[24];
-      int n = gFaixa(&canais[i], agoraT, agoraT + G_BUSCA_HORAS * 3600, ps, 24), k;
-      for (k = 0; k < n && buscaNP < G_BUSCA_PROGS; k++) {
-        if (!ps[k].titulo || !nv_contem_dobrado(ps[k].titulo, agulha)) continue;
-        buscaProg[buscaNP].canal = i;
-        buscaProg[buscaNP].ini = ps[k].ini; buscaProg[buscaNP].fim = ps[k].fim;
-        snprintf(buscaProg[buscaNP].titulo, sizeof buscaProg[buscaNP].titulo, "%s", ps[k].titulo);
-        buscaNP++;
+      time_t de = agoraT, ate = agoraT + G_BUSCA_HORAS * 3600;
+      int rodada;
+      // #344: gFaixa devolve no maximo o tamanho de ps. Um canal com mais
+      // programas na janela vem em lotes: o proximo comeca onde o ultimo acabou.
+      for (rodada = 0; rodada < 16 && buscaNP < G_BUSCA_PROGS; rodada++) {
+        int n = gFaixa(&canais[i], de, ate, ps, (int)(sizeof ps / sizeof ps[0])), k;
+        if (n > (int)(sizeof ps / sizeof ps[0])) n = (int)(sizeof ps / sizeof ps[0]);
+        for (k = 0; k < n && buscaNP < G_BUSCA_PROGS; k++) {
+          if (!ps[k].titulo || !nv_contem_dobrado(ps[k].titulo, agulha)) continue;
+          buscaProg[buscaNP].canal = i;
+          buscaProg[buscaNP].ini = ps[k].ini; buscaProg[buscaNP].fim = ps[k].fim;
+          snprintf(buscaProg[buscaNP].titulo, sizeof buscaProg[buscaNP].titulo, "%s", ps[k].titulo);
+          buscaNP++;
+        }
+        if (n < (int)(sizeof ps / sizeof ps[0]) || ps[n - 1].fim <= de) break;
+        de = ps[n - 1].fim;
       }
     }
   { int a, b;   // ordem: no ar antes, depois o que comeca primeiro
