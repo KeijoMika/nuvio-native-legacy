@@ -278,8 +278,13 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
       snprintf(s.provedor, sizeof s.provedor, "%s", provedor);
       snprintf(texto, sizeof texto, "%s %s %s %s", s.rotulo, s.descricao, titulo, s.arquivo);
       for (char *q = texto; *q; q++) if (*q == '\n') *q = ' ';
+      // "FHD"/"Full HD" (#402): formatadores tipo AIOStreams escrevem so a
+      // sigla, sem 1080. Token isolado, e na vez do 1080: numero maior escrito
+      // ainda vence. Nao o "hd" solto do nv_res_do_texto: "DTS-HD" viraria 720.
       s.altura = contem(texto, "2160") || token(texto, "4k") || token(texto, "uhd") ? 2160 :
-                 contem(texto, "1440") ? 1440 : contem(texto, "1080") ? 1080 :
+                 contem(texto, "1440") ? 1440 :
+                 contem(texto, "1080") || token(texto, "fhd") || token(texto, "fullhd") ||
+                 token(texto, "full hd") || token(texto, "full-hd") || token(texto, "full.hd") ? 1080 :
                  contem(texto, "720") ? 720 : contem(texto, "480") ? 480 : 0;
       s.dolbyVision = token(texto, "dv") || token(texto, "dovi") ||
                       contem(texto, "dolby vision") || contem(texto, "dolbyvision");
