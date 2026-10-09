@@ -137,12 +137,48 @@ function count(fn) {
   return m;
 }
 
-function issueLink(n) {
+function issueUrl(n) {
   var it = BY[n], u = it && safeUrl(it.url);
-  var t = "#" + n + (it ? "" : "");
-  var a = u ? el("a", { href: u, target: "_blank", rel: "noopener", text: t, title: it.titulo || "" }) : el("span", { text: t });
-  return a;
+  if (u) return u;
+  var repo = (D && D.meta && D.meta.repo) || "";
+  return repo ? repo + "/issues/" + n : null;
 }
+function issueLink(n) {
+  var it = BY[n], u = issueUrl(n), t = "#" + n;
+  return u ? el("a", { href: u, target: "_blank", rel: "noopener", text: t, title: (it && it.titulo) || "" }) : el("span", { text: t });
+}
+
+// O mapa tem texto de terceiros: linkify monta NODES, nunca innerHTML.
+// #NNN vira issue/PR, hash que existe no repo (meta.commits) vira commit,
+// branch citada (meta.branches) vira tree, e URL http(s) vira link.
+var RE_LINK = /https?:\/\/[^\s<>"'`]+|#\d{1,4}\b|\b[0-9a-f]{7,12}\b|[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._/-]*/g;
+function linkify(texto) {
+  var frag = document.createDocumentFragment(), t = sv(texto);
+  if (!t) return frag;
+  var meta = (D && D.meta) || {}, repo = meta.repo || "", commits = meta.commits || {}, branches = {};
+  (meta.branches || []).forEach(function (b) { branches[b] = 1; });
+  var last = 0, m, re = new RegExp(RE_LINK.source, "g");
+  while ((m = re.exec(t)) !== null) {
+    var txt = m[0], url = null;
+    if (/^https?:/i.test(txt)) {
+      while (txt.length > 10 && /[.,;:!?)\]]$/.test(txt)) txt = txt.slice(0, -1);
+      url = safeUrl(txt);
+    } else if (txt.charAt(0) === "#") {
+      url = issueUrl(Number(txt.slice(1)));
+    } else if (branches[txt] && repo) {
+      url = repo + "/tree/" + txt;
+    } else if (commits[txt] && repo) {
+      url = repo + "/commit/" + commits[txt];
+    }
+    if (!url) continue;
+    frag.appendChild(document.createTextNode(t.slice(last, m.index)));
+    frag.appendChild(el("a", { href: url, target: "_blank", rel: "noopener", text: txt, title: txt }));
+    last = m.index + txt.length;
+  }
+  frag.appendChild(document.createTextNode(t.slice(last)));
+  return frag;
+}
+function tx(texto, tag, cls) { var e = el(tag || "span", cls ? { class: cls } : null); e.appendChild(linkify(texto)); return e; }
 
 function setFilter(k, v) {
   F[k] = (F[k] === v) ? "" : v;
@@ -195,17 +231,17 @@ function renderRoadmap() {
   if (!rm.length) { box.appendChild(el("div", { class: "vazio", text: "Sem roadmap neste mapa." })); return; }
   rm.forEach(function (r) {
     var card = el("div", { class: "rel" }, [el("h3", null, [el("span", { text: sv(r.release) })])]);
-    if (r.situacao) card.appendChild(el("div", { class: "sit", text: r.situacao }));
-    if (r.descricao) card.appendChild(el("p", { class: "desc", text: r.descricao }));
+    if (r.situacao) card.appendChild(el("div", { class: "sit" }, [tx(r.situacao)]));
+    if (r.descricao) card.appendChild(el("p", { class: "desc" }, [tx(r.descricao)]));
     var its = r.itens || [];
     if (!its.length) card.appendChild(el("div", { class: "vazio", text: "Nenhum item." }));
     its.forEach(function (x) {
-      var d = el("div", { class: "it" }, [el("b", { text: sv(x.nome) })]);
-      if (x.porque) d.appendChild(el("p", { text: x.porque }));
+      var d = el("div", { class: "it" }, [tx(x.nome, "b")]);
+      if (x.porque) d.appendChild(el("p", null, [tx(x.porque)]));
       var links = el("div");
       (x.issues || []).forEach(function (n) { links.appendChild(el("span", { class: "tag ac" }, [issueLink(n)])); });
-      (x.branches || []).forEach(function (b) { links.appendChild(el("span", { class: "tag", text: b })); });
-      if (x.origem) links.appendChild(el("span", { class: "tag", text: "origem: " + x.origem }));
+      (x.branches || []).forEach(function (b) { links.appendChild(el("span", { class: "tag" }, [tx(b)])); });
+      if (x.origem) links.appendChild(el("span", { class: "tag" }, [document.createTextNode("origem: "), tx(x.origem)]));
       d.appendChild(links);
       card.appendChild(d);
     });
@@ -285,8 +321,8 @@ function renderListas() {
       el("b", { text: " " + (it ? sv(it.titulo) : "") }),
       el("span", { class: "tag " + (x.confirmado ? "ok" : "warn"), text: x.confirmado ? "confirmado" : "nao confirmado" })
     ])]);
-    if (x.resposta) d.appendChild(el("p", { text: "Resposta proposta: " + x.resposta }));
-    if (x.confirmacao) d.appendChild(el("p", { class: "rec", text: "Confirmacao: " + x.confirmacao }));
+    if (x.resposta) d.appendChild(el("p", null, [document.createTextNode("Resposta proposta: "), tx(x.resposta)]));
+    if (x.confirmacao) d.appendChild(el("p", { class: "rec" }, [document.createTextNode("Confirmacao: "), tx(x.confirmacao)]));
     fe.appendChild(d);
   });
   if (!(D.fechar_203 || []).length) fe.appendChild(el("div", { class: "vazio", text: "Nada na lista." }));
@@ -296,7 +332,7 @@ function renderListas() {
     var it = BY[x.numero];
     nf.appendChild(el("div", null, [
       el("div", null, [el("span", { class: "tag ac" }, [issueLink(x.numero)]), el("b", { text: " " + (it ? sv(it.titulo) : "") })]),
-      el("p", { class: "rec", text: sv(x.motivo) })
+      el("p", { class: "rec" }, [tx(x.motivo)])
     ]));
   });
   if (!(D.nao_fechar_ainda || []).length) nf.appendChild(el("div", { class: "vazio", text: "Nada na lista." }));
@@ -377,7 +413,7 @@ function renderTable() {
     var stCls = /lancada|consertada/.test(st) ? "ok" : /precisa-log|aberta/.test(st) ? "warn" : "";
     var row = el("tr", { class: "row" }, [
       numCell,
-      el("td", { class: "tit", text: sv(i.titulo) }),
+      el("td", { class: "tit" }, [tx(i.titulo)]),
       el("td", null, [el("span", { class: "tag " + (aberta(i) ? "warn" : ""), text: sv(i.estado_github) })]),
       el("td", { text: sv(i.plataforma) }),
       el("td", { text: sv(i.tipo) }),
@@ -399,7 +435,7 @@ function renderTable() {
 }
 function detalhe(i) {
   var dl = el("dl");
-  function add(k, v) { if (v) { dl.appendChild(el("dt", { text: k })); dl.appendChild(el("dd", { text: v })); } }
+  function add(k, v) { if (v) { dl.appendChild(el("dt", { text: k })); dl.appendChild(el("dd", null, [tx(v)])); } }
   add("Notas", sv(i.notas));
   add("Proximo passo", sv(i.proximo_passo));
   add("Conserto", Array.isArray(i.conserto) ? i.conserto.join("\n") : sv(i.conserto));
@@ -426,26 +462,29 @@ function renderAuditoria() {
   vs.forEach(function (v) {
     var iss = el("td"); (v.issues || []).forEach(function (n) { iss.appendChild(el("span", { class: "tag ac" }, [issueLink(n)])); });
     t.appendChild(el("tr", null, [
-      el("td", { text: sv(v.data) }), el("td", { text: sv(v.quem) }), el("td", { text: sv(v.o_que) }), iss,
-      el("td", { text: sv(v.ref) }),
+      el("td", { text: sv(v.data) }), el("td", null, [tx(v.quem)]), el("td", null, [tx(v.o_que)]), iss,
+      el("td", null, [tx(v.ref)]),
       el("td", null, [el("span", { class: "tag " + (RES_TAG[v.resultado] || ""), text: sv(v.resultado) })]),
-      el("td", { text: sv(v.evidencia) })
+      el("td", null, [tx(v.evidencia)])
     ]));
   });
-  box.appendChild(el("div", { class: "scroll" }, [t]));
+  // a caixa de scroll e reaproveitada entre recargas, senao o scroll dela se perde
+  var s = document.getElementById("scroll-auditoria");
+  if (!s) { s = el("div", { class: "scroll", id: "scroll-auditoria" }); box.appendChild(s); }
+  s.textContent = ""; s.appendChild(t);
 }
 function renderFora() {
   var box = document.getElementById("fora"); box.textContent = "";
   var fs = Array.isArray(D.fora_do_github) ? D.fora_do_github : [];
   if (!fs.length) { box.appendChild(el("div", { class: "vazio", text: "Nada fora do GitHub." })); return; }
   fs.slice().reverse().forEach(function (o) {
-    var d = el("div", { class: "it" }, [el("b", { text: sv(o.titulo) })]);
+    var d = el("div", { class: "it" }, [tx(o.titulo, "b")]);
     var tags = el("div");
     [o.plataforma, o.status, o.release && o.release !== "-" ? "release " + o.release : ""].forEach(function (x) { if (x) tags.appendChild(el("span", { class: "tag", text: x })); });
     d.appendChild(tags);
-    if (o.proximo_passo) d.appendChild(el("p", { class: "rec", text: "Proximo passo: " + o.proximo_passo }));
-    if (o.notas) d.appendChild(el("p", { text: o.notas }));
-    if ((o.conserto || []).length) d.appendChild(el("p", { text: "Conserto: " + o.conserto.join("; ") }));
+    if (o.proximo_passo) d.appendChild(el("p", { class: "rec" }, [document.createTextNode("Proximo passo: "), tx(o.proximo_passo)]));
+    if (o.notas) d.appendChild(el("p", null, [tx(o.notas)]));
+    if ((o.conserto || []).length) d.appendChild(el("p", null, [document.createTextNode("Conserto: "), tx(o.conserto.join("; "))]));
     box.appendChild(d);
   });
 }
