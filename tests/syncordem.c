@@ -175,8 +175,15 @@ static char ultimoPush[2048];
 // Modo "troca": a RPC das colecoes do perfil 1 fica presa ate a pessoa trocar
 // para o 2 — o ciclo do 1 termina com o 2 ja ativo.
 static int segurarCol, puxandoCol;
+// #378: modo "legconta" — a conta devolve um blob de ajustes com o idioma da
+// legenda, e o que sync.c faz com ele fica anotado (stubs mais abaixo).
+static int modoBlob, blobsAplicados;
+static char idiomasConta[512];
 char *sessao_rpc(const char *funcao, const char *corpo, int *st) {
   *st = 200;
+  if (modoBlob && !strcmp(funcao, "sync_pull_profile_settings_blob"))
+    return strdup("[{\"settings_json\":{\"features\":{\"player_settings\":{"
+                  "\"subtitle_preferred_language\":{\"type\":\"string\",\"value\":\"en\"}}}}}]");
   if (modoAddons && !strcmp(funcao, "sync_push_addons")) {
     pthread_mutex_lock(&trava);
     snprintf(ultimoPush, sizeof ultimoPush, "%s", corpo);
@@ -276,7 +283,8 @@ int  addons_exportar(AddonRemoto *s, int m) {
 }
 void agenda_esquecer(void) {}
 void lembrete_esquecer_todos(void) {}
-int  ajustes_aplicar_blob(const char *j) { (void)j; return 0; }
+int  ajustes_aplicar_blob(const char *j) { (void)j; blobsAplicados++; return 0; }
+void ajustes_idiomas_da_conta(const char *b) { snprintf(idiomasConta, sizeof idiomasConta, "%s", b ? b : ""); }
 void ajustes_definir_ocultar_nao_lancados(int l) { (void)l; }
 int  ajustes_mesclar_blob(const char *b, char **s) { (void)b; *s = NULL; return 0; }
 void ajustes_tmdb_idioma_relatar(const char *b) { (void)b; }
@@ -491,6 +499,22 @@ int main(int argc, char **argv) {
   int remAntes, rpcAntes;
 
   setvbuf(stdout, NULL, _IOLBF, 0);
+  if (argc > 1 && !strcmp(argv[1], "legconta")) {
+    // #378: uma mudanca anterior em Ajustes deixou a protecao gravada. O blob
+    // nao e aplicado (certo), mas os idiomas da conta tem de chegar a
+    // linguas.c: e deles que "Da conta" vive, e eles nao sobrescrevem escolha
+    // local nenhuma.
+    printf("-- sessao: ajustes locais protegidos, conta com legenda en\n");
+    dados_gravar("ajustes-locais.txt", "1\n");
+    modoBlob = 1;
+    escolher(1);
+    ciclo();
+    confere("blob protegido nao aplicado", blobsAplicados == 0);
+    confere("idiomas da conta entregues mesmo protegido",
+            strstr(idiomasConta, "subtitle_preferred_language") && strstr(idiomasConta, "\"en\""));
+    printf("%s\n", falhas ? "FALHOU" : "PASSOU");
+    return falhas ? 1 : 0;
+  }
   if (argc > 1 && !strncmp(argv[1], "addons-", 7)) return testePersistencia(argv[1]);
   if (argc > 1 && !strcmp(argv[1], "addons")) {
     modoAddons = 1; escolher(1); sync_sujar_addons(); sync_iniciar(); ateTerminar();

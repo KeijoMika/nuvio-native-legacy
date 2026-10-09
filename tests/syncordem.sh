@@ -64,6 +64,11 @@ sessao addons-reabrir
 sessao addons-boot-leitura
 sessao addons-ack
 sessao addons-limpo
+# #378: com os ajustes locais protegidos, os idiomas da conta chegam assim mesmo.
+export NV_T_DIR="$dir/legconta"; mkdir "$NV_T_DIR"
+sessao legconta
+echo "$SAIDA" | grep -qF 'idiomas da conta entregues mesmo protegido' \
+  || { echo "FALHOU: sessao legconta"; exit 1; }
 for caso in identidade ack-perfil disco ram8 teto; do
   export NV_T_DIR="$dir/addons-$caso"; mkdir "$NV_T_DIR"
   sessao "addons-$caso"
