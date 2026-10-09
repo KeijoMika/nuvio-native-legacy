@@ -226,7 +226,7 @@ function cardDecisao(x) {
   d.appendChild(l);
   if (a) d.appendChild(el("p", { class: "rec", text: "Resposta do dono: " + (a.resposta === "sim" ? "SIM" : "NAO") + (a.nota ? " - " + a.nota : "") + " (" + quandoFmt(a.quando) + ")" }));
   if (feita || !API_OK || !x.id) return d;
-  var escolha = a ? a.resposta : "";
+  var escolha = a ? a.resposta : "", enviando = false;
   var bS = el("button", { type: "button", class: "sim", text: "Sim" }), bN = el("button", { type: "button", class: "nao", text: "Nao" });
   var ta = el("textarea", { maxlength: "2000", rows: "3", placeholder: "informacao adicional (opcional)", "aria-label": "Informacao adicional" });
   ta.value = a ? a.nota || "" : "";
@@ -235,19 +235,22 @@ function cardDecisao(x) {
   function marca() {
     bS.className = "sim" + (escolha === "sim" ? " on" : ""); bN.className = "nao" + (escolha === "nao" ? " on" : "");
     bS.setAttribute("aria-pressed", String(escolha === "sim")); bN.setAttribute("aria-pressed", String(escolha === "nao"));
-    ctr.textContent = ta.value.length + "/2000"; env.disabled = !escolha;
+    ctr.textContent = ta.value.length + "/2000";
+    bS.disabled = bN.disabled = ta.disabled = enviando; env.disabled = enviando || !escolha;
   }
-  bS.addEventListener("click", function () { escolha = "sim"; marca(); });
-  bN.addEventListener("click", function () { escolha = "nao"; marca(); });
-  ta.addEventListener("input", marca);
+  bS.addEventListener("click", function () { if (enviando) return; escolha = "sim"; marca(); });
+  bN.addEventListener("click", function () { if (enviando) return; escolha = "nao"; marca(); });
+  ta.addEventListener("input", function () { if (!enviando) marca(); });
   env.addEventListener("click", function () {
-    env.disabled = true; est.className = "est"; est.textContent = "enviando...";
+    if (enviando || !escolha) return;
+    enviando = true; marca(); est.className = "est"; est.textContent = "enviando...";
     fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: x.id, resposta: escolha, nota: ta.value }) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.erro || ("HTTP " + r.status)); return j; }); })
       .then(function (j) {
         var h = (RESP[x.id] || (RESP[x.id] = { historico: [] })).historico; h.push(j.registro);
-        d.parentNode.replaceChild(cardDecisao(x), d);
-      }).catch(function (e) { est.className = "est bad"; est.textContent = "nao enviou: " + e.message; marca(); });
+        enviando = false;
+        if (d.parentNode) d.parentNode.replaceChild(cardDecisao(x), d);
+      }).catch(function (e) { enviando = false; est.className = "est bad"; est.textContent = "nao enviou: " + e.message; marca(); });
   });
   d.appendChild(el("div", { class: "resp" }, [bS, bN]));
   d.appendChild(ta);

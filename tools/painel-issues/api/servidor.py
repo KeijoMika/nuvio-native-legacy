@@ -11,7 +11,7 @@ Content-Type application/json (obriga preflight em outro site).
 
 Config por ambiente (ou argumentos de mesmo nome em minusculas):
   PAINEL_DATA_JSON   data.json publicado (ids validos)  [/data/html/data.json]
-  PAINEL_RESPOSTAS   arquivo de respostas               [/data/respostas.json]
+  PAINEL_RESPOSTAS   arquivo de respostas               [/data/respostas/respostas.json]
   PAINEL_ORIGENS     origens aceitos, separados por virgula
   PAINEL_HOST/PORTA  [0.0.0.0] [8000]
 """
@@ -69,12 +69,34 @@ def gravar(caminho, dados):
             os.fsync(f.fileno())
         os.chmod(tmp, 0o644)
         os.replace(tmp, caminho)
+        dfd = os.open(pasta, os.O_RDONLY)
+        try:
+            os.fsync(dfd)
+        finally:
+            os.close(dfd)
     except BaseException:
         try:
             os.unlink(tmp)
         except OSError:
             pass
         raise
+
+
+def prontidao(cfg):
+    """None se pronto; senao o motivo (vira 503 em /api/saude)."""
+    try:
+        if not decisoes_publicadas(cfg["data_json"]):
+            return "data.json sem ids de decisao"
+    except Erro as e:
+        return e.msg
+    pasta = os.path.dirname(os.path.abspath(cfg["respostas"]))
+    if not (os.path.isdir(pasta) and os.access(pasta, os.W_OK | os.X_OK)):
+        return "pasta de respostas nao gravavel"
+    try:
+        ler(cfg["respostas"])
+    except Erro as e:
+        return e.msg
+    return None
 
 
 def registrar(cfg, corpo):
@@ -136,6 +158,9 @@ class H(BaseHTTPRequestHandler):
         try:
             c = self._caminho()
             if c == "/api/saude":
+                motivo = prontidao(self.cfg)
+                if motivo:
+                    return self._json(503, {"ok": False, "motivo": motivo})
                 return self._json(200, {"ok": True})
             if c != "/api/respostas":
                 raise Erro(404, "nao encontrado")
@@ -176,7 +201,7 @@ def main():
     e = os.environ.get
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data-json", default=e("PAINEL_DATA_JSON", "/data/html/data.json"))
-    ap.add_argument("--respostas", default=e("PAINEL_RESPOSTAS", "/data/respostas.json"))
+    ap.add_argument("--respostas", default=e("PAINEL_RESPOSTAS", "/data/respostas/respostas.json"))
     ap.add_argument("--origens", default=e("PAINEL_ORIGENS", ORIGENS_PADRAO))
     ap.add_argument("--host", default=e("PAINEL_HOST", "0.0.0.0"))
     ap.add_argument("--porta", type=int, default=int(e("PAINEL_PORTA", "8000")))

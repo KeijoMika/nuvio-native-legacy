@@ -32,7 +32,7 @@ Cada decisao em `docs/issues/mapa.json` tem um `id` estavel (`dec-...`); o paine
 Sim/Nao, texto (2000 caracteres) e Enviar, e permite alterar ate a decisao ser marcada
 `aplicada_em` (AAAA-MM-DD, preenchido pela coordenacao). Sem a API, o painel fica so leitura.
 
-- API: `api/servidor.py` (stdlib), `POST/GET /api/respostas`, grava `/data/respostas.json`
+- API: `api/servidor.py` (stdlib), `POST/GET /api/respostas`, grava `/data/respostas/respostas.json` (no ZimaOS: `/DATA/AppData/nuvio-painel/respostas/`; o `html/` entra no container so leitura, e a API roda sem root)
   (historico por id, ultima = atual). **Sem autenticacao**: so LAN/Tailscale, como o painel;
   a defesa e o cabecalho Origin (origens do painel) + Content-Type JSON.
 - Implantar (precisa de OK do dono, recria o container nginx do painel):

@@ -43,10 +43,15 @@ def valida_decisoes():
     if reus: sys.exit('ERRO: id retirado foi reusado: '+', '.join(reus))
     try:
         ant=json.loads(subprocess.run(['git','-C',D,'show','HEAD:./mapa.json'],capture_output=True,text=True,check=True).stdout)
-        antes={d['id'] for d in ant.get('decisoes',[]) if 'id' in d}|set(ant.get('decisoes_ids_retirados',[]))
-    except Exception: antes=set()  # sem git/HEAD: so as checagens acima
+        ret_antes=set(ant.get('decisoes_ids_retirados',[]))
+        antes={d['id'] for d in ant.get('decisoes',[]) if 'id' in d}|ret_antes
+    except Exception: antes=set(); ret_antes=set()  # sem git/HEAD: so as checagens acima
+    volta=sorted(ret_antes&set(ids))
+    if volta: sys.exit("ERRO: id retirado no HEAD voltou a ficar ativo (nunca reuse): "+', '.join(volta))
     sumiu=sorted(antes-set(ids)-set(ret))
     if sumiu: sys.exit("ERRO: id de decisao sumiu sem ir para decisoes_ids_retirados: "+', '.join(sumiu))
+    perdeu=sorted(ret_antes-set(ret))
+    if perdeu: sys.exit("ERRO: id saiu de decisoes_ids_retirados (a lista so cresce): "+', '.join(perdeu))
 valida_decisoes()
 def carrega_respostas():
     p=os.path.join(D,'respostas-dono.json')
