@@ -617,6 +617,23 @@ int main(void) {
       }
       puts("ok  catalogo primeiro: lista de arquivos que ficou nao trava a traducao do TMDB");
     }
+    // CONJUNTO CHEIO sem poder crescer: 1023 pares entram (sobra a casa vazia
+    // que encerra a sondagem), repetido segue repetido, e o 1024o nunca e
+    // guardado — responde "novo" toda vez, sem travar a procura.
+    {
+      EpSet cj = { 0 };
+      callocFalha = 1; callocNegados = 0;
+      for (i = 1; i <= 1023; i++) assert(epSetNovo(&cj, 1, i) == 1);
+      assert(cj.n == 1023 && cj.cap == 1024);
+      for (i = 1; i <= 1023; i++) assert(epSetNovo(&cj, 1, i) == 0);
+      for (i = 0; i < 3; i++) assert(epSetNovo(&cj, 1, 1024) == 1);
+      assert(epSetNovo(&cj, 2, 1) == 1);
+      assert(cj.n == 1023 && cj.cap == 1024 && callocNegados > 0);
+      assert(epSetNovo(&cj, 1, 1023) == 0);
+      free(cj.v);
+      callocFalha = 0;
+      puts("ok  conjunto cheio sem crescer: 1023 pares, o resto nao entra e a procura termina");
+    }
     nFake = 0; nRotas = 0;
     addonMeta = 0; cineSerie = NULL; addonResp = NULL;
     limparCacheMeta();
