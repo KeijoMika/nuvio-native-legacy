@@ -8,6 +8,8 @@
 #
 #   NUVIO_SHOT_FONTE=3 bash tests/novidades_cartao_shot.sh /tmp/nuvio-novcartao
 #   (NUVIO_SHOT_FONTE=3 = Montserrat, a fonte da TV; NUVIO_SHOT_SO=medir pula as capturas)
+# Confere tambem os vaos reais de 12px em pt e o terceiro QR (Discord).
+# NUVIO_SHOT_SO=compilar valida o harness na sandbox, sem abrir SDL/GL.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 NUVIO_DADOS=$(mktemp -d "${TMPDIR:-/tmp}/nuvio-novcartao-shot.XXXXXX")
@@ -25,4 +27,6 @@ cc "${sources[@]}" tests/novidades_cartao_shot.c -Isrc \
   -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   -L/opt/homebrew/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
   -Wno-deprecated-declarations -Wno-macro-redefined
-"$NUVIO_DADOS/shot" "$saida"
+if [ "${NUVIO_SHOT_SO:-}" != compilar ]; then
+  "$NUVIO_DADOS/shot" "$saida"
+fi

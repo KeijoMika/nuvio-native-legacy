@@ -8,10 +8,9 @@
 // com os QRs, o ponteiro do Magic Remote, 320/180 ms de entrada e saida e as
 // Animacoes reduzidas.
 //
-// ALTURAS FIXAS: a lista nao mede texto; cada item reserva as linhas que o
-// conteudo declara (nome + frases) e o rodape e reservado. A TCL do dono
-// mostrou que medir no primeiro quadro deixava a lista descer por baixo dos
-// botoes. Se a lista nao cabe, o motor abre outra pagina, quebrando por grupo.
+// ALTURAS: mede a quebra real ao abrir/trocar de idioma, com o teto declarado
+// pelo conteudo. Guarda as medidas antes de paginar: o orcamento de texturas
+// dos primeiros quadros nao muda as alturas nem empurra a lista ao rodape.
 // CUSTO DE GPU: nenhuma passada de desfoque; artes do pacote, veus e
 // retangulos pequenos (a copia desfocada do gfx_desfocado e feita uma vez).
 #include "novidades_cartao.h"
@@ -72,7 +71,7 @@ typedef struct {
   const char *icone, *nome;
   const char *frase;     // a frase, apagada, embaixo do nome
   const char *frase2;    // opcional, logo abaixo
-  int linhas, linhas2;   // linhas RESERVADAS para cada frase (0 = 1)
+  int linhas, linhas2;   // teto de linhas de cada frase (0 = 1)
   unsigned plataformas;  // NOV_* (0 = todas)
 } NovItem;
 
@@ -220,6 +219,11 @@ static int nVis, vis[NOV_ITENS_MAX], pgVis[NOV_ITENS_MAX], nPagNov = 1;
 static const char *kickerVis[NOV_ITENS_MAX];
 static int nCen, cen[NOV_CENAS_MAX];
 static float alturaPag[NOV_PAGINAS_MAX];
+static int linhasItem[NOV_ITENS_MAX], linhasItem2[NOV_ITENS_MAX];
+static int idiomaMontado = -1;
+static unsigned plataformaMontada;
+static float vaoMin = 999.0f, vaoMax;
+static int discordDesenhado;
 
 static int compacto(void) { return CT.nCenas == 0; }
 static float padLista(void) { return compacto() ? COMPACTO_PAD : N_PAD; }
@@ -228,9 +232,21 @@ static float textoW(void) { return compacto() ? COMPACTO_W - 2.0f * COMPACTO_PAD
 
 static int linhasDe(int l) { return l > 1 ? l : 1; }
 static float alturaItem(const NovItem *it) {
-  float h = NOME_H + FRASE_LH * (float)linhasDe(it->linhas);
-  if (it->frase2) h += FRASE_GAP + FRASE_LH * (float)linhasDe(it->linhas2);
+  int i = (int)(it - CT.itens);
+  float h = NOME_H + FRASE_LH * (float)linhasItem[i];
+  if (it->frase2) h += FRASE_GAP + FRASE_LH * (float)linhasItem2[i];
   return h;
+}
+
+// Mesma quebra do desenho, sem criar texturas. Sem fonte (testes de estado),
+// conserva o teto; a proxima abertura mede novamente.
+static int medirLinhas(const char *s, int teto) {
+  int n;
+  teto = linhasDe(teto);
+  if (teto == 1 || !txt_largura(TXT_CAPTION, "M")) return teto;
+  n = (int)(txt_bloco_corta(TXT_CAPTION, i18n(s), 0, 0, 0, 0, 0,
+                            textoW() - ICONE - 22.0f, FRASE_LH, 0, teto) / FRASE_LH);
+  return n > 0 ? n : 1;
 }
 
 // Do topo do cartao ao primeiro kicker, e ate onde a lista pode ir.
@@ -242,10 +258,15 @@ static void montar(void) {
   const char *kick = NULL;
   int kickUsado = 1;
   float cap = fimLista() - topoLista(), usado = 0.0f;
+  if (idiomaMontado == ajustes_idioma() && plataformaMontada == plataforma()) return;
+  idiomaMontado = ajustes_idioma();
+  plataformaMontada = plataforma();
   nVis = 0;
   for (i = 0; i < CT.nItens && nVis < NOV_ITENS_MAX; i++) {
     if (CT.itens[i].grupo) { kick = CT.itens[i].grupo; kickUsado = 0; }
     if (!vale(CT.itens[i].plataformas)) continue;
+    linhasItem[i] = medirLinhas(CT.itens[i].frase, CT.itens[i].linhas);
+    linhasItem2[i] = CT.itens[i].frase2 ? medirLinhas(CT.itens[i].frase2, CT.itens[i].linhas2) : 0;
     kickerVis[nVis] = kickUsado ? NULL : kick;
     kickUsado = 1;
     vis[nVis++] = i;
@@ -265,7 +286,7 @@ static void montar(void) {
   }
   nPagNov = nVis ? pgVis[nVis - 1] + 1 : 1;
   if (compacto()) {
-    // Reserva o mesmo espaco usado pelo desenho, sem depender da fonte carregada.
+    // Reserva exatamente as medidas guardadas para o desenho.
     for (i = 0; i < nPagNov; i++) {
       int k, n = 0;
       float h = topoLista() + FOLGA_MIN + BOTAO_H_PRIMARIO + COMPACTO_PAD;
@@ -276,6 +297,7 @@ static void montar(void) {
       alturaPag[i] = h;
     }
   }
+  if (pagina > nPagNov) { pagina = nPagNov; pag = (float)pagina; }
   nCen = 0;
   for (i = 0; i < CT.nCenas && nCen < NOV_CENAS_MAX; i++)
     if (CT.cenas[i].desenhar && vale(CT.cenas[i].plataformas)) cen[nCen++] = i;
@@ -293,10 +315,14 @@ const char *novcartao_versao(void) { return CT.versao; }
 const char *novcartao_arquivo(void) { return CT.arquivo; }
 void novcartao_teste_relogio(float s) { relogio = s; }
 void novcartao_teste_esquecer(void) { decidido = 0; aberto = 0; }
-void novcartao_teste_plataforma(unsigned p) { plataformaTeste = p; montar(); }
+void novcartao_teste_plataforma(unsigned p) { plataformaTeste = p; idiomaMontado = -1; montar(); }
 float novcartao_teste_folga(void) { return folgaLista; }
 int novcartao_teste_cortadas(void) { return frasesCortadas; }
 int novcartao_teste_desenhados(void) { return itensDesenhados; }
+float novcartao_teste_altura_item(int i) { return alturaItem(&CT.itens[vis[i]]); }
+float novcartao_teste_vao_min(void) { return vaoMin; }
+float novcartao_teste_vao_max(void) { return vaoMax; }
+int novcartao_teste_discord(void) { return discordDesenhado; }
 void novcartao_teste_medir(int sim) { medirCortes = sim; }
 
 static float duracaoCena(int i) { float d = CT.cenas[cen[i]].duracao; return d > 0.0f ? d : CICLO_S; }
@@ -309,6 +335,7 @@ float novcartao_teste_inicio_cena(int i) {
 }
 
 static void comecar(float e) {
+  idiomaMontado = -1;
   montar();
   aberto = 1;
   decidido = 1;
@@ -382,6 +409,7 @@ static void ok(void) {
 void novcartao_evento(const SDL_Event *e) {
   SDL_Keycode k;
   if (!aberto || e->type != SDL_KEYDOWN) return;
+  montar();
   k = e->key.keysym.sym;
   if (k == SDLK_LEFT)  { if (foco > 0) foco--; return; }
   if (k == SDLK_RIGHT) { if (foco < 1) foco++; return; }
@@ -398,6 +426,7 @@ void novcartao_atualizar(float dt, Uint32 agora) {
   (void)agora;
   if (!aberto && entrada < 0.002f) { entrada = 0.0f; return; }
   if (aberto) {
+    montar();
     pedirArtes();
     if (novcartao_previa_pronta()) relogio += dt;
   }
@@ -471,22 +500,23 @@ static void desenhaPrevia(float x, float y, float a) {
 // ------------------------------------------------------------- as mudancas
 static float ox;   // deslocamento horizontal da pagina (a troca de pagina desliza)
 
-static void frase(const char *s, int linhas, float x, float y, float w, float a) {
+static float frase(const char *s, int linhas, float x, float y, float w, float a) {
   const char *t = i18n(s);
   if (linhas <= 1) {
     TxtLinha f = txt_linha_corta(TXT_CAPTION, t, 186, 192, 204, 255, w);
     txt_desenhar_alpha(f, x, y, 0.92f * a);
     if (txt_largura(TXT_CAPTION, t) > (int)w) frasesCortadas++;
-    return;
+    return FRASE_LH;
   }
-  txt_bloco_corta(TXT_CAPTION, t, 186, 192, 204, x, y, w, FRASE_LH, 0.92f * a, linhas);
+  float h = txt_bloco_corta(TXT_CAPTION, t, 186, 192, 204, x, y, w, FRASE_LH, 0.92f * a, linhas);
   // So nos testes: quantas linhas a frase pede sem limite (desenho invisivel).
   if (medirCortes && txt_bloco(TXT_CAPTION, t, 0, 0, 0, -4000.0f, -4000.0f, w, FRASE_LH, 0.0f, 0) >
                      FRASE_LH * (float)linhas + 0.5f)
     frasesCortadas++;
+  return h;
 }
 
-static void item(const NovItem *it, float y, float a) {
+static float item(const NovItem *it, float y, float a) {
   float tx = textoX() + ox + ICONE + 22.0f, tw = textoW() - (ICONE + 22.0f);
   GfxRect d = { textoX() + ox, y - 2.0f, ICONE, ICONE };
   const char *nome = i18n(it->nome);
@@ -496,10 +526,11 @@ static void item(const NovItem *it, float y, float a) {
   n = txt_linha_corta(TXT_ILHA_NOME, nome, 246, 247, 250, 255, tw);
   txt_desenhar_alpha(n, tx, y, a);
   if (txt_largura(TXT_ILHA_NOME, nome) > (int)tw) frasesCortadas++;
-  frase(it->frase, linhasDe(it->linhas), tx, y + NOME_H, tw, a);
+  int i = (int)(it - CT.itens);
+  float h = NOME_H + frase(it->frase, linhasItem[i], tx, y + NOME_H, tw, a);
   if (it->frase2)
-    frase(it->frase2, linhasDe(it->linhas2), tx,
-          y + NOME_H + FRASE_LH * (float)linhasDe(it->linhas) + FRASE_GAP, tw, a);
+    h += FRASE_GAP + frase(it->frase2, linhasItem2[i], tx, y + h + FRASE_GAP, tw, a);
+  return h;
 }
 
 static float grupo(const char *g, float y, float a) {
@@ -526,6 +557,7 @@ static void cabecalho(float y0, float a, float dx) {
 static void paginaNovidades(int pg, float y0, float a, float dx) {
   float y = y0 + topoLista(), vao, total = 0.0f, limite = y0 + (compacto() ? alturaPag[pg] - COMPACTO_PAD - BOTAO_H_PRIMARIO - FOLGA_MIN : fimLista());
   int i, g = 0, ng = 0, n = 0, k = 0;
+  float fimAnterior = 0.0f;
   if (a <= 0.004f) return;
   cabecalho(y0, a, dx);
   for (i = 0; i < nVis; i++) {
@@ -559,7 +591,12 @@ static void paginaNovidades(int pg, float y0, float a, float dx) {
       y += grupo(kickerVis[i], y + sobe, al);
     }
     if (y + h > limite + 0.5f) break;
-    item(it, y + sobe, al);
+    if (medirCortes && k && !kickerVis[i]) {
+      float v = y + sobe - fimAnterior;
+      if (v < vaoMin) vaoMin = v;
+      if (v > vaoMax) vaoMax = v;
+    }
+    fimAnterior = y + sobe + item(it, y + sobe, al);
     itensDesenhados++;
     y += h;
     k++;
@@ -581,26 +618,33 @@ static void paginaApoioDesenho(float y0, float a, float dx) {
                  200, 205, 215, x, y, textoW(), 36.0f, 0.9f * a, 4);
   y += 44.0f;
   { float lado = 300.0f, gap = 44.0f;
-    for (i = 0; i < n; i++) {
-      int q = apoio_qual(i);
-      float qx = x + (float)i * (lado + gap);
+    float comunidadeX = x + textoW() - lado;
+    ajustes_ui_kicker(i18n("Comunidade"), comunidadeX, y - GRUPO_H, a);
+    gfx_cor((GfxRect){ comunidadeX - 68.0f, y - GRUPO_H, 1, lado + 174.0f },
+            0, 1, 1, 1, 0.08f * a);
+    for (i = 0; i <= n; i++) {
+      int q = i < n ? apoio_qual(i) : APOIO_DISCORD;
+      float qx = i < n ? x + (float)i * (lado + gap) : comunidadeX;
       TxtLinha u = txt_linha_corta(TXT_V2_18, apoio_url_curta(q), 243, 242, 239, 255, lado + gap * 0.8f);
       // A luz atras do cartao claro: a peca mais importante da pagina sem
       // gritar (sombra, nao borda colorida).
       gfx_rect((GfxRect){ qx - 18.0f, y - 10.0f, lado + 36.0f, lado + 40.0f }, 0, GFX_SOMBRA, 0.8f, 0, 0, 0.2f,
                0, 0, 0, 0.5f * a);
-      apoio_qr(q, qx, y, lado, a);
+      int desenhou = apoio_qr(q, qx, y, lado, a);
+      if (q == APOIO_DISCORD) discordDesenhado = desenhou;
       // O selo (Ko-fi oficial; o do Patreon no mesmo formato) e o endereco,
       // centrados embaixo do codigo.
       apoio_rotulo(q, qx + lado * 0.5f, y + lado + 20.0f, 72.0f, 1, a);
       txt_desenhar_alpha(u, qx + (lado - (float)u.w) * 0.5f, y + lado + 20.0f + 72.0f + 10.0f, 0.6f * a);
     }
-    y += lado + 20.0f + 72.0f + 10.0f + 24.0f + 34.0f; }
+    y += lado + 20.0f + 72.0f + 10.0f + 24.0f + 34.0f;
+    txt_bloco(TXT_CAPTION, i18n("Dúvidas, bugs e builds de teste."),
+              186, 192, 204, comunidadeX, y, lado, 28.0f, 0.92f * a, 3); }
   { float ar, ag, ab;
     ajustes_acento_marca(&ar, &ag, &ab);
     gfx_icone((GfxRect){ x, y + 1.0f, 22.0f, 22.0f }, "aj_heart", ar, ag, ab, 0.9f * a);
     txt_bloco(TXT_CAPTION, i18n("É opcional e nada muda no app. Fica também em Ajustes › Sobre e ajuda."),
-              186, 192, 204, x + 34.0f, y, textoW() - 34.0f, 28.0f, 0.92f * a, 2); }
+              186, 192, 204, x + 34.0f, y, textoW() - 470.0f, 28.0f, 0.92f * a, 3); }
 }
 
 static void ptFoco(int b, int nada) { (void)nada; foco = b; }
@@ -681,6 +725,7 @@ static void desenharCorpo(void) {
 
   frasesCortadas = 0;
   itensDesenhados = 0;
+  vaoMin = 999.0f; vaoMax = 0.0f; discordDesenhado = 0;
   // Na pagina de apoio a previa recua (um veu, nao transparencia: a cena
   // translucida mostraria uma camada atraves da outra): os codigos sao o assunto.
   if (!compacto()) {

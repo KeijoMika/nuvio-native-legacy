@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 static GLuint fbo, fboTex;
 
@@ -90,6 +91,11 @@ static void captura(const char *saida, const char *nome, float seg, int pagina) 
   novcartao_teste_relogio(seg);
   // Quadros parados: icones, texto e a copia desfocada terminam de carregar.
   for (i = 0; i < 12; i++) { quadro(0.0f); SDL_Delay(2); }
+  if (pagina == novcartao_paginas() - 1) {
+    assert(novcartao_teste_discord());
+    assert(!strcmp(apoio_url(APOIO_DISCORD), NV_URL_DISCORD));
+    assert(apoio_n() == 2 && apoio_qual(2) == -1);
+  }
   snprintf(cam, sizeof cam, "%s/%s.png", saida, nome);
   grava(cam);
   tecla(SDLK_ESCAPE); tecla(SDLK_ESCAPE); tecla(SDLK_ESCAPE); tecla(SDLK_ESCAPE);
@@ -114,6 +120,11 @@ static void cabeEmTodos(void) {
         // Sem cenas, medir o texto da lista tambem.
         c += novcartao_teste_cortadas();
         desenhados += novcartao_teste_desenhados();
+        if (idi == 0 && novcartao_teste_vao_max() > 0) {
+          assert(fabsf(novcartao_teste_vao_min() - 12.0f) < 0.01f);
+          assert(fabsf(novcartao_teste_vao_max() - 12.0f) < 0.01f);
+        }
+        assert(novcartao_paginas() == n);
         // Todas as cenas passam pela legenda quando o conteudo tem previa.
         for (int cena = 0; cena < novcartao_cenas(); cena++) {
           novcartao_teste_relogio(novcartao_teste_inicio_cena(cena) + 1.0f); quadro(0.0f);
@@ -122,6 +133,8 @@ static void cabeEmTodos(void) {
         tecla(SDLK_RETURN);
       }
       assert(desenhados == novcartao_itens_visiveis());
+      for (i = 0; i < 40; i++) quadro(1.0f / 60.0f);
+      assert(novcartao_teste_discord());
       if (novcartao_teste_folga() < 27.99f)
         printf("plataforma %u, idioma %d (%s): folga %.2f px\n", PLAT[k], idi, idioma_iso(idi), novcartao_teste_folga());
       assert(novcartao_teste_folga() >= 27.99f);   // lista exatamente cheia nao e erro de float
@@ -134,6 +147,7 @@ static void cabeEmTodos(void) {
   novcartao_teste_plataforma(0);
   if (getenv("NUVIO_SHOT_FONTE")) assert(comCorte == 0);
   printf("PASS: a lista acaba acima do rodape nos %d idiomas e 5 plataformas (%d com reticencias)\n", IDIOMA_N, comCorte);
+  puts("PASS: vaos de 12px em pt; Discord desenhado em todos os idiomas e plataformas");
 }
 
 int main(int argc, char **argv) {

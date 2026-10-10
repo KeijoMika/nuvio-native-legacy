@@ -12,7 +12,7 @@
 // O VISUAL e o da 2.0.2 (aprovado): a previa viva a esquerda, as mudancas em
 // grupos a direita, os botoes no canto de baixo e, no fim, "Apoie o projeto"
 // com os QRs (apoio.h). Quando a lista nao cabe numa pagina, o motor quebra
-// por GRUPO em mais paginas (alturas fixas, nada medido).
+// por GRUPO em mais paginas (alturas medidas e guardadas ao abrir/trocar idioma).
 // Sem cenas, usa uma coluna centrada, sem previa, com altura pela lista.
 //
 // QUANDO ABRE: uma vez por versao, na Home pronta, sem player nem pagina do
@@ -63,6 +63,10 @@ void novcartao_teste_plataforma(unsigned p); // 0 = a do binario
 float novcartao_teste_folga(void);   // rodape - fim da lista, pior pagina desenhada
 int  novcartao_teste_cortadas(void); // frases com reticencias, ultimo quadro
 int  novcartao_teste_desenhados(void); // itens realmente desenhados, ultimo quadro
+float novcartao_teste_altura_item(int i); // altura reservada do i-esimo visivel
+float novcartao_teste_vao_min(void); // vaos reais entre itens do mesmo grupo
+float novcartao_teste_vao_max(void);
+int novcartao_teste_discord(void); // QR desenhado no ultimo quadro
 // Liga a medida das frases de varias linhas (custa um bloco invisivel por frase).
 void novcartao_teste_medir(int sim);
 #endif

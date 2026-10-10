@@ -1,5 +1,5 @@
 // Conteudo da 2.0.4: docs/releases/2.0.4/NOTAS.md e PEDIDO-NOV-R2.md.
-// Sem cenas nem artes. Linhas reservadas para as traducoes, sem medir no primeiro quadro.
+// Sem cenas nem artes. Tetos de linhas para as traducoes; o motor mede antes de paginar.
 static const NovItem ITENS_204[] = {
   { .grupo = "Correções", .icone = "aj_list-video", .nome = "Temporadas",
     .frase = "Abas de temporadas corrigidas em animes longos.", .linhas = 2 },

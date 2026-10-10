@@ -9,12 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *const URL[APOIO_N] = { NV_URL_PATREON, NV_URL_KOFI };
-static const char *const NOME[APOIO_N] = { "Patreon", "Ko-fi" };
+static const char *const URL[] = { NV_URL_PATREON, NV_URL_KOFI, NV_URL_DISCORD };
+static const char *const NOME[] = { "Patreon", "Ko-fi", "Discord" };
 
-static GLuint tex[APOIO_N];
-static int    texLado[APOIO_N];     // modulos + zona de silencio
-static int    tentou[APOIO_N];
+static GLuint tex[APOIO_DISCORD + 1];
+static int    texLado[APOIO_DISCORD + 1];     // modulos + zona de silencio
+static int    tentou[APOIO_DISCORD + 1];
 // O QR OFICIAL DO KO-FI (o do dono, com a xicara no meio): aponta para o
 // endereco por ID da pagina (ko-fi.com/K0S82835VO), nao para NV_URL_KOFI.
 // 410 px = 41 modulos de 10 px, zona de silencio inclusa. Sem a imagem (ou
@@ -35,8 +35,8 @@ int apoio_qual(int i) {
   return -1;
 }
 
-const char *apoio_nome(int q) { return q >= 0 && q < APOIO_N ? NOME[q] : ""; }
-const char *apoio_url(int q) { return q >= 0 && q < APOIO_N ? URL[q] : ""; }
+const char *apoio_nome(int q) { return q >= 0 && q <= APOIO_DISCORD ? NOME[q] : ""; }
+const char *apoio_url(int q) { return q >= 0 && q <= APOIO_DISCORD ? URL[q] : ""; }
 
 const char *apoio_url_curta(int q) {
   const char *s = apoio_url(q), *p = strstr(s, "://");
@@ -80,7 +80,7 @@ static void gerar(int q) {
 
 int apoio_qr(int q, float x, float y, float lado, float a) {
   float s;
-  if (q < 0 || q >= APOIO_N || !URL[q][0]) return 0;
+  if (q < 0 || q > APOIO_DISCORD || !URL[q][0]) return 0;
   if (q == APOIO_KOFI && a > 0.004f) {
     GLuint t = tex_obter(qrKofi);
     if (t) {
@@ -119,6 +119,7 @@ void apoio_dir(const char *d) {
 // altura; a placa do Patreon copia altura, cantos e as duas linhas (pequena
 // em cima, nome grande embaixo) para os dois lerem como par.
 float apoio_rotulo(int q, float x, float y, float h, int centro, float a) {
+  if (q < 0 || q > APOIO_DISCORD) return 0;
   if (q == APOIO_KOFI) {
     GLuint t = tex_obter(selo);
     float ap = tex_aspecto(selo), w;
@@ -131,20 +132,22 @@ float apoio_rotulo(int q, float x, float y, float h, int centro, float a) {
     }
     return w;
   }
-  { TxtLinha p = txt_linha(TXT_V2_18, i18n("Apoie no"), 30, 31, 36, 255);
+  { TxtLinha p = {0};
+    if (q != APOIO_DISCORD) p = txt_linha(TXT_V2_18, i18n("Apoie no"), 30, 31, 36, 255);
     TxtLinha n = txt_linha(TXT_W20_24B, NOME[q], 20, 21, 26, 255);
-    float w = (float)(p.w > n.w ? p.w : n.w) + 2.0f * 0.42f * h, th = (float)p.h + (float)n.h - 2.0f;
+    float w = (float)(p.w > n.w ? p.w : n.w) + 2.0f * 0.42f * h;
+    float ph = p.h ? (float)p.h - 2.0f : 0.0f, th = ph + (float)n.h;
     if (centro) x -= w * 0.5f;
     gfx_cor((GfxRect){ x, y, w, h }, 0.11f, 0.957f, 0.961f, 0.980f, a);
     txt_desenhar_alpha(p, x + (w - (float)p.w) * 0.5f, y + (h - th) * 0.5f, 0.8f * a);
-    txt_desenhar_alpha(n, x + (w - (float)n.w) * 0.5f, y + (h - th) * 0.5f + (float)p.h - 2.0f, a);
+    txt_desenhar_alpha(n, x + (w - (float)n.w) * 0.5f, y + (h - th) * 0.5f + ph, a);
     return w;
   }
 }
 
 void apoio_soltar(void) {
   int q;
-  for (q = 0; q < APOIO_N; q++) {
+  for (q = 0; q <= APOIO_DISCORD; q++) {
     if (tex[q]) { gfx_tex_esquecer(tex[q]); glDeleteTextures(1, &tex[q]); }
     tex[q] = 0; tentou[q] = 0;
   }
