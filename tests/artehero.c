@@ -37,7 +37,35 @@ static CatItem item(const char *backdrop, const char *poster, const char *imdb) 
   return c;
 }
 
+static const char *escolhaSalva;
+static const char *fundoSalvo(const char *id) {
+  return !strcmp(id, "tt7") ? escolhaSalva : NULL;
+}
+
 int main(void) {
+  // Escolhas Apple antigas precisam sair da chave do arquivo antigo em disco.
+  { CatItem c = item("", "", "tt7");
+    const char *antiga = "https://nuvio.invalid/arte/apple/1920/tt7/m/2015/Silo%20Teste";
+    const char *nova = "https://nuvio.invalid/arte/apple/1920/v2/tt7/m/2015/Silo%20Teste";
+    artehero_definir_escolha(fundoSalvo, NULL);
+    escolhaSalva = antiga;
+    assert(!strcmp(artehero_url_escolhida(&c), nova));
+    assert(!strcmp(artehero_url(&c), nova));
+    assert(!strcmp(artehero_url_destaque(&c, ARTEHERO_TMDB, 1), nova));
+    assert(!strcmp(artehero_url_escolha_grande(antiga), nova));
+    assert(escolhaSalva == antiga);  // migracao somente em memoria
+    escolhaSalva = nova;
+    assert(!strcmp(artehero_url_escolhida(&c), nova));
+    escolhaSalva = "https://nuvio.invalid/arte/apple/1280/tt7/s/2023/Silo";
+    assert(!strcmp(artehero_url_escolhida(&c),
+                   "https://nuvio.invalid/arte/apple/1280/v2/tt7/s/2023/Silo"));
+    escolhaSalva = "https://nuvio.invalid/arte/fanart/full/tt7/m/0";
+    assert(!strcmp(artehero_url_escolhida(&c), escolhaSalva));
+    escolhaSalva = "https://example.com/apple/1920/tt7/m/2015/Silo";
+    assert(!strcmp(artehero_url_escolhida(&c), escolhaSalva));
+    artehero_definir_escolha(NULL, NULL); }
+  puts("ok  escolha Apple salva: migra URL antiga, preserva versionada e outras fontes");
+
   // SAMSUNG: NUNCA `original` NEM /full/ no fundo, em fonte nenhuma, nem na
   // Alta (fundoOriginal(), OOM do registro 1450). tests/artehero.sh roda este
   // mesmo arquivo uma segunda vez com -D__EMSCRIPTEN__.
