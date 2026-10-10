@@ -51,6 +51,7 @@
 #include "ajustes_ux.h"
 #include "idioma.h"
 #include "posterprov.h"
+#include "rede.h"
 #include "ponteiro.h"
 #include "sistexto.h"
 #include "celbotao.h"
@@ -323,9 +324,11 @@ static void metaTitulo(const CatItem *ci, char *dst, size_t n) {
 static const char *arteDe(const CatItem *ci, int paisagem) {
   const char *a;
   if (paisagem && ci->backdrop[0]) return ci->backdrop;
-  a = posterprov_card_addon(ci->origem, ci->imdb, ci->tmdb, ci->tipo, ci->poster);
-  if (a && a[0]) return a;
-  return ci->backdrop[0] ? ci->backdrop : "";
+  // A busca preserva a arte do resultado; provedor por ID so sem nenhuma.
+  if (ci->poster[0]) return ci->poster;
+  if (ci->backdrop[0]) return ci->backdrop;
+  a = posterprov_card_addon(ci->origem, ci->imdb, ci->tmdb, ci->tipo, "");
+  return a && a[0] ? a : "";
 }
 
 static void linhaTitulo(int tipo, int idx) {
@@ -338,7 +341,19 @@ static void linhaTitulo(int tipo, int idx) {
   snprintf(l->arte, sizeof l->arte, "%s", arteDe(ci, tipo == L_TOPO));
   snprintf(l->id, sizeof l->id, "%s", ci->imdb);
   snprintf(l->genero, sizeof l->genero, "%s", ci->genero);
-  l->paisagem = ci->backdrop[0] != 0;
+  l->paisagem = ci->backdrop[0] && strcmp(ci->backdrop, ci->poster) &&
+                !strcmp(l->arte, ci->backdrop);
+  // Uma linha por montagem, nao por quadro. URLs redigidas, inclusive addon.
+  { char origem[160], poster[256], fundo[256], escolhida[256];
+    printf("[spotlight-arte] id=%s tipo=%s meta=%.96s linha=%s fonte=%s paisagem=%d origem=%s poster=%s background=%s escolhida=%s\n",
+           ci->imdb, ci->tipo, ci->meta, tipo == L_TOPO ? "topo" : "titulo",
+           !l->arte[0] ? "nenhuma" : !strcmp(l->arte, ci->poster) ? "poster" :
+           !strcmp(l->arte, ci->backdrop) ? "background" : "provedor-id", l->paisagem,
+           rede_url_publica(ci->origem, origem, sizeof origem),
+           rede_url_log(ci->poster, poster, sizeof poster),
+           rede_url_log(ci->backdrop, fundo, sizeof fundo),
+           rede_url_log(l->arte, escolhida, sizeof escolhida));
+  }
   snprintf(l->chave, sizeof l->chave, "t|%s|%s", ci->imdb, ci->titulo);
 }
 
