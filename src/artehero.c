@@ -317,7 +317,8 @@ static const char *urlDaFonte(const CatItem *item, int fonte, int grande,
 #endif
       if (!temTt || !ano || !item->titulo[0]) return NULL;
       codificar(item->titulo, enc, sizeof enc);
-      snprintf(saida, tam, "%s" "apple/%s/%s/%c/%d/%s", ARTE_VIRTUAL_PREFIXO,
+      // v2 separa no disco a arte antiga, que podia vir do tipo oposto.
+      snprintf(saida, tam, "%s" "apple/%s/v2/%s/%c/%d/%s", ARTE_VIRTUAL_PREFIXO,
                t, id, ehSerie(item) ? 's' : 'm', ano, enc);
       return saida;
     }

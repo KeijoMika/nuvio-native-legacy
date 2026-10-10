@@ -719,6 +719,7 @@ static int lerPedido(const char *url, ArfPedido *p) {
   memcpy(p->fonte, s, n); s = b + 1;
   b = strchr(s, '/'); if (!b || (n = (size_t)(b - s)) == 0 || n >= sizeof p->tamanho) return -1;
   memcpy(p->tamanho, s, n); s = b + 1;
+  if (!strcmp(p->fonte, "apple") && !strncmp(s, "v2/", 3)) s += 3;
   b = strchr(s, '/'); n = b ? (size_t)(b - s) : strlen(s);
   if (!n || n >= sizeof p->id) return -1;
   memcpy(p->id, s, n);
