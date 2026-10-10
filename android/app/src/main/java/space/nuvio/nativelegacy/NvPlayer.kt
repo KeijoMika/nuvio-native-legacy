@@ -603,9 +603,16 @@ object NvPlayer {
     // dele entra na lista entre estes dois (setVideoSurfaceView, em abrirMain).
     private var destruirIni = 0L
     private val antesDoMedia3 = object : SurfaceHolder.Callback {
-        override fun surfaceCreated(h: SurfaceHolder) {}
-        override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, a: Int) {}
-        override fun surfaceDestroyed(h: SurfaceHolder) { destruirIni = SystemClock.elapsedRealtime() }
+        override fun surfaceCreated(h: SurfaceHolder) {
+            Log.i(TAG, "[dvtrace] created sessao=$sessao holder=${System.identityHashCode(h)} atual=${h === superficie?.holder} hdr=$ultHdr frame=${h.surfaceFrame}")
+        }
+        override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, a: Int) {
+            Log.i(TAG, "[dvtrace] changed sessao=$sessao holder=${System.identityHashCode(h)} atual=${h === superficie?.holder} tamanho=${w}x$a formato=$f hdr=$ultHdr")
+        }
+        override fun surfaceDestroyed(h: SurfaceHolder) {
+            destruirIni = SystemClock.elapsedRealtime()
+            Log.i(TAG, "[dvtrace] destroyed sessao=$sessao holder=${System.identityHashCode(h)} atual=${h === superficie?.holder} hdr=$ultHdr")
+        }
     }
     private val depoisDoMedia3 = object : SurfaceHolder.Callback {
         override fun surfaceCreated(h: SurfaceHolder) {}
@@ -666,6 +673,7 @@ object NvPlayer {
         pedX = x; pedY = y; pedW = w; pedH = h; pedEncaixa = encaixa
         temJanela = true
         calcularJanela()
+        Log.i(TAG, "[dvtrace] janela sessao=$sessao holder=${System.identityHashCode(superficie?.holder)} pedido=$x,$y ${w}x$h encaixa=$encaixa calculada=$jx,$jy ${jw}x$jh hdr=$ultHdr semRecriar=$semRecriar")
     }
 
     private fun calcularJanela() {
@@ -773,6 +781,7 @@ object NvPlayer {
     private val recriar = Runnable {
         val p = player
         val sv = superficie
+        Log.i(TAG, "[dvtrace] recriar player=${System.identityHashCode(p)} holder=${System.identityHashCode(sv?.holder)} soltando=${soltando === p} vis=${sv?.visibility} valida=${sv?.holder?.surface?.isValid}")
         if (p != null && sv != null && soltando !== p && sv.visibility == View.VISIBLE && sv.holder.surface?.isValid == true) {
             soltando = p
             soltarSaida(p) {
@@ -783,6 +792,7 @@ object NvPlayer {
                 Log.i(TAG, "[player] superficie: destruir levou ${SystemClock.elapsedRealtime() - ini} ms no fio principal")
                 principal.post {
                     if (player != null) sv.visibility = View.VISIBLE
+                    Log.i(TAG, "[dvtrace] visible player=${System.identityHashCode(p)} holder=${System.identityHashCode(sv.holder)} atual=${player === p && superficie === sv}")
                     (activity as? NuvioActivity)?.devolverFoco()
                 }
             }
@@ -800,6 +810,7 @@ object NvPlayer {
         } catch (e: Throwable) { false }
     }
     private fun recriarSuperficie(atrasoMs: Long) {
+        Log.i(TAG, "[dvtrace] pedido sessao=$sessao holder=${System.identityHashCode(superficie?.holder)} atrasoMs=$atrasoMs hdr=$ultHdr quadro=$quadroVisto semRecriar=$semRecriar soltando=${soltando != null}")
         if (semRecriar) return
         principal.removeCallbacks(recriar)
         principal.postDelayed(recriar, atrasoMs)
@@ -831,7 +842,7 @@ object NvPlayer {
     private val estavelRun = Runnable {
         if (player != null && quadroVisto && !estavelEmitido) {
             estavelEmitido = true
-            Log.i(TAG, "[aspect] superficie estavel (hdr=$ultHdr)")
+            Log.i(TAG, "[aspect] superficie estavel (hdr=$ultHdr) sessao=$sessao soltando=${soltando != null} segunda=$hdrSegundaFeita holder=${System.identityHashCode(superficie?.holder)}")
             ev(EV_SUPERFICIE_ESTAVEL)
         }
     }
@@ -952,7 +963,7 @@ object NvPlayer {
 
         override fun onRenderedFirstFrame() {
             if (!atual(minha)) return
-            Log.i(TAG, "[player] onRenderedFirstFrame renderer=video loadMs=${SystemClock.elapsedRealtime() - abriuEm}")
+            Log.i(TAG, "[player] onRenderedFirstFrame renderer=video loadMs=${SystemClock.elapsedRealtime() - abriuEm} sessao=$sessao hdr=$ultHdr holder=${System.identityHashCode(superficie?.holder)} soltando=${soltando != null}")
             ev(EV_PRIMEIRO_QUADRO)
             quadroVisto = true
             logTaxaDeQuadros()
@@ -1143,6 +1154,7 @@ object NvPlayer {
             }
         }
         if (hdr == ultHdr && dv == ultDv && atmos == ultAtmos) return
+        Log.i(TAG, "[dvtrace] hdr sessao=$sessao $ultHdr->$hdr decoderDv=$decoderDv quadro=$quadroVisto estavel=$estavelEmitido segunda=$hdrSegundaFeita soltando=${soltando != null}")
         ultHdr = hdr; ultDv = dv; ultAtmos = atmos
         try { nativeHdr(hdr, dv, atmos) } catch (e: UnsatisfiedLinkError) { }
         hdrNaSuperficie()
