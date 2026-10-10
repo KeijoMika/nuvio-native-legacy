@@ -21,7 +21,7 @@
 //       unica passada (GFX_COPIA, filtro linear). 2,25x menos pixels por
 //       quadro. SO FORCADO: nas Tizen 5.0 o texto ficou borrado demais.
 //
-// COMO O NIVEL E ESCOLHIDO (so no .tpk, NV_TPK):
+// COMO O NIVEL E ESCOLHIDO (.tpk, Android e LG webOS):
 //   - -DNV_TPK_NIVEL_FORCADO=N (tools/tpk.sh com NV_TPK_NIVEL=N): fixo, sem
 //     medir. E o canario de comparacao; a release nao usa.
 //   - senao ADAPTATIVO: nos primeiros ~20 s de home cheia mede FPS e quanto do
@@ -34,12 +34,14 @@
 //     avaliacao=1, bloqueado e fps0/1/2. Nivel legado >0 e comparado uma vez
 //     com o 0 na mesma sessao. Candidato so e gravado depois da comparacao.
 //     Chave diferente (firmware novo, outra TV) = recomeca do 0.
-//   - GPU fraca conhecida (ptv_gpu_fraca) sem nada gravado: comeca no 1.
+//   - Sem nada gravado: comeca no 0, inclusive em GPU fraca conhecida.
+//   - Sair da Home, perder as artes ou suspender cancela o candidato e volta
+//     ao nivel anterior; a proxima comparacao mede uma referencia nova.
 //   - a chave ganha "4k" com superficie acima de 1080p: o nivel aprendido em
 //     4K (4x os pixels) nao vale para 1080p, e vice-versa.
 //   - NUNCA vira 720p sozinho (pedido do dono, 06/10: "720p e o pior cenario,
 //     e o que fica mais feio"): o maximo automatico e o 2, em 1080p.
-//   - fora do .tpk: nivel 0 sempre (LG e .wgt nao mudam). No Mac,
+//   - nos demais alvos: nivel 0 por padrao (.wgt nao muda). No Mac,
 //     NUVIO_GPU_NIVEL=N no ambiente forca o nivel, para ver o resultado.
 //
 // GLES3 / EXTENSOES: o host cria contexto GLES 2.0 (Program.cs Version20,

@@ -306,13 +306,7 @@ void gpun_iniciar(int w, int h) {
   adaptativo = 1;
   origem = "adaptativo";
   ler();
-  // Nothing saved yet and a GPU class known to be weak (Mali-4xx, Midgard,
-  // ptv_gpu_fraca): start at light effects instead of spending the first
-  // measured window janking at full effects. Measuring continues from there.
-  if (!strcmp(origem, "adaptativo") && ptv_gpu_fraca_atual()) {
-    nivel = 1;
-    origem = "GPU fraca: comeca nos efeitos leves";
-  }
+  // Mesmo GPU fraca precisa da referencia no 0 antes de reduzir efeitos.
 #else
   { const char *e = getenv("NUVIO_GPU_NIVEL");
 #if defined(__APPLE__) || defined(NV_LINUX_DESKTOP)
@@ -506,8 +500,13 @@ void gpun_medir(double dtms, double espera, double cpu, int naHome, int cheia) {
   double fps, e, c;
   if (!adaptativo || decidido || nivel > GPUN_NIVEL_AUTO_MAX) return;
   if (!naHome || !cheia || dtms > 1000.0) {
-    // Fora da home (ou suspensao): a janela em curso nao vale; ao voltar,
-    // aquece de novo antes de medir.
+    // Outra cena invalida tambem a referencia do candidato. Volta ao ultimo
+    // nivel confirmado, sem gravar/bloquear; ao voltar mede a referencia nova.
+    if (anterior >= 0) {
+      fpsNivel[nivel] = fpsNivel[anterior] = 0;
+      aplicar(anterior, "comparacao interrompida");
+      anterior = -1;
+    }
     if (estavaNaHome) { janN = 0; janMs = janEsp = janCpu = 0; if (aquece < GPUN_ASSENTA_MS) aquece = GPUN_ASSENTA_MS; }
     estavaNaHome = 0;
     return;

@@ -7,6 +7,7 @@
 #include "gpunivel.h"
 #include "gfx.h"
 #include "dados.h"
+#include "perfiltv.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,13 +38,61 @@ int dados_gravar(const char *nome, const char *c) {
 }
 char *dados_ler(const char *nome) { (void)nome; return gravado[0] ? strdup(gravado) : NULL; }
 
+// Inicializacao real, sem contexto GL: GPU fraca reconhecida pelo perfiltv.
+const GLubyte *glGetString(GLenum e) {
+  return (const GLubyte *)(e == GL_RENDERER ? "Mali-400" : "");
+}
+void glGetIntegerv(GLenum e, GLint *v) { (void)e; *v = 0; }
+
 // `seg` segundos de quadros iguais.
 static void rodar(double seg, double dt, double espera, double cpu, int naHome, int cheia) {
   double t;
   for (t = 0; t < seg * 1000.0; t += dt) gpun_medir(dt, espera, cpu, naHome, cheia);
 }
 
-int main(void) {
+static void inicioFraco(void) {
+  gravado[0] = 0;
+  gpun_iniciar(1920, 1080);
+  assert(ptv_gpu_fraca_atual());
+  rodar(8, 31.25, 25, 4, 1, 1);
+  assert(gpun_nivel() == 1 && !gpun_teste_decidido() && !gravado[0]);
+  rodar(7, 31.25, 25, 4, 1, 1);
+  assert(gpun_nivel() == 0 && strstr(gravado, "bloqueado=1"));
+  gpun_iniciar(1920, 1080);
+  assert(gpun_nivel() == 0 && gpun_teste_decidido());
+  puts("ok  R2 GPU fraca: 32 -> 32 fps nao valida reducao no arranque");
+}
+
+static void interrupcao(void) {
+  // Sair da Home, perder as artes ou suspender, durante ambos os candidatos.
+  for (int degrau = 1; degrau <= 2; degrau++) {
+    for (int motivo = 0; motivo < 3; motivo++) {
+      gpun_teste_reiniciar(); gravado[0] = 0;
+      rodar(8, degrau == 1 ? 1000.0 / 30 : 100, 90, 4, 1, 1);
+      if (degrau == 2) rodar(7, 50, 40, 4, 1, 1);
+      assert(gpun_nivel() == degrau && !gpun_teste_decidido());
+      gpun_medir(motivo == 2 ? 1001 : 40, 30, 4, motivo != 0, motivo != 1);
+      assert(gpun_nivel() == degrau - 1 && !gpun_teste_decidido() && !gravado[0]);
+      // Outra cena a 50 fps nao deve confirmar o candidato interrompido.
+      rodar(8, 20, 15, 4, 1, 1);
+      assert(gpun_nivel() == degrau - 1 && gpun_teste_decidido());
+      assert(strstr(gravado, "bloqueado=0"));
+    }
+  }
+  // Nova comparacao depois de interrupcao nao usa os 30 fps antigos.
+  gpun_teste_reiniciar(); gravado[0] = 0;
+  rodar(8, 1000.0 / 30, 25, 4, 1, 1);
+  gpun_medir(1001, 0, 0, 1, 1);
+  rodar(8, 50, 40, 4, 1, 1);   // referencia nova: 20
+  rodar(7, 40, 30, 4, 1, 1);   // 25: +5 e +25%, deve conservar
+  assert(gpun_nivel() == 1 && strstr(gravado, "bloqueado=0"));
+  assert(strstr(gravado, "fps0=20.000") && strstr(gravado, "fps1=25.000"));
+  puts("ok  R2 interrupcao: cancela candidato, preserva nivel anterior e mede nova referencia");
+}
+
+int main(int argc, char **argv) {
+  if (argc == 2 && !strcmp(argv[1], "inicio")) { inicioFraco(); return 0; }
+  if (argc == 2 && !strcmp(argv[1], "interrupcao")) { interrupcao(); return 0; }
   // #410B: reduzir efeitos sem ganhar FPS deve devolver o visual anterior.
   gpun_teste_reiniciar(); gravado[0] = 0;
   rodar(8, 1000.0 / 43.0, 18.0, 4.0, 1, 1);
