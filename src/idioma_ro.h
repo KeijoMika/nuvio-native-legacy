@@ -1400,6 +1400,7 @@
   T("Desmarcado como assistido", "Marcat ca nevizionat"),
   T("Desmarcando como assistido...", "Se marchează ca nevizionat..."),
   T("Desmarcar como assistido", "Marchează ca nevizionat"),
+  T("Desmarcar daqui em diante", "Marchează ca nevizionat de aici înainte"),
   T("Desmarcar este episódio", "Debifează acest episod"),
   T("Desmarcar temporada (%d)", "Debifează sezonul (%d)"),
   T("Despejadas", "Eliminate"),

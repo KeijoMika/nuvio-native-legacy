@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Als niet gezien gemarkeerd"),
   T("Desmarcando como assistido...", "Markeren als niet gezien..."),
   T("Desmarcar como assistido", "Markeren als niet gezien"),
+  T("Desmarcar daqui em diante", "Vanaf hier als ongezien markeren"),
   T("Desmarcar este episódio", "Markering van deze aflevering verwijderen"),
   T("Desmarcar temporada (%d)", "Markering van seizoen verwijderen (%d)"),
   T("Despejadas", "Verwijderd"),

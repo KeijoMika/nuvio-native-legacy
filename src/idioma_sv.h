@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Markerad som osedd"),
   T("Desmarcando como assistido...", "Markerar som osedd..."),
   T("Desmarcar como assistido", "Markera som osedd"),
+  T("Desmarcar daqui em diante", "Markera som osedda härifrån"),
   T("Desmarcar este episódio", "Avmarkera det här avsnittet"),
   T("Desmarcar temporada (%d)", "Avmarkera säsong (%d)"),
   T("Despejadas", "Utkastade"),

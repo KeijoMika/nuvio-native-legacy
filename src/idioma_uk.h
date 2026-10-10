@@ -1400,6 +1400,7 @@
   T("Desmarcado como assistido", "Позначено як непереглянуте"),
   T("Desmarcando como assistido...", "Позначення як непереглянутого..."),
   T("Desmarcar como assistido", "Позначити як непереглянуте"),
+  T("Desmarcar daqui em diante", "Позначити як непереглянуті від цієї серії далі"),
   T("Desmarcar este episódio", "Зняти позначку з цього епізоду"),
   T("Desmarcar temporada (%d)", "Зняти позначку із сезону (%d)"),
   T("Despejadas", "Вивантажено"),

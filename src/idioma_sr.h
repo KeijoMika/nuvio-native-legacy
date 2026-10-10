@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Označeno kao negledano"),
   T("Desmarcando como assistido...", "Označavanje kao negledano..."),
   T("Desmarcar como assistido", "Označi kao negledano"),
+  T("Desmarcar daqui em diante", "Označi kao neodgledano od ove epizode nadalje"),
   T("Desmarcar este episódio", "Ukloni oznaku sa ove epizode"),
   T("Desmarcar temporada (%d)", "Ukloni oznaku sezone (%d)"),
   T("Despejadas", "Izbačene"),

@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Oznaczono jako nieobejrzane"),
   T("Desmarcando como assistido...", "Oznaczanie jako nieobejrzane..."),
   T("Desmarcar como assistido", "Oznacz jako nieobejrzane"),
+  T("Desmarcar daqui em diante", "Oznacz jako nieobejrzane od tego odcinka"),
   T("Desmarcar este episódio", "Odznacz ten odcinek"),
   T("Desmarcar temporada (%d)", "Odznacz sezon (%d)"),
   T("Despejadas", "Usunięte"),

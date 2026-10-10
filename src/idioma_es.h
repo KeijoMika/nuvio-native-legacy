@@ -1400,6 +1400,7 @@
   T("Desmarcado como assistido", "Desmarcado como visto"),
   T("Desmarcando como assistido...", "Desmarcando como visto..."),
   T("Desmarcar como assistido", "Desmarcar como visto"),
+  T("Desmarcar daqui em diante", "Marcar como no vistos de aquí en adelante"),
   T("Desmarcar este episódio", "Desmarcar este episodio"),
   T("Desmarcar temporada (%d)", "Desmarcar temporada (%d)"),
   T("Despejadas", "Desalojadas"),

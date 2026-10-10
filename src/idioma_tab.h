@@ -1400,6 +1400,7 @@
   { "Desmarcado como assistido", "Marked as unwatched" },
   { "Desmarcando como assistido...", "Marking as unwatched..." },
   { "Desmarcar como assistido", "Mark as unwatched" },
+  { "Desmarcar daqui em diante", "Mark as unwatched from here on" },
   { "Desmarcar este episódio", "Unmark this episode" },
   { "Desmarcar temporada (%d)", "Unmark season (%d)" },
   { "Despejadas", "Evicted" },

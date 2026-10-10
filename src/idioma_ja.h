@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "視聴済みを解除しました"),
   T("Desmarcando como assistido...", "視聴済みを解除しています..."),
   T("Desmarcar como assistido", "視聴済みを解除"),
+  T("Desmarcar daqui em diante", "このエピソード以降を未視聴にする"),
   T("Desmarcar este episódio", "このエピソードの視聴済みを解除"),
   T("Desmarcar temporada (%d)", "シーズンの視聴済みを解除 (%d)"),
   T("Despejadas", "破棄"),

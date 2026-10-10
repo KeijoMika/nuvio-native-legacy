@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "İzlenmedi olarak işaretlendi"),
   T("Desmarcando como assistido...", "İzlenmedi olarak işaretleniyor..."),
   T("Desmarcar como assistido", "İzlenmedi olarak işaretle"),
+  T("Desmarcar daqui em diante", "Bu bölümden itibaren izlenmedi olarak işaretle"),
   T("Desmarcar este episódio", "Bu bölümün işaretini kaldır"),
   T("Desmarcar temporada (%d)", "Sezonun işaretini kaldır (%d)"),
   T("Despejadas", "Atılan"),

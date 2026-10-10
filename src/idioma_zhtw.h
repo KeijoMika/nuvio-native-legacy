@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "已標記為未看"),
   T("Desmarcando como assistido...", "正在標記為未看..."),
   T("Desmarcar como assistido", "標記為未看"),
+  T("Desmarcar daqui em diante", "將本集及後續集數標為未看"),
   T("Desmarcar este episódio", "取消標記此集"),
   T("Desmarcar temporada (%d)", "取消標記本季 (%d)"),
   T("Despejadas", "已清出"),

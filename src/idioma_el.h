@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Σημειώθηκε ως μη προβλημένο"),
   T("Desmarcando como assistido...", "Σήμανση ως μη προβλημένο..."),
   T("Desmarcar como assistido", "Σήμανση ως μη προβλημένο"),
+  T("Desmarcar daqui em diante", "Σήμανση ως μη προβληθέντα από εδώ και πέρα"),
   T("Desmarcar este episódio", "Αφαίρεση σήμανσης από αυτό το επεισόδιο"),
   T("Desmarcar temporada (%d)", "Αφαίρεση σήμανσης σεζόν (%d)"),
   T("Despejadas", "Αποβλήθηκαν"),
