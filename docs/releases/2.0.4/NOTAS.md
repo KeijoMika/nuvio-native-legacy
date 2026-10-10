@@ -14,6 +14,7 @@ A hotfix on top of 2.0.3, plus a few small additions. Community server: **https:
 ## Fixed
 
 - **"The source didn't answer in time" on sources that work** (#409). Auto-play now skips 4K sources the TV's decoder cannot play and waits for the previous player to be released before opening the next one.
+- **Android TV and Samsung .tpk: slow 4K sources are no longer dropped while they are opening.** A source that had already answered (tracks known) but had not shown its first frame within 15 seconds was treated as dead, so auto-play jumped to the next one and could take 40 seconds to start. Such a source now gets the full 30 seconds; a source that sends nothing is still skipped at 15.
 - **Samsung .tpk: the interface no longer stalls while a video opens or closes** (#412). This changes the app host, so **the .tpk has to be reinstalled**; the in-app update alone does not deliver this fix.
 - **Samsung Tizen 4 / 5: no more "Not Available" toast** on Play/Pause and other media keys (#411).
 - **Glass outline, Depth, edge glow and Sheen respond to their settings again** (#410). The automatic graphics level now starts from full effects and only steps down when the TV measurably cannot keep up.
