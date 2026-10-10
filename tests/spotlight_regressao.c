@@ -137,6 +137,24 @@ int main(void) {
   assert(SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS) == 0);
   dados_iniciar(getenv("NUVIO_DADOS")); ajustes_iniciar();
   cat_quadro();
+  // A arte da busca vence um provedor global, para topo e linhas.
+  PosterProvCfg pp = {0}; pp.prov = PP_MODELO;
+  strcpy(pp.modelo, "https://posters.example/{imdb}.jpg");
+  posterprov_configurar(&pp);
+  CatItem arteItem = item("tt14688458", "series", "2023", 81);
+  check(!strcmp(arteDe(&arteItem, 0), arteItem.poster), "linha preserva poster do resultado com provedor ligado");
+  check(!strcmp(arteDe(&arteItem, 1), arteItem.backdrop), "topo preserva background do resultado");
+  arteItem.backdrop[0] = 0;
+  check(!strcmp(arteDe(&arteItem, 1), arteItem.poster), "topo sem fundo preserva poster do resultado");
+  strcpy(arteItem.backdrop, "fundo-do-resultado"); arteItem.poster[0] = 0;
+  check(!strcmp(arteDe(&arteItem, 0), arteItem.backdrop), "linha sem poster usa fundo antes do provedor");
+  arteItem.backdrop[0] = 0;
+  check(!strcmp(arteDe(&arteItem, 0), "https://posters.example/tt14688458.jpg"), "provedor por ID so quando resultado nao tem arte");
+  arteItem = item("tt14688458", "series", "2023", 81);
+  strcpy(arteItem.backdrop, arteItem.poster);
+  cat_definir_tudo(&arteItem, 1, NULL, 0); nLin = 0; linhaTitulo(L_TOPO, 0);
+  check(!lin[0].paisagem && !strcmp(lin[0].arte, arteItem.poster), "poster copiado para backdrop continua retrato");
+  memset(&pp, 0, sizeof pp); posterprov_configurar(&pp);
   rem[0][0] = item("tt2015", "movie", "2015", 89);
   rem[0][1] = item("tt2021", "movie", "2021", 60);
   rem[0][2] = item("tt2014", "movie", "2014", 72);
