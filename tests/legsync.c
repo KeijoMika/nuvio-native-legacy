@@ -251,11 +251,23 @@ static void regressaoTcl(int caso) {
     do { usleep(1000); v = legsync_visao(0); } while (v.fase == LEGSYNC_AGUARDANDO);
     assert(v.fase == LEGSYNC_PRONTA);
     assert(!(legsync_pil_passo(&p, &v, 23000, "P", texto, sizeof texto) & LEGSYNC_PIL_BAIXAR));
+    // A ilha ja recolheu quando o download da original falha.
+    p.estado = LEGSYNC_PIL_SINCRONIZANDO; p.desde = 19000;
+    v = pv(LEGSYNC_LENDO, 1);
+    assert(legsync_pil_passo(&p, &v, 23001, "P", texto, sizeof texto) & LEGSYNC_PIL_ESCONDEU);
+    assert(p.estado == LEGSYNC_PIL_OFF && p.espera);
     // Falha real vem do callback, não de um relógio da interface.
     legsync_primaria_externa("ext://0/inexistente.srt", "pt", "Falhou");
     legsync_definir_trocador(NULL);
     v = esperarAuto(MKV, 3);
     assert(legsync_pil_passo(&p, &v, 24000, "P", texto, sizeof texto) & LEGSYNC_PIL_BAIXAR);
+    // pilFalhou e pilZerar (apos 8 s) limpam rastreia/estado, mas nao espera.
+    p.rastreia = 0; p.estado = LEGSYNC_PIL_OFF;
+    int avisos = 1;
+    for (unsigned t = 32001; t < 33000; t += 16)
+      if (p.rastreia || p.espera)
+        avisos += !!(legsync_pil_passo(&p, &v, t, "P", texto, sizeof texto) & LEGSYNC_PIL_BAIXAR);
+    assert(avisos == 1 && !p.espera);
   }
   legsync_destruir(); printf("TCL regressão %d: ok\n", caso);
 }

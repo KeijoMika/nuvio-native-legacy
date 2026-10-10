@@ -150,7 +150,7 @@ int legsync_pilula_final(const LegSyncVisao *v, const char *provedor, char *dst,
 int legsync_pil_passo(LegSyncPil *p, const LegSyncVisao *v, unsigned agora, const char *provedor, char *texto, unsigned tam) {
   int quer, r = 0;
   if (v->autoDesligado) { p->espera = 0; return LEGSYNC_PIL_ZERAR; }
-  if (v->falhaDownload && v->autoFase != 1) return LEGSYNC_PIL_BAIXAR;
+  if (v->falhaDownload && v->autoFase != 1) { p->espera = 0; return LEGSYNC_PIL_BAIXAR; }
   // Fechada, esperando o fim do plano: so o fim reabre. 2/3 = terminou (aceito,
   // desistiu/recusou/sem referencia); 1 segue; 0 = cancelado (sem plano): nada.
   if (p->espera && p->estado == LEGSYNC_PIL_OFF) {
