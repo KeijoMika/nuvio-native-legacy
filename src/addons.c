@@ -213,7 +213,7 @@ static void progLimpar(void) {
   progPubN = 0;
 }
 
-static void capturarEscopo(FontecacheEscopo *e) {
+void addons_capturar_escopo(FontecacheEscopo *e) {
   memset(e, 0, sizeof *e);
   snprintf(e->conta, sizeof e->conta, "%s", sessao_usuario());
   e->perfil = perfis_ativo();
@@ -223,7 +223,7 @@ static void capturarEscopo(FontecacheEscopo *e) {
 
 static int escopoAindaAtual(const FontecacheEscopo *e) {
   FontecacheEscopo atual;
-  capturarEscopo(&atual);
+  addons_capturar_escopo(&atual);
   return atual.perfil == e->perfil && atual.addons == e->addons &&
          atual.geracao == e->geracao && !strcmp(atual.conta, e->conta);
 }
@@ -2396,7 +2396,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
         // nunca "respondeu sem fonte", que e `respondeu` com n = 0. Uma vez por
         // queda: so na PRIMEIRA consulta muda (mudoSeg 0 -> 1); responder de
         // novo zera e rearma. Cancelada no meio nao conta.
-        if (rs && addon[c.baldes[q].idx].mudoSeg == 1 && !(c.cancelado && c.cancelado(c.ctx)))
+        if (rs && rs->valido && addon[c.baldes[q].idx].mudoSeg == 1 && !(c.cancelado && c.cancelado(c.ctx)))
           foraAnotar(addon[c.baldes[q].idx].nome);
       }
       if (rs) {
@@ -2434,7 +2434,13 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
 
 int addons_consultar(const char *id, const char *tipo, const char *base, int fios,
                      int (*cancelado)(void *), void *ctx, Stream **saida) {
-  return consultar(id, tipo, base, fios, cancelado, ctx, saida, NULL, 0);
+  // Uma resposta VOD incompleta nao pode esconder o addon que falhou na
+  // busca real seguinte. O cache da busca principal aplica a mesma guarda.
+  Resumo rs = {0};
+  int vod = tipo && !strcmp(tipo, "series");
+  int n = consultar(id, tipo, base, fios, cancelado, ctx, saida, vod ? &rs : NULL, 0);
+  if (vod && rs.semResposta) { free(*saida); *saida = NULL; return -1; }
+  return n;
 }
 
 // Contagens da LISTA (nao da consulta), para "nao ha a quem perguntar".
@@ -2521,7 +2527,7 @@ static void dispararBusca(void) {
   progLigado = alvoVod();
   progPublicou = 0; progExtraPublicou = 0;
   progInicio = SDL_GetTicks();
-  capturarEscopo(&fioEscopo);
+  addons_capturar_escopo(&fioEscopo);
   snprintf(fioBase, sizeof fioBase, "%s", alvoBase);
   alvoBase[0] = 0;   // consumida: origem e do pedido, nao de sessao
   if (pthread_create(&fio, NULL, buscar, NULL) != 0) { fioVivo = 0; progLigado = 0; estado = ADD_PARADO; }
@@ -2612,7 +2618,7 @@ static void buscarPedido(const char *imdb, const char *tipo, int forcar) {
     Stream *l;
     int n;
     Uint32 idade;
-    capturarEscopo(&escopo);
+    addons_capturar_escopo(&escopo);
     if (renovar) fontecache_vod_apagar(alvoId, alvoTipo, alvoBase, &escopo);
     else if (fontecache_vod_pegar(alvoId, alvoTipo, alvoBase, &escopo,
                             &l, &n, &idade) == FC_ACERTO) {
