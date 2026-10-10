@@ -12,6 +12,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Tizen.Multimedia;
 
 namespace NuvioTpk
@@ -90,7 +91,7 @@ namespace NuvioTpk
 
         readonly VideoWindowMetrics windowMetrics = new VideoWindowMetrics();
         Player player;
-        int sessao;
+        int sessao, playerSessao;
         volatile int posMs;
 
         public Video(Func<Display> fazDisplay, Action<Action> principal, string dados, int telaW, int telaH)
@@ -100,18 +101,18 @@ namespace NuvioTpk
             this.telaW = telaW;
             this.telaH = telaH;
             logArq = Path.Combine(dados, "tpk-host.log");
-            fAbrir = (u, c) => { string url = Marshal.PtrToStringAnsi(u), cab = Marshal.PtrToStringAnsi(c); Principal(() => Abrir(url, cab)); };
-            fParar = () => Principal(Parar);
-            fPausar = p => Principal(() => Pausar(p != 0));
-            fBuscar = ms => Principal(() => Buscar(ms));
-            fVolume = v => Principal(() => PedirVolume(v));
-            fJanela = (x, y, w, h) => Principal(() => Janela(x, y, w, h));
+            fAbrir = (u, c) => { string url = Marshal.PtrToStringAnsi(u), cab = Marshal.PtrToStringAnsi(c); Trocar(minha => Abrir(url, cab, minha)); };
+            fParar = Parar;
+            fPausar = p => ComSessao(() => Pausar(p != 0));
+            fBuscar = ms => ComSessao(() => Buscar(ms));
+            fVolume = v => ComSessao(() => PedirVolume(v));
+            fJanela = (x, y, w, h) => ComSessao(() => Janela(x, y, w, h));
             fPos = () => posMs;
             NvVid.Registrar(Marshal.GetFunctionPointerForDelegate(fAbrir), Marshal.GetFunctionPointerForDelegate(fParar),
                                    Marshal.GetFunctionPointerForDelegate(fPausar), Marshal.GetFunctionPointerForDelegate(fBuscar),
                                    Marshal.GetFunctionPointerForDelegate(fVolume), Marshal.GetFunctionPointerForDelegate(fJanela),
                                    Marshal.GetFunctionPointerForDelegate(fPos));
-            fEscolher = (tipo, idx) => Principal(() => Escolher(tipo, idx));
+            fEscolher = (tipo, idx) => ComSessao(() => Escolher(tipo, idx));
             NvVid.RegistrarFaixas(Marshal.GetFunctionPointerForDelegate(fEscolher));
         }
 
@@ -251,7 +252,11 @@ namespace NuvioTpk
         // Relogio do host, no fio principal.
         public void Tique()
         {
-            try { if (player != null && player.State == PlayerState.Playing) posMs = player.GetPlayPosition(); } catch { }
+            // Uma consulta por tique no principal; fPos so le o cache.
+            long inicio = Stopwatch.GetTimestamp();
+            try { if (player != null && playerSessao == Volatile.Read(ref sessao) && player.State == PlayerState.Playing) posMs = player.GetPlayPosition(); } catch { }
+            long ms = (Stopwatch.GetTimestamp() - inicio) * 1000 / Stopwatch.Frequency;
+            if (ms >= 50) Log("[video] tpk consulta posicao levou " + ms + " ms (fio principal)");
         }
 
         public void Log(string s)
@@ -265,10 +270,66 @@ namespace NuvioTpk
             principal(() => { try { a(); } catch (Exception e) { Log("principal: " + e); } });
         }
 
-        async void Abrir(string url, string cabecalhos)
+        // Invalida tambem comandos que ficaram na fila durante uma troca.
+        void ComSessao(Action a)
         {
-            Parar();
-            int minha = ++sessao;
+            int minha = Volatile.Read(ref sessao);
+            Principal(() => { if (minha == Volatile.Read(ref sessao) && playerSessao == minha && !paradaFalhou) a(); });
+        }
+
+        [DllImport("libc.so.6", EntryPoint = "_exit")] static extern void SairImediatamente(int codigo);
+        internal int PrazoPararMs = 5000;
+        internal Action FalhaFatal = () => { try { SairImediatamente(1); } catch { Environment.Exit(1); } };
+        int fatal;
+        bool paradaFalhou;
+        readonly object trocaTrava = new object();
+        System.Threading.Timer prazoParada;
+        Stopwatch tempoParada;
+
+        // O prazo nasce no fio solicitante, ANTES do Post: o principal pode
+        // estar preso em GetPlayPosition/Stop. Pedidos repetidos nao adiam o
+        // limite. A trava so protege o prazo, nunca uma chamada Tizen.
+        void Trocar(Action<int> abrir)
+        {
+            int minha;
+            lock (trocaTrava)
+            {
+                if (fatal != 0) return;
+                minha = Interlocked.Increment(ref sessao);
+                if (prazoParada == null)
+                {
+                    var tempo = tempoParada = Stopwatch.StartNew();
+                    prazoParada = new System.Threading.Timer(_ =>
+                    {
+                        lock (trocaTrava)
+                        {
+                            if (prazoParada == null || tempoParada != tempo || fatal != 0) return;
+                            Volatile.Write(ref fatal, 1);
+                            prazoParada.Dispose(); prazoParada = null;
+                        }
+                        Log("[video] tpk parar NAO confirmou em " + tempo.ElapsedMilliseconds + " ms; encerrando processo");
+                        FalhaFatal();
+                    }, null, PrazoPararMs, Timeout.Infinite);
+                }
+            }
+            Principal(() =>
+            {
+                if (minha != Volatile.Read(ref sessao) || Volatile.Read(ref fatal) != 0) return;
+                if (paradaFalhou || !PararAtual()) { paradaFalhou = true; return; }
+                long ms;
+                lock (trocaTrava)
+                {
+                    if (minha != sessao || fatal != 0) return;
+                    ms = tempoParada.ElapsedMilliseconds;
+                    prazoParada.Dispose(); prazoParada = null;
+                }
+                Log("[video] tpk parar confirmado em " + ms + " ms");
+                if (abrir != null && minha == Volatile.Read(ref sessao)) abrir(minha);
+            });
+        }
+
+        async void Abrir(string url, string cabecalhos, int minha)
+        {
             posMs = 0;
             // Player novo nasce no volume cheio; so um pedido DESTA sessao
             // (trailer.c, logo depois do video_tocar) o muda.
@@ -276,12 +337,12 @@ namespace NuvioTpk
             try
             {
                 var p = new Player();
-                player = p;
-                p.PlaybackCompleted += (s, e) => { if (minha == sessao) NvVid.Evento(EV_FIM, 0, 0); };
-                p.ErrorOccurred += (s, e) => { if (minha == sessao) { Log("erro " + e.Error); NvVid.Evento(EV_ERRO, (int)e.Error, 0); } };
-                p.BufferingProgressChanged += (s, e) => { if (minha == sessao) NvVid.Evento(EV_BUFFER, e.Percent, 0); };
-                p.PlaybackInterrupted += (s, e) => { if (minha == sessao) { Log("interrompido: " + e.Reason); NvVid.Evento(EV_PAUSADO, 0, 0); } };
-                p.SubtitleUpdated += (s, e) => { if (minha == sessao) NvVid.Legenda(e.Text ?? "", (int)e.Duration); };
+                player = p; playerSessao = minha;
+                p.PlaybackCompleted += (s, e) => { if (minha == Volatile.Read(ref sessao)) NvVid.Evento(EV_FIM, 0, 0); };
+                p.ErrorOccurred += (s, e) => { if (minha == Volatile.Read(ref sessao)) { Log("erro " + e.Error); NvVid.Evento(EV_ERRO, (int)e.Error, 0); } };
+                p.BufferingProgressChanged += (s, e) => { if (minha == Volatile.Read(ref sessao)) NvVid.Evento(EV_BUFFER, e.Percent, 0); };
+                p.PlaybackInterrupted += (s, e) => { if (minha == Volatile.Read(ref sessao)) { Log("interrompido: " + e.Reason); NvVid.Evento(EV_PAUSADO, 0, 0); } };
+                p.SubtitleUpdated += (s, e) => { if (minha == Volatile.Read(ref sessao)) NvVid.Legenda(e.Text ?? "", (int)e.Duration); };
                 foreach (var linha in (cabecalhos ?? "").Split('\n'))
                 {
                     int i = linha.IndexOf(':');
@@ -295,22 +356,16 @@ namespace NuvioTpk
                 p.Display = fazDisplay();
                 p.DisplaySettings.Mode = PlayerDisplayMode.LetterBox;
                 await p.PrepareAsync();
-                // Sessao trocada durante o Prepare: Parar() ja soltou e descartou este
-                // Player (player == p la), entao Unprepare() lancava
-                // ObjectDisposedException e o catch registrava "abrir:" (2.0.1: 45
-                // pessoas, 176 logs). Nada a fazer aqui; cada passo isolado.
-                if (minha != sessao)
-                {
-                    try { p.Unprepare(); } catch { }
-                    try { p.Dispose(); } catch { }
-                    return;
-                }
+                // A parada e dona unica do descarte, inclusive se o Prepare
+                // terminar depois do pedido de saida ou de outra abertura.
+                if (minha != Volatile.Read(ref sessao)) return;
                 int dur = 0;
                 try { dur = p.StreamInfo.GetDuration(); } catch { }
                 try { var v = p.StreamInfo.GetVideoProperties(); NvVid.Evento(EV_TAMANHO, v.Size.Width, v.Size.Height); } catch { }
                 int nAudio = Faixas(p);
                 AplicaVolume(p, "preparado");
                 NvVid.Evento(EV_PRONTO, dur, 0);
+                if (minha != Volatile.Read(ref sessao)) return;
                 p.Start();
                 windowMetrics.Invalidate();
                 AplicaVolume(p, "start");
@@ -318,19 +373,19 @@ namespace NuvioTpk
                 if (volPedido)
                 {
                     await System.Threading.Tasks.Task.Delay(1500);
-                    if (minha == sessao && player == p) AplicaVolume(p, "tocando 1,5 s");
+                    if (minha == Volatile.Read(ref sessao) && player == p) AplicaVolume(p, "tocando 1,5 s");
                 }
                 // Alguns contêineres/HLS so publicam as faixas de audio depois
                 // que a reproducao comeca: le de novo, uma vez.
                 if (nAudio == 0)
                 {
                     await System.Threading.Tasks.Task.Delay(2000);
-                    if (minha == sessao && player == p) Faixas(p, true);
+                    if (minha == Volatile.Read(ref sessao) && player == p) Faixas(p, true);
                 }
             }
             catch (Exception e)
             {
-                if (minha != sessao) { Log("abrir: sessao antiga encerrada (" + e.GetType().Name + ")"); return; }
+                if (minha != Volatile.Read(ref sessao)) { Log("abrir: sessao antiga encerrada (" + e.GetType().Name + ")"); return; }
                 Log("abrir: " + e);
                 NvVid.Evento(EV_ERRO, -1, 0);
             }
@@ -386,16 +441,14 @@ namespace NuvioTpk
             finally { if (minha == primerGen) SoltaPrimer(); }
         }
 
-        void SoltaPrimer()
+        bool SoltaPrimer()
         {
             primerGen++;
-            var p = primer;
+            if (primer == null) return true;
+            if (!Liberar(primer)) return false;
             primer = null;
-            if (p == null) return;
-            try { if (p.State == PlayerState.Playing || p.State == PlayerState.Paused) p.Stop(); } catch (Exception e) { Log("[audio] prime stop: " + e.Message); }
-            try { if (p.State != PlayerState.Idle) p.Unprepare(); } catch (Exception e) { Log("[audio] prime unprepare: " + e.Message); }
-            try { p.Dispose(); } catch (Exception e) { Log("[audio] prime dispose: " + e.Message); }
             Log("[audio] prime released");
+            return true;
         }
 
         void ReportWindowMetrics()
@@ -411,38 +464,32 @@ namespace NuvioTpk
             windowMetrics.Reset();
         }
 
-        public void Parar()
+        public void Parar() { Trocar(null); }
+        public void Encerrar() { Parar(); }
+
+        // Nao apaga a referencia antes do Idle + Dispose. Cada passo tenta
+        // mesmo se o anterior falhar; mudo e plano solto vem antes do Stop.
+        bool Liberar(Player p)
         {
-            ReportWindowMetrics();
-            SoltaPrimer();
-            sessao++;
-            var p = player;
-            player = null;
-            if (p == null) return;
-            try { if (p.State == PlayerState.Playing || p.State == PlayerState.Paused) p.Stop(); } catch { }
-            try { if (p.State != PlayerState.Idle) p.Unprepare(); } catch { }
-            try { p.Dispose(); } catch { }
+            bool idle = false, disposto = false;
+            try { p.Muted = true; } catch (Exception e) { Log("parar muted: " + e.Message); }
+            try { p.Display = null; } catch (Exception e) { Log("parar display: " + e.Message); }
+            try { if (p.State == PlayerState.Playing || p.State == PlayerState.Paused) p.Stop(); }
+            catch (Exception e) { Log("parar stop: " + e.Message); }
+            try { if (p.State != PlayerState.Idle) p.Unprepare(); idle = p.State == PlayerState.Idle; }
+            catch (Exception e) { Log("parar unprepare: " + e.Message); }
+            try { p.Dispose(); disposto = true; } catch (Exception e) { Log("parar dispose: " + e.Message); }
+            return idle && disposto;
         }
 
-        // SAIDA do app (canario de janela, #137 "fechar deixa a TV preta"): o
-        // mesmo Parar(), mas com o plano de video devolvido de forma explicita
-        // (Display nenhum com o player ja em Idle, antes do Dispose) e uma linha
-        // por passo no log. Cada passo isolado: nenhum segura a saida.
-        public void Encerrar()
+        bool PararAtual()
         {
             ReportWindowMetrics();
-            SoltaPrimer();
-            sessao++;
-            var p = player;
-            player = null;
-            if (p == null) { Log("[janela] saida: sem player aberto"); return; }
-            PlayerState st = PlayerState.Idle;
-            try { st = p.State; } catch { }
-            try { if (st == PlayerState.Playing || st == PlayerState.Paused) p.Stop(); } catch (Exception e) { Log("[janela] saida: stop " + e.Message); }
-            try { if (p.State != PlayerState.Idle) p.Unprepare(); } catch (Exception e) { Log("[janela] saida: unprepare " + e.Message); }
-            try { p.Display = null; } catch (Exception e) { Log("[janela] saida: display nenhum " + e.GetType().Name + ": " + e.Message); }
-            try { p.Dispose(); } catch (Exception e) { Log("[janela] saida: dispose " + e.Message); }
-            Log("[janela] saida: player de " + st + " solto (stop/unprepare/display/dispose)");
+            if (!SoltaPrimer()) return false;
+            if (player == null) return true;
+            if (!Liberar(player)) return false;
+            player = null; // cache preserva a retomada durante a espera da reconexao
+            return true;
         }
 
         void Pausar(bool pausa)
