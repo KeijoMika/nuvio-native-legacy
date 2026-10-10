@@ -601,6 +601,7 @@ static int contarModo(int m) {
 // Refaz a lista visivel de TITULOS (modos Salvos e Coleção).
 static void reconstruir(void) {
   int n = cat_n();
+  int exclTipo = 0, exclMeta = 0, locaisFora = 0;
   if (n > CAT_MAX) n = CAT_MAX;
   contaModo[0] = contarModo(MODO_SALVOS);
   contaModo[1] = contarModo(MODO_NUVEM);
@@ -632,11 +633,11 @@ static void reconstruir(void) {
     if (jaNoFiltro(ci->imdb)) continue;
     if (nContados < CAT_MAX) contados[nContados++] = i;
     totalModo++;
-    if (tipo == TIPO_FILME && ehSerie(ci)) continue;
-    if (tipo == TIPO_SERIE && !ehSerie(ci)) continue;
+    if (tipo == TIPO_FILME && ehSerie(ci)) { exclTipo++; continue; }
+    if (tipo == TIPO_SERIE && !ehSerie(ci)) { exclTipo++; continue; }
     // `hideUnreleasedContent`: sem ano em `meta` o titulo ainda nao estreou do
     // ponto de vista do catalogo, e a preferencia manda escondê-lo.
-    if (ajustes_ocultar_nao_lancados() && !ci->meta[0]) continue;
+    if (ajustes_ocultar_nao_lancados() && !ci->meta[0]) { exclMeta++; continue; }
     filtro[nFiltro++] = i;
   }
   // OS SALVOS LOCAIS QUE O CATALOGO NAO TEM. salvos_aplicar_catalogo so MARCA
@@ -651,9 +652,10 @@ static void reconstruir(void) {
       const SalvoItem *s = salvos_item(k);
       if (!s || !s->id[0] || cat_indice_por_imdb(s->id) >= 0) continue;
       totalModo++;
-      if (tipo == TIPO_FILME && ehSerieSalvo(s)) continue;
-      if (tipo == TIPO_SERIE && !ehSerieSalvo(s)) continue;
-      if (ajustes_ocultar_nao_lancados() && !s->meta[0]) continue;
+      locaisFora++;
+      if (tipo == TIPO_FILME && ehSerieSalvo(s)) { exclTipo++; continue; }
+      if (tipo == TIPO_SERIE && !ehSerieSalvo(s)) { exclTipo++; continue; }
+      if (ajustes_ocultar_nao_lancados() && !s->meta[0]) { exclMeta++; continue; }
       filtro[nFiltro++] = -k - 1;
     }
   }
@@ -675,6 +677,15 @@ static void reconstruir(void) {
     }
   }
   remapear(0);
+  // Uma linha por montagem, nao por quadro: distingue filtro de janela/rolagem.
+  // As fontes remotas ja chegam fundidas em naLista; nao somar seus logs.
+  printf("[biblioteca] perfil=%d modo=%d tipo=%d ocultar=%d exibicao=%d "
+         "salvos=%d colecao=%d total=%d cat_unicos=%d locais_fora=%d "
+         "excl_tipo=%d excl_meta=%d grade=%d colunas=%d linhas=%d teto_linhas=%d\n",
+         perfis_ativo(), modo, tipo, ajustes_ocultar_nao_lancados(), exibicao,
+         contaModo[0], contaModo[1], totalModo, nContados, locaisFora,
+         exclTipo, exclMeta, nCelulas, colunas(), nLinhas(), BIB_MAX_LINHAS);
+  fflush(stdout);
 }
 
 // Pede a fonte escolhida ao modulo de listas. Cada uma custa no maximo UM
