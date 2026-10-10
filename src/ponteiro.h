@@ -100,6 +100,14 @@ int  ponteiro_toque(void);
 // Ha tela de toque (Android, ou um dedo ja chegou): alvos pequenos crescem.
 int  ponteiro_tem_toque(void);
 
+// When the pointer last moved, by the pointer's own clock (0 = never).
+//
+// It exists because motion does NOT reach the player as an event: main.c consumes
+// it in the pointer, and inside a single target `mover()` returns early (the hover
+// only fires when the target CHANGES), so a hand resting on a button produces
+// nothing at all. Whoever needs "is the person still moving the remote?" asks here.
+Uint32 ponteiro_last_motion(void);
+
 // Posicao logica atual (para quem ativa por coordenada, como a barra de tempo).
 float ponteiro_x(void);
 float ponteiro_y(void);
