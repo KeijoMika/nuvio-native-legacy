@@ -8664,6 +8664,27 @@
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/411",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
+  },
+  {
+   "numero": 412,
+   "titulo": "Playback makes UI extremely laggy",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "revisar a rodada 2 (Codex) e juntar; validar numa TV Samsung .tpk; responder ao autor",
+   "notas": "Log QHQRVE (S95C, .tpk): relógio do player congelado, UI com upd=120 ms por quadro, parar retorna 0 ms mas o player nativo segue tocando. Conserto em agente/204-tpkpreso412 (71c7d615): ASS deixa de segurar o quadro, recupera relógio congelado, parada confirmada antes de abrir outro player. Revisão Codex achou P1 (Voltar durante PrepareAsync encerraria o processo numa TV sã): rodada 2 em andamento.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/412",
+   "criada_em": "2026-10-10",
+   "alvo": "2.0.4"
   }
  ],
  "fora_do_github": [
@@ -9668,7 +9689,7 @@
    "recomendacao": "Sugestão do agente: Discord (o app já tem integração de presença com Discord); decisão do dono.",
    "issues": [],
    "estado": "decidida",
-   "decisao": "Discord. Dono cria o servidor e manda o convite.",
+   "decisao": "Discord. Servidor \"Nuvio Legacy\" criado em 09/10 com modo Comunidade e estrutura no estilo do oficial (Info & Updates, Discussion por plataforma, Feedback em fóruns, Testing, Off-Topic). Convite permanente: https://discord.gg/9NWr6SHyzJ (vai no cartão de novidades com QR, notas e README).",
    "data": "2026-10-09",
    "quem": "dono (Henrique)"
   },
@@ -10218,6 +10239,57 @@
    "ref": "f9fa03b2 + painel v3",
    "resultado": "passou",
    "evidencia": "/api/saude {\"ok\": true}; containers versionados no ar, nuvio-painel antigo só parado; publicar.sh rc=0"
+  },
+  {
+   "data": "2026-10-09 23:10",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão da rodada 2 do nível de GPU adaptativo",
+   "issues": [
+    410
+   ],
+   "ref": "agente/204-gpunivel410 020fb8f8",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/410b-r2-codex.txt: 2 P2 (Mali-400 sem saída segura; interrupção perde reavaliação do legado). Rodada 3 pedida."
+  },
+  {
+   "data": "2026-10-09 23:10",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão da rodada 2 do decoder 4K / espera do release",
+   "issues": [
+    409
+   ],
+   "ref": "agente/204-decoder409 6d46e336",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/409-r2-codex.txt: 1 P2 (volume volta a 100% após a espera) + 1 P3 de teste. Rodada 3 pedida."
+  },
+  {
+   "data": "2026-10-09 23:10",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão do conserto do player preso no .tpk",
+   "issues": [
+    412
+   ],
+   "ref": "agente/204-tpkpreso412 71c7d615",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/412-codex.txt: P1 (Voltar durante PrepareAsync encerra o processo em TV sã). Rodada 2 pedida."
+  },
+  {
+   "data": "2026-10-09 23:10",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Conferência mecânica da documentação de funções (identificadores citados existem no código)",
+   "issues": [],
+   "ref": "agente/doc-funcoes 29a340b3",
+   "resultado": "passou",
+   "evidencia": "490 de 493 identificadores existem; os 3 errados corrigidos à mão (player.md, trakt.md, video.md)"
+  },
+  {
+   "data": "2026-10-09 23:10",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Servidor Discord reestruturado e convite permanente gerado",
+   "issues": [],
+   "ref": "guild 1558285501067296922",
+   "resultado": "passou",
+   "evidencia": "5 categorias e 10 canais novos conferidos pela lista de canais; convite https://discord.gg/9NWr6SHyzJ com 'nunca irá expirar'. Pendente: dono apagar os 10 canais antigos (Canais de Texto/Voz)."
   }
  ]
 }
