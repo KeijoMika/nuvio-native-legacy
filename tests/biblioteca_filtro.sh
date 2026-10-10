@@ -15,8 +15,9 @@ for plat in tv android; do
     -O1 -g -ffunction-sections -fdata-sections -Wl,-dead_strip -o "$tmp/teste"
   "$tmp/teste" | tee "$tmp/log"
   if [ "${BIB_EXIGIR_LOG:-1}" = 1 ]; then
-    if ! grep -q 'modo=0 tipo=0 ocultar=1 .*total=129 .*excl_meta=121 grade=8' "$tmp/log"; then
-      echo "FAIL: diagnostico nao explica os 121 excluidos ($plat)"
+    if ! grep -q 'modo=0 tipo=0 ocultar=1 .*total=129 .*excl_meta=0 grade=129' "$tmp/log" ||
+       ! grep -q 'modo=0 tipo=0 ocultar=1 .*total=129 .*excl_meta=2 grade=127' "$tmp/log"; then
+      echo "FAIL: diagnostico deve manter desconhecidos e excluir apenas futuros ($plat)"
       exit 1
     fi
     echo "biblioteca diagnostico ($plat): PASS"

@@ -82,6 +82,7 @@
 #include "revela.h"
 #include "layout.h"
 #include "ajustes.h"
+#include "nlanc.h"
 #include "ctxmenu.h"
 #include "escala.h"
 #include "ponteiro.h"
@@ -103,6 +104,7 @@ static int bibTinta2(void) { return 205; }
 #include <string.h>
 #include <strings.h>
 #include <math.h>
+#include <time.h>
 
 // Fileiras de foco: 0 = modos (ou as acoes, dentro de uma lista aberta),
 // 1 = seletores, 2.. = grade. Dentro de uma lista aberta a grade comeca em 1 —
@@ -602,6 +604,12 @@ static int contarModo(int m) {
 static void reconstruir(void) {
   int n = cat_n();
   int exclTipo = 0, exclMeta = 0, locaisFora = 0;
+  int anoAtual = 0;
+  if (ajustes_ocultar_nao_lancados()) {
+    time_t agora = time(NULL);
+    struct tm tmv;
+    if (gmtime_r(&agora, &tmv)) anoAtual = tmv.tm_year + 1900;
+  }
   if (n > CAT_MAX) n = CAT_MAX;
   contaModo[0] = contarModo(MODO_SALVOS);
   contaModo[1] = contarModo(MODO_NUVEM);
@@ -635,9 +643,8 @@ static void reconstruir(void) {
     totalModo++;
     if (tipo == TIPO_FILME && ehSerie(ci)) { exclTipo++; continue; }
     if (tipo == TIPO_SERIE && !ehSerie(ci)) { exclTipo++; continue; }
-    // `hideUnreleasedContent`: sem ano em `meta` o titulo ainda nao estreou do
-    // ponto de vista do catalogo, e a preferencia manda escondê-lo.
-    if (ajustes_ocultar_nao_lancados() && !ci->meta[0]) { exclMeta++; continue; }
+    // Mesmo criterio da Home: so ano futuro conhecido; sem meta permanece.
+    if (anoAtual && nlanc_meta_futuro(ci->meta, anoAtual)) { exclMeta++; continue; }
     filtro[nFiltro++] = i;
   }
   // OS SALVOS LOCAIS QUE O CATALOGO NAO TEM. salvos_aplicar_catalogo so MARCA
@@ -655,7 +662,7 @@ static void reconstruir(void) {
       locaisFora++;
       if (tipo == TIPO_FILME && ehSerieSalvo(s)) { exclTipo++; continue; }
       if (tipo == TIPO_SERIE && !ehSerieSalvo(s)) { exclTipo++; continue; }
-      if (ajustes_ocultar_nao_lancados() && !s->meta[0]) { exclMeta++; continue; }
+      if (anoAtual && nlanc_meta_futuro(s->meta, anoAtual)) { exclMeta++; continue; }
       filtro[nFiltro++] = -k - 1;
     }
   }
