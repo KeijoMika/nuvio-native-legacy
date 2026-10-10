@@ -194,6 +194,12 @@ const TgDados *tgraf_dados(int idx) {
   tgraf_montar(&dados, epsBuf, k, sabe, agT, agE, 0, temAmg ? &at : NULL);
   dIdx = idx; dCat = cat_revisao(); dVisto = vistoep_revisao();
   dAmg = amigostitulo_revisao(); dAgT = agT; dAgE = agE; dNEps = n; dValido = 1;
+  printf("[vistoep] %s: grafico mapa_rev=%u sabe=%d vistos=%d/%d agenda=T%dE%d",
+         dados.imdb, dVisto, sabe, dados.vistos, dados.exibidos, agT, agE);
+  for (i = 0; i < dados.n; i++)
+    printf(" T%d=%d/%d", dados.t[i].numero, dados.t[i].vistos, dados.t[i].exibidos);
+  printf("\n");
+  fflush(stdout);
   return &dados;
 }
 
