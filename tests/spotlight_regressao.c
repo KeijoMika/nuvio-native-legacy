@@ -12,6 +12,7 @@
 #define spotpessoa_n teste_pessoas_n
 #define spotpessoa_geracao teste_pessoas_geracao
 #define guia_preparar_busca teste_guia
+#define guia_logo_desenhar teste_logo
 #define gfx_recorte teste_recorte
 #define tex_obter_larg teste_tex
 #define tex_falhou teste_tex_falhou
@@ -34,23 +35,39 @@ static int quant[2], falhas, cortadas, artes;
 static float fimRecorte;
 static char termo[96];
 static char generoDesenhado[160];
+static CatItem publicacao;
+static CatFileira fileiraPublicacao;
+static int publicarNaMontagem, focoDesenhado;
+static const char *nomeFoco;
 void teste_buscar(const char *t) { snprintf(termo, sizeof termo, "%s", t); }
 int teste_alvos(void) { return 2; }
 int teste_n(int a, const char *t) { return !strcmp(t, termo) ? quant[a] : 0; }
 int teste_item(int a, int i, CatItem *it) { *it = rem[a][i]; return 1; }
 int teste_total(const char *t) { return teste_n(0, t) + teste_n(1, t); }
-int teste_buscando(void) { return 0; }
+int teste_buscando(void) {
+  // Intercala uma publicacao real depois de montar os grupos, antes de
+  // remontar registrar as versoes. Determinista, sem corrida de threads.
+  if (publicarNaMontagem) {
+    publicarNaMontagem = 0;
+    cat_definir_tudo(&publicacao, 1, &fileiraPublicacao, 1);
+  }
+  return 0;
+}
 int teste_geracao(void) { return 1; }
 void teste_pessoas_pedir(const char *t, unsigned a) { (void)t; (void)a; }
 void teste_pessoas_atualizar(unsigned a) { (void)a; }
 int teste_pessoas_n(const char *t) { (void)t; return 0; }
 unsigned teste_pessoas_geracao(void) { return 0; }
 void teste_guia(void) {}
+void teste_logo(const char *url, const char *nome, GfxRect r, float w, float h, float c, float a) {
+  (void)url; (void)nome; (void)r; (void)w; (void)h; (void)c; (void)a;
+}
 void teste_sem_recorte(void) {}
 void teste_cor(GfxRect r, float raio, float cr, float cg, float cb, float a) {
   (void)r; (void)raio; (void)cr; (void)cg; (void)cb; (void)a;
 }
 TxtLinha teste_linha(TxtEstilo e, const char *s, int r, int g, int b, int a) {
+  if (nomeFoco && !strcmp(s, nomeFoco)) focoDesenhado++;
   (void)e; (void)s; (void)r; (void)g; (void)b; (void)a;
   return (TxtLinha){0, 100, 20, 0, 0};
 }
@@ -98,6 +115,24 @@ static void assentar(void) {
   for (int i = 0; i < 180; i++) spot_atualizar(1.0f / 60, (unsigned)i);
 }
 static const char *topoId(void) { return cat_item(lin[1].ref)->imdb; }
+static void focoImediato(int tipo, const char *msg) {
+  int ultimo = nLin - 1;
+  Linha antes = lin[ultimo];
+  painel = P_LISTA; focoL = ultimo - 1;
+  scrollY = scrollAlvo = velY = 0;
+  assentar();
+  lin[ultimo].tipo = tipo;
+  strcpy(lin[ultimo].t1, "Alvo do foco");
+  nomeFoco = lin[ultimo].t1; focoDesenhado = 0;
+  assert(lin[ultimo].y + lin[ultimo].h - scrollY > listaVisivel());
+  SDL_Event e = {0}; e.type = SDL_KEYDOWN; e.key.keysym.sym = SDLK_DOWN;
+  spot_evento(&e);
+  spot_atualizar(1.0f / 60, 200);
+  desenhaLista(0, 1);
+  float y = SP_CORPO_Y + SP_CPAD_T + lin[ultimo].y - scrollY + (1 - entraLin[ultimo]) * 10;
+  check(focoL == ultimo && focoDesenhado && y + lin[ultimo].h <= fimRecorte + .1f, msg);
+  nomeFoco = NULL; lin[ultimo] = antes;
+}
 int main(void) {
   assert(SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS) == 0);
   dados_iniciar(getenv("NUVIO_DADOS")); ajustes_iniciar();
@@ -128,6 +163,22 @@ int main(void) {
   check(!strcmp(topoId(), "tt2015"), "titulo exato precede titulo pessoal parcial");
   strcpy(rem[1][0].titulo, "Silo");
 
+  // O salvo parcial nao pode esgotar as vagas antes do exato na fileira.
+  static CatItem cheios[65];
+  for (int i = 0; i < 65; i++) {
+    char id[32]; snprintf(id, sizeof id, "ttCheio%d", i);
+    cheios[i] = item(id, "movie", "2020", 0);
+    if (i < 64) {
+      snprintf(cheios[i].titulo, sizeof cheios[i].titulo, "Silo parcial %d", i);
+      cheios[i].naLista = 1;
+    }
+  }
+  quant[0] = quant[1] = 0;
+  CatFileira exato = {0}; exato.ini = 64; exato.n = 1;
+  cat_definir_tudo(cheios, 65, &exato, 1); montar();
+  check(!strcmp(topoId(), "ttCheio64"), "exato local sobrevive a 64 salvos parciais antes das fileiras");
+  quant[0] = 3; quant[1] = 1;
+
   // Sem dado pessoal: ordem da fonte, sem usar nota como popularidade.
   CatItem base = item("ttBase", "movie", "2000", 0);
   strcpy(base.titulo, "Outro");
@@ -141,6 +192,9 @@ int main(void) {
   painel = P_LISTA; focoL = 1; assentar();
   cortadas = artes = 0; desenhaLista(0, 1);
   check(artes > 0 && cortadas == 0, "nenhum poster parcial invade o rodape a 130%");
+  focoImediato(L_TITULO, "titulo focado desenhado inteiro no primeiro quadro apos Baixo");
+  focoImediato(L_PESSOA, "pessoa focada desenhada inteira no primeiro quadro apos Baixo");
+  focoImediato(L_CANAL, "canal focado desenhado inteiro no primeiro quadro apos Baixo");
   focoL = nLin - 1; assentar();
   cortadas = artes = 0; desenhaLista(0, 1);
   check(artes > 0 && cortadas == 0 &&
@@ -161,6 +215,15 @@ int main(void) {
   spot_atualizar(.016f, 1);
   check(lin[1].ref == 1 && !strcmp(lin[1].arte, "fundo-novo-A"),
         "revisao do catalogo atualiza indice e arte sem nova consulta");
+
+  publicacao = lote[1]; fileiraPublicacao = cw; fileiraPublicacao.ini = 0;
+  strcpy(publicacao.backdrop, "fundo-publicado-durante-montagem");
+  publicarNaMontagem = 1;
+  remontar();
+  assert(!publicarNaMontagem && !strcmp(lin[1].arte, "fundo-novo-A"));
+  spot_atualizar(.016f, 2);
+  check(lin[1].ref == 0 && !strcmp(lin[1].arte, publicacao.backdrop),
+        "publicacao durante montagem e observada no quadro seguinte");
   // OK chega antes do proximo atualizar (ordem dos eventos no app).
   cw.ini = 0; cat_definir_tudo(&lote[1], 1, &cw, 1); montar();
   cw.ini = 1; cat_definir_tudo(lote, 2, &cw, 1);

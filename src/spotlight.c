@@ -390,12 +390,12 @@ static void montarTitulos(const char *alvo) {
   // Salvos podem estar fora das fileiras. O bonus pessoal (15) vence a
   // ordem dos addons (0..6), mas nao a classe de casamento do nome (20).
   // Nao usamos nota como popularidade: CatItem nao tem esse dado.
-  for (r = -1; r < cat_n_fileiras() && nc < 64; r++) {
+  for (r = -1; r < cat_n_fileiras(); r++) {
     const CatFileira *cf = r >= 0 ? cat_fileira(r) : NULL;
     int n = cf ? cf->n : cat_n();
     if (r >= 0 && !cf) break;
     if (cf && desc_busca_base_oculta(cf->base)) continue;
-    for (i = 0; i < n && nc < 64; i++) {
+    for (i = 0; i < n; i++) {
       int idx = cf ? cf->ini + i : i;
       const CatItem *ci = cat_item(idx);
       int p, k, bonus, dup = 0;
@@ -412,7 +412,14 @@ static void montarTitulos(const char *alvo) {
         }
       }
       if (dup) continue;
-      c[nc].idx = idx; c[nc].pont = p + bonus; c[nc].ordem = ordem++; nc++;
+      // O teto limita memoria, nao a busca: um exato tardio substitui parcial.
+      k = nc;
+      if (nc == 64) {
+        k = 0;
+        for (int j = 1; j < nc; j++) if (candCmp(&c[j], &c[k]) > 0) k = j;
+        if (p + bonus <= c[k].pont) continue;
+      } else nc++;
+      c[k].idx = idx; c[k].pont = p + bonus; c[k].ordem = ordem++;
     }
   }
   // tira os -1 (catalogo no teto) antes de ordenar
@@ -803,6 +810,8 @@ static void remontar(void) {
   static char chavesAntes[SP_MAX_LIN][96];
   float entraAntes[SP_MAX_LIN];
   int nAntes = nLin, i, j;
+  // Publicacao durante a montagem deve continuar pendente no proximo quadro.
+  ultimaRevCatalogo = cat_revisao_itens();
   if (focoL >= 0 && focoL < nLin) snprintf(chaveFoco, sizeof chaveFoco, "%s", lin[focoL].chave);
   for (i = 0; i < nLin; i++) { memcpy(chavesAntes[i], lin[i].chave, 96); entraAntes[i] = entraLin[i]; }
   snprintf(montada, sizeof montada, "%s", consulta);
@@ -870,7 +879,6 @@ static void remontar(void) {
   ultimoBuscando = modoAjustes ? 0 : desc_buscando();
   ultimaGeracao = modoAjustes ? 0 : desc_busca_geracao();
   ultimaGerPessoa = modoAjustes ? 0 : spotpessoa_geracao();
-  ultimaRevCatalogo = cat_revisao_itens();
 }
 
 static int temResultados(void) {
@@ -1408,6 +1416,15 @@ void spot_atualizar(float dt, Uint32 agora) {
   } else if (painel != P_LISTA) scrollAlvo = 0.0f;
   if (scrollAlvo < 0.0f) scrollAlvo = 0.0f;
   scrollY = anim_mola2(&velY, scrollY, scrollAlvo, dt, NV_MOLA2_SCROLL);
+  // OK ja aciona o foco: nao espere a mola para faze-lo caber no recorte real.
+  if (painel == P_LISTA && focoL >= 0 && focoL < nLin) {
+    float vis = corpoH - SP_CPAD_T - SP_CPAD_B - SP_RODAPE_H;
+    float topo = lin[focoL].y + (1.0f - entraLin[focoL]) * 10.0f;
+    if (vis >= lin[focoL].h) {
+      float y = anim_clamp(scrollY, topo + lin[focoL].h - vis, topo);
+      if (y != scrollY) { scrollY = y; velY = 0.0f; }
+    }
+  }
 }
 
 // --- Desenho -----------------------------------------------------------------------
