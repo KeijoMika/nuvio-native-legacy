@@ -107,7 +107,7 @@ static void referenciaTravada(void) {
       gpun_medir(1200, 1100, 4, 1, 1);
       gpun_medir(1200, 1100, 4, 1, 1);
       if (motivo == 4) ptv_definir_gpu_fraca(0);
-      gpun_medir(motivo == 0 ? 20 : 1200, 1100, motivo == 3 ? 1150 : 4,
+      gpun_medir(motivo == 0 ? 20 : 1200, motivo == 0 ? 3 : 1100, motivo == 3 ? 1150 : 4,
                  motivo != 1, motivo != 2);
       ptv_definir_gpu_fraca(1);
       assert(gpun_nivel() == 0 && !gpun_teste_decidido());
@@ -151,6 +151,32 @@ static void legadoInterrompido(void) {
     }
   }
   puts("ok  R3 legado interrompido: retoma 0 -> 1/2 e so grava depois de 50 -> 60 fps");
+}
+
+static void referenciaAlternada(void) {
+  for (int legado = 0; legado <= 1; legado++) {
+    gpun_teste_reiniciar(); gravado[0] = 0;
+    if (legado) strcpy(gravado, "versao=1\nchave=0\nnivel=2\n");
+    ptv_definir_gpu_fraca(ptv_gpu_fraca("Mali-400"));
+    gpun_preferencia(0);
+    char salvo[sizeof gravado]; strcpy(salvo, gravado);
+    for (int i = 0; i < 3; i++) {
+      assert(gpun_nivel() == 0 && !gpun_teste_decidido());
+      gpun_medir(1200, 1100, 4, 1, 1);
+      gpun_medir(900, 800, 4, 1, 1);
+    }
+    assert(gpun_nivel() == 2 && minimos && gpun_teste_decidido());
+    assert(!strcmp(salvo, gravado));
+  }
+  // Uma janela completa nao carrega descartes para a tentativa seguinte.
+  gpun_teste_reiniciar(); gravado[0] = 0;
+  gpun_medir(1200, 1100, 4, 1, 1);
+  gpun_medir(1200, 1100, 4, 1, 1);
+  rodar(8, 40, 30, 4, 1, 1);
+  assert(gpun_nivel() == 1 && !gpun_teste_decidido());
+  gpun_medir(1200, 1100, 4, 1, 1);
+  assert(gpun_nivel() == 0 && !gpun_teste_decidido() && !gravado[0]);
+  puts("ok  R4: Mali-400 1200/900 ms aciona protecao sem gravar avaliacao");
 }
 
 int main(int argc, char **argv) {
@@ -282,6 +308,7 @@ int main(int argc, char **argv) {
   assert(gpun_nivel() == 3 && !gpun_efeitos_automaticos() && !strcmp(salvo, gravado));
   puts("ok  legado com ganho fica; 720p forcado nao participa");
   legadoInterrompido();
+  referenciaAlternada();
   puts("gpunivel: tudo ok");
   return 0;
 }

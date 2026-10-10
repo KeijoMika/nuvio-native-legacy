@@ -499,12 +499,12 @@ static void decidir(const char *porque) {
 void gpun_medir(double dtms, double espera, double cpu, int naHome, int cheia) {
   double fps, e, c;
   if (!adaptativo || decidido || nivel > GPUN_NIVEL_AUTO_MAX) return;
-  // GPU fraca pode nao terminar nem a referencia no 0. Tres quadros lentos
-  // seguidos, com espera de GPU, ativam protecao so nesta sessao: sem janela
-  // comparavel nao ha avaliacao para gravar. Uma suspensao isolada nao conta.
-  if (naHome && cheia && dtms > 1000.0 && ptv_gpu_fraca_atual() &&
+  // GPU fraca pode nao terminar nem a referencia no 0. Tres descartes na
+  // tentativa, mesmo intercalados, ativam protecao so nesta sessao: sem
+  // janela comparavel nao ha avaliacao para gravar.
+  if (naHome && cheia && ptv_gpu_fraca_atual() &&
       espera >= GPUN_ESPERA_MIN && espera > cpu) {
-    if (++descartes >= 3) {
+    if (dtms > 1000.0 && ++descartes >= 3) {
       aplicar(GPUN_NIVEL_AUTO_MAX, "GPU fraca: referencia nao termina");
       decidido = 1;
       return;
@@ -526,6 +526,7 @@ void gpun_medir(double dtms, double espera, double cpu, int naHome, int cheia) {
   if (aquece > 0) { aquece -= dtms; return; }
   janN++; janMs += dtms; janEsp += espera; janCpu += cpu; totalMs += dtms;
   if (janMs < GPUN_JANELA_MS) return;
+  descartes = 0; // janela completa encerra a tentativa
   fps = janN * 1000.0 / janMs;
   e = janEsp / janN;
   c = janCpu / janN;

@@ -35,8 +35,9 @@
 //     com o 0 na mesma sessao. Candidato so e gravado depois da comparacao.
 //     Chave diferente (firmware novo, outra TV) = recomeca do 0.
 //   - Sem nada gravado: comeca no 0, inclusive em GPU fraca conhecida.
-//     Se tres quadros seguidos na Home cheia excederem 1 s com espera de GPU
-//     dominante, GPU fraca fica no 2 so nesta sessao, sem gravar avaliacao.
+//     Tres descartes >1 s na tentativa, mesmo intercalados, com Home cheia e
+//     espera de GPU dominante: GPU fraca fica no 2 so nesta sessao, sem gravar.
+//     Janela completa ou perda dessas condicoes zera a contagem.
 //   - Sair da Home, perder as artes ou suspender cancela o candidato e volta
 //     ao nivel anterior; a proxima comparacao mede uma referencia nova e
 //     preserva a reavaliacao pendente do legado ate concluir a comparacao.
