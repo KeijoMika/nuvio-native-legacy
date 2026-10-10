@@ -21,6 +21,12 @@ static int    tentou[APOIO_DISCORD + 1];
 // antes de ela carregar) vale o gerado a partir de NV_URL_KOFI.
 static char selo[600] = "deploy/app/art/marcas/kofi-badge.png";
 static char qrKofi[600] = "deploy/app/art/marcas/kofi-qr.png";
+// O QR E O SELO DO DISCORD (pedido do dono, 09/10: "com o icone e as cores"):
+// imagens geradas por tools/discord_qr.py a partir de NV_URL_DISCORD, correcao
+// H, logo no centro. Trocar o convite = rodar a ferramenta de novo. Sem a
+// imagem vale o QR gerado e a placa so com o nome.
+static char qrDiscord[600] = "deploy/app/art/marcas/discord-qr.png";
+static char seloDiscord[600] = "deploy/app/art/marcas/discord-badge.png";
 
 int apoio_n(void) {
   int i, n = 0;
@@ -81,8 +87,8 @@ static void gerar(int q) {
 int apoio_qr(int q, float x, float y, float lado, float a) {
   float s;
   if (q < 0 || q > APOIO_DISCORD || !URL[q][0]) return 0;
-  if (q == APOIO_KOFI && a > 0.004f) {
-    GLuint t = tex_obter(qrKofi);
+  if ((q == APOIO_KOFI || q == APOIO_DISCORD) && a > 0.004f) {
+    GLuint t = tex_obter(q == APOIO_KOFI ? qrKofi : qrDiscord);
     if (t) {
       // Cantos claros do cartao + o simbolo oficial com folga, sem modulo
       // menor que ~5 px no menor uso (a previa de Ajustes).
@@ -113,6 +119,8 @@ void apoio_dir(const char *d) {
   if (!d || !d[0]) return;
   snprintf(selo, sizeof selo, "%s/marcas/kofi-badge.png", d);
   snprintf(qrKofi, sizeof qrKofi, "%s/marcas/kofi-qr.png", d);
+  snprintf(qrDiscord, sizeof qrDiscord, "%s/marcas/discord-qr.png", d);
+  snprintf(seloDiscord, sizeof seloDiscord, "%s/marcas/discord-badge.png", d);
 }
 
 // O selo do Ko-fi tem 672x356 no original (1,89:1) e cantos de ~10% da
@@ -120,9 +128,10 @@ void apoio_dir(const char *d) {
 // em cima, nome grande embaixo) para os dois lerem como par.
 float apoio_rotulo(int q, float x, float y, float h, int centro, float a) {
   if (q < 0 || q > APOIO_DISCORD) return 0;
-  if (q == APOIO_KOFI) {
-    GLuint t = tex_obter(selo);
-    float ap = tex_aspecto(selo), w;
+  if (q == APOIO_KOFI || (q == APOIO_DISCORD && tex_obter(seloDiscord))) {
+    const char *arq = q == APOIO_KOFI ? selo : seloDiscord;
+    GLuint t = tex_obter(arq);
+    float ap = tex_aspecto(arq), w;
     if (ap <= 0.0f) ap = 672.0f / 356.0f;
     w = h * ap;
     if (centro) x -= w * 0.5f;
