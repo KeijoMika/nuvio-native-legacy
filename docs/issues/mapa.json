@@ -6649,7 +6649,7 @@
   {
    "numero": 311,
    "titulo": "[suggestion] option to disable \"from nuvio search\"",
-   "estado_github": "aberta",
+   "estado_github": "fechada",
    "plataforma": "?",
    "tipo": "feature",
    "status": "lancada",
@@ -6667,11 +6667,10 @@
     "ultimo_comentario_por": "iqui27",
     "ultima_nossa": "2026-10-08"
    },
-   "proximo_passo": "fechar com a resposta curta do bloco \"fechar com a 2.0.3\" (o dono decide; saiu na v2.0.3)",
+   "proximo_passo": "nada: o autor confirmou em 10/10 (\"Fully functional verified, closing\") e fechou",
    "notas": "Resposta corrigiu: opções de busca não estão na 2.0.2, saem na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/311",
-   "criada_em": "2026-10-07",
-   "alvo": "ja-lancada"
+   "criada_em": "2026-10-07"
   },
   {
    "numero": 312,
@@ -8604,8 +8603,8 @@
    "estado_github": "aberta",
    "plataforma": "Android",
    "tipo": "bug",
-   "status": "aberta",
-   "release": "-",
+   "status": "consertada-nao-lancada",
+   "release": "2.0.4",
    "conserto": [],
    "ultima_resposta": {
     "nos": false,
@@ -8613,8 +8612,8 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "revisar a rodada 2 e juntar; responder ao autor",
-   "notas": "Log 4B891A (Changhong AI PONT, MStar, Android 11, tela 1080p): automático escolhe 4K (VidFast), 15 s sem nenhum evento do player, depois erro 4003 (decodificação). Foto do autor: vídeo tocando atrás da mensagem. Causa provável: troca de fonte abre player novo antes do velho soltar o decoder (NvPlayer.liberar só encolhe a SurfaceView e solta em outra thread; overlay MStar segue visível). Conserto em agente/204-decoder409 (capacidade 4K do decoder, sem repetir codec que falhou, Voltar fecha o erro) + rodada 2 (esperar o release, logs do player).",
+   "proximo_passo": "juntado na integração (2051869e); validar na TCL; responder ao autor",
+   "notas": "Log 4B891A (Changhong AI PONT, MStar, Android 11, tela 1080p): automático escolhe 4K (VidFast), 15 s sem nenhum evento do player, depois erro 4003 (decodificação). Foto do autor: vídeo tocando atrás da mensagem. Causa provável: troca de fonte abre player novo antes do velho soltar o decoder (NvPlayer.liberar só encolhe a SurfaceView e solta em outra thread; overlay MStar segue visível). Conserto em agente/204-decoder409 (capacidade 4K do decoder, sem repetir codec que falhou, Voltar fecha o erro) + rodada 2 (esperar o release, logs do player). | 10/10: outro usuário (Namer03) lembrou no fio que já existe Reprodução › seleção manual de fonte como contorno.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/409",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
@@ -8636,8 +8635,8 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relevo, brilho de borda, cobertura) e Reflexo a 0%; comparar com 2.0.2; pedir log",
-   "notas": "Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4.",
+   "proximo_passo": "juntar a rodada 4 do nível de GPU quando o Codex liberar; responder ao autor; menu em 4K no .tpk fica para a 2.0.5",
+   "notas": "Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4. | 10/10, autor depois de testar: efeitos completos + menu 4K não melhoraram a nitidez dos Ajustes (bate com o achado de que o .tpk enxerga a TV 4K como 1920x1080: não é regressão da 2.0.3, vai para a 2.0.5); os ajustes recomendados melhoraram o vidro da Home; Profundidade e os outros quase não mudam ligado/desligado (conferir na TV com o conserto cc8bbdcd, que só entra na 2.0.4). Opinião: visual \"menos moderno\" que o anterior, organização melhor.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/410",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
@@ -8671,8 +8670,8 @@
    "estado_github": "aberta",
    "plataforma": "Samsung .tpk",
    "tipo": "bug",
-   "status": "aberta",
-   "release": "-",
+   "status": "consertada-nao-lancada",
+   "release": "2.0.4",
    "conserto": [],
    "ultima_resposta": {
     "nos": false,
@@ -8680,7 +8679,7 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
-   "proximo_passo": "revisar a rodada 2 (Codex) e juntar; validar numa TV Samsung .tpk; responder ao autor",
+   "proximo_passo": "juntado na integração (f7a24dc7); validar numa Samsung .tpk (host .NET mudou: precisa instalar o .tpk, auto-update da .so não basta); responder ao autor",
    "notas": "Log QHQRVE (S95C, .tpk): relógio do player congelado, UI com upd=120 ms por quadro, parar retorna 0 ms mas o player nativo segue tocando. Conserto em agente/204-tpkpreso412 (71c7d615): ASS deixa de segurar o quadro, recupera relógio congelado, parada confirmada antes de abrir outro player. Revisão Codex achou P1 (Voltar durante PrepareAsync encerraria o processo numa TV sã): rodada 2 em andamento.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/412",
    "criada_em": "2026-10-10",
@@ -9754,12 +9753,6 @@
    "confirmacao": "sem confirmacao do autor"
   },
   {
-   "numero": 311,
-   "resposta": "The search options (including turning off \"from Nuvio\" results) are in 2.0.3, under Settings > Sources & add-ons. Thanks for the idea, and reopen if you can't find them.",
-   "confirmado": false,
-   "confirmacao": "o autor perguntou onde ficava a opcao; nao confirmou na 2.0.3"
-  },
-  {
    "numero": 312,
    "resposta": "The Dolby Vision correction is posted above: Dolby Vision in MKV is off by default in 2.0.3 (Settings > Playback > More options). Thanks, and reopen if anything is still off.",
    "confirmado": false,
@@ -10290,6 +10283,78 @@
    "ref": "guild 1558285501067296922",
    "resultado": "passou",
    "evidencia": "5 categorias e 10 canais novos conferidos pela lista de canais; convite https://discord.gg/9NWr6SHyzJ com 'nunca irá expirar'. Pendente: dono apagar os 10 canais antigos (Canais de Texto/Voz)."
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão de confirmação da rodada 3 do #409",
+   "issues": [
+    409
+   ],
+   "ref": "agente/204-decoder409 c51dc9ec",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/409-r3-codex.txt: sem achados P1/P2"
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão de confirmação da rodada 2 do #412",
+   "issues": [
+    412
+   ],
+   "ref": "agente/204-tpkpreso412 6ec34f52",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/412-r2-codex.txt: sem achados P1/P2; sem TV física"
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão de confirmação da rodada 3 do prefetch do próximo episódio",
+   "issues": [],
+   "ref": "agente/204-proxprefetch 61b7db4d",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/prox-r3-codex.txt: sem achados P1/P2"
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão do cartão de novidades com Discord + QR",
+   "issues": [],
+   "ref": "agente/204-novidades c0c2d1a8",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/nov-r3-codex.txt: sem achados P1/P2; capturas em /Volumes/ExternalSSD/tmp/nov204-shots3 conferidas pela coordenação"
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Codex gpt-6-astra (revisão)",
+   "o_que": "Revisão de confirmação da rodada 3 do nível de GPU",
+   "issues": [
+    410
+   ],
+   "ref": "agente/204-gpunivel410 db3c1242",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/410b-r3-codex.txt: P2 residual (quadros alternando 1200/900 ms nunca terminam a referência). Rodada 4 pedida."
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Testes-alvo na integração depois dos 4 merges",
+   "issues": [
+    409,
+    412
+   ],
+   "ref": "integracao/2.0.3.1 fd86a673",
+   "resultado": "passou",
+   "evidencia": "decoder409, proxprefetch, addonslista, tpk-preso, stream_parser, android_decoder409.py, novidades_cartao: rc=0"
+  },
+  {
+   "data": "2026-10-10 00:20",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Onboarding do Discord ativado",
+   "issues": [],
+   "ref": "guild 1558285501067296922",
+   "resultado": "passou",
+   "evidencia": "9 canais padrão, aviso de boas-vindas, 3 tarefas (rules, bugs-and-issues, announcements); 'Onboarding is Enabled'. Ícone: dono sobe à mão."
   }
  ]
 }

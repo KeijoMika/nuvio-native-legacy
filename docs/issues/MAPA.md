@@ -109,7 +109,7 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 | 2.2 | 0 |  |
 | futuro | 8 | #135, #260, #304, #342, #343, #347, #348, #389 |
 | nao vamos fazer | 4 | #292, #307, #324, #354 |
-| ja-lancada | 31 | #144, #252, #269, #284, #287, #290, #293, #296, #298, #300, #303, #305, #311, #312, #319, #320, #321, #322, #323, #330, #332, #335, #339, #340, #341, #361, #363, #368, #370, #383, #384 |
+| ja-lancada | 30 | #144, #252, #269, #284, #287, #290, #293, #296, #298, #300, #303, #305, #312, #319, #320, #321, #322, #323, #330, #332, #335, #339, #340, #341, #361, #363, #368, #370, #383, #384 |
 
 ## Fechar com a 2.0.3
 
@@ -120,7 +120,6 @@ Issues ABERTAS no GitHub cujo conserto saiu na v2.0.3 (commits contidos na tag).
 | [#269](https://github.com/iqui27/nuvio-native-legacy/issues/269) | Embedded subtitles are not being detected or not being displ | NÃO: o autor agradeceu o conserto parcial da 2.0.2; nao testou a 2.0.3 | Thanks for reporting this! Embedded subtitles on big MKV files (over 2 GB) are fixed in 2.0.3. Please update, and reopen this if they still don't show up. |
 | [#284](https://github.com/iqui27/nuvio-native-legacy/issues/284) | Source result ("Best for this tv") missing resolution | NÃO: sem comentarios do autor | Thanks! The "Best for this TV" source line now shows the resolution in 2.0.3. Please reopen if you still don't see it. |
 | [#305](https://github.com/iqui27/nuvio-native-legacy/issues/305) | Hide player ui when pressing up | NÃO: sem confirmacao do autor | Done in 2.0.3: pressing Up on the seek bar now hides the player controls (any key brings them back). Reopen if it doesn't work for you. |
-| [#311](https://github.com/iqui27/nuvio-native-legacy/issues/311) | [suggestion] option to disable "from nuvio search" | NÃO: o autor perguntou onde ficava a opcao; nao confirmou na 2.0.3 | The search options (including turning off "from Nuvio" results) are in 2.0.3, under Settings > Sources & add-ons. Thanks for the idea, and reopen if you can't find them. |
 | [#312](https://github.com/iqui27/nuvio-native-legacy/issues/312) | few minor bugs, none affect use | NÃO: correcao do texto publicada 09/10; autor nao respondeu | The Dolby Vision correction is posted above: Dolby Vision in MKV is off by default in 2.0.3 (Settings > Playback > More options). Thanks, and reopen if anything is still off. |
 | [#319](https://github.com/iqui27/nuvio-native-legacy/issues/319) | Home row still not updating properly | NÃO: sem confirmacao do autor | Thanks for the log! 2.0.3 fixes the home rows not refreshing (rows of switched-off add-ons are now cleaned up properly). Please reopen if it still happens. |
 | [#320](https://github.com/iqui27/nuvio-native-legacy/issues/320) | Arabic language in Subtitle shows no glyph font | NÃO: sem confirmacao do autor | This is fixed in 2.0.3: the Arabic subtitle font is now found even when the update only replaced the app's code. Please reopen if you still see empty boxes. |
@@ -200,9 +199,9 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 268 |
-| aberta | 34 |
+| aberta | 32 |
 | respondida | 24 |
-| consertada-nao-lancada | 20 |
+| consertada-nao-lancada | 22 |
 | por-desenho | 14 |
 | precisa-log | 8 |
 | fechada-sem-resposta | 6 |
@@ -214,15 +213,15 @@ Por release (grupo de planejamento):
 | Grupo | Qtd |
 |---|---|
 | lançadas em tag v* (qualquer versão) | 268 |
-| sem release | 87 |
+| sem release | 85 |
 | 2.0.5 (branches) | 11 |
 | 2.0.3 lançada, com pendência | 5 |
 | futuro (2.1/2.2) | 5 |
-| 2.0.4 (hotfix, sem tag) | 3 |
+| 2.0.4 (hotfix, sem tag) | 5 |
 
 Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18, 2.0.3: 35.
 
-Abertas no GitHub: 110. Fechadas: 269.
+Abertas no GitHub: 109. Fechadas: 270.
 Abertas sem nenhum comentário nosso: 60.
 
 ## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)
@@ -247,19 +246,23 @@ Notas:
 
 ## 2.0.4 (hotfix em integracao/2.0.3.1, sem tag)
 
-3 issues.
+5 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
 | [#344](https://github.com/iqui27/nuvio-native-legacy/issues/344) | Live TV search crash | Android | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | 9d78c75a, 8dd273f3, c9af64b1 | sem comentários | responder com a causa quando o hotfix 2.0.4 sair |
 | [#372](https://github.com/iqui27/nuvio-native-legacy/issues/372) | [Bug] Incorrect Season/Episode Metadata Mapping for TV Anime | Samsung .tpk | bug | consertada-nao-lancada | 2.0.4 | 2.0.5 | 038a7dc7, c2112b61, a120b67c | sem comentários | parte 1 (abas de temporada) sai na 2.0.4: responder ao autor com a causa quando sair; part |
 | [#392](https://github.com/iqui27/nuvio-native-legacy/issues/392) | Profile switching still rearrange my home screen | Samsung .tpk | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | bb583b60, 9023ebdb, bdd49eb6 | sem comentários | responder ao autor com a causa quando a 2.0.4 sair |
+| [#409](https://github.com/iqui27/nuvio-native-legacy/issues/409) | The source didn't answer in time error even though the serve | Android | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | - | sem comentários | juntado na integração (2051869e); validar na TCL; responder ao autor |
+| [#412](https://github.com/iqui27/nuvio-native-legacy/issues/412) | Playback makes UI extremely laggy | Samsung .tpk | bug | consertada-nao-lancada | 2.0.4 | 2.0.4 | - | sem comentários | juntado na integração (f7a24dc7); validar numa Samsung .tpk (host .NET mudou: precisa inst |
 
 Notas:
 
 - **#344**: CAUSA PROVADA (09/10) por tombstone simbolizado (log AX1R49): leitura fora do limite em buscaFazer (src/guia.c ~3965, EpgProg ps[24] enquanto epg_faixa/xtepg_faixa devolvem o total). Existe desde a v1.7.0, continua na 2.0.3 e vale para todas as plataformas com o guia. Conserto em agente/2031-guiabusca, alvo 2.0.4. Primeira rodada integrada em integracao/2.0.3.1 (merge c9af64b1; teste 9d78c75a falhava com ASan, conserto 8dd273f3); ainda sem tag v*.
 - **#372**: CAUSA PROVADA (09/10): regressão 9677065b (v2.0.1, catálogo do Nuvio primeiro para a lista de episódios; o TMDB junta anime longo em 1-2 temporadas: Bleach no Nuvio {1:366,2:50} contra S1-16 no Cinemeta) somada a um defeito antigo: as abas de temporada saem do corpo do Nuvio mesmo quando a lista de episódios é a do add-on (descoberta.c ~7069-7087, detail.c ~742-765). O log BZB857 (2.0.3, webOS) prova. A teoria do autor sobre o Trakt está errada.  Relacionado: #328 (episódios duplicados), mesma raiz (numeração). A parte SIMKL do título não foi tratada. DECISÃO DO DONO (09/10), duas partes. PARTE 1, conserto na 2.0.4: as abas de temporada saem da lista de episódios publicada (não da ficha do Nuvio) e a cauda de enriquecimento do detalhe não repõe abas velhas; integrada em integracao/2.0.3.1 (merge 21077ab5; 038a7dc7, c2112b61, a120b67c, 167310e6, 8eb5ce90), ainda sem tag v*. PARTE 2, 2.0.5, opção (b): lista de episódios na numeração Cinemeta/TVDB mais uma camada de tradução por número absoluto do episódio para o progresso/scrobble do Trakt, a conta Nuvio, o Simkl, os ids de "a seguir"/Continuar assistindo e as marcas de visto (vistonao/vistoep). Como a issue tem um alvo só, o alvo é 2.0.5 (parte aberta). Origem: dono 09/10.
 - **#392**: Samsung .tpk Tizen 6.0, v2.0.3 (rawldon, log VV8JG2): ao trocar de perfil e voltar, a ordem das fileiras da Home muda (coleções, catálogos e Continuar assistindo). CAUSA PROVADA pelo log VV8JG2: o build da Home registra os catálogos dos add-ons do perfil anterior no arquivo de ordem do perfil novo, e isso expulsa fileiras. Conserto em agente/2031-ordemperfil (teste bb583b60, conserto 9023ebdb: a lista de add-ons do perfil que saiu não é registrada no arquivo do perfil novo), ainda não integrado. Mesma queixa do #294, que persiste na 2.0.3.
+- **#409**: Log 4B891A (Changhong AI PONT, MStar, Android 11, tela 1080p): automático escolhe 4K (VidFast), 15 s sem nenhum evento do player, depois erro 4003 (decodificação). Foto do autor: vídeo tocando atrás da mensagem. Causa provável: troca de fonte abre player novo antes do velho soltar o decoder (NvPlayer.liberar só encolhe a SurfaceView e solta em outra thread; overlay MStar segue visível). Conserto em agente/204-decoder409 (capacidade 4K do decoder, sem repetir codec que falhou, Voltar fecha o erro) + rodada 2 (esperar o release, logs do player). | 10/10: outro usuário (Namer03) lembrou no fio que já existe Reprodução › seleção manual de fonte como contorno.
+- **#412**: Log QHQRVE (S95C, .tpk): relógio do player congelado, UI com upd=120 ms por quadro, parar retorna 0 ms mas o player nativo segue tocando. Conserto em agente/204-tpkpreso412 (71c7d615): ASS deixa de segurar o quadro, recupera relógio congelado, parada confirmada antes de abrir outro player. Revisão Codex achou P1 (Voltar durante PrepareAsync encerraria o processo numa TV sã): rodada 2 em andamento.
 
 ## Planejado na 2.0.5 (com branch)
 
@@ -307,7 +310,7 @@ Notas:
 
 ## Aberta sem plano
 
-51 issues.
+49 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -358,10 +361,8 @@ Notas:
 | [#405](https://github.com/iqui27/nuvio-native-legacy/issues/405) | Quick search doesn't list all results | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | ler o log ABB125 e comparar a busca rapida (canal -) com a busca do menu para "Silo" |
 | [#406](https://github.com/iqui27/nuvio-native-legacy/issues/406) | Passing through ratings on title page | Samsung .tpk | feature | aberta | - | 2.0.5 | - | sem comentários | decidir com o dono: notas da pagina do titulo como um bloco so na navegacao vertical |
 | [#407](https://github.com/iqui27/nuvio-native-legacy/issues/407) | Top menu open when scrolling up on the title page | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | reproduzir no .tpk: cima a partir do Play na pagina do titulo abre o menu do topo (o mesmo |
-| [#409](https://github.com/iqui27/nuvio-native-legacy/issues/409) | The source didn't answer in time error even though the serve | Android | bug | aberta | - | 2.0.4 | - | sem comentários | revisar a rodada 2 e juntar; responder ao autor |
-| [#410](https://github.com/iqui27/nuvio-native-legacy/issues/410) | Settings interface lower resolution; glass, depth, edge glow | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | cc8bbdcd | sem comentários | reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relev |
+| [#410](https://github.com/iqui27/nuvio-native-legacy/issues/410) | Settings interface lower resolution; glass, depth, edge glow | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | cc8bbdcd | sem comentários | juntar a rodada 4 do nível de GPU quando o Codex liberar; responder ao autor; menu em 4K n |
 | [#411](https://github.com/iqui27/nuvio-native-legacy/issues/411) | Samsung "Not Available" toast on Play/Pause (Tizen 4/5) | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | a066e6c8 | sem comentários | gerar .tpk Tizen 4/5 da 2.0.4 para o relator testar (precisa OK do dono) |
-| [#412](https://github.com/iqui27/nuvio-native-legacy/issues/412) | Playback makes UI extremely laggy | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | revisar a rodada 2 (Codex) e juntar; validar numa TV Samsung .tpk; responder ao autor |
 
 Notas:
 
@@ -399,16 +400,14 @@ Notas:
 - **#405**: mackojanko, QE65Q80A, 2.0.3: a busca rapida nao mostra Silo (2023); a busca do menu mostra. Log ABB125. Sem causa ainda.
 - **#406**: mackojanko: subir/descer na pagina do titulo passa nota por nota; pede que as notas sejam um bloco unico.
 - **#407**: mackojanko, QE65Q80A, 2.0.3: acima do Play o foco abre o menu do topo; ele acha que nao deveria abrir. Sem log.
-- **#409**: Log 4B891A (Changhong AI PONT, MStar, Android 11, tela 1080p): automático escolhe 4K (VidFast), 15 s sem nenhum evento do player, depois erro 4003 (decodificação). Foto do autor: vídeo tocando atrás da mensagem. Causa provável: troca de fonte abre player novo antes do velho soltar o decoder (NvPlayer.liberar só encolhe a SurfaceView e solta em outra thread; overlay MStar segue visível). Conserto em agente/204-decoder409 (capacidade 4K do decoder, sem repetir codec que falhou, Voltar fecha o erro) + rodada 2 (esperar o release, logs do player).
-- **#410**: Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4.
+- **#410**: Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4. | 10/10, autor depois de testar: efeitos completos + menu 4K não melhoraram a nitidez dos Ajustes (bate com o achado de que o .tpk enxerga a TV 4K como 1920x1080: não é regressão da 2.0.3, vai para a 2.0.5); os ajustes recomendados melhoraram o vidro da Home; Profundidade e os outros quase não mudam ligado/desligado (conferir na TV com o conserto cc8bbdcd, que só entra na 2.0.4). Opinião: visual "menos moderno" que o anterior, organização melhor.
 - **#411**: Q7FN Tizen 4. Host 4/5 passa a reservar teclas de mídia (keygrab TOPMOST via ecore_wayland/ecore_wl2, varre janelas 0-63) — merge a066e6c8. Relator sugeriu ElmSharp WinKeyGrab/eext_win_keygrab_set e se ofereceu para testar numa Q7FN.
-- **#412**: Log QHQRVE (S95C, .tpk): relógio do player congelado, UI com upd=120 ms por quadro, parar retorna 0 ms mas o player nativo segue tocando. Conserto em agente/204-tpkpreso412 (71c7d615): ASS deixa de segurar o quadro, recupera relógio congelado, parada confirmada antes de abrir outro player. Revisão Codex achou P1 (Voltar durante PrepareAsync encerraria o processo numa TV sã): rodada 2 em andamento.
 
 ## Já lançado
 
 268 issues.
 
-### Lançadas e ainda abertas no GitHub (37)
+### Lançadas e ainda abertas no GitHub (36)
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -427,7 +426,6 @@ Notas:
 | [#302](https://github.com/iqui27/nuvio-native-legacy/issues/302) | Live TV issue persists with 2.1 tpk65 | Samsung .tpk | bug | lancada | 2.0.3 | 2.0.5 | 6c4d3863, 8fea5018, 0021b573 | nós 10-08 | postar correção |
 | [#303](https://github.com/iqui27/nuvio-native-legacy/issues/303) | how to remove continue watching from opening screen | ? | feature | lancada | 2.0.2 | ja-lancada | 1300a834 | nós 10-07 | nada (pode fechar) |
 | [#305](https://github.com/iqui27/nuvio-native-legacy/issues/305) | Hide player ui when pressing up | ? | feature | lancada | 2.0.3 | ja-lancada | 98bee79f | nós 10-07 | fechar com a resposta curta do bloco "fechar com a 2.0.3" (o dono decide; saiu na v2.0.3) |
-| [#311](https://github.com/iqui27/nuvio-native-legacy/issues/311) | [suggestion] option to disable "from nuvio search" | ? | feature | lancada | 2.0.3 | ja-lancada | 607b25bf, a86e55c2, 0d5ca11b | nós 10-08 | fechar com a resposta curta do bloco "fechar com a 2.0.3" (o dono decide; saiu na v2.0.3) |
 | [#312](https://github.com/iqui27/nuvio-native-legacy/issues/312) | few minor bugs, none affect use | LG | bug | lancada | 2.0.3 | ja-lancada | a86e55c2, 317cb179 | nós 10-08 | nada (correcao publicada 09/10: Dolby Vision em MKV vem DESLIGADO por padrao); pode fechar |
 | [#319](https://github.com/iqui27/nuvio-native-legacy/issues/319) | Home row still not updating properly | ? | bug | lancada | 2.0.3 | ja-lancada | 66e6ae9e, 3c51d5b7, 0fcfa601 | nós 10-07 | fechar com a resposta curta do bloco "fechar com a 2.0.3" (o dono decide; saiu na v2.0.3) |
 | [#320](https://github.com/iqui27/nuvio-native-legacy/issues/320) | Arabic language in Subtitle shows no glyph font | Samsung .tpk | bug | lancada | 2.0.3 | ja-lancada | 22ecac46, 8ab3b78f | nós 10-07 | fechar com a resposta curta do bloco "fechar com a 2.0.3" (o dono decide; saiu na v2.0.3) |
@@ -467,7 +465,6 @@ Notas:
 - **#302**: Rascunho de correção: o conserto do live TV NÃO está na 2.0.2 (resposta anterior dizia que sim). 0021b573 (2.0.2) é parcial. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
 - **#303**: Alvo ja-lancada: já saiu numa versão publicada; só falta fechar.
 - **#305**: LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
-- **#311**: Resposta corrigiu: opções de busca não estão na 2.0.2, saem na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
 - **#312**: Nossa resposta disse que "Dolby Vision in MKV" vem LIGADO por padrão: ERRADO, é DESLIGADO (docs 203-dvmkv-decisao.md; ajustes_ux_padrao.inc). Resumo traduzido e "All sources" saem na 2.0.3, não na 2.0.2. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. 09/10: correcao publicada na issue (DV em MKV desligado por padrao), com OK do dono.
 - **#319**: LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
 - **#320**: Nenhum commit cita #320; 22ecac46/8ab3b78f ("tpk: arabic plain subtitles find Noto Naskh when the installed res/ predates 2.0.2") batem com a promessa "o próximo update busca a fonte sozinho". LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
@@ -490,7 +487,7 @@ Notas:
 - **#383**: Pedido: a legenda lembrar a faixa entre episódios (referência: NuvioMedia/NuvioTVSmart#1025). SUSPEITA de que a 2.0.3 já cobre: legmemoria (a89987c1, na tag v2.0.3) guarda por perfil a faixa exata por título (imdb sem temporada/episódio, então vale para os episódios da série) e a última escolha a mão em outro título; só a escolha manual grava. Não conferido contra a regra exata do Nuvio nem testado em TV; se o autor disser que falta algo (por exemplo lembrar por idioma de áudio), reabrir como 2.0.5. O comentário de base08 (não é do projeto) só concorda.
 - **#384**: LG C5, webOS 26, Nuvio 2.0.2; Re:Zero S1 (Seadex): legenda embutida do ep. 3 funcionou, a do ep. 4 parou de aparecer depois da abertura. O autor (Vidhin05) JÁ mandou dois códigos de log no corpo (DDRROH e 98ZQED), ainda não lidos por nós; por isso o status é aberta e não precisa-log. Um comentário do próprio autor fala de "quedas de conexão e falhas de rede, talvez queda do debrid": relato solto, sem log próprio, tratar como segundo sintoma e checar nos mesmos logs. Namer03 (não é do projeto) respondeu "mesma coisa do #308, sai na 2.0.3": SUSPEITA, o #308 é legenda que bloqueia a fonte, o sintoma aqui (legenda some no meio) pode ser outro; não confirmado. Candidatos já na 2.0.3: #269 (legenda embutida) e #335 (ASS). ALVO 2.0.5 = triagem: pode virar 2.0.3 se os logs mostrarem que é o #308. CAUSA ACHADA (09/10, nos logs do próprio autor): NÃO é o #308 e NÃO está corrigido na 2.0.3 até agora. O coletor de ASS embutido indexa no máximo 8000 blocos (MKVASS_MAX_PONTOS, src/mkvass.c:61) NA ORDEM DO ARQUIVO; numa release com muito typeset (letreiros, karaokê) os 8000 acabam logo depois da abertura, e o resto do episódio fica sem legenda (log: "cobertura=7360-217270ms" com exatamente 8000 eventos). O branch agente/203-384 trabalha nisso; o alvo continua 2.0.5 a menos que esse branch entre na 2.0.3. Próximo passo: integrar agente/203-384 (ou deixar para a 2.0.5) e avisar o autor. O comentário de "queda do debrid" segue sem log próprio. CORRIGIDO (09/10): o conserto de agente/203-384 entrou na 2.0.3 (merge 2b4c3cea; b03b86db teste e 9ee093ac conserto, ambos contidos na tag v2.0.3): o índice cobre a faixa inteira e a faixa grande é colhida só na janela do playhead, sem carga extra no CDN. O texto acima sobre "não está corrigido" e "alvo 2.0.5" é histórico. A "queda do debrid" do autor segue sem log próprio.
 
-### Lançadas e fechadas (231)
+### Lançadas e fechadas (232)
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -720,6 +717,7 @@ Notas:
 | [#295](https://github.com/iqui27/nuvio-native-legacy/issues/295) | Profile picker background — “Profile art” option not working | Samsung .tpk | bug | lancada | 2.0.2 | - | 881f7cae | nós 10-07 | nada (fechada) |
 | [#297](https://github.com/iqui27/nuvio-native-legacy/issues/297) |  Issue: P2P stream stops due to full TV storage. | Samsung .tpk | bug | lancada | 2.0.2 | - | 325f4e2b, 1b6a5439 | nós 10-07 | nada (fechada) |
 | [#308](https://github.com/iqui27/nuvio-native-legacy/issues/308) | [bug] subtitles block source | ? | bug | lancada | 2.0.3 | - | e52fae3f, 6269f306, b65c3324 | autor 10-09 | nada (fechada 09/10; renderizacao ASS segue na #394) |
+| [#311](https://github.com/iqui27/nuvio-native-legacy/issues/311) | [suggestion] option to disable "from nuvio search" | ? | feature | lancada | 2.0.3 | - | 607b25bf, a86e55c2, 0d5ca11b | nós 10-08 | nada: o autor confirmou em 10/10 ("Fully functional verified, closing") e fechou |
 | [#317](https://github.com/iqui27/nuvio-native-legacy/issues/317) | App doesn't  open on my LG webOS Tv UK6550PSB | LG | bug | lancada | 2.0.3 | - | 9a17b810, 8cf12920, d423b051 | nós 10-07 | - |
 | [#318](https://github.com/iqui27/nuvio-native-legacy/issues/318) | screen flickers and stops responding when pressing OK (andro | Android | bug | lancada | 2.0.3 | - | 142ae407, 773658c8, 730556e1 | autor 10-08 | - |
 | [#327](https://github.com/iqui27/nuvio-native-legacy/issues/327) | Hero doesn’t working / Catalog bug | Samsung .wgt | bug | lancada | 2.0.3 | - | 8ab1b19b, d268b069 | autor 10-07 | nada (fechada; saiu na v2.0.3) |
@@ -829,6 +827,7 @@ Notas:
 - **#278**: Sem commit #278; versão 2.0.1 citada na nossa resposta.
 - **#282**: Sem commit #282; versão 2.0.1 citada na nossa resposta.
 - **#308**: O defeito do relato original (fonte com ASS que não abre e cai no CDN) está corrigido na 2.0.3: o autor confirma em 09/10 "got them working now". DECISÃO: a issue segue aberta no mapa, com status lancada e alvo 2.0.5, porque o autor trouxe sintomas NOVOS no mesmo fio: todas as legendas ASS com sombra/anel e cor diferente da original (exemplo do Stremio com anel branco), legendas grandes/avançadas lentas (baixo fps) e um clipe fora de sincronia (vídeos e captura anexados, não vistos por nós). SUSPEITA, sem leitura de código nem log: desenho do libass (sombra/contorno/cor) e custo de desenho das legendas grandes na TV. Se o dono preferir, fechar a #308 como resolvida e abrir issue nova para o desenho. FECHADA 09/10 com OK do dono: o problema original saiu na 2.0.3; os sintomas novos de renderizacao ASS (sombra/anel, cor, lentidao, dessincronia) foram para a #394.
+- **#311**: Resposta corrigiu: opções de busca não estão na 2.0.2, saem na 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
 - **#317**: LG webOS 4 com pouca RAM; partes na 2.0.2 (0fcfa601, 937f8e6b). LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. FECHADA no GitHub pelo coordenador em 09/10. Origem: dono 09/10.
 - **#318**: Tudo integrado em 2.0.3. O relator de queda nativa no Android < 12 (c8793c11 em agente/203-318-play) entrou como 142ae407, o mesmo commit com outro hash; tests/queda.sh passa em c3c1032e. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag. FECHADA no GitHub pelo coordenador em 09/10. Origem: dono 09/10.
 - **#327**: Fechada no GitHub antes do release 2.0.3. LANÇADA na v2.0.3 (09/10): todos os commits do conserto estão contidos na tag.
@@ -905,6 +904,13 @@ Quem validou o quê, em que ref, com que resultado e onde está a prova; mais re
 
 | Data | Quem | O que | Issues | Ref | Resultado | Evidência |
 |---|---|---|---|---|---|---|
+| 2026-10-10 00:20 | Codex gpt-6-astra (revisão) | Revisão de confirmação da rodada 3 do #409 | #409 | agente/204-decoder409 c51dc9ec | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/409-r3-codex.txt: sem achados P1/P2 |
+| 2026-10-10 00:20 | Codex gpt-6-astra (revisão) | Revisão de confirmação da rodada 2 do #412 | #412 | agente/204-tpkpreso412 6ec34f52 | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/412-r2-codex.txt: sem achados P1/P2; sem TV física |
+| 2026-10-10 00:20 | Codex gpt-6-astra (revisão) | Revisão de confirmação da rodada 3 do prefetch do próximo episódio | - | agente/204-proxprefetch 61b7db4d | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/prox-r3-codex.txt: sem achados P1/P2 |
+| 2026-10-10 00:20 | Codex gpt-6-astra (revisão) | Revisão do cartão de novidades com Discord + QR | - | agente/204-novidades c0c2d1a8 | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/nov-r3-codex.txt: sem achados P1/P2; capturas em /Volumes/ExternalSSD/tmp/nov204-shots3 conferidas pela coordenação |
+| 2026-10-10 00:20 | Codex gpt-6-astra (revisão) | Revisão de confirmação da rodada 3 do nível de GPU | #410 | agente/204-gpunivel410 db3c1242 | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/410b-r3-codex.txt: P2 residual (quadros alternando 1200/900 ms nunca terminam a referência). Rodada 4 pedida. |
+| 2026-10-10 00:20 | Claude Opus 5.5 (sessão de coordenação) | Testes-alvo na integração depois dos 4 merges | #409, #412 | integracao/2.0.3.1 fd86a673 | passou | decoder409, proxprefetch, addonslista, tpk-preso, stream_parser, android_decoder409.py, novidades_cartao: rc=0 |
+| 2026-10-10 00:20 | Claude Opus 5.5 (sessão de coordenação) | Onboarding do Discord ativado | - | guild 1558285501067296922 | passou | 9 canais padrão, aviso de boas-vindas, 3 tarefas (rules, bugs-and-issues, announcements); 'Onboarding is Enabled'. Ícone: dono sobe à mão. |
 | 2026-10-09 23:10 | Codex gpt-6-astra (revisão) | Revisão da rodada 2 do nível de GPU adaptativo | #410 | agente/204-gpunivel410 020fb8f8 | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/410b-r2-codex.txt: 2 P2 (Mali-400 sem saída segura; interrupção perde reavaliação do legado). Rodada 3 pedida. |
 | 2026-10-09 23:10 | Codex gpt-6-astra (revisão) | Revisão da rodada 2 do decoder 4K / espera do release | #409 | agente/204-decoder409 6d46e336 | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/409-r2-codex.txt: 1 P2 (volume volta a 100% após a espera) + 1 P3 de teste. Rodada 3 pedida. |
 | 2026-10-09 23:10 | Codex gpt-6-astra (revisão) | Revisão do conserto do player preso no .tpk | #412 | agente/204-tpkpreso412 71c7d615 | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/412-codex.txt: P1 (Voltar durante PrepareAsync encerra o processo em TV sã). Rodada 2 pedida. |
