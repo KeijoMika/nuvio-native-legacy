@@ -11,6 +11,10 @@ void *SDL_AndroidGetActivity(void);
 #include <stdint.h>
 #include <stdlib.h>
 
+static int cap4k[4];
+void stream_definir_decoder4k(int h, int a, int v, int av) {
+  cap4k[0] = h; cap4k[1] = a; cap4k[2] = v; cap4k[3] = av;
+}
 static struct JNINativeInterface_ jni;
 static const struct JNINativeInterface_ *env = &jni;
 static int chamadasNormais, chamadasPosicao, recebidoMs, recebidoGeracao, excecao, lancar;
@@ -61,6 +65,9 @@ static void JNICALL chamar(JNIEnv *e, jclass c, jmethodID m, ...) {
   va_end(ap);
 }
 int main(void) {
+  Java_space_nuvio_nativelegacy_NvPlayer_nativeDecoder4k(NULL, NULL, 1, 0, -1, 1);
+  assert(cap4k[0] == 1 && cap4k[1] == 0 && cap4k[2] == -1 && cap4k[3] == 1);
+
   jni.NewGlobalRef = global; jni.GetStaticMethodID = metodo;
   jni.NewString = texto; jni.DeleteLocalRef = apagar;
   jni.ExceptionCheck = temExcecao; jni.ExceptionClear = limparExcecao;

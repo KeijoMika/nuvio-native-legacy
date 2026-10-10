@@ -114,6 +114,10 @@ static int *exib;
 #define AUTO_EXCL_MAX 32
 static int automaticasExcluidas[AUTO_EXCL_MAX];
 static int nAutomaticasExcluidas;
+// #409: so Android publica estas capacidades. -1 preserva LG/Tizen/host.
+static int decoder4k[4] = { -1, -1, -1, -1 }; // HEVC, AVC, VP9, AV1
+static int decoderFalhaAltura[4];             // apenas a lista atual
+static int excedeDecoder(const Stream *s);
 static pthread_mutex_t autoExclTrava = PTHREAD_MUTEX_INITIALIZER;
 // Trava entre a lista e os fios de verificacao (ver Lote, abaixo): a troca de
 // lista e as leituras/escritas dos fios em `lista[]` passam por ela.
@@ -342,9 +346,9 @@ static int ehInformativa(const Stream *s) {
 // na folha manual (#284: 75% Android / 60% Samsung / 41% LG falham quando o
 // automatico os escolhe, contra 6/14/9% das fontes com resolucao).
 static int foraDoAuto(int i) {
-  return automaticaExcluida(i) || (i >= 0 && i < n && ehInformativa(&lista[i]));
+  return automaticaExcluida(i) || (i >= 0 && i < n && (ehInformativa(&lista[i]) || excedeDecoder(&lista[i])));
 }
-int stream_automatico_disponivel(int indice) { return indice >= 0 && indice < n && !automaticaExcluida(indice); }
+int stream_automatico_disponivel(int indice) { return indice >= 0 && indice < n && !automaticaExcluida(indice) && !excedeDecoder(&lista[indice]); }
 int stream_automatico_excluir(int indice) {
   int resultado = 0;
   pthread_mutex_lock(&autoExclTrava);
@@ -472,6 +476,7 @@ void stream_definir_lista_idade(const Stream *l, int qtd, Uint32 idade) {
   selosAgendar(0, n);
   pthread_mutex_lock(&autoExclTrava);
   nAutomaticasExcluidas = 0;
+  memset(decoderFalhaAltura, 0, sizeof decoderFalhaAltura);
   pthread_mutex_unlock(&autoExclTrava);
   // LISTA NOVA, INDICE VELHO NAO VALE. A preferida e uma posicao na lista
   // ANTERIOR; mantida, ela apontaria para outra fonte do episodio seguinte —
@@ -693,6 +698,53 @@ static int acha(const char *t, const char *termo) {
   for (; *t; t++) if (!strncasecmp(t, termo, n)) return 1;
   return 0;
 }
+
+void stream_definir_decoder4k(int hevc, int avc, int vp9, int av1) {
+  pthread_mutex_lock(&autoExclTrava);
+  decoder4k[0] = hevc; decoder4k[1] = avc; decoder4k[2] = vp9; decoder4k[3] = av1;
+  pthread_mutex_unlock(&autoExclTrava);
+}
+static int codecDaFonte(const Stream *s) {
+  uint64_t b = s->badges | badges_detectar(s->rotulo) |
+               badges_detectar(s->descricao) | badges_detectar(s->arquivo);
+  if (b & badges_bit("co-av1")) return 3;
+  if (b & badges_bit("co-x265")) return 0;
+  if (b & badges_bit("co-x264")) return 1;
+  const char *c[] = { s->rotulo, s->descricao, s->arquivo };
+  for (int i = 0; i < 3; i++) {
+    if (acha(c[i], "vp9") || acha(c[i], "vp09")) return 2;
+    if (acha(c[i], "avc1")) return 1;
+    if (acha(c[i], "av01")) return 3;
+  }
+  return 0; // codec nao anunciado: HEVC, como nas fontes UHD do relato
+}
+static int excedeDecoder(const Stream *s) {
+  int c, r;
+  if (s->altura < 2160) return 0;
+  pthread_mutex_lock(&autoExclTrava);
+  r = 0;
+  for (int i = 0; i < 4; i++) r |= decoder4k[i] == 0 || decoderFalhaAltura[i] != 0;
+  pthread_mutex_unlock(&autoExclTrava);
+  if (!r) return 0;
+  c = codecDaFonte(s);
+  pthread_mutex_lock(&autoExclTrava);
+  r = decoder4k[c] == 0 || (decoderFalhaAltura[c] && s->altura >= decoderFalhaAltura[c]);
+  pthread_mutex_unlock(&autoExclTrava);
+  return r;
+}
+void stream_automatico_erro_decoder(int indice, int codigo) {
+  if (codigo != 4001 && codigo != 4003 && codigo != 4004 && codigo != 4005) return;
+  pthread_mutex_lock(&verTrava);
+  if (indice >= 0 && indice < n && lista[indice].altura >= 2160) {
+    int c = codecDaFonte(&lista[indice]), h = lista[indice].altura;
+    pthread_mutex_lock(&autoExclTrava);
+    if (!decoderFalhaAltura[c] || h < decoderFalhaAltura[c]) decoderFalhaAltura[c] = h;
+    pthread_mutex_unlock(&autoExclTrava);
+    printf("[fonte] decoder: erro %d, automatico evita codec=%d a partir de %dp nesta lista\n", codigo, c, h);
+  }
+  pthread_mutex_unlock(&verTrava);
+}
+
 // Perfil 8 declarado (ou camada base HDR10 marcada): a base HDR10 toca em tela
 // sem Dolby Vision. Sem nenhuma das duas o perfil e desconhecido.
 static int perfil8(const Stream *s) {
@@ -1181,6 +1233,7 @@ static int verificarUma(int i, Conferencia *c) {
     pthread_mutex_unlock(&verTrava);
     return 0;
   }
+  if (excedeDecoder(&lista[i])) { pthread_mutex_unlock(&verTrava); return 0; }
   snprintf(url, sizeof url, "%s", lista[i].url);
   snprintf(cab, sizeof cab, "%s", lista[i].cabecalhos);
   snprintf(infoHash, sizeof infoHash, "%s", lista[i].infoHash);
@@ -1242,6 +1295,11 @@ static int verificarOuParar(int i, void *u) {
   int ok;
   if (c->abortou) return 0;
   ok = verificarUma(i, c);
+  // A antecipada pode ter falhado no decoder enquanto esta URL era conferida.
+  pthread_mutex_lock(&verTrava);
+  if (listaGeracao != c->geracao) c->abortou = 1;
+  if (c->abortou || i >= n || excedeDecoder(&lista[i])) ok = 0;
+  pthread_mutex_unlock(&verTrava);
   // A candidata que o player ja abriu (fonteantecipa.h): o veredito vai para o
   // fio principal, e um erro do player ANTES dele vale como "nao serviu".
   if (i == c->antecipada) {
@@ -1546,7 +1604,10 @@ int stream_primeira_boa(int tentativas) {
       escolhida = fonteauto_primeira(fila, nf, verificarOuParar, falhouUma, &c, &tocadas);
   } else
   escolhida = fonteauto_primeira(fila, nf, verificarOuParar, falhouUma, &c, &tocadas);
-  if (c.abortou) escolhida = -1;
+  pthread_mutex_lock(&verTrava);
+  if (c.abortou || listaGeracao != c.geracao ||
+      (escolhida >= 0 && (escolhida >= n || excedeDecoder(&lista[escolhida])))) escolhida = -1;
+  pthread_mutex_unlock(&verTrava);
   marco(escolhida >= 0 ? "fonte: verificacao ok" : "fonte: verificacao sem resultado");
   // QUANTO CUSTOU A VERIFICACAO, DEBRID INCLUIDO (#202): o log so tinha a conta
   // das candidatas. Entre a decisao e o primeiro quadro e a maior fatia do
@@ -1918,7 +1979,8 @@ static int automaticoCom(int regras) {
   // enchendo por addon o indice e a ordem de CHEGADA, nao a dos addons.
   for (int k = 0; k < n; k++) {
     int i = ORD(k), g = regras ? grupoDe(i) : 0;
-    if (automaticaExcluida(i) || ehInformativa(&lista[i]) || g < 0) continue;
+    if (automaticaExcluida(i) || ehInformativa(&lista[i]) ||
+        (regras && excedeDecoder(&lista[i])) || g < 0) continue;
     long p = pontos(&lista[i]);
     if (lg) { idx[m] = i; pts[m] = p; grp[m] = (signed char)g; m++; }
     // O GRUPO das regras (#202) vem antes da pontuacao: permitida primeiro.
@@ -1958,7 +2020,7 @@ int stream_proxima_sem_perda(int atual) {
   if (atual < 0 || atual >= n) return 0;
   for (int k = 0; k < n; k++) {
     int i = ORD(k), g = grupoDe(i);
-    if (i == atual || automaticaExcluida(i) || ehInformativa(&lista[i]) || g < 0) continue;
+    if (i == atual || foraDoAuto(i) || g < 0) continue;
     long p = pontos(&lista[i]);
     if (melhor < 0 || g < gMelhor || (g == gMelhor && p > maior)) { maior = p; melhor = i; gMelhor = g; }
   }
@@ -2058,7 +2120,8 @@ static int nFiltrados(void) {
 // na frente quando existe; senao, a de maior pontuacao. Pedido do dono, 16/09.
 // Uma vez por quadro, nunca por linha: stream_automatico percorre a lista.
 static int automaticaDaFolha(void) {
-  return preferida >= 0 && !automaticaExcluida(preferida) ? preferida : automaticoCom(!canalFolha);
+  return preferida >= 0 && !automaticaExcluida(preferida) &&
+         (canalFolha || !excedeDecoder(&lista[preferida])) ? preferida : automaticoCom(!canalFolha);
 }
 
 // A LISTA AGRUPADA POR RESOLUCAO. A ordem da lista (a pontuacao) vale DENTRO

@@ -129,6 +129,7 @@ object NvPlayer {
     @JvmStatic external fun nativeFaixasFim(selAudio: Int, selLeg: Int)
     @JvmStatic external fun nativeLegenda(texto: String, durMs: Int)
     @JvmStatic external fun nativePos(ms: Int)
+    @JvmStatic external fun nativeDecoder4k(hevc: Int, avc: Int, vp9: Int, av1: Int)
     @JvmStatic external fun nativeTela(hdr: Int, dv: Int)
     @JvmStatic external fun nativeHdr(hdr: String, dv: Int, atmos: Int)
     @JvmStatic external fun nativeRetomada(geracao: Int, aceita: Int)
@@ -219,6 +220,9 @@ object NvPlayer {
             Log.w(TAG, "nativeIniciar sem a lib ainda; o C acha a classe pelo ClassLoader da Activity: $e")
         }
         informarTela(activity)
+        val d = decoders4k
+        try { nativeDecoder4k(d[0], d[1], d[2], d[3]) }
+        catch (e: UnsatisfiedLinkError) { Log.w(TAG, "decoder4k sem lib: $e") }
     }
 
     // Capacidade HDR/Dolby Vision da tela, para o automatico de fontes. Lista
@@ -231,6 +235,39 @@ object NvPlayer {
             val dv = if (tipos.contains(android.view.Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION)) 1 else 0
             nativeTela(1, dv)
         } catch (e: Throwable) { Log.w(TAG, "informarTela: $e") }
+    }
+
+    // #409: uma consulta por processo, independente da resolucao da tela.
+    // 24 fps e o piso UHD de filme; nao promete 4K60 nem suporte a todo perfil.
+    private val decoders4k: IntArray by lazy {
+        val mimes = arrayOf("video/hevc", "video/avc", "video/x-vnd.on2.vp9", "video/av01")
+        val resultado = IntArray(4) { -1 }
+        try {
+            val codecs = android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).codecInfos
+            if (codecs.isEmpty()) return@lazy resultado
+            for ((i, mime) in mimes.withIndex()) {
+                var suporta = false
+                var incerto = false
+                for (codec in codecs) {
+                    try {
+                        val nome = codec.name.lowercase(java.util.Locale.ROOT)
+                        if (codec.isEncoder || nome.endsWith(".secure") ||
+                            nome.startsWith("omx.google.") || nome.startsWith("c2.android.") ||
+                            nome.startsWith("c2.google.") || nome.contains(".sw.") ||
+                            (android.os.Build.VERSION.SDK_INT >= 29 && codec.isSoftwareOnly)) continue
+                        if (!codec.supportedTypes.any { it.equals(mime, ignoreCase = true) }) continue
+                        val v = codec.getCapabilitiesForType(mime).videoCapabilities
+                        if (v == null) { incerto = true; continue }
+                        if (v.isSizeSupported(3840, 2160) && v.areSizeAndRateSupported(3840, 2160, 24.0)) {
+                            suporta = true
+                            break
+                        }
+                    } catch (e: Exception) { incerto = true; Log.w(TAG, "decoder4k $mime: $e") }
+                }
+                resultado[i] = if (suporta) 1 else if (incerto) -1 else 0
+            }
+        } catch (e: Exception) { Log.w(TAG, "decoder4k: $e") }
+        resultado
     }
 
     // onPause: pausa (o C fica sabendo pelo evento 3) e guarda a posicao; o

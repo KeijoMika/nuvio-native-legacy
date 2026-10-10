@@ -1631,6 +1631,9 @@ static void vigiarAntecipada(void) {
     case FA_ACAO_DESFAZER_VEREDITO: desfazerAntecipada("a conferencia reprovou"); break;
     case FA_ACAO_DESFAZER_PLAYER:
       printf("[fonte] erro do player antes do veredito: %s\n", video_erro_texto());
+#ifdef NV_ANDROID
+      stream_automatico_erro_decoder(antAberta, atoi(video_erro_texto()));
+#endif
       fa_player_falhou(antAberta);
       stream_automatico_excluir(antAberta);
       stream_automatico_excluir_irmas(antAberta);
@@ -1817,6 +1820,9 @@ static void tentarProximaFonteVOD(void) {
   // Erro do PLAYER (nao prazo nem buffer): as irmas desta fonte saem junto,
   // senao as vagas que sobram vao todas para links que falham igual.
   if (atual >= 0 && motivo == 1) {
+#ifdef NV_ANDROID
+    stream_automatico_erro_decoder(atual, atoi(video_erro_texto()));
+#endif
     int k = stream_automatico_excluir_irmas(atual);
     if (k) printf("[fonte] automatico VOD pulou %d link(s) irmao(s) de %d\n", k, atual);
   }

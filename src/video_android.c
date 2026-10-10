@@ -450,6 +450,14 @@ JNIEXPORT void JNICALL Java_space_nuvio_nativelegacy_NvPlayer_nativeTela(JNIEnv 
   fflush(stdout);
 }
 
+JNIEXPORT void JNICALL Java_space_nuvio_nativelegacy_NvPlayer_nativeDecoder4k(JNIEnv *env, jclass cls,
+                                                                                  jint hevc, jint avc, jint vp9, jint av1) {
+  (void)env; (void)cls;
+  stream_definir_decoder4k(hevc, avc, vp9, av1);
+  printf("[tv] decoder 4K: hevc=%d avc=%d vp9=%d av1=%d\n", (int)hevc, (int)avc, (int)vp9, (int)av1);
+  fflush(stdout);
+}
+
 JNIEXPORT void JNICALL Java_space_nuvio_nativelegacy_NvPlayer_nativeHdr(JNIEnv *env, jclass cls, jstring hdr, jint dv, jint atmos) {
   char h[24];
   (void)cls;

@@ -2683,19 +2683,29 @@ void player_evento(const SDL_Event *e) {
 
   if (k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE ||
       k == SDLK_DELETE) {
+#ifdef NV_ANDROID
+    if (erroFonte && !ehCanal()) {
+      player_voltar_a_esperar(); pedFontes = 1;
+      return;
+    }
+#endif
     saindo = 1; pediuSair = 1;
     return;
   }
 
   // A FONTE NAO ABRIU (filme/serie): a tecla e do MODAL da ilha. ESQUERDA e
   // DIREITA escolhem entre Abrir Fontes e Voltar; OK aciona. Voltar fecha o
-  // player como o BACK (tratado acima).
+  // player como o BACK (tratado acima); no Android ambos voltam as fontes (#409).
   if (erroFonte && !ehCanal()) {
     if (k == SDLK_LEFT) erroBotao = 0;
     else if (k == SDLK_RIGHT) erroBotao = 1;
     else if (k == SDLK_RETURN || k == SDLK_KP_ENTER || k == SDLK_SPACE) {
+#ifdef NV_ANDROID
+      player_voltar_a_esperar(); pedFontes = 1; // Abrir Fontes e Voltar dispensam o erro
+#else
       if (erroBotao == 0) pedFontes = 1;
       else { saindo = 1; pediuSair = 1; }
+#endif
     }
     return;
   }
