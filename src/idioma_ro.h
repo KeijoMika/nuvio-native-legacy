@@ -1536,6 +1536,8 @@
   T("Efeito de profundidade", "Efect de adâncime"),
   T("Efeito vidro", "Sticlă"),
   T("Efeitos visuais", "Efecte vizuale"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Efectele vizuale sunt ușoare pe acest televizor; opțiunea are un efect redus. Schimbă în Acest televizor › Efecte vizuale."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Efectele vizuale sunt minime pe acest televizor; opțiunea are un efect redus. Schimbă în Acest televizor › Efecte vizuale."),
   T("Egito", "Egipt"),
   T("Ela já sabia disso.", "Ea știa deja asta."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Nu te pot găsi, nu îți văd profilul și nu îți pot trimite cereri de prietenie."),

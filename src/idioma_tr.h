@@ -1537,6 +1537,8 @@
   T("Efeito de profundidade", "Derinlik efekti"),
   T("Efeito vidro", "Cam"),
   T("Efeitos visuais", "Görsel efektler"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Bu TV’de görsel efektler hafif düzeyde; bu seçeneğin etkisi azdır. Bu TV › Görsel efektler bölümünden ayarlayın."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Bu TV’de görsel efektler en düşük düzeyde; bu seçeneğin etkisi azdır. Bu TV › Görsel efektler bölümünden ayarlayın."),
   T("Egito", "Mısır"),
   T("Ela já sabia disso.", "O bunu zaten biliyordu."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Seni bulamaz, profilini göremez ve sana arkadaşlık isteği gönderemezler."),

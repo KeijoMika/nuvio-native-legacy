@@ -1537,6 +1537,8 @@
   T("Efeito de profundidade", "Učinek globine"),
   T("Efeito vidro", "Steklo"),
   T("Efeitos visuais", "Vizualni učinki"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Vizualni učinki so na tem TV lahki; možnost ima majhen vpliv. Spremenite v Ta televizor › Vizualni učinki."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Vizualni učinki so na tem TV minimalni; možnost ima majhen vpliv. Spremenite v Ta televizor › Vizualni učinki."),
   T("Egito", "Egipt"),
   T("Ela já sabia disso.", "To je že vedela."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Ne morejo vas najti, ne vidijo vašega profila in vam ne morejo poslati prošnje za prijateljstvo."),

@@ -1537,6 +1537,8 @@
   T("Efeito de profundidade", "Efek kedalaman"),
   T("Efeito vidro", "Kaca"),
   T("Efeitos visuais", "Efek visual"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Efek visual diatur ke ringan di TV ini; opsi ini kurang berpengaruh. Atur di TV ini › Efek visual."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Efek visual diatur ke minimal di TV ini; opsi ini kurang berpengaruh. Atur di TV ini › Efek visual."),
   T("Egito", "Mesir"),
   T("Ela já sabia disso.", "Dia sudah tahu itu."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Mereka tidak bisa menemukanmu, melihat profilmu, atau mengirim permintaan pertemanan."),

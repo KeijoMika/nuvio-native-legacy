@@ -1537,6 +1537,8 @@
   T("Efeito de profundidade", "Εφέ βάθους"),
   T("Efeito vidro", "Γυαλί"),
   T("Efeitos visuais", "Οπτικά εφέ"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Τα οπτικά εφέ είναι ελαφριά σε αυτή την TV· η επιλογή έχει μικρή επίδραση. Αλλάξτε τα στο Αυτή η τηλεόραση › Οπτικά εφέ."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Τα οπτικά εφέ είναι ελάχιστα σε αυτή την TV· η επιλογή έχει μικρή επίδραση. Αλλάξτε τα στο Αυτή η τηλεόραση › Οπτικά εφέ."),
   T("Egito", "Αίγυπτος"),
   T("Ela já sabia disso.", "Εκείνη το ήξερε ήδη."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Δεν μπορούν να σε βρουν, να δουν το προφίλ σου ούτε να σου στείλουν αίτημα φιλίας."),

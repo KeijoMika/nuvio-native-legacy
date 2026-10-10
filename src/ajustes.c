@@ -9,6 +9,7 @@
 #include "trailerfonte.h"   // NV_TRAILER_CONTINUA_DETALHE, nas ajudas do trailer
 #include "dados.h"
 #include "resolucao.h"
+#include "gpunivel.h"
 #include "enquete.h"
 #include "stalker.h"
 #include "xtream.h"
@@ -5155,7 +5156,7 @@ static void focarOpcao(int op) {
 // A frase responde "o que isto E". O que MUDA na pratica vai em efeitoOpcao,
 // separado de proposito: as duas perguntas sao diferentes e juntas viram um
 // paragrafo que ninguem le do sofa.
-static const char *ajudaOpcao(int op) {
+static const char *ajudaOpcaoBase(int op) {
   if (op == AJ_ICONE_APP) return "Escolha uma marca alternativa para o Nuvio nesta TV. Um agradecimento a quem apoia o projeto.";
   if (inativa(op)) {
     if (op == AJ_VIDRO_CONTORNO) return "Ative a interface de vidro para ajustar o contorno.";
@@ -5525,6 +5526,23 @@ static const char *ajudaOpcao(int op) {
       return "Mostra esta nota na linha do título, com a marca e a escala do próprio site. Se a linha não couber, saem primeiro as menos importantes. A aba de notas continua mostrando todas.";
     default: return "Use as setas laterais para escolher. A preferência é aplicada ao alterar o valor.";
   }
+}
+
+// #410B: aviso primeiro para ficar visivel tambem nas ajudas compactas.
+// Traduz cada frase antes de juntar: i18n nao encontra uma chave composta.
+static const char *ajudaOpcao(int op) {
+  const char *base = ajudaOpcaoBase(op);
+  static char b[2048];
+  if (gpun_efeitos_automaticos() &&
+      (op == AJ_VIDRO || op == AJ_VIDRO_CONTORNO || op == AJ_VIDRO_OPAC ||
+       op == AJ_VIDRO_FOSCO || (op >= AJ_PROF && op <= AJ_PROF_TRAILERS))) {
+    const char *aviso = gpun_nivel() >= 2
+      ? "Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais."
+      : "Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.";
+    snprintf(b, sizeof b, "%s\n%s", i18n(aviso), i18n(base));
+    return b;
+  }
+  return base;
 }
 
 // O QUE MUDA NA PRATICA quando esta opcao muda. NULL quando nao ha nada
