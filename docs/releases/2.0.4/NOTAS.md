@@ -6,6 +6,7 @@ A hotfix on top of 2.0.3, plus a few small additions. Community server: **https:
 
 - **Discord server.** The "What's new" card and Support the project show a QR code to join: https://discord.gg/9NWr6SHyzJ
 - **Source order** (#400): Settings › Playback › More options lets you keep the sources by quality or exactly as the add-on sent them (for AIOStreams and similar, which already sort).
+- **Automatic subtitle sync can be turned off** (Settings › Subtitles, next to "Sync by audio"). It stays on by default.
 - **"Unmark from here on"** in the episode menu, next to "Unmark up to here". Both range actions now cover the whole show, not only the season on screen.
 - **Next episode opens faster:** its sources are fetched 10 seconds before the up-next card appears.
 - **LG: Dolby Vision profile 5 in MP4** plays as Dolby Vision.
@@ -21,6 +22,7 @@ A hotfix on top of 2.0.3, plus a few small additions. Community server: **https:
 - **Library showed "129 saved" but only a few titles** when "Hide unreleased" was on: titles without a year were treated as unreleased. Only titles with a known future date are hidden now.
 - **Spotlight:** your own titles (Continue Watching, saved, in progress) come first among equal matches, the last row is never drawn clipped, OK opens the title you see even if the list refreshed, and artwork no longer mixes a movie with a series of the same name.
 - **Series pages are smooth again** when opened from Continue Watching or Spotlight: the progress chart was being rebuilt many times per frame.
+- **Automatic subtitle sync no longer swaps the subtitle you chose** when the video's own reference track is too short to compare (a forced track with a few lines), and no longer says "Couldn't download the subtitle" for a subtitle that downloaded and is on screen.
 - Subtitles-only add-ons (OpenSubtitles and similar) no longer appear as "did not respond" in the source list.
 - **TV guide: search no longer crashes** when you press "done" on the keyboard and a channel has more than 24 programmes in the next 6 hours (#344). Searching now also looks past the first 24 programmes of such a channel.
 - **Season tabs match the episode list** (#372, #328). When a metadata add-on supplied a longer episode list than the Nuvio catalog (anime such as The Apothecary Diaries), its episodes were loaded but the page kept one season tab, so only season 1 was visible. The tabs now come from the list that is actually shown, and reopening the title while its cast and artwork are still loading no longer brings the old tabs back.
