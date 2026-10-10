@@ -19,11 +19,20 @@ def bloco(inicio):
         end += 1
     return source[start:end]
 
-abrir = bloco('    private fun abrirMain(').split('        novaSuperficie(act)')[0] + '        criados.add(url)\n    }'
-erro = bloco('        override fun onPlayerError(').replace('override fun', 'fun')
+abrir = bloco('    private fun abrirMain(')
+# Mantem espera, inicializacao do ganho e publicacao do player reais;
+# substitui somente a construcao Android/Media3 pelos doubles abaixo.
+abrir = (abrir.split('        novaSuperficie(act)')[0]
+         + abrir[abrir.index('            // F07: VOLUME BOOST.'):abrir.index('            // ON (')]
+         + '        val p = ExoPlayer(emptyList())\n'
+         + abrir[abrir.index('            player = p'):abrir.index('            semTravaDeFio(p)')]
+         + '        criados.add(url)\n    }')
+erro = bloco('        override fun onPlayerError(')
 fixture = r'''
+import space.nuvio.nativelegacy.GanhoMath
 import java.util.concurrent.atomic.AtomicInteger
 object C { const val TRACK_TYPE_UNKNOWN = -1; const val TRACK_TYPE_AUDIO = 1; const val TRACK_TYPE_VIDEO = 2 }
+object Player { interface Listener { fun onPlayerError(error: PlaybackException) } }
 object SystemClock { var agora = 100L; fun elapsedRealtime() = agora }
 object Log {
     val linhas = mutableListOf<String>()
@@ -39,13 +48,16 @@ class ExoPlaybackException(code: Int, val rendererIndex: Int, val type: Int = TY
     companion object { const val TYPE_RENDERER = 1 }
 }
 class ExoPlayer(val tipos: List<Int>) {
+    var volume = 1f
     val rendererCount get() = tipos.size
     fun getRendererType(i: Int) = tipos[i]
     val currentPosition = 0L
 }
+class GanhoAudioProcessor { var ganho = 1f }
 class Fila {
     data class Item(val quando: Long, val r: Runnable)
     val itens = mutableListOf<Item>()
+    fun post(r: Runnable) { postDelayed(r, 0) }
     fun postDelayed(r: Runnable, ms: Long) { itens.add(Item(SystemClock.agora + ms, r)) }
     fun ate(fim: Long) {
         while (itens.any { it.quando <= fim }) {
@@ -61,27 +73,32 @@ object Fixture {
     val pedidos = AtomicInteger(1); var pedidoAtivo = 1
     val liberacoesEmCurso = AtomicInteger(); var semRecriar = true
     var releaseMs = 0L; var releases = 0; val criados = mutableListOf<String>()
-    val minha get() = sessao
     var sessao = 1; var abriuEm = 0L; var retentou = true
     var urlAtual = "url"; var cabAtual = ""; var inicioAtualMs = 0; var geracaoNative = 0; var fracaoAtual = 0
     var player: ExoPlayer? = null; var evento = -99
+    var ganhoPct = 100; var processador: GanhoAudioProcessor? = null
     fun atual(minha: Int) = minha == sessao && pedidoAtivo == pedidos.get()
     fun confirmarRetomada(g: Int, a: Boolean) {}
     fun ev(t: Int, a: Int, b: Int) { evento = b }
     fun liberar() {
         releases++; sessao++
+        player = null; processador = null
         if (releaseMs > 0) {
             liberacoesEmCurso.incrementAndGet()
             principal.postDelayed({ liberacoesEmCurso.decrementAndGet() }, releaseMs)
         }
     }
     ABRIR
-    ERRO
+    GANHO
+    APLICAR_GANHO
+    fun ouvinte(minha: Int) = object : Player.Listener {
+        ERRO
+    }
     fun abrir(u: String) { abrirMain(u, "", false, 0, 0, pedidos.get()) }
     fun reset() {
         principal.itens.clear(); SystemClock.agora = 100; pedidos.set(1); pedidoAtivo = 1
         liberacoesEmCurso.set(0); criados.clear(); releases = 0; semRecriar = true; releaseMs = 0
-        Log.linhas.clear(); activity = Any()
+        Log.linhas.clear(); activity = Any(); ganhoPct = 100; player = null; processador = null
     }
 }
 fun main(args: Array<String>) {
@@ -89,20 +106,44 @@ fun main(args: Array<String>) {
     if (args[0] == "renderer") {
         // Ordem invertida: o indice do renderer NAO e o tipo.
         f.player = ExoPlayer(listOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
+        val ouv = f.ouvinte(f.sessao)
         for (code in listOf(4001, 4003, 4004, 4005)) {
-            f.onPlayerError(ExoPlaybackException(code, 0))
+            ouv.onPlayerError(ExoPlaybackException(code, 0))
             check(f.evento == C.TRACK_TYPE_AUDIO) { "P2 erro audio $code enviado como renderer=${f.evento}" }
-            f.onPlayerError(ExoPlaybackException(code, 1))
+            ouv.onPlayerError(ExoPlaybackException(code, 1))
             check(f.evento == C.TRACK_TYPE_VIDEO)
         }
-        f.onPlayerError(PlaybackException(4003)); check(f.evento == C.TRACK_TYPE_UNKNOWN)
-        f.onPlayerError(ExoPlaybackException(4003, 99)); check(f.evento == C.TRACK_TYPE_UNKNOWN)
-        f.onPlayerError(ExoPlaybackException(4003, 1, 0)); check(f.evento == C.TRACK_TYPE_UNKNOWN)
+        ouv.onPlayerError(PlaybackException(4003)); check(f.evento == C.TRACK_TYPE_UNKNOWN)
+        ouv.onPlayerError(ExoPlaybackException(4003, 99)); check(f.evento == C.TRACK_TYPE_UNKNOWN)
+        ouv.onPlayerError(ExoPlaybackException(4003, 1, 0)); check(f.evento == C.TRACK_TYPE_UNKNOWN)
+        // Mesmo pedido, sessao nova: o listener guarda a sessao em que nasceu.
+        f.sessao++; f.evento = -99
+        ouv.onPlayerError(ExoPlaybackException(4003, 1)); check(f.evento == -99)
+        val novo = f.ouvinte(f.sessao)
+        novo.onPlayerError(ExoPlaybackException(4003, 1)); check(f.evento == C.TRACK_TYPE_VIDEO)
         f.pedidos.incrementAndGet(); f.evento = -99
-        f.onPlayerError(ExoPlaybackException(4003, 1)); check(f.evento == -99)
+        novo.onPlayerError(ExoPlaybackException(4003, 1)); check(f.evento == -99)
         check(Log.linhas.any { it.contains("renderer=audio") && it.contains("loadMs=") })
         check(Log.linhas.any { it.contains("renderer=video") })
         println("PASS renderer: audio/video/desconhecido, 4 codigos e callback obsoleto")
+        return
+    }
+    if (args[0] == "ganho") {
+        for (pct in listOf(50, 150)) {
+            f.reset(); f.releaseMs = 600; f.abrir("nova")
+            check(f.player == null && f.processador == null)
+            f.ganho(pct); f.principal.ate(100)
+            check(f.ganhoPct == pct && f.player == null && f.processador == null)
+            f.principal.ate(725)
+            check(f.player?.volume == GanhoMath.volumePlayer(pct) &&
+                  f.processador?.ganho == GanhoMath.reforco(pct)) {
+                "P2 ganho($pct) perdido no release: volume=${f.player?.volume}, reforco=${f.processador?.ganho}"
+            }
+            // Nova abertura sem pedido de ganho continua usando o padrao 100%.
+            f.abrir("seguinte"); f.principal.ate(1400)
+            check(f.player?.volume == 1f && f.processador?.ganho == 1f)
+        }
+        println("PASS ganho: 50%/150% durante release aplicados ao novo player/processador; nova abertura em 100%")
         return
     }
     f.reset(); f.releaseMs = 600; f.abrir("nova")
@@ -124,7 +165,9 @@ fun main(args: Array<String>) {
     f.reset(); f.abrir("primeira"); check(f.criados == listOf("primeira"))
     println("PASS release: espera, prazo 3s, cancelamento, substituicao, encerramento e TCL")
 }
-'''.replace('ABRIR', abrir).replace('ERRO\n', erro + '\n')
+'''.replace('ABRIR', abrir).replace('ERRO\n', erro + '\n').replace(
+    'APLICAR_GANHO', bloco('    private fun aplicarGanho(')).replace(
+    '    GANHO\n', bloco('    @JvmStatic fun ganho(') + '\n')
 cache = Path.home() / '.gradle/caches/modules-2/files-2.1'
 def jar(group, artifact, version):
     return str(next((cache / group / artifact / version).glob('*/*.jar')))
@@ -139,8 +182,9 @@ with tempfile.TemporaryDirectory(prefix='nuvio-decoder409-') as tmp:
     tmp = Path(tmp); file = tmp / 'DecoderFixture.kt'; file.write_text(fixture)
     subprocess.run([java, '-cp', classpath, 'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler',
                     '-no-stdlib', '-no-reflect', '-nowarn', '-classpath', stdlib,
-                    '-jvm-target', '17', '-d', str(tmp / 'classes'), str(file)], check=True)
+                    '-jvm-target', '17', '-d', str(tmp / 'classes'), str(file),
+                    str(root / 'android/app/src/main/java/space/nuvio/nativelegacy/GanhoMath.kt')], check=True)
     failed = 0
-    for case in ('renderer', 'release'):
+    for case in ('renderer', 'release', 'ganho'):
         failed += subprocess.run([java, '-cp', f'{tmp / "classes"}:{stdlib}', 'DecoderFixtureKt', case]).returncode != 0
     raise SystemExit(bool(failed))

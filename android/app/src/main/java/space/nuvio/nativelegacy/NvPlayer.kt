@@ -339,7 +339,11 @@ object NvPlayer {
         val act = activity
         if (act == null) { confirmarRetomada(geracao, false); return }
         val espera = if (esperaInicio < 0) SystemClock.elapsedRealtime() else esperaInicio
-        if (esperaInicio < 0) liberar()
+        if (esperaInicio < 0) {
+            liberar()
+            // O C envia o ganho depois de abrir; a espera nao pode apaga-lo.
+            ganhoPct = 100
+        }
         // MStar/Amlogic: o overlay e o decoder antigos precisam sair antes do novo.
         // Poll no Handler deixa Back/parar funcionar enquanto o release corre em fundo.
         if (semRecriar) {
@@ -416,10 +420,8 @@ object NvPlayer {
             }
             relatarCache(minha)
 
-            // F07: VOLUME BOOST. Every open starts at 100% (the C side re-sends
-            // the session volume right after the open); the gain processor is
-            // per player, inside the audio sink.
-            ganhoPct = 100
+            // F07: VOLUME BOOST. Preserve the gain received during release;
+            // the processor is per player, inside the audio sink.
             val proc = GanhoAudioProcessor()
             processador = proc
 
@@ -463,6 +465,7 @@ object NvPlayer {
                     .setDataSourceFactory(DefaultDataSource.Factory(act, origem)))
                 .build()
             player = p
+            aplicarGanho()
             semTravaDeFio(p)
             // Release anterior ainda preso no HAL de audio: sessao de audio nova,
             // para o AudioTrack deste filme nao esperar o patch do velho.
