@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Mélységhatás"),
   T("Efeito vidro", "Üveg"),
   T("Efeitos visuais", "Vizuális effektek"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Ezen a tévén a vizuális effektek könnyűek; a beállításnak kevés hatása van. Módosítás: Ez a TV › Vizuális effektek."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Ezen a tévén a vizuális effektek minimálisak; a beállításnak kevés hatása van. Módosítás: Ez a TV › Vizuális effektek."),
   T("Egito", "Egyiptom"),
   T("Ela já sabia disso.", "Ő ezt már tudta."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Nem találnak meg, nem látják a profilodat, és nem küldhetnek neked ismerősnek jelölést."),

@@ -1527,6 +1527,8 @@
   { "Efeito de profundidade", "Depth effect" },
   { "Efeito vidro", "Glass" },
   { "Efeitos visuais", "Visual effects" },
+  { "Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Visual effects are set to light on this TV; this option has little effect. Change this in This TV › Visual effects." },
+  { "Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Visual effects are set to minimal on this TV; this option has little effect. Change this in This TV › Visual effects." },
   { "Egito", "Egypt" },
   { "Ela já sabia disso.", "She already knew that." },
   { "Elas não te acham, não veem seu perfil e não te pedem amizade.", "They can't find you, can't see your profile and can't send you friend requests." },

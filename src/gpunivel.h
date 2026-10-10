@@ -27,11 +27,13 @@
 //   - senao ADAPTATIVO: nos primeiros ~20 s de home cheia mede FPS e quanto do
 //     quadro e ESPERA (clr+swap) contra CPU (ev+bomb+upd+des). FPS < 45 com a
 //     espera dominando = GPU presa: desce UM nivel, espera assentar, mede de
-//     novo. FPS bom = fica. CPU dominando = fica (menos pixel nao ajuda). Nunca
-//     sobe sozinho. O nivel alcancado fica em <dados>/gpu-nivel.txt com a
-//     chave GPU+driver+modelo+versao da Tizen, e o proximo arranque COMECA nele
-//     (e continua medindo: so desce). Chave diferente (firmware novo, outra TV)
-//     = recomeca do 0.
+//     novo. So conserva a reducao com ganho >=15% E >=5 fps; caso contrario
+//     volta ao nivel anterior e bloqueia novas descidas para essa chave.
+//     Compara antes de aceitar FPS bom ou CPU dominante no candidato.
+//     gpu-nivel.txt mantem versao=1/nivel para leitores antigos e acrescenta
+//     avaliacao=1, bloqueado e fps0/1/2. Nivel legado >0 e comparado uma vez
+//     com o 0 na mesma sessao. Candidato so e gravado depois da comparacao.
+//     Chave diferente (firmware novo, outra TV) = recomeca do 0.
 //   - GPU fraca conhecida (ptv_gpu_fraca) sem nada gravado: comeca no 1.
 //   - a chave ganha "4k" com superficie acima de 1080p: o nivel aprendido em
 //     4K (4x os pixels) nao vale para 1080p, e vice-versa.
@@ -60,6 +62,8 @@ void gpun_iniciar(int w, int h);
 void gpun_log_perfil(long memMB, int texMb, int fios, int heroi);
 
 int  gpun_nivel(void);
+// Efeitos reduzidos pelo automatico, para a ajuda dos Ajustes.
+int  gpun_efeitos_automaticos(void);
 // Troca o nivel na hora, sem medir nem gravar (captura de teste).
 void gpun_definir_nivel(int n);
 // Ajuste "Efeitos visuais" do .tpk: 0 automatico, 1 completos, 2 leves.

@@ -1527,6 +1527,8 @@
   T("Efeito de profundidade", "Effet de profondeur"),
   T("Efeito vidro", "Verre"),
   T("Efeitos visuais", "Effets visuels"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Les effets visuels sont légers sur ce téléviseur ; cette option a peu d’effet. Réglez-les dans Ce téléviseur › Effets visuels."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Les effets visuels sont minimaux sur ce téléviseur ; cette option a peu d’effet. Réglez-les dans Ce téléviseur › Effets visuels."),
   T("Egito", "Égypte"),
   T("Ela já sabia disso.", "Elle le savait déjà."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Elles ne peuvent pas vous trouver, voir votre profil ni vous envoyer de demandes d'amitié."),

@@ -2,9 +2,8 @@
 //
 // O quadro chega como main.c o entrega (dt, espera = clr+swap, cpu) e a
 // regra tem de: ficar no 0 quando o FPS e bom (a Tizen 6 a 60 nunca desce);
-// descer 0 -> 1 -> 2 quando a espera domina a 25 fps (o registro 8825); nao
-// descer quando quem pesa e a CPU; ignorar quadros fora da home; e gravar o
-// nivel alcancado. gfx e dados entram como dubles: o que se testa e a regra.
+// conservar 0 -> 1 -> 2 so com ganho medido; voltar e bloquear sem ganho;
+// migrar niveis legados uma vez; nao descer por CPU; ignorar fora da home. gfx e dados entram como dubles: o que se testa e a regra.
 #include "gpunivel.h"
 #include "gfx.h"
 #include "dados.h"
@@ -36,7 +35,7 @@ int dados_gravar(const char *nome, const char *c) {
   snprintf(gravado, sizeof gravado, "%s", c);
   return 1;
 }
-char *dados_ler(const char *nome) { (void)nome; return NULL; }
+char *dados_ler(const char *nome) { (void)nome; return gravado[0] ? strdup(gravado) : NULL; }
 
 // `seg` segundos de quadros iguais.
 static void rodar(double seg, double dt, double espera, double cpu, int naHome, int cheia) {
@@ -45,6 +44,15 @@ static void rodar(double seg, double dt, double espera, double cpu, int naHome, 
 }
 
 int main(void) {
+  // #410B: reduzir efeitos sem ganhar FPS deve devolver o visual anterior.
+  gpun_teste_reiniciar(); gravado[0] = 0;
+  rodar(8, 1000.0 / 43.0, 18.0, 4.0, 1, 1);
+  assert(gpun_nivel() == 1);
+  rodar(7, 1000.0 / 43.0, 18.0, 4.0, 1, 1);
+  assert(gpun_nivel() == 0 && gpun_teste_decidido());
+  assert(strstr(gravado, "bloqueado=1"));
+  puts("ok  #410B: 43 -> 43 fps devolve efeitos completos e bloqueia descida");
+
   // 1. Tizen 6: 60 fps (a espera e o vsync, grande, mas o FPS e bom) -> fica.
   gpun_teste_reiniciar(); gravado[0] = 0;
   rodar(12, 16.7, 12.0, 4.0, 1, 1);
@@ -52,17 +60,15 @@ int main(void) {
   assert(strstr(gravado, "nivel=0"));
   puts("ok  60 fps: fica no nivel 0 e grava");
 
-  // 2. O registro 8825: 25 fps, espera 34 ms contra 5 de CPU -> 1 e PARA.
-  //    A 25 fps o 720p (nivel 2) nao e escolhido: no teste das duas Tizen 5.0
-  //    (#180) o texto ficou borrado demais; "efeitos" ganhou. So abaixo de 25.
+  // 2. 25 -> 32 fps: ganho comprovado, conserva o 1 sem ir ao 2.
   gpun_teste_reiniciar(); gravado[0] = 0;
   rodar(8, 40.0, 34.0, 5.0, 1, 1);          // aquece 3 s + janela de 4 s
   assert(gpun_nivel() == 1 && leves == 1 && !gpun_teste_decidido());
-  assert(strstr(gravado, "nivel=1"));
-  rodar(7, 40.0, 34.0, 5.0, 1, 1);          // assenta 2 s + janela de 4 s
+  assert(!gravado[0]);   // candidato ainda nao foi validado
+  rodar(7, 1000.0 / 32.0, 25.0, 5.0, 1, 1);          // assenta 2 s + janela de 4 s
   assert(gpun_nivel() == 1 && gpun_teste_decidido());
   assert(!strstr(gravado, "nivel=2"));
-  puts("ok  25 fps presos na GPU: desce 0 -> 1, grava e para (25 fps nao vira 720p)");
+  puts("ok  25 -> 32 fps: desce 0 -> 1, confirma, grava e para");
 
   // 3. Desce ate onde o FPS fica bom e para ali.
   gpun_teste_reiniciar();
@@ -72,17 +78,16 @@ int main(void) {
   assert(gpun_nivel() == 1 && gpun_teste_decidido());
   puts("ok  com o nivel 1 a 60 fps: fica no 1");
 
-  // 3b. Mali-400 do registro 9859 (UA40N5300, Tizen 4.0): mesmo com efeitos
-  //     leves fica em ~12 fps, espera dominando. Abaixo de 25 fps desce ao
-  //     2 (efeitos MINIMOS, em 1080p) e para: o 720p (3) nunca e automatico.
+  // 3b. GPU lenta: 12 -> 20 -> 25 fps comprova ambos os ganhos; o 720p
+  //     (3) nunca e automatico. 20 -> 25 tambem cobre o piso exato de +5 fps.
   gpun_teste_reiniciar(); gravado[0] = 0;
   rodar(8, 83.0, 76.0, 5.0, 1, 1);          // 12 fps: 0 -> 1
   assert(gpun_nivel() == 1 && !gpun_teste_decidido());
-  rodar(7, 83.0, 76.0, 5.0, 1, 1);          // continua a 12 fps no 1: -> 2
-  assert(gpun_nivel() == 2 && minimos == 1 && strstr(gravado, "nivel=2"));
+  rodar(7, 50.0, 43.0, 5.0, 1, 1);          // ganha: 12 -> 20 fps, ainda critico: -> 2
+  assert(gpun_nivel() == 2 && minimos == 1 && !gravado[0]);
   rodar(7, 40.0, 30.0, 5.0, 1, 1);          // no 2 a 25 fps: nao vai ao 3 (720p)
   assert(gpun_nivel() == 2 && gpun_teste_decidido());
-  puts("ok  12 fps mesmo no nivel 1: desce ao 2 (efeitos minimos, 1080p) e para");
+  puts("ok  12 -> 20 -> 25 fps: desce ao 2 (efeitos minimos, 1080p) e para");
 
   // 4. Lento pela CPU (des domina): menos pixel nao ajuda -> nao desce.
   gpun_teste_reiniciar();
@@ -103,6 +108,65 @@ int main(void) {
   assert(gpun_nivel() == 0 && !gpun_teste_decidido());
   puts("ok  fora da home ou home vazia nao mede; sair zera a janela");
 
+  // 6. Cada piso importa, mesmo que o candidato cruze os 45 fps.
+  const double base[] = {40, 10, 43};
+  const double depois[] = {45.5, 14, 46};
+  for (int i = 0; i < 3; i++) {
+    gpun_teste_reiniciar(); gravado[0] = 0;
+    rodar(8, 1000 / base[i], 20, 4, 1, 1);
+    rodar(7, 1000 / depois[i], 20, 4, 1, 1);
+    assert(gpun_nivel() == 0 && gpun_teste_decidido());
+  }
+  // 7. Ganho so no primeiro degrau: volta ao 1, nao perde o ganho provado.
+  gpun_teste_reiniciar(); gravado[0] = 0;
+  rodar(8, 100, 90, 4, 1, 1);
+  rodar(7, 50, 40, 4, 1, 1);
+  assert(gpun_nivel() == 2);
+  rodar(7, 50, 40, 4, 1, 1);
+  assert(gpun_nivel() == 1 && strstr(gravado, "bloqueado=1"));
+  assert(strstr(gravado, "fps0=10.000") && strstr(gravado, "fps1=20.000") && strstr(gravado, "fps2=20.000"));
+  gpun_teste_reiniciar(); gpun_preferencia(0); // rele o mesmo arquivo
+  assert(gpun_nivel() == 1 && gpun_teste_decidido());
+  rodar(30, 100, 90, 4, 1, 1);
+  assert(gpun_nivel() == 1);
+  gpun_preferencia(1); assert(gpun_nivel() == 0 && !gpun_efeitos_automaticos());
+  gpun_preferencia(2); assert(gpun_nivel() == 1 && !gpun_efeitos_automaticos());
+  gpun_preferencia(0); assert(gpun_nivel() == 1 && gpun_efeitos_automaticos());
+  puts("ok  trava persiste ao reiniciar; escolha manual continua funcionando");
+
+  // 8. Legado salvo no 2: mede 0 e compara o 2 uma vez (#410/66108).
+  gpun_teste_reiniciar();
+  strcpy(gravado, "versao=1\nchave=0\nnivel=2\n");
+  gpun_preferencia(0);
+  assert(gpun_nivel() == 0 && !gpun_teste_decidido());
+  rodar(8, 1000.0 / 43, 18, 4, 1, 1);
+  assert(gpun_nivel() == 2 && gpun_efeitos_automaticos());
+  rodar(7, 1000.0 / 43, 18, 4, 1, 1);
+  assert(gpun_nivel() == 0 && !gpun_efeitos_automaticos());
+  assert(strstr(gravado, "versao=1\nchave=0\nnivel=0\n"));
+  gpun_teste_reiniciar(); gpun_preferencia(0);
+  assert(gpun_nivel() == 0 && gpun_teste_decidido());
+  // Firmware/GPU diferente invalida a trava.
+  strcpy(gravado, "versao=1\nchave=ff\nnivel=1\navaliacao=1\nbloqueado=1\n");
+  gpun_preferencia(0);
+  assert(gpun_nivel() == 0 && !gpun_teste_decidido());
+  puts("ok  legado 43 -> 43 volta ao 0; mesma chave nao repete, outra chave mede");
+
+  // 9. Legado que ajuda permanece; novo arranque nao volta a testar o 0.
+  strcpy(gravado, "versao=1\nchave=0\nnivel=2\n");
+  gpun_preferencia(0);
+  rodar(8, 50, 40, 4, 1, 1);
+  rodar(7, 25, 18, 4, 1, 1);
+  assert(gpun_nivel() == 2 && gpun_teste_decidido());
+  gpun_teste_reiniciar(); gpun_preferencia(0);
+  assert(gpun_nivel() == 2 && !gpun_teste_decidido());
+  rodar(8, 25, 18, 4, 1, 1);
+  assert(gpun_nivel() == 2 && gpun_teste_decidido());
+  // Forcar 720p continua manual e nao mede nem sobrescreve a decisao.
+  char salvo[sizeof gravado]; strcpy(salvo, gravado);
+  gpun_forcar_720(); rodar(30, 100, 90, 4, 1, 1);
+  assert(gpun_nivel() == 3 && !gpun_efeitos_automaticos() && !strcmp(salvo, gravado));
+  puts("ok  legado com ganho fica; 720p forcado nao participa");
   puts("gpunivel: tudo ok");
   return 0;
 }

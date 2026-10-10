@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Hiệu ứng chiều sâu"),
   T("Efeito vidro", "Kính"),
   T("Efeitos visuais", "Hiệu ứng hình ảnh"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Hiệu ứng hình ảnh ở mức nhẹ trên TV này; tùy chọn ít có tác dụng. Điều chỉnh tại TV này › Hiệu ứng hình ảnh."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Hiệu ứng hình ảnh ở mức tối thiểu trên TV này; tùy chọn ít có tác dụng. Điều chỉnh tại TV này › Hiệu ứng hình ảnh."),
   T("Egito", "Ai Cập"),
   T("Ela já sabia disso.", "Cô ấy đã biết điều đó."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Họ không thể tìm thấy bạn, không xem được hồ sơ và không thể gửi lời mời kết bạn."),

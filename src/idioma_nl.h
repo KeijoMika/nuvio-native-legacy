@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Dieptee-effect"),
   T("Efeito vidro", "Glas"),
   T("Efeitos visuais", "Visuele effecten"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Visuele effecten staan op licht op deze tv; deze optie heeft weinig effect. Pas dit aan via Deze tv › Visuele effecten."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Visuele effecten staan op minimaal op deze tv; deze optie heeft weinig effect. Pas dit aan via Deze tv › Visuele effecten."),
   T("Egito", "Egypte"),
   T("Ela já sabia disso.", "Dat wist ze al."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Ze kunnen je niet vinden, zien je profiel niet en kunnen je geen vriendschapsverzoek sturen."),

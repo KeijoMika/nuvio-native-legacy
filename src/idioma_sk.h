@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Efekt hĺbky"),
   T("Efeito vidro", "Sklo"),
   T("Efeitos visuais", "Vizuálne efekty"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Vizuálne efekty sú na tomto TV ľahké; táto voľba má malý účinok. Upravte v Tento televízor › Vizuálne efekty."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Vizuálne efekty sú na tomto TV minimálne; táto voľba má malý účinok. Upravte v Tento televízor › Vizuálne efekty."),
   T("Egito", "Egypt"),
   T("Ela já sabia disso.", "To už vedela."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Nenájdu vás, neuvidia váš profil a nemôžu vám poslať žiadosť o priateľstvo."),

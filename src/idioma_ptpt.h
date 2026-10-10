@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Efeito de profundidade"),
   T("Efeito vidro", "Efeito vidro"),
   T("Efeitos visuais", "Efeitos visuais"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Os efeitos visuais estão em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Os efeitos visuais estão em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais."),
   T("Egito", "Egito"),
   T("Ela já sabia disso.", "Ela já sabia disso."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Não o encontram, não veem o seu perfil e não lhe pedem amizade."),

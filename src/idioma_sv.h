@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Djupeffekt"),
   T("Efeito vidro", "Glas"),
   T("Efeitos visuais", "Visuella effekter"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Visuella effekter är lätta på denna TV; alternativet har liten effekt. Ändra under Den här TV:n › Visuella effekter."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Visuella effekter är minimala på denna TV; alternativet har liten effekt. Ändra under Den här TV:n › Visuella effekter."),
   T("Egito", "Egypten"),
   T("Ela já sabia disso.", "Hon visste redan det."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "De kan inte hitta dig, se din profil eller skicka vänförfrågan till dig."),

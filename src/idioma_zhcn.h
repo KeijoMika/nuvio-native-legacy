@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "景深效果"),
   T("Efeito vidro", "玻璃"),
   T("Efeitos visuais", "视觉效果"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "此电视的视觉效果已设为轻量；此选项影响很小。请在这台电视 › 视觉效果中调整。"),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "此电视的视觉效果已设为最低；此选项影响很小。请在这台电视 › 视觉效果中调整。"),
   T("Egito", "埃及"),
   T("Ela já sabia disso.", "她早就知道了。"),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "他们无法找到你，看不到你的个人资料，也不能向你发送好友请求。"),

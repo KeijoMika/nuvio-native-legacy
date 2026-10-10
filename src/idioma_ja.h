@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "奥行き効果"),
   T("Efeito vidro", "ガラス"),
   T("Efeitos visuais", "視覚効果"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "このテレビの視覚効果は軽量です。この項目の効果は限定的です。このテレビ › 視覚効果で変更できます。"),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "このテレビの視覚効果は最小限です。この項目の効果は限定的です。このテレビ › 視覚効果で変更できます。"),
   T("Egito", "エジプト"),
   T("Ela já sabia disso.", "彼女はもう知っていました。"),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "その人たちはあなたを検索できず、プロフィールも見られず、フレンドリクエストも送れません。"),

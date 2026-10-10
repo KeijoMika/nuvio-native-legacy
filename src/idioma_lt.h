@@ -1528,6 +1528,8 @@
   T("Efeito de profundidade", "Gylio efektas"),
   T("Efeito vidro", "Stiklas"),
   T("Efeitos visuais", "Vaizdo efektai"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Šiame televizoriuje vaizdo efektai yra lengvi; ši parinktis mažai ką keičia. Keiskite Šis televizorius › Vaizdo efektai."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "Šiame televizoriuje vaizdo efektai yra minimalūs; ši parinktis mažai ką keičia. Keiskite Šis televizorius › Vaizdo efektai."),
   T("Egito", "Egiptas"),
   T("Ela já sabia disso.", "Ji tai jau žinojo."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Jie negali jūsų rasti, matyti jūsų profilio ir siųsti jums draugystės prašymų."),

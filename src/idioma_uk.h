@@ -1527,6 +1527,8 @@
   T("Efeito de profundidade", "Ефект глибини"),
   T("Efeito vidro", "Скло"),
   T("Efeitos visuais", "Візуальні ефекти"),
+  T("Efeitos visuais está em leves nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "На цьому телевізорі візуальні ефекти полегшені; цей параметр мало впливає. Змініть у розділі Цей телевізор › Візуальні ефекти."),
+  T("Efeitos visuais está em mínimos nesta TV; a opção tem pouco efeito. Ajuste em Esta TV › Efeitos visuais.", "На цьому телевізорі візуальні ефекти мінімальні; цей параметр мало впливає. Змініть у розділі Цей телевізор › Візуальні ефекти."),
   T("Egito", "Єгипет"),
   T("Ela já sabia disso.", "Вона вже це знала."),
   T("Elas não te acham, não veem seu perfil e não te pedem amizade.", "Вони не можуть вас знайти, бачити ваш профіль і надсилати вам запити в друзі."),
