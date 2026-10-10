@@ -11,6 +11,7 @@
 #include "layout.h"
 #include "anim.h"
 #include "vistoep.h"
+#include "vistonao.h"
 #include "visto.h"
 #include "simkl.h"   // SMK_LOTE_MAX: menor limite de envio dos destinos
 #include "botoes.h"
@@ -93,7 +94,7 @@ enum { VT_MARCAR = 0, VT_DESMARCAR, VT_N };
 static int vmModoTemp;
 static int vmQuantos[VM_N];   // tamanho do lote de cada opcao, da abertura
 static int montarLote(int idx, int modo, int t, int e, VistoPar *saida, int max);
-// Seleciona tudo; o limite de rede so vale ao enviar.
+// Consulta a faixa inteira; a aplicacao limita o gesto e os envios.
 #define VM_LOTE VE_LOTE_MAX
 static int vmAberto, vmFoco, vmVisto;      // vmVisto: o sentido do gesto
 static Uint32 vmDesde;                     // relogio da pressao longa
@@ -326,6 +327,14 @@ static int aplicarVisto(int modo, int visto) {
   // A TEMPORADA DO EPISODIO (vmT), e nao a da aba selecionada. Sao a mesma
   // coisa dentro da folha, e fora dela nao ha aba nenhuma.
   n = montarLote(vmIdx, modo, vmT, vmE, lote, VM_LOTE);
+  // Faixa grande: so o que falta mudar, para o proximo gesto poder avancar.
+  if (n > VISTONAO_MAX) {
+    int k = 0;
+    for (int i = 0; i < n && k < VISTONAO_MAX; i++)
+      if (vistoep_estado(ci->imdb, lote[i].temporada, lote[i].episodio) != visto)
+        lote[k++] = lote[i];
+    n = k;
+  }
   if (n < 1) return 0;
   mudou = vistoep_aplicar(ci->imdb, lote, n, visto, envio, &ja);
   printf("[visto] menu: %s %s %s S%dE%d: %d enviados, %d ja estavam\n",

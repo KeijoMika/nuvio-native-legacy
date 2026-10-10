@@ -11,14 +11,14 @@
 
 #define SILO "tt14688458"
 static int falhas, enviados, sentido, chamadas, totalEnviados;
-static VistoPar paresEnviados[1024];
+static VistoPar paresEnviados[VE_LOTE_MAX];
 #define CHECK(c) do { if (!(c)) { printf("FALHOU %d: %s\n", __LINE__, #c); falhas++; } } while (0)
 int destinosTeste(void) { return VISTO_TRAKT | VISTO_SIMKL | VISTO_CONTA; }
 int capturarEnvio(const char *id, const char *tipo, const VistoPar *p, int n, int v, int d) {
   CHECK(!strcmp(id, SILO) && !strcmp(tipo, "series"));
   CHECK(d == destinosTeste());
   CHECK(n <= 256);
-  assert(totalEnviados + n <= 1024);
+  assert(totalEnviados + n <= VE_LOTE_MAX);
   memcpy(paresEnviados + totalEnviados, p, n * sizeof *p);
   totalEnviados += n;
   enviados = n; sentido = v; chamadas++;
@@ -67,6 +67,45 @@ static void serieLonga(void) {
     }
     printf("300 episodios: caso %d, enviados %d, vistos restantes %d\n",
            caso, totalEnviados, vistoep_contar(SILO));
+  }
+}
+static void limiteLapides(void) {
+  const int total = VISTONAO_MAX + 100;
+  extras_teste_progresso(SILO, total, total, 0, 0);
+  for (int modo = 0; modo < 3; modo++) {
+    vistoep_esquecer();
+    vistonao_gesto(SILO, NULL, 0, 1);
+    for (int e = 1; e <= total; e++) vistoep_definir(SILO, 1, e, 1);
+    for (int gesto = 0; gesto < 2; gesto++) {
+      int esperado = gesto ? total - VISTONAO_MAX : VISTONAO_MAX;
+      chamadas = totalEnviados = 0;
+      episodios_menu_visto(0, 1, modo == 1 ? total : 1, "Limite de lapides");
+      CHECK(opcaoFrente() >= 0);
+      int pos = modo == 0 ? opcaoFrente() : 1;
+      if (modo == 2) menuAbrirTemporada(0, 1, 1);
+      if (pos >= 0) {
+        vmFoco = pos;
+        teclaTeste(SDLK_RETURN);
+        CHECK(vmFeito && vmFeitoN == esperado && vmFeitoVisto == 0);
+      }
+      CHECK(totalEnviados == esperado);
+      CHECK(chamadas == (esperado + SMK_LOTE_MAX - 1) / SMK_LOTE_MAX);
+      CHECK(vistoep_contar(SILO) == (gesto ? 0 : total - VISTONAO_MAX));
+      int primeiro = gesto ? VISTONAO_MAX + 1 : 1;
+      for (int i = 0; i < esperado; i++) {
+        CHECK(paresEnviados[i].temporada == 1 && paresEnviados[i].episodio == primeiro + i);
+        CHECK(vistonao_barra(SILO, 1, primeiro + i, 0) == 1);
+        vistoep_fonte(SILO, 1, primeiro + i, 1, 0, NULL);
+        CHECK(vistoep_estado(SILO, 1, primeiro + i) == 0);
+      }
+      if (!gesto)
+        for (int e = VISTONAO_MAX + 1; e <= total; e++)
+          CHECK(vistoep_estado(SILO, 1, e) == 1);
+      printf("limite lapides: modo %d, gesto %d, enviados %d, vistos restantes %d\n",
+             modo, gesto + 1, totalEnviados, vistoep_contar(SILO));
+    }
+    episodios_menu_visto(0, 1, 1, "Limite de lapides");
+    CHECK(opcaoFrente() < 0);
   }
 }
 int main(void) {
@@ -127,6 +166,7 @@ int main(void) {
   abrir(); for (i = 0; i < 10; i++) teclaTeste(SDLK_DOWN);
   teclaTeste(SDLK_RETURN); CHECK(episodios_menu_pediu_fontes());
   serieLonga();
+  limiteLapides();
   printf("desmarcarfrente: %s (%d falhas)\n", falhas ? "FALHOU" : "PASS", falhas);
   return falhas != 0;
 }
