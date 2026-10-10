@@ -167,6 +167,8 @@ static void conferirTexto(const char *o_que, const char *obtido, const char *esp
   falhas++;
 }
 
+static int sempreCancelado(void *u) { (void)u; return 1; }
+
 int main(void) {
   char dir[] = "/tmp/nuvio-addonslista-XXXXXX";
   char caminho[600];
@@ -282,6 +284,23 @@ int main(void) {
   // ---- #182: addon lento aparece sozinho, sem recarregar a mao
   conferir("addon lento entrou", addons_adicionar("Lento", "https://lento.test/manifest.json"), 1);
   // 11) nao respondeu na 1a tentativa, respondeu na 2a: a lista ja o traz.
+  // R2: uma busca real falha, seguida de prefetch cancelado antes do HTTP.
+  falhasLento = 1000; chamadasLento = 0;
+  addons_definir_origem("https://lento.test");
+  buscarMotivo("tt-r2-primeira");
+  conferir("R2 primeira busca tem duas tentativas", chamadasLento, 2);
+  { Stream *l = NULL;
+    conferir("R2 prefetch cancelado", addons_consultar("tt-r2:1:2", "series", "https://lento.test", 1,
+             sempreCancelado, NULL, &l), -1);
+    conferir("R2 cancelamento nao faz HTTP", chamadasLento, 2);
+    free(l);
+  }
+  falhasLento = 1; chamadasLento = 0;
+  addons_definir_origem("https://lento.test");
+  buscarMotivo("tt-r2-seguinte");
+  conferir("R2 busca real conserva segunda chance", chamadasLento, 2);
+  conferir("R2 segunda chance recupera fontes", addons_estado(), ADD_PRONTO);
+
   falhasLento = 1; chamadasLento = 0;
   addons_definir_origem("https://lento.test");
   addons_buscar("tt0000011", "movie");

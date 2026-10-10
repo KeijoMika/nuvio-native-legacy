@@ -11,7 +11,7 @@
 
 static CatItem titulo;
 static CatEp episodios[2];
-static int preparar = 1, atualT = 1, atualE = 1;
+static int preparar = 1, atualT = 1, atualE = 1, velocidade = 100;
 static double posicao, duracao = 1200, credito;
 static _Atomic int bloquear, entrou;
 char *rede_baixar(const char *url, int timeout) {
@@ -31,13 +31,13 @@ int cat_id_stream(int i, int t, int e, char *dst, unsigned tam) {
 }
 int cat_indice_por_imdb(const char *id) { (void)id; return -1; }
 void player_episodio_atual(int *t, int *e) { *t = atualT; *e = atualE; }
-int player_velocidade_efetiva(void) { return 100; }
+int player_velocidade_efetiva(void) { return velocidade; }
 void player_aprender_creditos(void) {}
 int ajustes_fonte_preparar(void) { return preparar; }
 double video_creditos(void) { return credito; }
 // A regra temporal real e exercitada tambem em tests/posplay.sh.
 int player_janela_proximo(double antecedencia) {
-  return posicao + antecedencia >= (credito > 1 ? credito : duracao - 50);
+  return posicao + antecedencia * velocidade / 100.0 >= (credito > 1 ? credito : duracao - 50);
 }
 int extras_n_relacionados(void) { return 0; }
 const char *extras_relacionado_imdb(int i) { (void)i; return ""; }
@@ -49,6 +49,7 @@ static void quadro(double p, int serie) {
 }
 static void iniciar(void) {
   posplay_fechar(); fontecache_vod_limpar();
+  stream_definir_lista(NULL, 0); // cada cenario comeca no episodio anterior
   for (int i = 0; i < 10; i++) quadro(0, 1);
 }
 static void esperarPedido(int n) {
@@ -78,6 +79,71 @@ static void iniciarBloqueado(void) {
   for (int i = 0; i < 2000 && !atomic_load(&entrou); i++) usleep(1000);
   assert(entrou);
 }
+static int extraModo;
+static int extraAtiva(void) { return extraModo != 0; }
+static int extraFixture(const char *id, const char *tipo, int (*c)(void *), void *ctx,
+                        OrigemAviso aviso, void *u, void *saida) {
+  Stream **l = saida;
+  (void)id; (void)tipo; (void)c; (void)ctx;
+  *l = calloc(1, sizeof **l); assert(*l);
+  aviso(u, 0, "Rapido", 1, NULL, 0);
+  aviso(u, 1, "Lento", 1, NULL, 0);
+  aviso(u, 0, "Rapido", 2, *l, 1);
+  // Corte deixa Lento pendente (1), falha explicita (3), ou sucesso vazio (2).
+  if (extraModo != 1) aviso(u, 1, "Lento", extraModo == 2 ? 3 : 2, NULL, 0);
+  return 1;
+}
+
+static void testarContagem(void) {
+  for (velocidade = 50; velocidade <= 200; velocidade *= 2) {
+    for (int marcador = 0; marcador < 2; marcador++) {
+      credito = marcador ? 1050 : 0;
+      iniciar();
+      int antes = pedidos, t, e;
+      double inicio = (marcador ? 1050 : 1150) - 10 * velocidade / 100.0;
+      quadro(inicio, 1); esperarFim(); assert(cacheProximo() == 2);
+      for (double p = inicio + velocidade / 100.0; p <= 1200; p += velocidade / 100.0) {
+        atomic_fetch_add(&relogio, 1000);
+        quadro(p, 1); esperarFim();
+      }
+      assert(posplay_pediu_episodio(&t, &e) && t == 1 && e == 2);
+      assert(cacheProximo() == 2); // a resposta original expirou ha >30 s
+      int antesBusca = pedidos;
+      posplay_fechar(); buscarTitulo("tt42:1:2", "series");
+      assert(pedidos == antesBusca && nLista == 2);
+      assert(pedidos == antes + 2); // so uma renovacao perto do fim, nao polling
+    }
+  }
+  velocidade = 100; credito = 0;
+  // Seek direto ao fim: a primeira resposta ja cobre a transicao, sem renovar.
+  iniciar();
+  int antes = pedidos;
+  for (int p = 1190; p <= 1200; p++) {
+    atomic_fetch_add(&relogio, 1000);
+    quadro(p, 1); esperarFim();
+  }
+  assert(cacheProximo() == 2 && pedidos == antes + 1);
+  puts("PASS R2 TTL: contagem com/sem marcador, 0.5x/1x/2x e preparo tardio sem HTTP redundante");
+}
+static void testarExtras(void) {
+  addons_definir_origem_extra(extraFixture, extraAtiva);
+  for (int semAddon = 0; semAddon < 2; semAddon++) {
+    if (semAddon) { addons_esquecer(); assert(addons_n() == 0); }
+    for (extraModo = 1; extraModo <= 3; extraModo++) {
+      iniciar(); quadro(1140, 1); esperarFim();
+      if (extraModo == 3) assert(cacheProximo() == (semAddon ? 1 : 3));
+      else assert(!cacheProximo()); // Rapido + Lento pendente nao e resposta completa
+      if (extraModo != 3) {
+        // A busca real ainda publica as fontes parciais, mas nunca as cacheia.
+        buscarTitulo("tt42:1:2", "series");
+        assert(nLista == (semAddon ? 1 : 3) && !cacheProximo());
+      }
+    }
+  }
+  extraModo = 0; listaAddon();
+  puts("PASS R2 extras: corte/falha nao viram cache; resposta completa, inclusive vazia, permite cache");
+}
+
 int main(void) {
   int antes;
   strcpy(titulo.imdb, "tt42:1:1"); strcpy(titulo.tipo, "series");
@@ -86,7 +152,13 @@ int main(void) {
     episodios[i].temporada = 1; episodios[i].episodio = i + 1;
     strcpy(episodios[i].data, "2020-01-01");
   }
-  listaAddon(); iniciar();
+  listaAddon();
+  const char *caso = getenv("R2_CASO");
+  if (!caso || !strcmp(caso, "ttl")) testarContagem();
+  if (!caso || !strcmp(caso, "extras")) testarExtras();
+  if (caso) { addons_encerrar(); free(listaAtiva); return 0; }
+  pedidos = 0; stream_definir_lista(NULL, 0);
+  iniciar();
   quadro(1139, 1); assert(pedidos == 0);
   quadro(1140, 1); esperarPedido(1); esperarFim();
   assert(cacheProximo() == 2 && nLista == 0); // nenhuma publicacao no player

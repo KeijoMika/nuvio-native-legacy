@@ -1889,6 +1889,7 @@ typedef struct {
   int valido;
   int instalados, comFonte, ligadosComFonte;   // da lista
   int consultados, responderam, semResposta, comFontes;   // da consulta
+  int extraIncompleta;
   char mudo[64], vazio[64];   // um nome de exemplo de cada, para o singular
 } Resumo;
 static Resumo resumo;
@@ -2184,6 +2185,7 @@ typedef struct {
   int (*cancelado)(void *); void *ctx;
   int progresso;
   Stream *l; int n;
+  _Atomic int pendentes, incompleta;
 } PedidoExtra;
 static int cancelaExtra(void *u) {
   PedidoExtra *p = u;
@@ -2191,6 +2193,11 @@ static int cancelaExtra(void *u) {
 }
 static void avisoExtra(void *u, int k, const char *nome, int estado, const void *fontes, int n) {
   PedidoExtra *p = u;
+  // Cada parte anuncia inicio (1) e fim (2/3), inclusive no prefetch.
+  // Contadores atomicos cobrem scrapers paralelos e indices de origens distintas.
+  if (estado == 1) atomic_fetch_add(&p->pendentes, 1);
+  if (estado == 2 || estado == 3) atomic_fetch_sub(&p->pendentes, 1);
+  if (estado == 3) atomic_store(&p->incompleta, 1);
   if (!p->progresso) return;
   // Scraper que terminou (2) ou desistiu (3): entra na memoria de latencia.
   if ((estado == 2 || estado == 3) && nome && !(p->cancelado && p->cancelado(p->ctx)))
@@ -2201,6 +2208,7 @@ typedef struct { PedidoExtra *pai; OrigemExtra f; Stream *l; int n; } UmaOrigem;
 static void *fioUmaOrigem(void *u) {
   UmaOrigem *o = u;
   o->n = o->f(o->pai->id, o->pai->tipo, cancelaExtra, o->pai, avisoExtra, o->pai, &o->l);
+  if (o->n < 0) atomic_store(&o->pai->incompleta, 1);
   return NULL;
 }
 static void *fioExtra(void *u) {
@@ -2274,6 +2282,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
   }
   if (nAddon <= 0) {
     if (temExtra) pthread_join(fioEx, NULL);
+    if (rs) rs->extraIncompleta = extra.pendentes != 0 || extra.incompleta;
     if (cancelado && cancelado(ctx)) { free(extra.l); return -1; }
     if (extra.n > 0) { *saida = extra.l; return extra.n; }
     free(extra.l);
@@ -2388,16 +2397,19 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
                              c.baldes[q].respondeu ? c.baldes[q].ms
                                                    : (unsigned)(SDL_GetTicks() - c.inicio),
                              c.baldes[q].respondeu);
-      if (c.baldes[q].respondeu) addon[c.baldes[q].idx].mudoSeg = 0;
-      else {
-        addon[c.baldes[q].idx].mudoSeg++;
-        // ADDON FORA DO AR (ilha, 02/10): a busca de verdade (rs) terminou e
-        // ESTE addon nao respondeu nem na segunda chance — transporte ou HTTP,
-        // nunca "respondeu sem fonte", que e `respondeu` com n = 0. Uma vez por
-        // queda: so na PRIMEIRA consulta muda (mudoSeg 0 -> 1); responder de
-        // novo zera e rearma. Cancelada no meio nao conta.
-        if (rs && rs->valido && addon[c.baldes[q].idx].mudoSeg == 1 && !(c.cancelado && c.cancelado(c.ctx)))
-          foraAnotar(addon[c.baldes[q].idx].nome);
+      // Cancelamento nao prova falha nem recuperacao, nem dos baldes pulados.
+      if (!(c.cancelado && c.cancelado(c.ctx))) {
+        if (c.baldes[q].respondeu) addon[c.baldes[q].idx].mudoSeg = 0;
+        else {
+          addon[c.baldes[q].idx].mudoSeg++;
+          // ADDON FORA DO AR (ilha, 02/10): a busca de verdade (rs) terminou e
+          // ESTE addon nao respondeu nem na segunda chance — transporte ou HTTP,
+          // nunca "respondeu sem fonte", que e `respondeu` com n = 0. Uma vez por
+          // queda: so na PRIMEIRA consulta muda (mudoSeg 0 -> 1); responder de
+          // novo zera e rearma. Cancelada no meio nao conta.
+          if (rs && rs->valido && addon[c.baldes[q].idx].mudoSeg == 1)
+            foraAnotar(addon[c.baldes[q].idx].nome);
+        }
       }
       if (rs) {
         const char *nome = addon[c.baldes[q].idx].nome;
@@ -2420,6 +2432,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
   free(c.baldes);
   pthread_mutex_destroy(&c.trava);
   if (temExtra) pthread_join(fioEx, NULL);
+  if (rs) rs->extraIncompleta = extra.pendentes != 0 || extra.incompleta;
   if (progresso) addonstats_salvar();
   if (extra.n > 0) {
     Stream *tmp = realloc(achados, sizeof(Stream) * (size_t)(n + extra.n));
@@ -2439,7 +2452,7 @@ int addons_consultar(const char *id, const char *tipo, const char *base, int fio
   Resumo rs = {0};
   int vod = tipo && !strcmp(tipo, "series");
   int n = consultar(id, tipo, base, fios, cancelado, ctx, saida, vod ? &rs : NULL, 0);
-  if (vod && rs.semResposta) { free(*saida); *saida = NULL; return -1; }
+  if (vod && (rs.semResposta || rs.extraIncompleta)) { free(*saida); *saida = NULL; return -1; }
   return n;
 }
 
@@ -2502,7 +2515,7 @@ static void *buscar(void *u) {
   n = consultar(alvoId, alvoTipo, fioBase, ADD_FIOS, NULL, NULL, &achados, &rs,
                 progLigado);
   resultadoQuando = SDL_GetTicks();
-  resultadoCacheavel = n > 0 && rs.semResposta == 0;
+  resultadoCacheavel = n > 0 && rs.semResposta == 0 && !rs.extraIncompleta;
   if (n < 0) n = 0;
   resumo = rs;
   marco(n ? "addons: fontes recebidas" : "addons: nenhuma fonte");
