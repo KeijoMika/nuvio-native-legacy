@@ -73,7 +73,9 @@ if [ -f "$BASE/respostas.json" ] && [ ! -f "$BASE/respostas/respostas.json" ]; t
   cp -p "$BASE/respostas.json" "$BASE/respostas/respostas.json" && echo "migrado: respostas.json -> respostas/"
 fi
 
-docker build -t nuvio-painel-api "$BASE/api"          # falhou aqui: nada foi tocado
+# /DATA/.docker e do root no ZimaOS: o buildx precisa de uma pasta gravavel.
+mkdir -p "$BASE/.docker"
+DOCKER_CONFIG="$BASE/.docker" docker build -t nuvio-painel-api "$BASE/api"          # falhou aqui: nada foi tocado
 docker network inspect nuvio-painel-net >/dev/null 2>&1 || docker network create nuvio-painel-net >/dev/null
 # dono fixo nao-root (ssh pode ser root): chown por container descartavel
 docker run --rm --user 0 --entrypoint chown -v "$BASE/respostas":/data/respostas nuvio-painel-api -R "$UID_API:$UID_API" /data/respostas
