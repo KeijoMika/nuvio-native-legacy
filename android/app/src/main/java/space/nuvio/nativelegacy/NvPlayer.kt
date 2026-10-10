@@ -26,6 +26,7 @@ import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
@@ -44,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger
 // Sessao monotonica: cada abrir/parar sobe `sessao`, e todo callback confere o
 // numero em que nasceu. Um player velho nao fala mais depois de liberado.
 //
-// Eventos (nativeEvento): 1 PRONTO(durMs) 2 TOCANDO 3 PAUSADO 4 FIM 5 ERRO(cod)
+// Eventos (nativeEvento): 1 PRONTO(durMs) 2 TOCANDO 3 PAUSADO 4 FIM 5 ERRO(cod, C.TRACK_TYPE_* do renderer)
 // 6 TAMANHO(w,h) 7 BUFFER(pct) 8 PRIMEIRO_QUADRO, e a extensao 9 = a fonte tem
 // audio mas nenhuma faixa tem decoder aqui (o C responde video_audio_nao_suportado).
 //
@@ -333,10 +334,24 @@ object NvPlayer {
     // --- abrir / liberar ------------------------------------------------------
 
     private fun abrirMain(url: String, cabecalhos: String, reabrindo: Boolean,
-                          inicioMs: Int, geracao: Int, pedido: Int, fracao: Int = 0) {
+                          inicioMs: Int, geracao: Int, pedido: Int, fracao: Int = 0, esperaInicio: Long = -1L) {
+        if (pedido != pedidos.get()) return
         val act = activity
         if (act == null) { confirmarRetomada(geracao, false); return }
-        liberar()
+        val espera = if (esperaInicio < 0) SystemClock.elapsedRealtime() else esperaInicio
+        if (esperaInicio < 0) liberar()
+        // MStar/Amlogic: o overlay e o decoder antigos precisam sair antes do novo.
+        // Poll no Handler deixa Back/parar funcionar enquanto o release corre em fundo.
+        if (semRecriar) {
+            val ms = SystemClock.elapsedRealtime() - espera
+            if (liberacoesEmCurso.get() > 0 && ms < 3000) {
+                principal.postDelayed({
+                    abrirMain(url, cabecalhos, reabrindo, inicioMs, geracao, pedido, fracao, espera)
+                }, 25)
+                return
+            }
+            Log.i(TAG, "[player] esperou o release anterior $ms ms (pendentes=${liberacoesEmCurso.get()})")
+        }
         novaSuperficie(act)
         pedidoAtivo = pedido
         hdrRecriado = false; hdrRecriadoPara = ""; quadroVisto = false
@@ -883,6 +898,7 @@ object NvPlayer {
         override fun onPlaybackStateChanged(state: Int) {
             if (!atual(minha)) return
             val p = player ?: return
+            Log.i(TAG, "[player] onPlaybackStateChanged state=$state renderer=audio(${p.audioFormat?.sampleMimeType}),video(${p.videoFormat?.sampleMimeType}) loadMs=${SystemClock.elapsedRealtime() - abriuEm}")
             when (state) {
                 Player.STATE_BUFFERING -> ev(EV_BUFFER, 0)
                 Player.STATE_READY -> {
@@ -933,6 +949,7 @@ object NvPlayer {
 
         override fun onRenderedFirstFrame() {
             if (!atual(minha)) return
+            Log.i(TAG, "[player] onRenderedFirstFrame renderer=video loadMs=${SystemClock.elapsedRealtime() - abriuEm}")
             ev(EV_PRIMEIRO_QUADRO)
             quadroVisto = true
             logTaxaDeQuadros()
@@ -970,7 +987,17 @@ object NvPlayer {
 
         override fun onPlayerError(error: PlaybackException) {
             if (!atual(minha)) return
-            Log.w(TAG, "erro ${error.errorCodeName} (${error.errorCode}): ${error.message}")
+            val exo = error as? ExoPlaybackException
+            val p = player
+            val tipo = if (exo?.type == ExoPlaybackException.TYPE_RENDERER && p != null &&
+                exo.rendererIndex in 0 until p.rendererCount) p.getRendererType(exo.rendererIndex)
+                else C.TRACK_TYPE_UNKNOWN
+            val renderer = when (tipo) {
+                C.TRACK_TYPE_AUDIO -> "audio"
+                C.TRACK_TYPE_VIDEO -> "video"
+                else -> "desconhecido"
+            }
+            Log.w(TAG, "[player] onPlayerError renderer=$renderer nome=${exo?.rendererName} loadMs=${SystemClock.elapsedRealtime() - abriuEm} erro ${error.errorCodeName} (${error.errorCode}): ${error.message}")
             // Decoder que falha nos primeiros 5 s: o recurso pode estar sendo
             // solto por outro app (ResourceConflict do Tizen); reabre uma vez.
             val cedo = SystemClock.elapsedRealtime() - abriuEm < RETRY_DECODER_MS
@@ -988,7 +1015,7 @@ object NvPlayer {
                 principal.postDelayed({ if (atual(minha)) abrirMain(u, c, true, inicio, geracao, pedido, fracao) }, 400)
                 return
             }
-            ev(EV_ERRO, error.errorCode, 0)
+            ev(EV_ERRO, error.errorCode, tipo)
         }
     }
 

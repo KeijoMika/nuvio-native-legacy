@@ -716,27 +716,40 @@ static int codecDaFonte(const Stream *s) {
     if (acha(c[i], "avc1")) return 1;
     if (acha(c[i], "av01")) return 3;
   }
-  return 0; // codec nao anunciado: HEVC, como nas fontes UHD do relato
+  return -1; // Sem codec anunciado, nao ha evidencia para bloquear uma familia.
 }
 static int excedeDecoder(const Stream *s) {
   int c, r;
-  if (s->altura < 2160) return 0;
+  if (s->altura <= 0) return 0;
   pthread_mutex_lock(&autoExclTrava);
   r = 0;
   for (int i = 0; i < 4; i++) r |= decoder4k[i] == 0 || decoderFalhaAltura[i] != 0;
   pthread_mutex_unlock(&autoExclTrava);
   if (!r) return 0;
   c = codecDaFonte(s);
+  if (c < 0) return 0;
   pthread_mutex_lock(&autoExclTrava);
-  r = decoder4k[c] == 0 || (decoderFalhaAltura[c] && s->altura >= decoderFalhaAltura[c]);
+  r = (s->altura >= 2160 && decoder4k[c] == 0) || (decoderFalhaAltura[c] && s->altura >= decoderFalhaAltura[c]);
   pthread_mutex_unlock(&autoExclTrava);
   return r;
 }
-void stream_automatico_erro_decoder(int indice, int codigo) {
+void stream_automatico_erro_decoder(int indice, int codigo, int renderer) {
   if (codigo != 4001 && codigo != 4003 && codigo != 4004 && codigo != 4005) return;
+  // Renderer 0 = video, 1 = audio, 2/qualquer outro = desconhecido. Erros de
+  // audio (EAC3/AC4 sem suporte) nao sao de codec de video: o caminho de
+  // bloqueio por codec nao pode morder uma fonte HEVC 4K porque o EAC3 dela
+  // falhou. O video_android.c so repassa o codigo se for renderer de video;
+  // aqui o parametro explicito e a defesa em profundidade para futuros
+  // chamadores (e o teste C, que nao liga o video_android.c).
+  if (renderer != 0) {
+    printf("[fonte] decoder: erro %d no renderer %d ignorado para codec de video (fonte %d)\n",
+           codigo, renderer, indice);
+    return;
+  }
   pthread_mutex_lock(&verTrava);
-  if (indice >= 0 && indice < n && lista[indice].altura >= 2160) {
+  if (indice >= 0 && indice < n && lista[indice].altura > 0) {
     int c = codecDaFonte(&lista[indice]), h = lista[indice].altura;
+    if (c < 0) { pthread_mutex_unlock(&verTrava); return; }
     pthread_mutex_lock(&autoExclTrava);
     if (!decoderFalhaAltura[c] || h < decoderFalhaAltura[c]) decoderFalhaAltura[c] = h;
     pthread_mutex_unlock(&autoExclTrava);
