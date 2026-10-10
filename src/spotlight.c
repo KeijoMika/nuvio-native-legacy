@@ -368,8 +368,9 @@ static void montarTitulos(const char *alvo) {
       for (i = 0; i < nRem && i < 8 && nc < 40; i++) {
         CatItem it;
         int idx, k, dup = 0;
-        if (!desc_busca_alvo_item(a, i, &it)) continue;
-        idx = it.imdb[0] ? cat_indice_por_imdb(it.imdb) : -1;
+        // Sem ID, cada montagem reinseriria o resultado e mudaria a revisao.
+        if (!desc_busca_alvo_item(a, i, &it) || !it.imdb[0]) continue;
+        idx = cat_indice_por_imdb(it.imdb);
         if (idx >= 0) for (k = 0; k < nc; k++) if (c[k].idx == idx) { dup = 1; break; }
         if (dup) continue;
         busca_normalizar(it.titulo, nome, sizeof nome);

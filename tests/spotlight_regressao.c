@@ -31,7 +31,7 @@
 #include <assert.h>
 
 static CatItem rem[2][4];
-static int quant[2], falhas, cortadas, artes;
+static int quant[2], falhas, cortadas, artes, montagens;
 static float fimRecorte;
 static char termo[96];
 static char generoDesenhado[160];
@@ -39,7 +39,7 @@ static CatItem publicacao;
 static CatFileira fileiraPublicacao;
 static int publicarNaMontagem, focoDesenhado;
 static const char *nomeFoco;
-void teste_buscar(const char *t) { snprintf(termo, sizeof termo, "%s", t); }
+void teste_buscar(const char *t) { montagens++; snprintf(termo, sizeof termo, "%s", t); }
 int teste_alvos(void) { return 2; }
 int teste_n(int a, const char *t) { return !strcmp(t, termo) ? quant[a] : 0; }
 int teste_item(int a, int i, CatItem *it) { *it = rem[a][i]; return 1; }
@@ -230,6 +230,24 @@ int main(void) {
   acionar(1);
   SpotPedido p;
   check(spot_pediu(&p) && p.indice == 1, "OK entre publicacao e quadro abre a identidade escolhida");
+
+  // Resultado sem ID nao pode alimentar a revisao que dispara outra montagem.
+  rem[0][0] = item("", "movie", "2024", 0);
+  quant[0] = 1; quant[1] = 0;
+  cat_definir_tudo(&base, 1, NULL, 0);
+  spot_abrir(0);
+  snprintf(consulta, sizeof consulta, "silo"); nConsulta = 4;
+  int nAntes = cat_n();
+  unsigned revAntes = cat_revisao_itens();
+  montagens = 0;
+  remontar();
+  for (int i = 0; i < 120; i++) {
+    cat_quadro();
+    spot_atualizar(1.0f / 60, (unsigned)i);
+  }
+  check(montagens == 1, "remoto sem ID: uma montagem em 120 quadros");
+  check(cat_n() == nAntes && cat_revisao_itens() == revAntes,
+        "remoto sem ID: catalogo e revisao nao crescem");
   printf("RESULTADO: %d falhas\n", falhas);
   return falhas ? 1 : 0;
 }
