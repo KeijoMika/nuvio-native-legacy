@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gera docs/issues/MAPA.md a partir de docs/issues/mapa.json.
 Uso: python3 docs/issues/mapa.py   (edite so o json; o md e derivado)"""
-import json,os,re,collections,sys
+import json,os,re,collections,sys,subprocess,html
 D=os.path.dirname(os.path.abspath(__file__))
 J=json.load(open(os.path.join(D,'mapa.json')))
 R=J['itens']
@@ -33,6 +33,49 @@ def valida_validacoes():
         if v['resultado'] not in RESULTADOS: sys.exit(f"ERRO: validacao {k} com resultado '{v['resultado']}' (use {', '.join(RESULTADOS)})")
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?',v['data']): sys.exit(f"ERRO: validacao {k} com data '{v['data']}' (AAAA-MM-DD [HH:MM])")
         if not isinstance(v.get('issues',[]),list): sys.exit(f"ERRO: validacao {k}: issues precisa ser lista")
+RE_ID=re.compile(r'^dec-[a-z0-9]+(-[a-z0-9]+)*$')
+def valida_decisoes():
+    # id estavel por decisao: presente, bem formado, unico, nunca some nem e reusado
+    ids=[]
+    for k,d in enumerate(J['decisoes'],1):
+        i=d.get('id')
+        if not isinstance(i,str) or not RE_ID.match(i): sys.exit(f"ERRO: decisao {k} sem id valido (formato dec-<assunto>, minusculas/digitos/hifens): {i!r}")
+        ids.append(i)
+        a=d.get('aplicada_em')
+        if a is not None and not re.match(r'^\d{4}-\d{2}-\d{2}$',str(a)): sys.exit(f"ERRO: {i}: aplicada_em deve ser AAAA-MM-DD")
+    dup=sorted(i for i,c in collections.Counter(ids).items() if c>1)
+    if dup: sys.exit('ERRO: ids de decisao repetidos: '+', '.join(dup))
+    ret=J.get('decisoes_ids_retirados')
+    if not isinstance(ret,list): sys.exit("ERRO: falta 'decisoes_ids_retirados' (lista, pode ser vazia)")
+    if len(set(ret))!=len(ret): sys.exit('ERRO: decisoes_ids_retirados com repeticao')
+    reus=sorted(set(ret)&set(ids))
+    if reus: sys.exit('ERRO: id retirado foi reusado: '+', '.join(reus))
+    try:
+        ant=json.loads(subprocess.run(['git','-C',D,'show','HEAD:./mapa.json'],capture_output=True,text=True,check=True).stdout)
+        ret_antes=set(ant.get('decisoes_ids_retirados',[]))
+        antes={d['id'] for d in ant.get('decisoes',[]) if 'id' in d}|ret_antes
+    except Exception: antes=set(); ret_antes=set()  # sem git/HEAD: so as checagens acima
+    volta=sorted(ret_antes&set(ids))
+    if volta: sys.exit("ERRO: id retirado no HEAD voltou a ficar ativo (nunca reuse): "+', '.join(volta))
+    sumiu=sorted(antes-set(ids)-set(ret))
+    if sumiu: sys.exit("ERRO: id de decisao sumiu sem ir para decisoes_ids_retirados: "+', '.join(sumiu))
+    perdeu=sorted(ret_antes-set(ret))
+    if perdeu: sys.exit("ERRO: id saiu de decisoes_ids_retirados (a lista so cresce): "+', '.join(perdeu))
+valida_decisoes()
+def carrega_respostas():
+    p=os.path.join(D,'respostas-dono.json')
+    if not os.path.exists(p): return {}
+    try: r=json.load(open(p,encoding='utf-8'))['respostas']
+    except Exception as e: sys.exit(f"ERRO: respostas-dono.json invalido: {e}")
+    ok={d['id'] for d in J['decisoes']}|set(J['decisoes_ids_retirados'])
+    out={}
+    for i,v in r.items():
+        h=v.get('historico') if isinstance(v,dict) else None
+        if not h or not all(isinstance(x,dict) and x.get('resposta') in ('sim','nao') for x in h): sys.exit(f"ERRO: respostas-dono.json: historico invalido em {i}")
+        if i not in ok: print(f"AVISO: resposta para id desconhecido {i} (ignorada)",file=sys.stderr); continue
+        out[i]=h[-1]
+    return out
+RESP=carrega_respostas()
 valida()
 valida_validacoes()
 for k,d in enumerate(J.get('decisoes',[])):
@@ -70,7 +113,7 @@ L.append(f"# Mapa vivo das issues\n\nBase: `{J['base']}` (integracao/2.0.3.1, qu
 L.append("""## Como atualizar
 
 1. Chegou issue nova, ou um conserto entrou numa branch/tag: edite **uma** entrada em `docs/issues/mapa.json` (procure por `"numero": N`) e rode `python3 docs/issues/mapa.py`, que valida e reescreve este arquivo. Sem o script, edite a linha equivalente aqui.
-2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4` = hotfix em integracao/2.0.3.1, `2.0.5 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.4`, `2.0.5`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json; decisão tem `estado` (`pendente` ou `decidida`) e, decidida, `decisao`, `data` e `quem`.
+2. Campos: `numero`, `titulo`, `plataforma` (LG, Samsung .tpk, Samsung .wgt, Android, all, `?`), `tipo` (bug, feature, question, meta), `status`, `release` (2.0.2 ou tag antiga, 2.0.3 = integracao/2.0.3, `2.0.4` = hotfix em integracao/2.0.3.1, `2.0.5 (branch)`, 2.1/2.2/futuro, `-`), `conserto` (hashes curtos com a ref entre parênteses), `ultima_resposta` (`nos` = o último comentário é nosso, `data`, `ultimo_comentario_por`, `ultima_nossa`), `proximo_passo`, `notas`, `alvo` (só issues ABERTAS, obrigatório: `2.0.3`, `2.0.4`, `2.0.5`, `2.1`, `2.2`, `futuro`, `nao vamos fazer`, ou `ja-lancada` quando já saiu e só falta fechar). `python3 docs/issues/mapa.py --check` valida e confere se o MAPA.md está em dia, sem escrever; o gerador sai com erro se uma issue aberta não tiver alvo. O roadmap e as decisões ficam em `roadmap` e `decisoes` no json; decisão tem `id` (OBRIGATÓRIO e estável, `dec-<assunto>` em minúsculas/dígitos/hifens: é o que liga a resposta do dono no painel à decisão; nunca mude nem reutilize, e o id que sai de vez vai para `decisoes_ids_retirados`), `estado` (`pendente` ou `decidida`) e, decidida, `decisao`, `data` e `quem`. Campo opcional `release` diz a versão afetada quando ela não dá para deduzir do alvo das issues ligadas. `aplicada_em` (AAAA-MM-DD) é preenchido pela coordenação depois de aplicar a resposta; a decisão sai da fila de pendentes do painel.
 3. Vocabulário de `status`: `aberta`, `respondida`, `consertada-nao-lancada`, `lancada`, `por-desenho`, `fora-do-escopo`, `precisa-log`, `duplicada`. Extra: `fechada-sem-resposta` (issue fechada sem nenhum comentário).
 4. Regra de honestidade: só vale `consertada-nao-lancada`/`lancada` com commit na ref. "Lançado" = commit contido numa tag `v*`. Sem commit, escreva "suspeita" ou "sem commit" em `conserto`/`notas`. "Lançada" em issue antiga sem commit com `#N` quer dizer: a nossa resposta cita uma versão que existe como tag (ver nota na linha).
 5. Atenção: mensagens de commit com `(#203)` / `(#204)` falam da VERSÃO 2.0.3 / 2.0.4 (o plano que hoje é a 2.0.5; a linha 2.0.3.1 é que saiu como 2.0.4), não das issues #203/#204. Esses dois números foram ignorados na busca por commits.
@@ -103,12 +146,32 @@ for x in J.get('nao_fechar_ainda',[]):
     r=next(i for i in R if i['numero']==x['numero'])
     L.append(f"| [#{r['numero']}]({r['url']}) | {cell(r['titulo'])[:60]} | {cell(x['motivo'])} |")
 L.append("\n## Decisões para o dono\n")
+def nota_md(s):
+    # texto do dono e entrada nao confiavel: sem HTML, sem link/imagem/formatacao do markdown
+    s=html.escape(' '.join(str(s).split()),quote=False)
+    return re.sub(r'([\\`*_\[\]()|!#~])',r'\\\1',s)
+def estado_dec(d):
+    # aplicada = a coordenacao ja marcou; respondida = o dono respondeu no painel;
+    # sem isso vale o estado do mapa (pendente/decidida).
+    if d.get('aplicada_em'): return 'aplicada'
+    if d['id'] in RESP: return 'respondida, a aplicar'
+    return d.get('estado','pendente')
+def linha_resp(d):
+    r=RESP.get(d['id'])
+    if not r: return ''
+    nota=(' Nota: '+nota_md(r['nota'])+'.') if r.get('nota') else ''
+    return f" **Resposta do dono: {'SIM' if r['resposta']=='sim' else 'NÃO'}**{nota} ({r.get('quando','?')[:10]})."
+def cabecalho_dec(d): return f"`{d['id']}` [{estado_dec(d)}]"
+apl=[d for d in J['decisoes'] if d.get('aplicada_em')]
 L.append("### Pendentes\n")
-for k,d in enumerate([d for d in J['decisoes'] if d.get('estado','pendente')=='pendente'],1):
-    L.append(f"{k}. {d['pergunta']} Recomendação: {d['recomendacao']}")
+for k,d in enumerate([d for d in J['decisoes'] if not d.get('aplicada_em') and d.get('estado','pendente')!='decidida'],1):
+    L.append(f"{k}. {cabecalho_dec(d)} {d['pergunta']} Recomendação: {d['recomendacao']}{linha_resp(d)}")
 L.append("\n### Decididas\n")
-for d in sorted([d for d in J['decisoes'] if d.get('estado')=='decidida'], key=lambda d:d['data'], reverse=True):
-    L.append(f"- {d['data']} ({d['quem']}): {d['pergunta']} **{d['decisao']}**")
+for d in sorted([d for d in J['decisoes'] if not d.get('aplicada_em') and d.get('estado')=='decidida'], key=lambda d:d['data'], reverse=True):
+    L.append(f"- {d['data']} ({d['quem']}), {cabecalho_dec(d)}: {d['pergunta']} **{d['decisao']}**{linha_resp(d)}")
+if apl:
+    L.append("\n### Decisões aplicadas (a coordenação já marcou)\n")
+    for d in apl: L.append(f"- {d['aplicada_em']}, {cabecalho_dec(d)}: {d['pergunta']}{linha_resp(d)}")
 L.append('')
 c=collections.Counter(r['status'] for r in R)
 L.append("## Resumo\n\nPor status:\n\n| Status | Qtd |\n|---|---|")

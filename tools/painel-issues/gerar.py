@@ -52,6 +52,12 @@ def main():
     dados["meta"]["commits"] = commits
     dados["meta"]["repo"] = "https://github.com/" + mrep.group(1) if mrep else ""
 
+    # Branches citadas no mapa que EXISTEM no repo local: os outros viram texto
+    # puro, nunca link morto. Tokeniza uma vez e cruza com as branches do repo.
+    tokens = set(re.findall(r"[A-Za-z0-9][A-Za-z0-9._/-]{2,80}", texto))
+    ramos = git(a.repo, "for-each-ref", "--format=%(refname:short)", "refs/heads").split()
+    dados["meta"]["branches"] = sorted(set(ramos) & tokens)
+
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, "data.json"), "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=1)
