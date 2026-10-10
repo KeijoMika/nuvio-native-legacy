@@ -10,14 +10,17 @@
 #include <assert.h>
 
 #define SILO "tt14688458"
-static int falhas, enviados, sentido, chamadas;
-static VistoPar paresEnviados[256];
+static int falhas, enviados, sentido, chamadas, totalEnviados;
+static VistoPar paresEnviados[1024];
 #define CHECK(c) do { if (!(c)) { printf("FALHOU %d: %s\n", __LINE__, #c); falhas++; } } while (0)
 int destinosTeste(void) { return VISTO_TRAKT | VISTO_SIMKL | VISTO_CONTA; }
 int capturarEnvio(const char *id, const char *tipo, const VistoPar *p, int n, int v, int d) {
   CHECK(!strcmp(id, SILO) && !strcmp(tipo, "series"));
   CHECK(d == destinosTeste());
-  memcpy(paresEnviados, p, n * sizeof *p);
+  CHECK(n <= 256);
+  assert(totalEnviados + n <= 1024);
+  memcpy(paresEnviados + totalEnviados, p, n * sizeof *p);
+  totalEnviados += n;
   enviados = n; sentido = v; chamadas++;
   return 1;
 }
@@ -31,6 +34,41 @@ static int opcaoFrente(void) {
   return -1;
 }
 static void abrir(void) { episodios_menu_visto(0, 2, 6, "T2E6"); }
+static void serieLonga(void) {
+  CatEp eps[300] = {0};
+  for (int i = 0; i < 300; i++) {
+    eps[i].temporada = 1; eps[i].episodio = i + 1;
+  }
+  cat_definir_episodios(0, eps, 300);
+  extras_teste_progresso(SILO, 300, 300, 0, 0);
+  // Frente com 300 vistos; depois so os ultimos 44; ate aqui nos dois sentidos.
+  for (int caso = 0; caso < 4; caso++) {
+    int primeiro = caso == 1 ? 257 : 1, v = caso == 3;
+    int esperado = 301 - primeiro;
+    vistoep_esquecer();
+    for (int e = 1; e <= 300; e++) vistoep_definir(SILO, 1, e, !v && e >= primeiro);
+    chamadas = totalEnviados = 0;
+    episodios_menu_visto(0, 1, caso < 2 ? 1 : 300, "Serie longa");
+    int pos = caso < 2 ? opcaoFrente() : 1; // VM_ATE e a segunda linha
+    CHECK(pos >= 0);
+    if (pos >= 0) {
+      for (int i = 0; i < pos; i++) teclaTeste(SDLK_DOWN);
+      teclaTeste(SDLK_RETURN);
+      CHECK(vmFeito && vmFeitoN == esperado && vmFeitoVisto == v);
+    }
+    CHECK(totalEnviados == esperado && chamadas == (esperado + 255) / 256);
+    CHECK(sentido == v);
+    CHECK(vistoep_contar(SILO) == (v ? 300 : 0));
+    for (int i = 0; i < totalEnviados; i++)
+      CHECK(paresEnviados[i].temporada == 1 && paresEnviados[i].episodio == primeiro + i);
+    if (caso < 2) {
+      episodios_menu_visto(0, 1, 1, "Serie longa");
+      CHECK(opcaoFrente() < 0);
+    }
+    printf("300 episodios: caso %d, enviados %d, vistos restantes %d\n",
+           caso, totalEnviados, vistoep_contar(SILO));
+  }
+}
 int main(void) {
   CatItem c = {0}; CatEp eps[30] = {0}; TgEp graf[30]; TgDados d;
   int i, pos, vistos, exibidos, t = 0, e = 0;
@@ -88,6 +126,7 @@ int main(void) {
   // A ausencia da opcao nao desloca "Fontes deste episodio".
   abrir(); for (i = 0; i < 10; i++) teclaTeste(SDLK_DOWN);
   teclaTeste(SDLK_RETURN); CHECK(episodios_menu_pediu_fontes());
+  serieLonga();
   printf("desmarcarfrente: %s (%d falhas)\n", falhas ? "FALHOU" : "PASS", falhas);
   return falhas != 0;
 }

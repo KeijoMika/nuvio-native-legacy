@@ -125,6 +125,9 @@ int  vistoep_ate_aqui(const char *imdb, int temporada, int episodio,
 int  vistoep_temporada(const char *imdb, int temporada, VistoPar *saida, int max);
 
 enum { VE_LOTE_TEMPORADA = 0, VE_LOTE_ATE, VE_LOTE_DAQUI };
+// ponytail: mapa inteiro + CAT_EP_MAX (1200); acompanhar se o catalogo crescer.
+#define VE_MAX 8000
+#define VE_LOTE_MAX (VE_MAX + 1200)
 // O LOTE DE UM GESTO (temporada, ate aqui ou daqui em diante INCLUSIVO), do
 // MAPA e do CATALOGO juntos, sem repetir. O mapa sozinho so enumera a serie
 // quando o Trakt respondeu; sem Trakt ele so tem o que ja foi visto, e a
@@ -133,7 +136,7 @@ enum { VE_LOTE_TEMPORADA = 0, VE_LOTE_ATE, VE_LOTE_DAQUI };
 // se sabe): dele em diante nada entra. Temporada 0 do catalogo fica fora do
 // "ate aqui" (especial so entra se o mapa trouxer). `saida` nula conta.
 // Daqui em diante respeita a agenda tambem no mapa, para so desmarcar lancados.
-// Teto de 256 por lote.
+// Teto VE_LOTE_MAX; quem envia divide conforme o limite do destino.
 int  vistoep_lote(const char *imdb, int modo, int temporada, int episodio,
                   const VistoPar *cat, int nCat, int agT, int agE,
                   VistoPar *saida, int max);

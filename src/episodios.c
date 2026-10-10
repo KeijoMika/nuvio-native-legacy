@@ -12,6 +12,7 @@
 #include "anim.h"
 #include "vistoep.h"
 #include "visto.h"
+#include "simkl.h"   // SMK_LOTE_MAX: menor limite de envio dos destinos
 #include "botoes.h"
 #include <stdio.h>
 #include <string.h>
@@ -92,8 +93,8 @@ enum { VT_MARCAR = 0, VT_DESMARCAR, VT_N };
 static int vmModoTemp;
 static int vmQuantos[VM_N];   // tamanho do lote de cada opcao, da abertura
 static int montarLote(int idx, int modo, int t, int e, VistoPar *saida, int max);
-// Teto do lote de um gesto. 64 era o antigo e cortava temporada de anime.
-#define VM_LOTE 256
+// Seleciona tudo; o limite de rede so vale ao enviar.
+#define VM_LOTE VE_LOTE_MAX
 static int vmAberto, vmFoco, vmVisto;      // vmVisto: o sentido do gesto
 static Uint32 vmDesde;                     // relogio da pressao longa
 static int vmSegurando, vmConsumir;
@@ -279,7 +280,7 @@ static int nLinhas(void) {
 // `saida` NULA = so contar, como em vistoep.h; o rotulo precisa do numero.
 // A regra mora em vistoep_lote (pura, com teste); aqui so se junta o catalogo.
 static int montarLote(int idx, int modo, int t, int e, VistoPar *saida, int max) {
-  static VistoPar cat[VM_LOTE * 4];
+  static VistoPar cat[VM_LOTE];
   const CatItem *ci = cat_item(idx);
   int i, nc = 0;
   if (!ci || !ci->imdb[0]) return 0;
@@ -287,7 +288,7 @@ static int montarLote(int idx, int modo, int t, int e, VistoPar *saida, int max)
     if (saida && max > 0) { saida[0].temporada = (short)t; saida[0].episodio = (short)e; }
     return 1;
   }
-  for (i = 0; i < cat_n_episodios(idx) && nc < VM_LOTE * 4; i++) {
+  for (i = 0; i < cat_n_episodios(idx) && nc < VM_LOTE; i++) {
     const CatEp *ce = cat_episodio(idx, i);
     if (!ce) continue;
     cat[nc].temporada = (short)ce->temporada;
@@ -311,8 +312,8 @@ static int montarLote(int idx, int modo, int t, int e, VistoPar *saida, int max)
 // episodio: "Ate aqui" em T2E5 re-postava a T1 inteira (Silo, 08/10, 15 em vez
 // de 1). Agora vistoep_aplicar devolve so os episodios cujo estado mudou; um
 // de estado DESCONHECIDO (mapa vazio, sem Trakt lido) conta como mudou, que e o
-// caso em que o remoto ainda precisa do reparo. Um pedido por destino, nunca um
-// por episodio. Desmarcar idem: so sai quem estava visto. Nada mudou: nada sai.
+// caso em que o remoto ainda precisa do reparo. Pedidos em lotes por destino,
+// nunca por episodio. Desmarcar idem: so sai quem estava visto. Nada mudou: nada sai.
 static const char *nomeModo(int modo) {
   return modo == VM_ESTE ? "este" : modo == VM_ATE ? "ate aqui" :
          modo == VM_DAQUI ? "daqui em diante" : "temporada";
@@ -331,8 +332,12 @@ static int aplicarVisto(int modo, int visto) {
          nomeModo(modo), visto ? "marcar" : "desmarcar", ci->imdb, vmT, vmE, mudou, ja);
   fflush(stdout);
   if (!mudou) return 0;
-  visto_episodios(ci->imdb, ci->tipo[0] ? ci->tipo : "series", envio, mudou, visto,
-                  visto_destinos());
+  for (int i = 0; i < mudou; i += SMK_LOTE_MAX) {
+    int qtd = mudou - i;
+    if (qtd > SMK_LOTE_MAX) qtd = SMK_LOTE_MAX;
+    visto_episodios(ci->imdb, ci->tipo[0] ? ci->tipo : "series", envio + i, qtd, visto,
+                    visto_destinos());
+  }
   return mudou;
 }
 

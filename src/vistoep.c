@@ -13,9 +13,7 @@
 // absurda nao virar consumo sem limite, e nao porque 8000 seja um numero
 // especial. Estourado, o mapa PARA DE CRESCER e diz no log — o que ja entrou
 // continua valendo, porque meio mapa e melhor que nenhum.
-#define VE_MAX 8000
-// Teto de um lote de gesto (ver vistoep_lote): o SMK_LOTE_MAX do Simkl.
-#define VE_LOTE 256
+#define VE_LOTE VE_LOTE_MAX
 
 typedef struct { char id[16]; short temp, ep; unsigned char visto; } Marca;
 static Marca *mapa;
