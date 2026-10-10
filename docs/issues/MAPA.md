@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 376 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `21077ab5` (integracao/2.0.3.1, que sai como 2.0.4; a 2.0.3 está na tag v2.0.3, 8ed4517c). Atualizado em 2026-10-09. 378 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -103,7 +103,7 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 | Alvo | Qtd | Issues |
 |---|---|---|
 | 2.0.3 | 5 | #246, #280, #283, #334, #356 |
-| 2.0.4 | 7 | #294, #344, #378, #390, #392, #402, #410 |
+| 2.0.4 | 9 | #294, #344, #378, #390, #392, #402, #409, #410, #411 |
 | 2.0.5 | 48 | #266, #286, #288, #302, #306, #310, #313, #315, #316, #326, #328, #329, #331, #337, #338, #345, #346, #349, #350, #352, #353, #355, #357, #358, #360, #362, #364, #365, #366, #367, #369, #372, #373, #379, #382, #385, #386, #387, #388, #393, #394, #400, #401, #403, #404, #405, #406, #407 |
 | 2.1 | 4 | #250, #333, #374, #397 |
 | 2.2 | 0 |  |
@@ -178,9 +178,7 @@ Issues ABERTAS no GitHub cujo conserto saiu na v2.0.3 (commits contidos na tag).
 13. `dec-refatoracao-geral` [pendente] Plano de refatoração geral (docs/plans/refatoracao-geral.md): quando? Não consta do roadmap aprovado. Recomendação: Sugestão do agente, não aprovada: depois da 2.0.3, na 2.1 como trabalho próprio; na 2.0.5 no máximo os itens 01-04 (apagar morto). Não misturar com recursos.
 14. `dec-250-arabe-autosync` [pendente] Menus em árabe (#250, #333) e auto sync de legenda (#374) seguem na 2.1? Não constam do roadmap aprovado; o árabe foi prometido na resposta do #325. Recomendação: Sugestão do agente, não aprovada: manter na 2.1 só se sobrar espaço; senão futuro. Corrigir a promessa pública do #325 se for para futuro.
 15. `dec-fechar-203-sem-confirmacao` [pendente] Fechar com a 2.0.3 (bloco acima): fechar já as issues sem confirmação do autor ou esperar o retorno? Recomendação: Fechar já #317 e #318 (autores confirmaram). As demais, esperar alguns dias pelo retorno; a resposta curta já pede para reabrir se persistir, então fechar também é aceitável.
-16. `dec-dvp5-lg-hdr10-ou-mp4` [pendente] Dolby Vision perfil 5 na LG: variante HDR10 ou MP4 primeiro (agente/2031-dvp5-hdr10 x agente/2031-dvp5-mp4)? Recomendação: Testar as duas na C9 e escolher; fora da 2.0.4 se não houver teste.
-17. `dec-canal-comunidade` [pendente] Canal de comunidade (Telegram ou Discord) pedido por usuário? Recomendação: Sugestão do agente: Discord (o app já tem integração de presença com Discord); decisão do dono.
-18. `dec-perfil-sem-trakt` [pendente] Perfil sem Trakt (usuários com Simkl veem "Trakt desconectado"): entra em qual versão? Recomendação: 2.0.5: perfil com dados do Simkl e mensagem certa quando só o Simkl está ligado.
+16. `dec-perfil-sem-trakt` [pendente] Perfil sem Trakt (usuários com Simkl veem "Trakt desconectado"): entra em qual versão? Recomendação: 2.0.5: perfil com dados do Simkl e mensagem certa quando só o Simkl está ligado.
 
 ### Decididas
 
@@ -189,7 +187,11 @@ Issues ABERTAS no GitHub cujo conserto saiu na v2.0.3 (commits contidos na tag).
 - 2026-10-09 (dono (Henrique)), `dec-204-card-novidades` [decidida]: Card de novidades da 2.0.4 (hotfix): fazer ou não? **Fazer. Delegado ao Codex em agente/204-novidades (até 3 cenas, só o que NOTAS.md prova).**
 - 2026-10-09 (dono (Henrique)), `dec-painel-sempre-atualizado` [decidida]: Painel de issues: sempre atualizado? **Sim, faz parte do fluxo: hook post-commit/post-merge republica o painel (tools/painel-issues).**
 - 2026-10-09 (dono (Henrique)), `dec-km7-se-hdr` [decidida]: Erros de KM7 SE (Reddit): consertar na 2.0.4? **Sim, 2.0.4 (98929593, ccd37565).**
+- 2026-10-09 (dono (Henrique)), `dec-dvp5-lg-hdr10-ou-mp4` [decidida]: Dolby Vision perfil 5 na LG: variante HDR10 ou MP4 primeiro (agente/2031-dvp5-hdr10 x agente/2031-dvp5-mp4)? **MP4 (agente/2031-dvp5-mp4) juntado na 2.0.4; C9 rodou o build, sem título DV perfil 5 em MP4 para exercitar.**
+- 2026-10-09 (dono (Henrique)), `dec-canal-comunidade` [decidida]: Canal de comunidade (Telegram ou Discord) pedido por usuário? **Discord. Dono cria o servidor e manda o convite.**
 - 2026-10-09 (dono (Henrique)), `dec-410-vidro-profundidade-tpk` [decidida]: #410 (vidro, Profundidade e Reflexo no .tpk) entra em qual versão? **2.0.4: é regressão da 2.0.3.**
+- 2026-10-09 (dono (Henrique)), `dec-addons-principal-off` [decidida]: "Usar os addons do perfil principal" ligado ou desligado por padrão? **Desligado por padrão (a6ae4f64); quem já escolheu mantém.**
+- 2026-10-09 (dono (Henrique)), `dec-central-pi` [decidida]: Central de comando: base dos executores? **Sim: pi como harness dos executores; Sol estudando o RPC/sessões/fork.**
 
 ## Resumo
 
@@ -198,9 +200,9 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 268 |
-| aberta | 34 |
+| aberta | 33 |
 | respondida | 24 |
-| consertada-nao-lancada | 17 |
+| consertada-nao-lancada | 20 |
 | por-desenho | 14 |
 | precisa-log | 8 |
 | fechada-sem-resposta | 6 |
@@ -212,7 +214,7 @@ Por release (grupo de planejamento):
 | Grupo | Qtd |
 |---|---|
 | lançadas em tag v* (qualquer versão) | 268 |
-| sem release | 84 |
+| sem release | 86 |
 | 2.0.5 (branches) | 11 |
 | 2.0.3 lançada, com pendência | 5 |
 | futuro (2.1/2.2) | 5 |
@@ -220,8 +222,8 @@ Por release (grupo de planejamento):
 
 Lançadas por versão: 1.0.7: 2, 1.0.10: 1, 1.0.13: 1, 1.0.15: 1, 1.0.16: 1, 1.0.21: 1, 1.0.23: 1, 1.0.29: 1, 1.0.30: 3, 1.0.31: 1, 1.0.32: 1, 1.0.34: 1, 1.0.35: 1, 1.0.36: 1, 1.0.38: 2, 1.0.41: 1, 1.0.43: 5, 1.0.44: 4, 1.0.45: 1, 1.0.51: 4, 1.0.53: 1, 1.0.54: 1, 1.0.55: 1, 1.0.56: 1, 1.1.0: 2, 1.1.2: 2, 1.2.1: 4, 1.3.0: 1, 1.3.2: 4, 1.3.4: 6, 1.3.4-comparacao1: 1, 1.3.5: 1, 1.3.7: 1, 1.3.10: 1, 1.3.11: 2, 1.3.12: 4, 1.4: 6, 1.4.1: 1, 1.4.2: 9, 1.4.3: 9, 1.4.4: 2, 1.4.5: 2, 1.4.6: 8, 1.4.7: 2, 1.5.0: 1, 1.5.1: 5, 1.5.2: 8, 1.5.3: 3, 1.5.4: 4, 1.6.0: 11, 1.6.1: 1, 1.6.2: 3, 1.6.3: 2, 1.6.4: 5, 1.6.5: 4, 1.7.0: 11, 1.7.1: 4, 1.7.2: 3, 1.7.4: 4, 2.0.0: 28, 2.0.1: 12, 2.0.2: 18, 2.0.3: 35.
 
-Abertas no GitHub: 107. Fechadas: 269.
-Abertas sem nenhum comentário nosso: 57.
+Abertas no GitHub: 109. Fechadas: 269.
+Abertas sem nenhum comentário nosso: 59.
 
 ## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)
 
@@ -305,7 +307,7 @@ Notas:
 
 ## Aberta sem plano
 
-48 issues.
+50 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -348,7 +350,7 @@ Notas:
 | [#393](https://github.com/iqui27/nuvio-native-legacy/issues/393) | [Feature Request] Option to change the library source from T | ? | feature | aberta | - | 2.0.5 | - | sem comentários | sugestao: perguntar ao autor qual tela e qual TV (a Biblioteca já lista o Simkl em Listas  |
 | [#394](https://github.com/iqui27/nuvio-native-legacy/issues/394) | ASS subtitles: lag on large tracks, shadow/color shift, occa | Samsung .tpk | bug | aberta | - | 2.0.5 | - | nós 10-09 | investigar renderizacao libass no .tpk (sombra/anel, cor, lentidao em faixa grande, dessin |
 | [#397](https://github.com/iqui27/nuvio-native-legacy/issues/397) | [Feature Request] Playback Engine Robustness: Native Codec O | LG | feature | respondida | - | 2.1 | - | sem comentários | postar o rascunho (EN, nas notas): o que já existe e o caminho; o que falta (atraso do áud |
-| [#400](https://github.com/iqui27/nuvio-native-legacy/issues/400) | feature-request: allow using default addon sources sort orde | all | feature | aberta | - | 2.0.5 | - | sem comentários | responder: hoje nao existe; opcao "manter a ordem do add-on" na aba de cada add-on, para a |
+| [#400](https://github.com/iqui27/nuvio-native-legacy/issues/400) | feature-request: allow using default addon sources sort orde | all | feature | consertada-nao-lancada | - | 2.0.5 | a46e1a4c | sem comentários | responder: hoje nao existe; opcao "manter a ordem do add-on" na aba de cada add-on, para a |
 | [#401](https://github.com/iqui27/nuvio-native-legacy/issues/401) | Long update time on Homebrew channel (15 mins +) | LG | bug | respondida | - | 2.0.5 | - | nós 10-09 | conserto na 2.0.5 (dados fora da pasta do app + limpeza de sobras; strip do binário) |
 | [#402](https://github.com/iqui27/nuvio-native-legacy/issues/402) | Wrong sorting in sources | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | ca8f29b4 | sem comentários | responder ao autor quando a 2.0.4 sair |
 | [#403](https://github.com/iqui27/nuvio-native-legacy/issues/403) | feature-request: Add a next button to go to next episode | all | feature | aberta | - | 2.0.5 | - | sem comentários | postar o rascunho (EN); botao Proximo na fileira de controles do player entra no item do p |
@@ -356,7 +358,9 @@ Notas:
 | [#405](https://github.com/iqui27/nuvio-native-legacy/issues/405) | Quick search doesn't list all results | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | ler o log ABB125 e comparar a busca rapida (canal -) com a busca do menu para "Silo" |
 | [#406](https://github.com/iqui27/nuvio-native-legacy/issues/406) | Passing through ratings on title page | Samsung .tpk | feature | aberta | - | 2.0.5 | - | sem comentários | decidir com o dono: notas da pagina do titulo como um bloco so na navegacao vertical |
 | [#407](https://github.com/iqui27/nuvio-native-legacy/issues/407) | Top menu open when scrolling up on the title page | Samsung .tpk | bug | aberta | - | 2.0.5 | - | sem comentários | reproduzir no .tpk: cima a partir do Play na pagina do titulo abre o menu do topo (o mesmo |
-| [#410](https://github.com/iqui27/nuvio-native-legacy/issues/410) | Settings interface lower resolution; glass, depth, edge glow | Samsung .tpk | bug | aberta | - | 2.0.4 | - | sem comentários | reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relev |
+| [#409](https://github.com/iqui27/nuvio-native-legacy/issues/409) | The source didn't answer in time error even though the serve | Android | bug | aberta | - | 2.0.4 | - | sem comentários | revisar a rodada 2 e juntar; responder ao autor |
+| [#410](https://github.com/iqui27/nuvio-native-legacy/issues/410) | Settings interface lower resolution; glass, depth, edge glow | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | cc8bbdcd | sem comentários | reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relev |
+| [#411](https://github.com/iqui27/nuvio-native-legacy/issues/411) | Samsung "Not Available" toast on Play/Pause (Tizen 4/5) | Samsung .tpk | bug | consertada-nao-lancada | - | 2.0.4 | a066e6c8 | sem comentários | gerar .tpk Tizen 4/5 da 2.0.4 para o relator testar (precisa OK do dono) |
 
 Notas:
 
@@ -394,7 +398,9 @@ Notas:
 - **#405**: mackojanko, QE65Q80A, 2.0.3: a busca rapida nao mostra Silo (2023); a busca do menu mostra. Log ABB125. Sem causa ainda.
 - **#406**: mackojanko: subir/descer na pagina do titulo passa nota por nota; pede que as notas sejam um bloco unico.
 - **#407**: mackojanko, QE65Q80A, 2.0.3: acima do Play o foco abre o menu do topo; ele acha que nao deveria abrir. Sem log.
+- **#409**: Log 4B891A (Changhong AI PONT, MStar, Android 11, tela 1080p): automático escolhe 4K (VidFast), 15 s sem nenhum evento do player, depois erro 4003 (decodificação). Foto do autor: vídeo tocando atrás da mensagem. Causa provável: troca de fonte abre player novo antes do velho soltar o decoder (NvPlayer.liberar só encolhe a SurfaceView e solta em outra thread; overlay MStar segue visível). Conserto em agente/204-decoder409 (capacidade 4K do decoder, sem repetir codec que falhou, Voltar fecha o erro) + rodada 2 (esperar o release, logs do player).
 - **#410**: Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4.
+- **#411**: Q7FN Tizen 4. Host 4/5 passa a reservar teclas de mídia (keygrab TOPMOST via ecore_wayland/ecore_wl2, varre janelas 0-63) — merge a066e6c8. Relator sugeriu ElmSharp WinKeyGrab/eext_win_keygrab_set e se ofereceu para testar numa Q7FN.
 
 ## Já lançado
 
@@ -897,6 +903,11 @@ Quem validou o quê, em que ref, com que resultado e onde está a prova; mais re
 
 | Data | Quem | O que | Issues | Ref | Resultado | Evidência |
 |---|---|---|---|---|---|---|
+| 2026-10-09 22:00 | Claude Opus 5.5 (sessão de coordenação) | Implantação da API de respostas do painel no ZimaOS | - | f9fa03b2 + painel v3 | passou | /api/saude {"ok": true}; containers versionados no ar, nuvio-painel antigo só parado; publicar.sh rc=0 |
+| 2026-10-09 21:51 | Codex gpt-6-astra (revisão estática) | #409 rodada 1 (decoder 4K, bloqueio por codec, Voltar) | #409 | agente/204-decoder409 | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/409-codex.txt (3 P2: erro de áudio bloqueia vídeo; codec desconhecido = HEVC; falha <2160p não bloqueia) — rodada 2 em andamento |
+| 2026-10-09 21:51 | Codex gpt-6-astra (revisão estática) | Pré-carregamento do próximo episódio rodada 1 | - | agente/204-proxprefetch | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/prox-codex.txt (3 P2: TTL expira antes da contagem; cancelado conta como mudo; cacheia sem plugins) — rodada 2 em andamento |
+| 2026-10-09 21:51 | Codex gpt-6-astra (revisão estática) | #410 parte 2 rodada 1 (nível de GPU volta se não ganhar fps) | #410 | agente/204-gpunivel410 | falhou | /Volumes/ExternalSSD/nv-203-tmp/rev/410b-codex.txt (3 P2: GPU fraca grava nível 1 sem medir 0; LG zera nível salvo e nunca reavalia; interrupção compara cenas diferentes) — rodada 2 em andamento |
+| 2026-10-09 21:30 | Codex gpt-6-astra (revisão estática) | #410 parte 1 e #411 | #410, #411 | cc8bbdcd, a066e6c8 | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/410-codex.txt e 411-codex.txt (no findings) |
 | 2026-10-09 21:00 | Claude Opus 5.5 (sessão de coordenação) | Leitura do código: o perfil depende só do Trakt (relato de usuário com Simkl) | - | integracao/2.0.3.1 | passou | src/app.c carregarPerfil -> trakt_perfil; sem trakt_ativo() o estado é "Trakt desconectado" |
 | 2026-10-09 20:40 | Codex gpt-6-astra (revisão estática) | OpenSubtitles "sem resposta": versão só-leitura, rodadas 2 e 3 | - | agente/204-sostream | passou | /Volumes/ExternalSSD/nv-203-tmp/rev/sostream2-codex.txt e sostream3-codex.txt (P2 de leitura sem sincronização e 200 vazio corrigidos; último P2 = republicação pela descoberta, corrigido com atômico em fonte; limite documentado: sonda terminando depois do resumo) |
 | 2026-10-09 20:35 | Claude Opus 5.5 (sessão de coordenação) | Teste do add-on só de legenda com a sonda terminando no meio da busca (reproduz "OpenSubtitles v3 não respondeu" da TCL) | - | ee2c64eb (FAIL) -> agente/204-sostream (PASS) | passou | tests/addonslista.sh: 2 pedidos de stream e motivo "OpenSubtitles v3 não respondeu" antes; 1 pedido e motivo vazio depois; autoplay_alvo e addonurl rc=0 |
@@ -1141,3 +1152,12 @@ Quem validou o quê, em que ref, com que resultado e onde está a prova; mais re
 - Conserto: nenhum encontrado
 - Próximo passo: 2.0.5: perfil com Simkl (stats do Simkl, ou montado do histórico local + Simkl) e mensagem certa quando só o Simkl está ligado; Telegram/Discord é decisão do dono
 - Notas: LIDO 09/10: a tela Meu perfil chama só trakt_perfil (src/app.c carregarPerfil, ~350) e, sem Trakt, mostra "Trakt desconectado. Vincule a conta para ver seu perfil." (app.c ~3273) mesmo com o Simkl conectado. perfil.c só mostra Simkl na linha de contas (~770). "Status" do relato não está claro (status de amigos/assistindo agora também vem do Trakt).
+
+### Estudo do fork ysosrs123/NuvioTV-Fork (pré-carregamento e outras melhorias)
+
+- Plataforma: all
+- Status: aberta
+- Release: -
+- Conserto: nenhum encontrado
+- Próximo passo: pré-carregar fontes do próximo episódio em agente/204-proxprefetch (rodada 2); pós-créditos, lista de fontes mortas e ytId na 2.0.5
+- Notas: Relatório do MiniMax M3 em /Volumes/ExternalSSD/tmp/nuvio-fork-ysosrs/relatorio.md, CONFERIDO pela coordenação: 3 afirmações erradas do M3 (já temos Preparar fonte ao abrir, foco fixo quando a lista cresce, medição passiva/StreamFit). Verdadeiros: preload do próximo (#3795), segurar cartão até pós-créditos, failover com fontes mortas persistentes, autoplay com ytId, 4 conexões fixas no ParaleloDataSource.

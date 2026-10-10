@@ -8429,7 +8429,9 @@
   {
    "estado_github": "aberta",
    "release": "-",
-   "conserto": [],
+   "conserto": [
+    "a46e1a4c (merge)"
+   ],
    "ultima_resposta": {
     "nos": false,
     "data": null,
@@ -8442,7 +8444,7 @@
    "titulo": "feature-request: allow using default addon sources sort order",
    "plataforma": "all",
    "tipo": "feature",
-   "status": "aberta",
+   "status": "consertada-nao-lancada",
    "proximo_passo": "responder: hoje nao existe; opcao \"manter a ordem do add-on\" na aba de cada add-on, para a 2.0.5",
    "notas": "Vidhin05 (tambem a discussao #376): quer a ordem do AIOStreams (ranked stream expressions). Hoje a lista sempre agrupa por resolucao e ordena do maior arquivo para o menor, uma aba por add-on (texto de ajuda em idioma_tab.h). As opcoes de ordem existentes valem so para o automatico.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/400"
@@ -8597,10 +8599,10 @@
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/407"
   },
   {
-   "numero": 410,
-   "titulo": "Settings interface lower resolution; glass, depth, edge glow, sheen settings do little",
+   "numero": 409,
+   "titulo": "The source didn't answer in time error even though the server is working",
    "estado_github": "aberta",
-   "plataforma": "Samsung .tpk",
+   "plataforma": "Android",
    "tipo": "bug",
    "status": "aberta",
    "release": "-",
@@ -8611,9 +8613,55 @@
     "ultimo_comentario_por": null,
     "ultima_nossa": null
    },
+   "proximo_passo": "revisar a rodada 2 e juntar; responder ao autor",
+   "notas": "Log 4B891A (Changhong AI PONT, MStar, Android 11, tela 1080p): automático escolhe 4K (VidFast), 15 s sem nenhum evento do player, depois erro 4003 (decodificação). Foto do autor: vídeo tocando atrás da mensagem. Causa provável: troca de fonte abre player novo antes do velho soltar o decoder (NvPlayer.liberar só encolhe a SurfaceView e solta em outra thread; overlay MStar segue visível). Conserto em agente/204-decoder409 (capacidade 4K do decoder, sem repetir codec que falhou, Voltar fecha o erro) + rodada 2 (esperar o release, logs do player).",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/409",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 410,
+   "titulo": "Settings interface lower resolution; glass, depth, edge glow, sheen settings do little",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "consertada-nao-lancada",
+   "release": "-",
+   "conserto": [
+    "cc8bbdcd (parte 1, merge)"
+   ],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
    "proximo_passo": "reproduzir no .tpk 2.0.3: Ajustes com vidro ligado, contorno do vidro, Profundidade (relevo, brilho de borda, cobertura) e Reflexo a 0%; comparar com 2.0.2; pedir log",
    "notas": "Namer03, S95C, 2.0.3. Diz que a tela de Ajustes ficou com resolução mais baixa, o vidro quase não aparece, o contorno do vidro não faz nada, Profundidade e as opções dela (brilho de borda, cobertura) mudam pouco, e o Reflexo (sheen) a 0% ainda deixa o brilho forte no cartaz em foco (fotos no issue). Sem log. SUSPEITA não lida: o .tpk pode estar com nível de GPU mais baixo (gpu-nivel) que desliga passadas de vidro, ou a renderização dos Ajustes em textura menor. DONO 09/10: regressão da 2.0.3, entra na 2.0.4.",
    "url": "https://github.com/iqui27/nuvio-native-legacy/issues/410",
+   "criada_em": "2026-10-09",
+   "alvo": "2.0.4"
+  },
+  {
+   "numero": 411,
+   "titulo": "Samsung \"Not Available\" toast on Play/Pause (Tizen 4/5)",
+   "estado_github": "aberta",
+   "plataforma": "Samsung .tpk",
+   "tipo": "bug",
+   "status": "consertada-nao-lancada",
+   "release": "-",
+   "conserto": [
+    "a066e6c8 (merge em integracao/2.0.3.1)"
+   ],
+   "ultima_resposta": {
+    "nos": false,
+    "data": null,
+    "ultimo_comentario_por": null,
+    "ultima_nossa": null
+   },
+   "proximo_passo": "gerar .tpk Tizen 4/5 da 2.0.4 para o relator testar (precisa OK do dono)",
+   "notas": "Q7FN Tizen 4. Host 4/5 passa a reservar teclas de mídia (keygrab TOPMOST via ecore_wayland/ecore_wl2, varre janelas 0-63) — merge a066e6c8. Relator sugeriu ElmSharp WinKeyGrab/eext_win_keygrab_set e se ofereceu para testar numa Q7FN.",
+   "url": "https://github.com/iqui27/nuvio-native-legacy/issues/411",
    "criada_em": "2026-10-09",
    "alvo": "2.0.4"
   }
@@ -8885,6 +8933,16 @@
    "conserto": [],
    "proximo_passo": "2.0.5: perfil com Simkl (stats do Simkl, ou montado do histórico local + Simkl) e mensagem certa quando só o Simkl está ligado; Telegram/Discord é decisão do dono",
    "notas": "LIDO 09/10: a tela Meu perfil chama só trakt_perfil (src/app.c carregarPerfil, ~350) e, sem Trakt, mostra \"Trakt desconectado. Vincule a conta para ver seu perfil.\" (app.c ~3273) mesmo com o Simkl conectado. perfil.c só mostra Simkl na linha de contas (~770). \"Status\" do relato não está claro (status de amigos/assistindo agora também vem do Trakt)."
+  },
+  {
+   "id": "fork-ysosrs123",
+   "titulo": "Estudo do fork ysosrs123/NuvioTV-Fork (pré-carregamento e outras melhorias)",
+   "plataforma": "all",
+   "status": "aberta",
+   "release": "-",
+   "conserto": [],
+   "proximo_passo": "pré-carregar fontes do próximo episódio em agente/204-proxprefetch (rodada 2); pós-créditos, lista de fontes mortas e ytId na 2.0.5",
+   "notas": "Relatório do MiniMax M3 em /Volumes/ExternalSSD/tmp/nuvio-fork-ysosrs/relatorio.md, CONFERIDO pela coordenação: 3 afirmações erradas do M3 (já temos Preparar fonte ao abrir, foco fixo quando a lista cresce, medição passiva/StreamFit). Verdadeiros: preload do próximo (#3795), segurar cartão até pós-créditos, failover com fontes mortas persistentes, autoplay com ytId, 4 conexões fixas no ParaleloDataSource."
   }
  ],
  "base_roadmap": "21077ab5",
@@ -9599,14 +9657,20 @@
    "pergunta": "Dolby Vision perfil 5 na LG: variante HDR10 ou MP4 primeiro (agente/2031-dvp5-hdr10 x agente/2031-dvp5-mp4)?",
    "recomendacao": "Testar as duas na C9 e escolher; fora da 2.0.4 se não houver teste.",
    "issues": [],
-   "estado": "pendente"
+   "estado": "decidida",
+   "decisao": "MP4 (agente/2031-dvp5-mp4) juntado na 2.0.4; C9 rodou o build, sem título DV perfil 5 em MP4 para exercitar.",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
   },
   {
    "id": "dec-canal-comunidade",
    "pergunta": "Canal de comunidade (Telegram ou Discord) pedido por usuário?",
    "recomendacao": "Sugestão do agente: Discord (o app já tem integração de presença com Discord); decisão do dono.",
    "issues": [],
-   "estado": "pendente"
+   "estado": "decidida",
+   "decisao": "Discord. Dono cria o servidor e manda o convite.",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
   },
   {
    "id": "dec-perfil-sem-trakt",
@@ -9624,6 +9688,26 @@
    ],
    "estado": "decidida",
    "decisao": "2.0.4: é regressão da 2.0.3.",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "id": "dec-addons-principal-off",
+   "pergunta": "\"Usar os addons do perfil principal\" ligado ou desligado por padrão?",
+   "recomendacao": "—",
+   "issues": [],
+   "estado": "decidida",
+   "decisao": "Desligado por padrão (a6ae4f64); quem já escolheu mantém.",
+   "data": "2026-10-09",
+   "quem": "dono (Henrique)"
+  },
+  {
+   "id": "dec-central-pi",
+   "pergunta": "Central de comando: base dos executores?",
+   "recomendacao": "Usar o pi (pi-mono) em modo RPC para MiniMax/Ollama; Codex e Claude Code ficam nos seus harnesses.",
+   "issues": [],
+   "estado": "decidida",
+   "decisao": "Sim: pi como harness dos executores; Sol estudando o RPC/sessões/fork.",
    "data": "2026-10-09",
    "quem": "dono (Henrique)"
   }
@@ -10082,6 +10166,58 @@
    "ref": "integracao/2.0.3.1",
    "resultado": "passou",
    "evidencia": "src/app.c carregarPerfil -> trakt_perfil; sem trakt_ativo() o estado é \"Trakt desconectado\""
+  },
+  {
+   "data": "2026-10-09 21:51",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "#409 rodada 1 (decoder 4K, bloqueio por codec, Voltar)",
+   "issues": [
+    409
+   ],
+   "ref": "agente/204-decoder409",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/409-codex.txt (3 P2: erro de áudio bloqueia vídeo; codec desconhecido = HEVC; falha <2160p não bloqueia) — rodada 2 em andamento"
+  },
+  {
+   "data": "2026-10-09 21:51",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "Pré-carregamento do próximo episódio rodada 1",
+   "issues": [],
+   "ref": "agente/204-proxprefetch",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/prox-codex.txt (3 P2: TTL expira antes da contagem; cancelado conta como mudo; cacheia sem plugins) — rodada 2 em andamento"
+  },
+  {
+   "data": "2026-10-09 21:51",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "#410 parte 2 rodada 1 (nível de GPU volta se não ganhar fps)",
+   "issues": [
+    410
+   ],
+   "ref": "agente/204-gpunivel410",
+   "resultado": "falhou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/410b-codex.txt (3 P2: GPU fraca grava nível 1 sem medir 0; LG zera nível salvo e nunca reavalia; interrupção compara cenas diferentes) — rodada 2 em andamento"
+  },
+  {
+   "data": "2026-10-09 21:30",
+   "quem": "Codex gpt-6-astra (revisão estática)",
+   "o_que": "#410 parte 1 e #411",
+   "issues": [
+    410,
+    411
+   ],
+   "ref": "cc8bbdcd, a066e6c8",
+   "resultado": "passou",
+   "evidencia": "/Volumes/ExternalSSD/nv-203-tmp/rev/410-codex.txt e 411-codex.txt (no findings)"
+  },
+  {
+   "data": "2026-10-09 22:00",
+   "quem": "Claude Opus 5.5 (sessão de coordenação)",
+   "o_que": "Implantação da API de respostas do painel no ZimaOS",
+   "issues": [],
+   "ref": "f9fa03b2 + painel v3",
+   "resultado": "passou",
+   "evidencia": "/api/saude {\"ok\": true}; containers versionados no ar, nuvio-painel antigo só parado; publicar.sh rc=0"
   }
  ]
 }
