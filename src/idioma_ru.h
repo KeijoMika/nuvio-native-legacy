@@ -1400,6 +1400,7 @@
   T("Desmarcado como assistido", "Отмечено как непросмотренное"),
   T("Desmarcando como assistido...", "Отметка как непросмотренного..."),
   T("Desmarcar como assistido", "Отметить как непросмотренное"),
+  T("Desmarcar daqui em diante", "Отметить как непросмотренные начиная с этой серии"),
   T("Desmarcar este episódio", "Снять отметку с этого эпизода"),
   T("Desmarcar temporada (%d)", "Снять отметку с сезона (%d)"),
   T("Despejadas", "Выгружено"),

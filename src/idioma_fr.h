@@ -1400,6 +1400,7 @@
   T("Desmarcado como assistido", "Marqué comme non vu"),
   T("Desmarcando como assistido...", "Marquage comme non vu..."),
   T("Desmarcar como assistido", "Marquer comme non vu"),
+  T("Desmarcar daqui em diante", "Marquer comme non vus à partir d’ici"),
   T("Desmarcar este episódio", "Décocher cet épisode"),
   T("Desmarcar temporada (%d)", "Décocher la saison (%d)"),
   T("Despejadas", "Évincées"),

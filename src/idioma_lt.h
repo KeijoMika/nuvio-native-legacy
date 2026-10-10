@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Pažymėta kaip neperžiūrėta"),
   T("Desmarcando como assistido...", "Žymima kaip neperžiūrėta..."),
   T("Desmarcar como assistido", "Pažymėti kaip neperžiūrėtą"),
+  T("Desmarcar daqui em diante", "Pažymėti kaip nežiūrėtas nuo šios serijos"),
   T("Desmarcar este episódio", "Nuimti šio epizodo žymą"),
   T("Desmarcar temporada (%d)", "Nuimti sezono žymą (%d)"),
   T("Despejadas", "Iškeltos"),

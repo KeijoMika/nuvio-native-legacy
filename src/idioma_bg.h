@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Отбелязано като негледано"),
   T("Desmarcando como assistido...", "Отбелязване като негледано..."),
   T("Desmarcar como assistido", "Отбележи като негледано"),
+  T("Desmarcar daqui em diante", "Отбележи като негледани от този епизод нататък"),
   T("Desmarcar este episódio", "Премахни отметката от този епизод"),
   T("Desmarcar temporada (%d)", "Премахни отметката от сезона (%d)"),
   T("Despejadas", "Изхвърлени"),

@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Ditandai belum ditonton"),
   T("Desmarcando como assistido...", "Menandai belum ditonton..."),
   T("Desmarcar como assistido", "Tandai belum ditonton"),
+  T("Desmarcar daqui em diante", "Tandai belum ditonton mulai episode ini"),
   T("Desmarcar este episódio", "Batalkan tanda episode ini"),
   T("Desmarcar temporada (%d)", "Batalkan tanda musim (%d)"),
   T("Despejadas", "Dikeluarkan"),

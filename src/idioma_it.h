@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Segnato come non visto"),
   T("Desmarcando como assistido...", "Segno come non visto..."),
   T("Desmarcar como assistido", "Segna come non visto"),
+  T("Desmarcar daqui em diante", "Segna come non visti da qui in poi"),
   T("Desmarcar este episódio", "Togli il segno da questo episodio"),
   T("Desmarcar temporada (%d)", "Togli il segno alla stagione (%d)"),
   T("Despejadas", "Espulse"),

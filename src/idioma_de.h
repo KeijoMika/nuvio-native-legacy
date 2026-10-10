@@ -1400,6 +1400,7 @@
   T("Desmarcado como assistido", "Als ungesehen markiert"),
   T("Desmarcando como assistido...", "Wird als ungesehen markiert..."),
   T("Desmarcar como assistido", "Als ungesehen markieren"),
+  T("Desmarcar daqui em diante", "Ab hier als ungesehen markieren"),
   T("Desmarcar este episódio", "Diese Folge entmarkieren"),
   T("Desmarcar temporada (%d)", "Staffel entmarkieren (%d)"),
   T("Despejadas", "Verworfen"),

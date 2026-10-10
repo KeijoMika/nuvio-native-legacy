@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Đã đánh dấu chưa xem"),
   T("Desmarcando como assistido...", "Đang đánh dấu chưa xem..."),
   T("Desmarcar como assistido", "Đánh dấu chưa xem"),
+  T("Desmarcar daqui em diante", "Đánh dấu chưa xem từ tập này trở đi"),
   T("Desmarcar este episódio", "Bỏ đánh dấu tập này"),
   T("Desmarcar temporada (%d)", "Bỏ đánh dấu mùa (%d)"),
   T("Despejadas", "Đã loại"),

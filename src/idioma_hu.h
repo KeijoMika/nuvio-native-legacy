@@ -1401,6 +1401,7 @@
   T("Desmarcado como assistido", "Megnézetlenként megjelölve"),
   T("Desmarcando como assistido...", "Megjelölés megnézetlenként..."),
   T("Desmarcar como assistido", "Megjelölés megnézetlenként"),
+  T("Desmarcar daqui em diante", "Megjelölés nem látottként ettől a résztől"),
   T("Desmarcar este episódio", "Ennek az epizódnak a jelölésének visszavonása"),
   T("Desmarcar temporada (%d)", "Évad jelölésének visszavonása (%d)"),
   T("Despejadas", "Kiürített"),
