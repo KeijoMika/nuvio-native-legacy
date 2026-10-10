@@ -10,7 +10,7 @@ flags=(-DNV_WEBOS -O1 -g -Isrc -I/opt/homebrew/include -I/opt/homebrew/include/S
 cc src/gpunivel.c src/perfiltv.c tests/gpunivel.c "${flags[@]}" \
   -DNV_GPUN_TESTE -Wall -Wextra -framework OpenGL -o "$work/teste"
 rc=0
-for caso in inicio interrupcao; do
+for caso in inicio interrupcao referencia legado; do
   "$work/teste" "$caso" || rc=1
 done
 "$work/teste" || rc=1  # inclui migracao de nivel legado e persistencia

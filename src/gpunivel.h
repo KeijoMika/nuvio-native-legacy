@@ -35,8 +35,11 @@
 //     com o 0 na mesma sessao. Candidato so e gravado depois da comparacao.
 //     Chave diferente (firmware novo, outra TV) = recomeca do 0.
 //   - Sem nada gravado: comeca no 0, inclusive em GPU fraca conhecida.
+//     Se tres quadros seguidos na Home cheia excederem 1 s com espera de GPU
+//     dominante, GPU fraca fica no 2 so nesta sessao, sem gravar avaliacao.
 //   - Sair da Home, perder as artes ou suspender cancela o candidato e volta
-//     ao nivel anterior; a proxima comparacao mede uma referencia nova.
+//     ao nivel anterior; a proxima comparacao mede uma referencia nova e
+//     preserva a reavaliacao pendente do legado ate concluir a comparacao.
 //   - a chave ganha "4k" com superficie acima de 1080p: o nivel aprendido em
 //     4K (4x os pixels) nao vale para 1080p, e vice-versa.
 //   - NUNCA vira 720p sozinho (pedido do dono, 06/10: "720p e o pior cenario,

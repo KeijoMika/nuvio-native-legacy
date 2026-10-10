@@ -60,7 +60,7 @@ static const char *descarteNome = "nenhum";
 static int profStencil;   // a janela tem profundidade/stencil para descartar
 // Medida.
 static double aquece = GPUN_AQUECE_MS, janMs, janEsp, janCpu, totalMs;
-static int janN, estavaNaHome;
+static int janN, estavaNaHome, descartes;
 // #410B: so vale perder efeitos com >= 15% E >= 5 fps. Os dois pisos
 // rejeitam ruido perto de 45 fps e ganhos absolutos pequenos em TV muito lenta.
 // ponytail: janelas de Home cheia, nao cena fixa; usar A/B/A se a navegacao
@@ -72,7 +72,7 @@ static void reiniciarMedida(void) {
   decidido = bloqueado = reavaliar = 0; anterior = -1;
   memset(fpsNivel, 0, sizeof fpsNivel);
   aquece = GPUN_AQUECE_MS; janMs = janEsp = janCpu = totalMs = 0;
-  janN = estavaNaHome = 0;
+  janN = estavaNaHome = descartes = 0;
 }
 
 #ifndef GL_FRAMEBUFFER_BINDING
@@ -499,6 +499,17 @@ static void decidir(const char *porque) {
 void gpun_medir(double dtms, double espera, double cpu, int naHome, int cheia) {
   double fps, e, c;
   if (!adaptativo || decidido || nivel > GPUN_NIVEL_AUTO_MAX) return;
+  // GPU fraca pode nao terminar nem a referencia no 0. Tres quadros lentos
+  // seguidos, com espera de GPU, ativam protecao so nesta sessao: sem janela
+  // comparavel nao ha avaliacao para gravar. Uma suspensao isolada nao conta.
+  if (naHome && cheia && dtms > 1000.0 && ptv_gpu_fraca_atual() &&
+      espera >= GPUN_ESPERA_MIN && espera > cpu) {
+    if (++descartes >= 3) {
+      aplicar(GPUN_NIVEL_AUTO_MAX, "GPU fraca: referencia nao termina");
+      decidido = 1;
+      return;
+    }
+  } else descartes = 0;
   if (!naHome || !cheia || dtms > 1000.0) {
     // Outra cena invalida tambem a referencia do candidato. Volta ao ultimo
     // nivel confirmado, sem gravar/bloquear; ao voltar mede a referencia nova.
@@ -524,6 +535,7 @@ void gpun_medir(double dtms, double espera, double cpu, int naHome, int cheia) {
   fpsNivel[nivel] = fps;
   if (anterior >= 0) {
     double antes = fpsNivel[anterior];
+    reavaliar = 0; // legado so deixa de estar pendente com a comparacao completa
     if (fps < antes * 1.15 || fps - antes < 5.0) {
       printf("[gpu-nivel] nivel %d nao ajudou (%.1f -> %.1f fps): volta ao %d\n",
              nivel, antes, fps, anterior);
@@ -539,7 +551,6 @@ void gpun_medir(double dtms, double espera, double cpu, int naHome, int cheia) {
   if (reavaliar) {
     anterior = 0;
     aplicar(reavaliar, "compara nivel salvo com efeitos completos");
-    reavaliar = 0;
     aquece = GPUN_ASSENTA_MS;
     return;
   }

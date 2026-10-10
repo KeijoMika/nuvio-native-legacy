@@ -90,9 +90,74 @@ static void interrupcao(void) {
   puts("ok  R2 interrupcao: cancela candidato, preserva nivel anterior e mede nova referencia");
 }
 
+static void referenciaTravada(void) {
+  for (int legado = 0; legado <= 1; legado++) {
+    gravado[0] = 0;
+    gpun_iniciar(1920, 1080);
+    if (legado) {
+      rodar(8, 20, 15, 4, 1, 1); // obtem a chave real da Mali-400
+      strstr(gravado, "nivel=")[6] = '2';
+      *strstr(gravado, "avaliacao=") = 0;
+      gpun_iniciar(1920, 1080);
+    }
+    char salvo[sizeof gravado]; strcpy(salvo, gravado);
+    assert(ptv_gpu_fraca_atual() && gpun_nivel() == 0);
+    // Suspensao isolada, fora da Home, artes ausentes e CPU nao rebaixam.
+    for (int motivo = 0; motivo < 5; motivo++) {
+      gpun_medir(1200, 1100, 4, 1, 1);
+      gpun_medir(1200, 1100, 4, 1, 1);
+      if (motivo == 4) ptv_definir_gpu_fraca(0);
+      gpun_medir(motivo == 0 ? 20 : 1200, 1100, motivo == 3 ? 1150 : 4,
+                 motivo != 1, motivo != 2);
+      ptv_definir_gpu_fraca(1);
+      assert(gpun_nivel() == 0 && !gpun_teste_decidido());
+    }
+    for (int i = 0; i < 3; i++) gpun_medir(1200, 1100, 4, 1, 1);
+    assert(gpun_nivel() == 2 && minimos && gpun_teste_decidido());
+    rodar(30, 20, 15, 4, 1, 1);
+    assert(!strcmp(salvo, gravado)); // protecao nao inventa avaliacao=1
+    gpun_preferencia(1);
+    rodar(5, 1200, 1100, 4, 1, 1);
+    assert(gpun_nivel() == 0); // escolha manual prevalece
+    gpun_preferencia(0);
+    gpun_medir(1200, 1100, 4, 1, 1);
+    assert(gpun_nivel() == 0); // reinicio limpa o contador
+  }
+  puts("ok  R3 referencia travada: Mali-400 nova/legada protegida, sem gravar avaliacao");
+}
+
+static void legadoInterrompido(void) {
+  for (int degrau = 1; degrau <= 2; degrau++) {
+    for (int motivo = 0; motivo < 3; motivo++) {
+      gpun_teste_reiniciar();
+      snprintf(gravado, sizeof gravado, "versao=1\nchave=0\nnivel=%d\n", degrau);
+      char salvo[sizeof gravado]; strcpy(salvo, gravado);
+      gpun_preferencia(0);
+      rodar(8, 20, 15, 4, 1, 1); // 50 fps no 0 ainda exige comparar o legado
+      assert(gpun_nivel() == degrau);
+      for (int tentativa = 0; tentativa < 2; tentativa++) {
+        gpun_medir(motivo == 2 ? 1001 : 20, 15, 4, motivo != 0, motivo != 1);
+        assert(gpun_nivel() == 0 && !strcmp(salvo, gravado));
+        rodar(8, 20, 15, 4, 1, 1);
+        assert(gpun_nivel() == degrau && !gpun_teste_decidido() && !strcmp(salvo, gravado));
+      }
+      rodar(7, 1000.0 / 60, 10, 4, 1, 1);
+      assert(gpun_nivel() == degrau && gpun_teste_decidido());
+      assert(strstr(gravado, "avaliacao=1") && strstr(gravado, "bloqueado=0"));
+      assert(strstr(gravado, "fps0=50.000"));
+      assert(strstr(gravado, degrau == 1 ? "fps1=60.000" : "fps2=60.000"));
+      gpun_preferencia(0);
+      assert(gpun_nivel() == degrau); // so a comparacao completa migra o salvo
+    }
+  }
+  puts("ok  R3 legado interrompido: retoma 0 -> 1/2 e so grava depois de 50 -> 60 fps");
+}
+
 int main(int argc, char **argv) {
   if (argc == 2 && !strcmp(argv[1], "inicio")) { inicioFraco(); return 0; }
   if (argc == 2 && !strcmp(argv[1], "interrupcao")) { interrupcao(); return 0; }
+  if (argc == 2 && !strcmp(argv[1], "referencia")) { referenciaTravada(); return 0; }
+  if (argc == 2 && !strcmp(argv[1], "legado")) { legadoInterrompido(); return 0; }
   // #410B: reduzir efeitos sem ganhar FPS deve devolver o visual anterior.
   gpun_teste_reiniciar(); gravado[0] = 0;
   rodar(8, 1000.0 / 43.0, 18.0, 4.0, 1, 1);
@@ -216,6 +281,7 @@ int main(int argc, char **argv) {
   gpun_forcar_720(); rodar(30, 100, 90, 4, 1, 1);
   assert(gpun_nivel() == 3 && !gpun_efeitos_automaticos() && !strcmp(salvo, gravado));
   puts("ok  legado com ganho fica; 720p forcado nao participa");
+  legadoInterrompido();
   puts("gpunivel: tudo ok");
   return 0;
 }
