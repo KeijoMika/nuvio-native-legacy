@@ -80,6 +80,20 @@ static void iniciarBloqueado(void) {
   assert(entrou);
 }
 static int extraModo;
+static int extraSilenciosaModo, extraSilenciosaChamadas;
+static int extraSilenciosaAtiva(void) { return extraSilenciosaModo != 0; }
+static int extraSilenciosa(const char *id, const char *tipo, int (*c)(void *), void *ctx,
+                          OrigemAviso aviso, void *u, void *saida) {
+  Stream **l = saida;
+  (void)id; (void)tipo; (void)c; (void)ctx;
+  extraSilenciosaChamadas++;
+  *l = NULL;
+  if (extraSilenciosaModo == 1) return 0; // falha HTTP/TMDB, sem callbacks
+  *l = calloc(1, sizeof **l); assert(*l);
+  aviso(u, 2, "Recuperada", 1, NULL, 0);
+  aviso(u, 2, "Recuperada", 2, *l, 1);
+  return 1;
+}
 static int extraAtiva(void) { return extraModo != 0; }
 static int extraFixture(const char *id, const char *tipo, int (*c)(void *), void *ctx,
                         OrigemAviso aviso, void *u, void *saida) {
@@ -127,6 +141,7 @@ static void testarContagem(void) {
 }
 static void testarExtras(void) {
   addons_definir_origem_extra(extraFixture, extraAtiva);
+  addons_definir_origem_extra(extraSilenciosa, extraSilenciosaAtiva);
   for (int semAddon = 0; semAddon < 2; semAddon++) {
     if (semAddon) { addons_esquecer(); assert(addons_n() == 0); }
     for (extraModo = 1; extraModo <= 3; extraModo++) {
@@ -139,9 +154,25 @@ static void testarExtras(void) {
         assert(nLista == (semAddon ? 1 : 3) && !cacheProximo());
       }
     }
+    extraModo = 3; // outra origem conclui: nao pode encobrir a falha silenciosa
+    extraSilenciosaModo = 1; extraSilenciosaChamadas = 0;
+    iniciar(); quadro(1140, 1); esperarFim();
+    if (cacheProximo()) {
+      fputs("FAIL R3: origem extra retornou 0 sem callbacks e cache parcial foi aceito\n", stderr);
+      abort();
+    }
+    assert(extraSilenciosaChamadas == 1);
+    buscarTitulo("tt42:1:2", "series");
+    assert(extraSilenciosaChamadas == 2 && nLista == (semAddon ? 1 : 3) && !cacheProximo());
+    extraSilenciosaModo = 2; // recupera dentro do TTL, sem adiantar o relogio
+    buscarTitulo("tt42:1:2", "series");
+    assert(extraSilenciosaChamadas == 3 && nLista == (semAddon ? 2 : 4));
+    assert(cacheProximo() == nLista);
+    extraSilenciosaModo = 0;
   }
   extraModo = 0; listaAddon();
   puts("PASS R2 extras: corte/falha nao viram cache; resposta completa, inclusive vazia, permite cache");
+  puts("PASS R3: retorno 0 sem callbacks nao cacheia; busca real recupera a origem dentro do TTL, com/sem addons");
 }
 
 int main(void) {

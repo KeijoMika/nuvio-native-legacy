@@ -2208,7 +2208,9 @@ typedef struct { PedidoExtra *pai; OrigemExtra f; Stream *l; int n; } UmaOrigem;
 static void *fioUmaOrigem(void *u) {
   UmaOrigem *o = u;
   o->n = o->f(o->pai->id, o->pai->tipo, cancelaExtra, o->pai, avisoExtra, o->pai, &o->l);
-  if (o->n < 0) atomic_store(&o->pai->incompleta, 1);
+  // ponytail: zero tambem pode ser falha sem callbacks (Plex/TMDB).
+  // Nao cachear ate as origens distinguirem falha de resposta vazia.
+  if (o->n <= 0) atomic_store(&o->pai->incompleta, 1);
   return NULL;
 }
 static void *fioExtra(void *u) {
