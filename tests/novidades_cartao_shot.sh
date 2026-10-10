@@ -1,6 +1,6 @@
 #!/bin/bash
 # Capturas do cartao de novidades da versao atual (novidades_cartao.h) em PNG
-# 1920x1080: cada pagina e as tres cenas do hotfix nas cinco plataformas,
+# 1920x1080: cada pagina do card compacto nas cinco plataformas,
 # ingles, alemao, japones, russo e animacoes
 # reduzidas; no fim, a lista cabe nos 30 idiomas. Janela GL ESCONDIDA e
 # desenho num FBO. Fica fora da suite (*_shot.sh): precisa de GL e de olho

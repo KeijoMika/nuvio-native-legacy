@@ -45,6 +45,9 @@
 #define N_Y         ((NV_TELA_H - N_H) * 0.5f)
 #define N_PAD         56.0f
 #define N_RAIO        36.0f
+#define COMPACTO_W   1160.0f
+#define COMPACTO_H    912.0f   // teto; cada pagina encolhe ate a altura da lista
+#define COMPACTO_PAD   40.0f
 #define PV_W         760.0f
 #define PV_H         (N_H - 2.0f * N_PAD)
 #define PV_RAIO       28.0f
@@ -105,7 +108,7 @@ static unsigned plataformaTeste;
 // Folga entre o fim da lista e o topo do rodape (a pior pagina desenhada) e
 // quantas frases precisaram de reticencias (testes).
 static float folgaLista = 999.0f;
-static int   frasesCortadas, medirCortes;
+static int   frasesCortadas, itensDesenhados, medirCortes;
 
 static unsigned plataforma(void) {
   if (plataformaTeste) return plataformaTeste;
@@ -131,7 +134,7 @@ static float janela(float t, float ini, float dur) { return anim_clamp((t - ini)
 __attribute__((unused)) static float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 // O vidro escuro das ilhas: miolo quase opaco e um fio claro na borda.
-static void vidro(GfxRect r, float raioPx, float a) {
+__attribute__((unused)) static void vidro(GfxRect r, float raioPx, float a) {
   gfx_cor(r, raioPx / r.h, 0.070f, 0.073f, 0.082f, 0.90f * a);
   gfx_anel(r, raioPx / r.h, 1.0f, 1, 1, 1, 0.09f * a);
 }
@@ -156,7 +159,7 @@ static void novArte(int numero, GfxRect r, float raioPx, float a) {
 
 // A mesma arte tao desfocada que so fica a cor (a copia 96x54 do
 // gfx_desfocado, gerada uma vez): o fundo das telas de espera do player.
-static void novArteDesfocada(int numero, GfxRect r, float raioPx, float a) {
+__attribute__((unused)) static void novArteDesfocada(int numero, GfxRect r, float raioPx, float a) {
   const char *url = artePorNumero(numero);
   GLuint t, tb;
   if (a <= 0.004f || !url) return;
@@ -216,6 +219,12 @@ int novcartao_previa_pronta(void) {
 static int nVis, vis[NOV_ITENS_MAX], pgVis[NOV_ITENS_MAX], nPagNov = 1;
 static const char *kickerVis[NOV_ITENS_MAX];
 static int nCen, cen[NOV_CENAS_MAX];
+static float alturaPag[NOV_PAGINAS_MAX];
+
+static int compacto(void) { return CT.nCenas == 0; }
+static float padLista(void) { return compacto() ? COMPACTO_PAD : N_PAD; }
+static float textoX(void) { return compacto() ? (NV_TELA_W - COMPACTO_W) * 0.5f + COMPACTO_PAD : TX; }
+static float textoW(void) { return compacto() ? COMPACTO_W - 2.0f * COMPACTO_PAD : TW; }
 
 static int linhasDe(int l) { return l > 1 ? l : 1; }
 static float alturaItem(const NovItem *it) {
@@ -225,8 +234,8 @@ static float alturaItem(const NovItem *it) {
 }
 
 // Do topo do cartao ao primeiro kicker, e ate onde a lista pode ir.
-static float topoLista(void) { return N_PAD - 6.0f + TITULO_H + (CT.subtitulo ? SUB_H : 0.0f) + 34.0f; }
-static float fimLista(void) { return N_H - N_PAD - BOTAO_H_PRIMARIO - FOLGA_MIN; }
+static float topoLista(void) { return padLista() - 6.0f + TITULO_H + (CT.subtitulo ? SUB_H : 0.0f) + 34.0f; }
+static float fimLista(void) { return (compacto() ? COMPACTO_H : N_H) - padLista() - BOTAO_H_PRIMARIO - FOLGA_MIN; }
 
 static void montar(void) {
   int i, pg = 0, usado0 = 1;
@@ -255,6 +264,18 @@ static void montar(void) {
     i = j;
   }
   nPagNov = nVis ? pgVis[nVis - 1] + 1 : 1;
+  if (compacto()) {
+    // Reserva o mesmo espaco usado pelo desenho, sem depender da fonte carregada.
+    for (i = 0; i < nPagNov; i++) {
+      int k, n = 0;
+      float h = topoLista() + FOLGA_MIN + BOTAO_H_PRIMARIO + COMPACTO_PAD;
+      for (k = 0; k < nVis; k++) if (pgVis[k] == i) {
+        if (n++) h += VAO_MIN * (kickerVis[k] ? 1.8f : 1.0f);
+        h += alturaItem(&CT.itens[vis[k]]) + (kickerVis[k] ? GRUPO_H : 0.0f);
+      }
+      alturaPag[i] = h;
+    }
+  }
   nCen = 0;
   for (i = 0; i < CT.nCenas && nCen < NOV_CENAS_MAX; i++)
     if (CT.cenas[i].desenhar && vale(CT.cenas[i].plataformas)) cen[nCen++] = i;
@@ -275,6 +296,7 @@ void novcartao_teste_esquecer(void) { decidido = 0; aberto = 0; }
 void novcartao_teste_plataforma(unsigned p) { plataformaTeste = p; montar(); }
 float novcartao_teste_folga(void) { return folgaLista; }
 int novcartao_teste_cortadas(void) { return frasesCortadas; }
+int novcartao_teste_desenhados(void) { return itensDesenhados; }
 void novcartao_teste_medir(int sim) { medirCortes = sim; }
 
 static float duracaoCena(int i) { float d = CT.cenas[cen[i]].duracao; return d > 0.0f ? d : CICLO_S; }
@@ -465,8 +487,8 @@ static void frase(const char *s, int linhas, float x, float y, float w, float a)
 }
 
 static void item(const NovItem *it, float y, float a) {
-  float tx = TX + ox + ICONE + 22.0f, tw = TW - (ICONE + 22.0f);
-  GfxRect d = { TX + ox, y - 2.0f, ICONE, ICONE };
+  float tx = textoX() + ox + ICONE + 22.0f, tw = textoW() - (ICONE + 22.0f);
+  GfxRect d = { textoX() + ox, y - 2.0f, ICONE, ICONE };
   const char *nome = i18n(it->nome);
   TxtLinha n;
   gfx_cor(d, 0.5f, 1, 1, 1, 0.075f * a);
@@ -481,27 +503,28 @@ static void item(const NovItem *it, float y, float a) {
 }
 
 static float grupo(const char *g, float y, float a) {
-  float kw = ajustes_ui_kicker(i18n(g), TX + ox, y, a);
-  gfx_cor((GfxRect){ TX + ox + kw + 16.0f, y + 8.0f, TW - kw - 16.0f, 1.0f }, 0, 1, 1, 1, 0.08f * a);
+  float kw = ajustes_ui_kicker(i18n(g), textoX() + ox, y, a);
+  gfx_cor((GfxRect){ textoX() + ox + kw + 16.0f, y + 8.0f, textoW() - kw - 16.0f, 1.0f }, 0, 1, 1, 1, 0.08f * a);
   return GRUPO_H;
 }
 
 static void cabecalho(float y0, float a, float dx) {
-  float y = y0 + N_PAD - 6.0f;
+  float y = y0 + padLista() - 6.0f;
   char t[64];
   snprintf(t, sizeof t, i18n("Novidades da %s"), CT.versao);
-  { TxtLinha l = txt_linha_corta(TXT_NOV_TITULO, t, 248, 249, 252, 255, TW);
-    txt_desenhar_alpha(l, TX + dx, y, a); }
+  { TxtLinha l = txt_linha_corta(TXT_NOV_TITULO, t, 248, 249, 252, 255, textoW());
+    txt_desenhar_alpha(l, textoX() + dx, y, a);
+    if (txt_largura(TXT_NOV_TITULO, t) > (int)textoW()) frasesCortadas++; }
   if (CT.subtitulo) {
     const char *s = i18n(CT.subtitulo);
-    TxtLinha l = txt_linha_corta(TXT_V2_26, s, 200, 205, 215, 255, TW);
-    txt_desenhar_alpha(l, TX + dx, y + TITULO_H + 6.0f, 0.9f * a);
-    if (txt_largura(TXT_V2_26, s) > (int)TW) frasesCortadas++;
+    TxtLinha l = txt_linha_corta(TXT_V2_26, s, 200, 205, 215, 255, textoW());
+    txt_desenhar_alpha(l, textoX() + dx, y + TITULO_H + 6.0f, 0.9f * a);
+    if (txt_largura(TXT_V2_26, s) > (int)textoW()) frasesCortadas++;
   }
 }
 
 static void paginaNovidades(int pg, float y0, float a, float dx) {
-  float y = y0 + topoLista(), vao, total = 0.0f, limite = y0 + fimLista();
+  float y = y0 + topoLista(), vao, total = 0.0f, limite = y0 + (compacto() ? alturaPag[pg] - COMPACTO_PAD - BOTAO_H_PRIMARIO - FOLGA_MIN : fimLista());
   int i, g = 0, ng = 0, n = 0, k = 0;
   if (a <= 0.004f) return;
   cabecalho(y0, a, dx);
@@ -537,6 +560,7 @@ static void paginaNovidades(int pg, float y0, float a, float dx) {
     }
     if (y + h > limite + 0.5f) break;
     item(it, y + sobe, al);
+    itensDesenhados++;
     y += h;
     k++;
     if (k < n) y += vao;
@@ -547,14 +571,14 @@ static void paginaNovidades(int pg, float y0, float a, float dx) {
 }
 
 static void paginaApoioDesenho(float y0, float a, float dx) {
-  float y = y0 + N_PAD - 6.0f, x = TX + dx;
+  float y = y0 + padLista() - 6.0f, x = textoX() + dx;
   int n = apoio_n(), i;
   if (a <= 0.004f) return;
-  { TxtLinha l = txt_linha_corta(TXT_NOV_TITULO, i18n("Apoie o projeto"), 248, 249, 252, 255, TW);
+  { TxtLinha l = txt_linha_corta(TXT_NOV_TITULO, i18n("Apoie o projeto"), 248, 249, 252, 255, textoW());
     txt_desenhar_alpha(l, x, y, a);
     y += (float)l.h + 22.0f; }
   y += txt_bloco(TXT_V2_26, i18n("O Nuvio Legacy é gratuito. Se ele te ajuda e você quiser apoiar quem faz o app, aponte a câmera do celular para um dos códigos."),
-                 200, 205, 215, x, y, TW, 36.0f, 0.9f * a, 4);
+                 200, 205, 215, x, y, textoW(), 36.0f, 0.9f * a, 4);
   y += 44.0f;
   { float lado = 300.0f, gap = 44.0f;
     for (i = 0; i < n; i++) {
@@ -576,15 +600,15 @@ static void paginaApoioDesenho(float y0, float a, float dx) {
     ajustes_acento_marca(&ar, &ag, &ab);
     gfx_icone((GfxRect){ x, y + 1.0f, 22.0f, 22.0f }, "aj_heart", ar, ag, ab, 0.9f * a);
     txt_bloco(TXT_CAPTION, i18n("É opcional e nada muda no app. Fica também em Ajustes › Sobre e ajuda."),
-              186, 192, 204, x + 34.0f, y, TW - 34.0f, 28.0f, 0.92f * a, 2); }
+              186, 192, 204, x + 34.0f, y, textoW() - 34.0f, 28.0f, 0.92f * a, 2); }
 }
 
 static void ptFoco(int b, int nada) { (void)nada; foco = b; }
 
-static void rodape(float y0, float a) {
-  float yBase = y0 + N_H - N_PAD;
+static void rodape(float y0, float altura, float a) {
+  float yBase = y0 + altura - padLista();
   const char *rot[2];
-  float w[2], xd = N_X + N_W - N_PAD, tracos;
+  float w[2], xd = textoX() + textoW(), tracos;
   int i, nPag = nPagNov + 1;
   rot[0] = i18n(pagina ? "Voltar" : "Agora não");
   rot[1] = i18n(pagina >= paginaApoio() ? "Concluir" : "Continuar");
@@ -603,8 +627,8 @@ static void rodape(float y0, float a) {
   // As paginas, como tracos no comeco do rodape. Somem quando os botoes
   // (rotulos longos, japones) chegam ate eles.
   tracos = 40.0f + (float)(nPag - 1) * (14.0f + 10.0f);
-  if (xd + BOTAO_GAP > TX + tracos + 24.0f)
-  { float x = TX, yc = yBase - BOTAO_H_PRIMARIO * 0.5f;
+  if (xd + BOTAO_GAP > textoX() + tracos + 24.0f)
+  { float x = textoX(), yc = yBase - BOTAO_H_PRIMARIO * 0.5f;
     for (i = 0; i < nPag; i++) {
       float on = 1.0f - anim_clamp(fabsf(pag - (float)i), 0.0f, 1.0f), tw = 14.0f + 26.0f * on;
       gfx_cor((GfxRect){ x, yc - 3.0f, tw, 6.0f }, 0.5f, 1, 1, 1, (0.22f + 0.68f * on) * a);
@@ -628,29 +652,44 @@ static void visPagina(int i, float *alfa, float *dx) {
 }
 
 static void desenharCorpo(void) {
-  float a = anim_suave(entrada), y0;
+  float a = anim_suave(entrada), y0, altura = N_H;
+  float largura = compacto() ? COMPACTO_W : N_W;
+  float x0 = (NV_TELA_W - largura) * 0.5f;
   int i;
   if (entrada < 0.002f) return;
   gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f, 0, 0, 0, 0.78f * entrada);
-  y0 = N_Y + (1.0f - a) * 28.0f;
+  if (compacto()) {
+    int p = (int)pag, q = p < paginaApoio() ? p + 1 : p;
+    float hp = p < paginaApoio() ? alturaPag[p] : N_H;
+    float hq = q < paginaApoio() ? alturaPag[q] : N_H;
+    float t = pag - (float)p;
+    // A pagina maior precisa caber enquanto estiver visivel (visPagina).
+    t = hp > hq ? anim_clamp((t - 0.625f) / 0.375f, 0, 1)
+                : anim_clamp(t / 0.35f, 0, 1);
+    altura = lerp(hp, hq, t);
+  }
+  y0 = (NV_TELA_H - altura) * 0.5f + (1.0f - a) * 28.0f;
   // O cartao: o vidro escuro das ilhas, um fio de luz e uma luz fria no alto.
-  { GfxRect c = { N_X, y0, N_W, N_H };
+  { GfxRect c = { x0, y0, largura, altura };
     float ar, ag, ab;
     ajustes_acento(&ar, &ag, &ab);
     gfx_rect((GfxRect){ c.x - 40.0f, c.y - 20.0f, c.w + 80.0f, c.h + 70.0f }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.12f,
              0, 0, 0, 0.6f * a);
-    gfx_cor(c, N_RAIO / N_H, 0.052f, 0.055f, 0.064f, 0.96f * a);
-    gfx_luz_canto(c, N_RAIO / N_H, c.w * 0.78f, -c.h * 0.25f, c.h * 0.95f, ar, ag, ab, 0.10f * a);
-    gfx_anel(c, N_RAIO / N_H, 1.2f, 1, 1, 1, 0.07f * a); }
+    gfx_cor(c, N_RAIO / altura, 0.052f, 0.055f, 0.064f, 0.96f * a);
+    gfx_luz_canto(c, N_RAIO / altura, c.w * 0.78f, -c.h * 0.25f, c.h * 0.95f, ar, ag, ab, 0.10f * a);
+    gfx_anel(c, N_RAIO / altura, 1.2f, 1, 1, 1, 0.07f * a); }
 
   frasesCortadas = 0;
+  itensDesenhados = 0;
   // Na pagina de apoio a previa recua (um veu, nao transparencia: a cena
   // translucida mostraria uma camada atraves da outra): os codigos sao o assunto.
-  desenhaPrevia(N_X + N_PAD, y0 + N_PAD, a);
-  { float rec = anim_clamp(pag - (float)(paginaApoio() - 1), 0.0f, 1.0f);
-    if (rec > 0.004f)
-      gfx_cor((GfxRect){ N_X + N_PAD, y0 + N_PAD, PV_W, PV_H }, PV_RAIO / PV_H, 0.052f, 0.055f, 0.064f,
-              0.55f * sai3(rec) * a); }
+  if (!compacto()) {
+    desenhaPrevia(N_X + N_PAD, y0 + N_PAD, a);
+    { float rec = anim_clamp(pag - (float)(paginaApoio() - 1), 0.0f, 1.0f);
+      if (rec > 0.004f)
+        gfx_cor((GfxRect){ N_X + N_PAD, y0 + N_PAD, PV_W, PV_H }, PV_RAIO / PV_H, 0.052f, 0.055f, 0.064f,
+                0.55f * sai3(rec) * a); }
+  }
 
   for (i = 0; i <= paginaApoio(); i++) {
     float al, dx;
@@ -659,7 +698,7 @@ static void desenharCorpo(void) {
     if (i < paginaApoio()) paginaNovidades(i, y0, a * al, dx);
     else paginaApoioDesenho(y0, a * al, dx);
   }
-  rodape(y0, a);
+  rodape(y0, altura, a);
 }
 
 // Cartao de tela quase cheia: ampliado so se ainda couber (escala.h).

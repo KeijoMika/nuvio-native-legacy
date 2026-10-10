@@ -177,18 +177,22 @@ static void plataformas(void) {
   int lg, tpk, wgt, and;
   novcartao_teste_plataforma(NOV_LG);
   lg = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 3);
+  assert(novcartao_cenas() == 0);
   novcartao_teste_plataforma(NOV_TPK);
   tpk = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 3);
+  assert(novcartao_cenas() == 0);
   novcartao_teste_plataforma(NOV_WGT);
   wgt = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 3);
+  assert(novcartao_cenas() == 0);
   novcartao_teste_plataforma(NOV_ANDROID);
   and = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 3);
-  assert(lg == 3 && tpk == 3 && wgt == 3 && and == 3);
-  assert(novcartao_paginas() == 2);  // hotfix curto + apoio
+  assert(novcartao_cenas() == 0);
+  assert(lg == 10 && tpk == 10 && wgt == 9 && and == 10);
+  assert(novcartao_paginas() == 3);  // correcoes, fontes/plataforma, apoio
+  assert(novcartao_previa_pronta());  // sem artes para esperar
+  novcartao_teste_plataforma(NOV_OUTRAS);
+  assert(novcartao_itens_visiveis() == 12);
+  assert(novcartao_paginas() == 4);  // host mostra as tres plataformas
   novcartao_teste_plataforma(0);
   printf("PASS: itens por plataforma: LG %d, .tpk %d, .wgt %d, Android %d\n", lg, tpk, wgt, and);
 }

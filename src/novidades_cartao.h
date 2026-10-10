@@ -13,6 +13,7 @@
 // grupos a direita, os botoes no canto de baixo e, no fim, "Apoie o projeto"
 // com os QRs (apoio.h). Quando a lista nao cabe numa pagina, o motor quebra
 // por GRUPO em mais paginas (alturas fixas, nada medido).
+// Sem cenas, usa uma coluna centrada, sem previa, com altura pela lista.
 //
 // QUANDO ABRE: uma vez por versao, na Home pronta, sem player nem pagina do
 // titulo por cima (novcartao_decidir), para quem JA viu o guia da 2.0. Quem
@@ -61,6 +62,7 @@ void novcartao_teste_esquecer(void);       // a decisao volta a valer
 void novcartao_teste_plataforma(unsigned p); // 0 = a do binario
 float novcartao_teste_folga(void);   // rodape - fim da lista, pior pagina desenhada
 int  novcartao_teste_cortadas(void); // frases com reticencias, ultimo quadro
+int  novcartao_teste_desenhados(void); // itens realmente desenhados, ultimo quadro
 // Liga a medida das frases de varias linhas (custa um bloco invisivel por frase).
 void novcartao_teste_medir(int sim);
 #endif

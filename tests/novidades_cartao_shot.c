@@ -105,19 +105,23 @@ static void cabeEmTodos(void) {
   for (k = 0; k < 5; k++) {
     novcartao_teste_plataforma(PLAT[k]);
     for (idi = 0; idi < IDIOMA_N; idi++) {
-      int c = 0, n;
+      int c = 0, n, desenhados = 0;
       ajustesDeTeste(idi, 0, 2);
       novcartao_abrir();
       n = novcartao_paginas();
       for (p = 0; p < n - 1; p++) {
         for (i = 0; i < 40; i++) quadro(1.0f / 60.0f);
-        // Todas as cenas passam pela legenda, inclusive a terceira do hotfix.
+        // Sem cenas, medir o texto da lista tambem.
+        c += novcartao_teste_cortadas();
+        desenhados += novcartao_teste_desenhados();
+        // Todas as cenas passam pela legenda quando o conteudo tem previa.
         for (int cena = 0; cena < novcartao_cenas(); cena++) {
           novcartao_teste_relogio(novcartao_teste_inicio_cena(cena) + 1.0f); quadro(0.0f);
           c += novcartao_teste_cortadas();
         }
         tecla(SDLK_RETURN);
       }
+      assert(desenhados == novcartao_itens_visiveis());
       if (novcartao_teste_folga() < 27.99f)
         printf("plataforma %u, idioma %d (%s): folga %.2f px\n", PLAT[k], idi, idioma_iso(idi), novcartao_teste_folga());
       assert(novcartao_teste_folga() >= 27.99f);   // lista exatamente cheia nao e erro de float
@@ -177,6 +181,10 @@ int main(int argc, char **argv) {
       novcartao_teste_plataforma(plataformas[plat]);
       for (int idi = 0; idi < (plat == 0 ? 5 : 1); idi++) {
         ajustesDeTeste(idiomas[idi], 0, idi == 1 ? 5 : 2);
+        for (int pg = 0; pg < novcartao_paginas() - 1; pg++) {
+          snprintf(nome, sizeof nome, "%s-%s-pagina-%d", nomes[plat], idioma_iso(idiomas[idi]), pg + 1);
+          captura(saida, nome, 1.2f, pg);
+        }
         for (cena = 0; cena < novcartao_cenas(); cena++) {
           snprintf(nome, sizeof nome, "%s-%s-cena-%d", nomes[plat], idioma_iso(idiomas[idi]), cena + 1);
           captura(saida, nome, novcartao_teste_inicio_cena(cena) + 1.2f, 0);
@@ -187,6 +195,10 @@ int main(int argc, char **argv) {
     }
     novcartao_teste_plataforma(NOV_LG);
     ajustesDeTeste(0, 1, 2);
+    for (int pg = 0; pg < novcartao_paginas(); pg++) {
+      snprintf(nome, sizeof nome, "lg-pt-reduzido-pagina-%d", pg + 1);
+      captura(saida, nome, 0.7f, pg);
+    }
     for (cena = 0; cena < novcartao_cenas(); cena++) {
       snprintf(nome, sizeof nome, "lg-pt-reduzido-cena-%d", cena + 1);
       captura(saida, nome, novcartao_teste_inicio_cena(cena) + 0.7f, 0);
