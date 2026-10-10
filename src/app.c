@@ -1690,7 +1690,7 @@ static void vigiarAberturaManual(void) {
   fonteManualDesde = 0;
   player_erro_fonte_motivo(i18n("A fonte não respondeu a tempo."), NULL);
 }
-// PRAZO DE ABERTURA (#202, inicio.h): 8 s sem nenhum sinal de vida, 30 s com
+// PRAZO DE ABERTURA (#202, inicio.h): 15 s sem nenhum sinal de vida, 30 s com
 // dado chegando — e o curto so quando a proxima candidata nao e pior que esta
 // (nunca baixar a qualidade por pressa; sem proxima, 30 s).
 static int aberturaVencida(Uint32 desde) {
@@ -1711,6 +1711,10 @@ static int aberturaVencida(Uint32 desde) {
   g.desdeMs = desde;
   g.proximaSemPerda = semPerda;
   g.dadoChegando = video_pronto() || video_buffer_fim() > 0.5;
+#if defined(NV_ANDROID) || defined(NV_TPK)
+  // Trilhas do player ja provam resposta antes do primeiro quadro (DV na TCL).
+  g.dadoChegando |= video_n_audio() > 0 || video_n_legenda() > 0;
+#endif
   if (!inicio_abre_vencida(&g)) return 0;
   printf("[fonte] sem sinal de abertura em %u ms (prazo %u ms%s)\n", (unsigned)desde,
          inicio_abre_prazo_ms(&g), semPerda ? ", proxima nao e pior" : "");
