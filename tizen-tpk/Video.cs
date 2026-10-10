@@ -304,8 +304,11 @@ namespace NuvioTpk
                         lock (trocaTrava)
                         {
                             if (prazoParada == null || tempoParada != tempo || fatal != 0) return;
-                            Volatile.Write(ref fatal, 1);
                             prazoParada.Dispose(); prazoParada = null;
+                            // Fila atrasada/flags nao provam recurso retido. As
+                            // referencias so somem quando Dispose retorna.
+                            if (Volatile.Read(ref player) == null && Volatile.Read(ref primer) == null) return;
+                            Volatile.Write(ref fatal, 1);
                         }
                         Log("[video] tpk parar NAO confirmou em " + tempo.ElapsedMilliseconds + " ms; encerrando processo");
                         FalhaFatal();
@@ -321,7 +324,7 @@ namespace NuvioTpk
                 {
                     if (minha != sessao || fatal != 0) return;
                     ms = tempoParada.ElapsedMilliseconds;
-                    prazoParada.Dispose(); prazoParada = null;
+                    prazoParada?.Dispose(); prazoParada = null;
                 }
                 Log("[video] tpk parar confirmado em " + ms + " ms");
                 if (abrir != null && minha == Volatile.Read(ref sessao)) abrir(minha);
@@ -337,7 +340,7 @@ namespace NuvioTpk
             try
             {
                 var p = new Player();
-                player = p; playerSessao = minha;
+                Volatile.Write(ref player, p); playerSessao = minha;
                 p.PlaybackCompleted += (s, e) => { if (minha == Volatile.Read(ref sessao)) NvVid.Evento(EV_FIM, 0, 0); };
                 p.ErrorOccurred += (s, e) => { if (minha == Volatile.Read(ref sessao)) { Log("erro " + e.Error); NvVid.Evento(EV_ERRO, (int)e.Error, 0); } };
                 p.BufferingProgressChanged += (s, e) => { if (minha == Volatile.Read(ref sessao)) NvVid.Evento(EV_BUFFER, e.Percent, 0); };
@@ -414,7 +417,7 @@ namespace NuvioTpk
                 if (!File.Exists(arquivo)) { Log("[audio] prime fail sem arquivo " + arquivo); return; }
                 if (player != null) { Log("[audio] prime skip: player do app ja aberto"); return; }
                 var p = new Player();
-                primer = p;
+                Volatile.Write(ref primer, p);
                 p.ErrorOccurred += (s, e) => Log("[audio] prime erro do player " + e.Error);
                 p.PlaybackInterrupted += (s, e) => Log("[audio] prime interrompido " + e.Reason);
                 p.SetSource(new MediaUriSource(arquivo));
@@ -445,8 +448,7 @@ namespace NuvioTpk
         {
             primerGen++;
             if (primer == null) return true;
-            if (!Liberar(primer)) return false;
-            primer = null;
+            if (!Liberar(ref primer)) return false;
             Log("[audio] prime released");
             return true;
         }
@@ -467,19 +469,18 @@ namespace NuvioTpk
         public void Parar() { Trocar(null); }
         public void Encerrar() { Parar(); }
 
-        // Nao apaga a referencia antes do Idle + Dispose. Cada passo tenta
-        // mesmo se o anterior falhar; mudo e plano solto vem antes do Stop.
-        bool Liberar(Player p)
+        // Dispose confirma a liberacao, independentemente do estado anterior.
+        // Preparing nao admite Unprepare; cada passo ainda tenta o Dispose.
+        bool Liberar(ref Player p)
         {
-            bool idle = false, disposto = false;
             try { p.Muted = true; } catch (Exception e) { Log("parar muted: " + e.Message); }
             try { p.Display = null; } catch (Exception e) { Log("parar display: " + e.Message); }
             try { if (p.State == PlayerState.Playing || p.State == PlayerState.Paused) p.Stop(); }
             catch (Exception e) { Log("parar stop: " + e.Message); }
-            try { if (p.State != PlayerState.Idle) p.Unprepare(); idle = p.State == PlayerState.Idle; }
+            try { if (p.State == PlayerState.Ready || p.State == PlayerState.Playing || p.State == PlayerState.Paused) p.Unprepare(); }
             catch (Exception e) { Log("parar unprepare: " + e.Message); }
-            try { p.Dispose(); disposto = true; } catch (Exception e) { Log("parar dispose: " + e.Message); }
-            return idle && disposto;
+            try { p.Dispose(); Volatile.Write(ref p, null); return true; }
+            catch (Exception e) { Log("parar dispose: " + e.Message); return false; }
         }
 
         bool PararAtual()
@@ -487,9 +488,7 @@ namespace NuvioTpk
             ReportWindowMetrics();
             if (!SoltaPrimer()) return false;
             if (player == null) return true;
-            if (!Liberar(player)) return false;
-            player = null; // cache preserva a retomada durante a espera da reconexao
-            return true;
+            return Liberar(ref player); // cache preserva a retomada durante a espera da reconexao
         }
 
         void Pausar(bool pausa)
