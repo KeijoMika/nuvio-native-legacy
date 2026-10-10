@@ -1,5 +1,8 @@
 // #410: pixels reais, sem janela, rede ou TV. Inclui Ajustes para escolher os
 // mesmos valores e executar as previas/linhas reais, sem costura no release.
+#ifdef NV410_TPK
+#define NV_TPK 1
+#endif
 #include "../src/ajustes.c"
 #include <OpenGL/OpenGL.h>
 #include <assert.h>
@@ -44,7 +47,13 @@ static void contexto(void) {
   assert(CGLChoosePixelFormat(a,&f,&n)==kCGLNoError && n);
   assert(CGLCreateContext(f,NULL,&c)==kCGLNoError);
   CGLDestroyPixelFormat(f); assert(CGLSetCurrentContext(c)==kCGLNoError);
-  printf("GL: %s\n", glGetString(GL_RENDERER));
+  printf("GL: %s | Ajustes: %s\n", glGetString(GL_RENDERER),
+#ifdef NV_TPK
+         "NV_TPK"
+#else
+         "host"
+#endif
+  );
   assert(gfx_iniciar());
   GLuint t;
   glGenTextures(1,&t); glBindTexture(GL_TEXTURE_2D,t);
