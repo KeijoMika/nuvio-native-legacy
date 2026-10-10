@@ -500,6 +500,7 @@ typedef enum {
   AJ_P2P_LIMITE,
   // #400: LOCAL, deste aparelho. No fim: valor[]/CHAVE[] posicionais.
   AJ_FONTE_ORDEM_ADDON,
+  AJ_LEG_SYNC_AUTO, // local, ligada de fábrica; append-only
   AJ_N
 } OpcaoId;
 
@@ -1326,6 +1327,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Layout dos Ajustes",              V_LAYOUT_AJUSTES, 2),   // local: ajustesLayoutLocal (#339)
   ESC("Limite de espaço do P2P",         V_P2P_LIMITE, 5),   // local: p2pLimiteLocal (#334)
   ESC("Ordem das fontes", V_FONTE_ORDEM_ADDON, 2), // local (#400)
+  ESC("Sincronia automática da legenda", V_LIGA, 2),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -1550,6 +1552,7 @@ static const char *CHAVE[] = {
   "ajustesLayoutLocal",
   "p2pLimiteLocal",
   "fonteOrdemLocal",
+  "legendaSyncAutoLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2065,6 +2068,7 @@ float ajustes_tamanho_ajustes(void) {
 }
 int ajustes_layout_lista(void) { return valor[AJ_LAYOUT_AJUSTES] == 1; }
 int ajustes_esconder_logo_trailer(void) { return lig(AJ_LOGO_TRAILER); }
+int ajustes_legenda_sync_auto(void) { return lig(AJ_LEG_SYNC_AUTO); }
 int ajustes_trailer_zoom_tpk(void) { return lig(AJ_TRAILER_ZOOM_TPK); }   // 1 = Ligado
 #ifdef NV_ANDROID
 int ajustes_legenda_sync_audio(void) { return lig(AJ_LEG_SYNC_AUDIO); }
@@ -4073,6 +4077,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_TAMANHO_AJUSTES:
     case AJ_LAYOUT_AJUSTES: /* #339: o arranjo dos Ajustes e desta TV */
     case AJ_LOGO_TRAILER:   /* so a protecao de OLED desta TV */
+    case AJ_LEG_SYNC_AUTO: /* escolha local desta TV */
     case AJ_LEG_SYNC_AUDIO: /* PCM e passthrough sao desta TV; o web nao tem */
     case AJ_LEG_FORCADA:    /* #287: o web nao tem esta escolha */
     case AJ_LEG2_POS: case AJ_LEG2_TAMANHO: case AJ_LEG2_COR: case AJ_LEG2_FUNDO: case AJ_LEG2_BORDA: /* estilo da legenda e desta TV */
@@ -5217,6 +5222,7 @@ static const char *ajudaOpcaoBase(int op) {
     // --- Reproducao
     case AJ_QUALIDADE: return "Define a preferência de resolução. A disponibilidade depende das fontes do addon.";
     case AJ_DV: case AJ_ATMOS: return "Preferência para fontes compatíveis. O formato disponível também depende do arquivo e da TV.";
+    case AJ_LEG_SYNC_AUTO: return "Ajusta a legenda automaticamente. Desligue para manter a escolhida. Vale só nesta TV.";
     case AJ_LEG_SYNC_AUDIO: return "Compara as falas do áudio com a legenda externa para acertar o atraso. Só onde o player entrega o áudio decodificado e sem passthrough; vale só nesta TV.";
     case AJ_LEG_FORCADA: return "Quando o áudio já está no idioma da legenda, liga só a legenda forçada desse idioma (falas em outra língua e placas), ou nenhuma se o arquivo não tiver. Desligado, liga a legenda completa como antes.";
     case AJ_LEG_LINGUA2: return "Segunda legenda, mostrada no alto da tela junto com a principal. Só arquivos SRT/VTT dos addons. \"Da conta\" segue o que está no seu perfil.";

@@ -22,6 +22,17 @@ int main(void) {
   // (dono, 09/10: cada perfil com os seus addons por padrao).
   assert(ajustes_addons_do_principal() == 0);
 
+  // Sincronia automática: persiste nesta TV, sem importar/exportar pela conta.
+  assert(ajustes_legenda_sync_auto());
+  mudarValor(AJ_LEG_SYNC_AUTO, 1); assert(!ajustes_legenda_sync_auto());
+  valor[AJ_LEG_SYNC_AUTO] = 0;
+  ajustes_dir(dir); assert(!ajustes_legenda_sync_auto());
+  ajustes_aplicar_blob("{\"legendaSyncAutoLocal\":0}");
+  assert(!ajustes_legenda_sync_auto() && !dePerfil(AJ_LEG_SYNC_AUTO));
+  { char *blob = NULL;
+    ajustes_mesclar_blob("{}", &blob);
+    assert(!blob || !strstr(blob, "legendaSyncAutoLocal")); free(blob); }
+
   // Perfil 1: destaque desligado, 4K pedido. 2.0.2: ele manda o historico so
   // para o Simkl e nao quer o social; o perfil 2 e o contrario.
   valor[AJ_CW_FONTE] = AJ_CWF_SIMKL;
@@ -66,6 +77,7 @@ int main(void) {
   { char *t = dados_ler("ajustes-p1.txt");
     assert(t);
     assert(!strstr(t, CHAVE[AJ_RESOLUCAO]));
+    assert(!strstr(t, CHAVE[AJ_LEG_SYNC_AUTO]));
     assert(!strstr(t, CHAVE[AJ_ADDONS_PRINCIPAL]));
     assert(!strstr(t, "\n-") && t[0] != '-');
     assert(strstr(t, CHAVE[AJ_HERO]));
