@@ -296,6 +296,8 @@ void player_leg_estilo_carregar(void);
 void player_leg_estilo_mudou(void);
 // Settings commits a complete draft only after confirmation. A failed write
 // leaves both the playing style and its authored-ASS override flags intact.
+int player_leg_fonte_definir(int familia);
+int player_leg_estilo_restaurar(void);
 int player_leg_estilo_definir(const VideoLegendaEstilo *estilo, int tocou);
 const VideoLegendaEstilo *player_leg_estilo_padrao(void);
 
