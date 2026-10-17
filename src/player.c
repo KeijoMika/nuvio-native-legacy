@@ -75,6 +75,8 @@ static void avisarCascaAberto(int v) { (void)v; }
 #include "perfisessao.h"
 extern int cat_episodios_finais(int, const char *) NV_PERFIL_OPCIONAL;
 extern int cat_episodio_tvdb(int, const char *, int, int) NV_PERFIL_OPCIONAL;
+extern int cat_episodio_tvdb_qualquer(int, const char *, int, int) NV_PERFIL_OPCIONAL;
+extern int cat_episodio_existe_final(int, const char *, int, int) NV_PERFIL_OPCIONAL;
 extern int trakt_scrobble_alvo(int, const TraktScrobbleAlvo *, double, double,
                               double, int) NV_PERFIL_OPCIONAL;
 #include "watchstate_envio.h"
@@ -704,6 +706,7 @@ static int abrindoSessao;
 // final de episodios provou a correspondencia.
 static TraktScrobbleAlvo scrobbleAlvo;
 static int scrobbleAlvoPronto;
+static int scrobbleTvdbCapturado;
 static int pedGuia, pedZap, pedGuiaCheio;   // pedidos de canal: overlay do guia / CH+/-
 // OSD PROPRIO DO CANAL AO VIVO (aovivo.h). O zapping acumula toques e so pede a
 // troca depois do debounce; `pedZap` passa a ser um DESLOCAMENTO (pode ser 3 ou
@@ -939,8 +942,15 @@ void player_definir_episodio(int t, int e) {
   if (t != epT || e != epE) {
     retomarFonteSeg = -1.0;
     memset(&scrobbleAlvo, 0, sizeof scrobbleAlvo); scrobbleAlvoPronto = 0;
+    scrobbleTvdbCapturado = 0;
   }
   epT = t; epE = e; linhaEp[0] = 0;
+  // Capture exact identity while the pair still belongs to the provisional
+  // list. A later final list may renumber this same episode and remove the old
+  // pair; TVDB is the bridge that remains valid across that replacement.
+  if (!scrobbleTvdbCapturado && c && !strcmp(c->tipo, "series") && t >= 0 && e > 0 &&
+      cat_episodio_tvdb_qualquer)
+    scrobbleTvdbCapturado = cat_episodio_tvdb_qualquer(idxAtual(), c->imdb, t, e);
   audioTitulo();
   retomarPct = 0;
   // !canalSessao: canal nao tem retomada, e se o indice ja foi remapeado o
@@ -1635,6 +1645,7 @@ void player_abrir(int indiceCatalogo, const char *url) {
   retomamorna_cancelar();
   creditosauto_zerar(&creditosAuto);
   memset(&scrobbleAlvo, 0, sizeof scrobbleAlvo); scrobbleAlvoPronto = 0;
+  scrobbleTvdbCapturado = 0;
   quadroCapturado = 0;
   player_descartar_retido();
   // O trailer usa o mesmo plano de video (LG) — solta antes de o player
@@ -2145,7 +2156,7 @@ static void idTrakt(const CatItem *ci, char *dst, size_t n) {
 
 static const TraktScrobbleAlvo *alvoTrakt(const CatItem *ci) {
   char id[64];
-  int tvdb = 0, final;
+  int tvdb = scrobbleTvdbCapturado, final, parFinal = 0;
   if (!ci || !ci->imdb[0] || (strcmp(ci->tipo, "movie") && strcmp(ci->tipo, "series")) ||
       (!strcmp(ci->tipo, "series") && (epT < 0 || epE <= 0))) return NULL;
   idTrakt(ci, id, sizeof id);
@@ -2155,9 +2166,18 @@ static const TraktScrobbleAlvo *alvoTrakt(const CatItem *ci) {
   final = strcmp(ci->tipo, "series") ||
           (cat_episodios_finais ? cat_episodios_finais(idxAtual(), ci->imdb)
                                 : !ci->epsParciais);
-  if (final && !strcmp(ci->tipo, "series") && cat_episodio_tvdb)
-    tvdb = cat_episodio_tvdb(idxAtual(), ci->imdb, epT, epE);
-  if (!scrobble_alvo_congelar(&scrobbleAlvo, &scrobbleAlvoPronto, id, final, tvdb))
+  if (!strcmp(ci->tipo, "series")) {
+    if (!tvdb && final && cat_episodio_tvdb)
+      tvdb = cat_episodio_tvdb(idxAtual(), ci->imdb, epT, epE);
+    if (final && cat_episodio_existe_final)
+      parFinal = cat_episodio_existe_final(idxAtual(), ci->imdb, epT, epE);
+    // Without the helper, retain the old behavior for optional-link builds.
+    else if (final && !cat_episodio_existe_final) parFinal = 1;
+  } else parFinal = final;
+  // An exact id captured before topology replacement is safe immediately. A
+  // numeric pair is safe only while that pair still exists in the final list.
+  if (!scrobble_alvo_congelar(&scrobbleAlvo, &scrobbleAlvoPronto, id,
+                              final, parFinal, tvdb))
     return NULL;
   return &scrobbleAlvo;
 }

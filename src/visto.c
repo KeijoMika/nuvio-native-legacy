@@ -35,13 +35,32 @@ int visto_destinos(void) {
 
 // Retry uses the same synchronous service writers as the first attempt.
 int visto_reenviar(const char *imdb, const char *tipo, const VistoPar *pares, int n,
-                   int visto, int destinos, const int *temps, int nt) {
+                   int visto, int destinos, const int *temps, int nt,
+                   const int *tvdbEps) {
   int ok = 0;
   if (destinos & VISTO_TRAKT) {
     TraktDestino d;
-    if (trakt_destino_capturar && trakt_destino_capturar(&d) &&
-        (n ? trakt_episodios_marcar_destino(&d, imdb, pares, n, visto)
-           : trakt_titulo_marcar_destino(&d, imdb, tipo, visto))) ok |= VISTO_TRAKT;
+    if (trakt_destino_capturar && trakt_destino_capturar(&d)) {
+      int enviado = 0, tentouExato = 0;
+      if (n && tvdbEps) {
+        TraktEpisodioAlvo alvos[VT_LOTE];
+        int temExato = 0;
+        for (int i = 0; i < n; i++) {
+          alvos[i].par = pares[i];
+          alvos[i].tvdbEp = tvdbEps[i] > 0 ? tvdbEps[i] : 0;
+          if (alvos[i].tvdbEp) temExato = 1;
+        }
+        if (temExato) {
+          tentouExato = 1;
+          if (trakt_episodios_marcar_alvos_destino)
+            enviado = trakt_episodios_marcar_alvos_destino(&d, imdb, alvos, n, visto);
+        }
+      }
+      if (!tentouExato)
+        enviado = n ? trakt_episodios_marcar_destino(&d, imdb, pares, n, visto)
+                    : trakt_titulo_marcar_destino(&d, imdb, tipo, visto);
+      if (enviado) ok |= VISTO_TRAKT;
+    }
   }
   if (destinos & VISTO_SIMKL) {
     SimklDestino d;
@@ -65,7 +84,7 @@ int visto_episodios_ja(const char *imdb, const char *tipo, const VistoPar *pares
   // Ordem: Trakt, Simkl, conta. Nenhum depende do outro; a falha de um nao
   // impede os seguintes (cada um diz no log o que aconteceu).
   int trackers = destinos & (VISTO_TRAKT | VISTO_SIMKL);
-  int enviados = visto_reenviar(imdb, tipo, pares, n, visto, trackers, NULL, 0);
+  int enviados = visto_reenviar(imdb, tipo, pares, n, visto, trackers, NULL, 0, NULL);
   contapend_confirmar_gesto(imdb, pares, n, ms, enviados);
   ok &= enviados == trackers;
   nv_perfil_sessao_destravar();
@@ -86,7 +105,8 @@ int visto_titulo_ja(const char *imdb, const char *tipo, const int *temporadas,
   if (!nv_perfil_sessao_travar(sessao)) return 0;
   long long ms = contapend_gesto(imdb, tipo, NULL, 0, visto, destinos, temporadas, nt);
   int trackers = destinos & (VISTO_TRAKT | VISTO_SIMKL);
-  int enviados = visto_reenviar(imdb, tipo, NULL, 0, visto, trackers, temporadas, nt);
+  int enviados = visto_reenviar(imdb, tipo, NULL, 0, visto, trackers,
+                                temporadas, nt, NULL);
   contapend_confirmar_gesto(imdb, NULL, 0, ms, enviados);
   if (enviados) ok &= contapend_reenviar_overrides(imdb, ms) >= 0;
   ok &= enviados == trackers;
@@ -179,28 +199,40 @@ static int episodiosEnviar(int indice, const char *imdb, const char *tipo,
   if (n > VT_LOTE) n = VT_LOTE;
   NvPerfilSessao sessao = nv_perfil_sessao_ler();
   if (!nv_perfil_sessao_travar(sessao)) return 0;
-  long long ms = contapend_gesto(imdb, tipo, pares, n, visto, destinos, NULL, 0);
+  int tvdbEps[VT_LOTE] = {0}, temAlvoTrakt = 0, confirmarSemEnvio = 0;
+  int destinosFio = destinos;
+  if (indice >= 0 && (destinos & VISTO_TRAKT) &&
+      (!tipo || !tipo[0] || !strcmp(tipo, "series")) &&
+      cat_episodio_tvdb) {
+    unsigned versao = cat_versao_episodios ? cat_versao_episodios() : 0;
+    for (int i = 0; i < n; i++) {
+      tvdbEps[i] = cat_episodio_tvdb(indice, imdb,
+          pares[i].temporada, pares[i].episodio);
+      if (tvdbEps[i] > 0) temAlvoTrakt = 1;
+    }
+    if (cat_versao_episodios && cat_versao_episodios() != versao) {
+      memset(tvdbEps, 0, sizeof tvdbEps);
+      temAlvoTrakt = 0; destinosFio &= ~VISTO_TRAKT;
+      confirmarSemEnvio |= VISTO_TRAKT;
+      printf("[visto] %s: lista de episodios mudou; lote Trakt nao enviado\n", imdb);
+      fflush(stdout);
+    }
+  }
+  long long ms = contapend_gesto_alvos(imdb, tipo, pares, tvdbEps, n, visto,
+                                       destinos, NULL, 0);
+  if (confirmarSemEnvio)
+    contapend_confirmar_gesto(imdb, pares, n, ms, confirmarSemEnvio);
   Envio *e = calloc(1, sizeof *e);
   if (!e) { nv_perfil_sessao_destravar(); return 0; }
   snprintf(e->imdb, sizeof e->imdb, "%s", imdb);
   snprintf(e->tipo, sizeof e->tipo, "%s", tipo && tipo[0] ? tipo : "series");
   memcpy(e->pares, pares, sizeof(VistoPar) * (size_t)n);
-  e->n = n; e->visto = visto; e->destinos = destinos; e->sessao = sessao; e->ms = ms;
-  if (indice >= 0 && (destinos & VISTO_TRAKT) && !strcmp(e->tipo, "series") &&
-      cat_episodio_tvdb) {
-    unsigned versao = cat_versao_episodios ? cat_versao_episodios() : 0;
-    for (int i = 0; i < n; i++) {
-      e->alvosTrakt[i].par = e->pares[i];
-      e->alvosTrakt[i].tvdbEp = cat_episodio_tvdb(indice, e->imdb,
-          e->pares[i].temporada, e->pares[i].episodio);
-      if (e->alvosTrakt[i].tvdbEp > 0) e->temAlvoTrakt = 1;
-    }
-    if (cat_versao_episodios && cat_versao_episodios() != versao) {
-      e->temAlvoTrakt = 0; e->destinos &= ~VISTO_TRAKT;
-      e->confirmarSemEnvio |= VISTO_TRAKT;
-      printf("[visto] %s: lista de episodios mudou; lote Trakt nao enviado\n", e->imdb);
-      fflush(stdout);
-    }
+  e->n = n; e->visto = visto; e->destinos = destinosFio;
+  e->sessao = sessao; e->ms = ms; e->temAlvoTrakt = temAlvoTrakt;
+  e->confirmarSemEnvio = confirmarSemEnvio;
+  for (int i = 0; i < n; i++) {
+    e->alvosTrakt[i].par = e->pares[i];
+    e->alvosTrakt[i].tvdbEp = tvdbEps[i];
   }
   capturarDestinos(e);
   int ok = lancar(e);

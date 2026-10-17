@@ -10,12 +10,13 @@
 static int pausaAceita(double pct) { return pct >= 1.0 && pct < 80.0; }
 
 int scrobble_alvo_congelar(TraktScrobbleAlvo *out, int *pronto, const char *id,
-                           int listaFinal, int tvdbEp) {
+                           int listaFinal, int parFinalExiste, int tvdbEp) {
   if (!out || !pronto) return 0;
   if (*pronto) return out->id[0] != 0;
-  // A lista provisoria nao prova em qual namespace o par esta. Esperar evita
-  // enviar start numerico e trocar para TVDB no pause/stop da mesma abertura.
-  if (!listaFinal || !id || !*id) return 0;
+  // A numeric pair is safe only while it exists in the final topology. An
+  // exact TVDB id captured from the provisional snapshot is already stable.
+  if ((!listaFinal || !parFinalExiste) && tvdbEp <= 0) return 0;
+  if (!id || !*id) return 0;
   memset(out, 0, sizeof *out);
   snprintf(out->id, sizeof out->id, "%s", id);
   out->tvdbEp = tvdbEp > 0 ? tvdbEp : 0;

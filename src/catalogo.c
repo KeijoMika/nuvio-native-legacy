@@ -1873,15 +1873,19 @@ int cat_id_stream(int indiceItem, int t, int e, char *dst, unsigned tam) {
   return 1;
 }
 
-static int episodioFaixaValida(int indice, const char *id) {
+static int episodioFaixaValidaEx(int indice, const char *id, int exigirFinal) {
   size_t a, b;
   if (!id || indice < 0 || indice >= n || !itens || !epIni || !epQtd ||
-      indice >= nFaixas || itens[indice].epsParciais ||
+      indice >= nFaixas || (exigirFinal && itens[indice].epsParciais) ||
       strcmp(itens[indice].tipo, "series") || epIni[indice] < 0 ||
       epQtd[indice] <= 0 || epIni[indice] > CAT_EP_MAX - epQtd[indice]) return 0;
   a = idbase_len(itens[indice].imdb);
   b = idbase_len(id);
   return a == b && !strncmp(itens[indice].imdb, id, a);
+}
+
+static int episodioFaixaValida(int indice, const char *id) {
+  return episodioFaixaValidaEx(indice, id, 1);
 }
 
 int cat_episodios_finais(int indice, const char *id) {
@@ -1916,6 +1920,48 @@ int cat_episodio_tvdb(int indice, const char *id, int t, int e) {
   pthread_mutex_unlock(&epTrava);
   pthread_mutex_unlock(&pubTrava);
   return tvdb;
+}
+
+// Playback can open while the fast provisional list is still visible. A
+// proven TVDB id from that snapshot remains the same episode after an addon
+// replaces its season/episode numbering, so capture it before replacement.
+int cat_episodio_tvdb_qualquer(int indice, const char *id, int t, int e) {
+  int tvdb = 0;
+  catTravar();
+  pthread_mutex_lock(&epTrava);
+  if (episodioFaixaValidaEx(indice, id, 0)) {
+    const CatEp *v = eps + epIni[indice];
+    int q = epQtd[indice];
+    for (int i = 0; i < q; i++) if (v[i].temporada == t && v[i].episodio == e) {
+      if (v[i].tvdbEp <= 0 || (tvdb && tvdb != v[i].tvdbEp)) { tvdb = 0; break; }
+      tvdb = v[i].tvdbEp;
+    }
+    if (tvdb) {
+      int mt = 0, me = 0, achou = 0;
+      for (int i = 0; i < q; i++) if (v[i].tvdbEp == tvdb) {
+        if (!achou) { mt = v[i].temporada; me = v[i].episodio; achou = 1; }
+        else if (mt != v[i].temporada || me != v[i].episodio) { tvdb = 0; break; }
+      }
+    }
+  }
+  pthread_mutex_unlock(&epTrava);
+  pthread_mutex_unlock(&pubTrava);
+  return tvdb;
+}
+
+int cat_episodio_existe_final(int indice, const char *id, int t, int e) {
+  int ok = 0;
+  catTravar();
+  pthread_mutex_lock(&epTrava);
+  if (episodioFaixaValida(indice, id)) {
+    const CatEp *v = eps + epIni[indice];
+    int q = epQtd[indice];
+    for (int i = 0; i < q; i++)
+      if (v[i].temporada == t && v[i].episodio == e) { ok = 1; break; }
+  }
+  pthread_mutex_unlock(&epTrava);
+  pthread_mutex_unlock(&pubTrava);
+  return ok;
 }
 
 int cat_episodio_por_tvdb(int indice, const char *id, int tvdb, int *t, int *e) {

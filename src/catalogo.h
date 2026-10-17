@@ -580,6 +580,8 @@ int           cat_id_stream(int indiceItem, int t, int e, char *dst, unsigned ta
 // replaced any provisional early list. Conflicting assignments return 0.
 int           cat_episodios_finais(int indiceItem, const char *id);
 int           cat_episodio_tvdb(int indiceItem, const char *id, int t, int e);
+int           cat_episodio_tvdb_qualquer(int indiceItem, const char *id, int t, int e);
+int           cat_episodio_existe_final(int indiceItem, const char *id, int t, int e);
 int           cat_episodio_por_tvdb(int indiceItem, const char *id, int tvdb,
                                     int *t, int *e);
 

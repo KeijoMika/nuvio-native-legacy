@@ -7527,8 +7527,10 @@ static void temporadasDosEps(const CatEp *eps, int n, TempsPub *tp) {
   }
 }
 
-static int publicarEpisodiosEx(const char *corpo, int alvoItem, const char *titulo,
-                               const char *sobre, int modo, TempsPub *tp, int cedo) {
+static int publicarEpisodiosEscolhidos(const char *corpo, int alvoItem,
+                                       const char *titulo, const char *sobre,
+                                       int modo, TempsPub *tp, int cedo,
+                                       int substituir) {
   CatEp *eps = malloc(sizeof(CatEp) * VIDEOS_MAX);
   int n = 0;
   if (!eps) return 0;
@@ -7547,13 +7549,14 @@ static int publicarEpisodiosEx(const char *corpo, int alvoItem, const char *titu
     int antigos = cat_n_episodios(alvoItem);
     CatItem atual;
     int parcial = !cedo && cat_copiar_item(alvoItem, &atual) && atual.epsParciais;
-    CatEp *estavel = antigos > 0 && epPedidoAtual() && !parcial
+    int trocarTopologia = !cedo && (parcial || substituir);
+    CatEp *estavel = antigos > 0 && epPedidoAtual() && !trocarTopologia
                    ? malloc(sizeof(CatEp) * VIDEOS_MAX) : NULL;
-    if (parcial) {
-      // An early list exists only to make the page useful while the selected
-      // metadata source resolves. It must not contribute extra topology to the
-      // final list: continuous S1E13 and split S2E1 can be the same episode.
-      // Text/art enrichment was already applied above to matching final pairs.
+    if (trocarTopologia) {
+      // A provisional list, or a complete list that lost source selection,
+      // must not contribute extra topology to the selected final list:
+      // continuous S1E13 and split S2E1 can be the same episode. Text/art
+      // enrichment was already applied above to matching final pairs.
       descCatEpisodios(alvoItem, eps, n);
       if (tp) temporadasDosEps(eps, n, tp);
       if (cat_copiar_item(alvoItem, &atual)) {
@@ -7615,9 +7618,25 @@ static int publicarEpisodiosEx(const char *corpo, int alvoItem, const char *titu
   return n;
 }
 
+static int publicarEpisodiosEx(const char *corpo, int alvoItem, const char *titulo,
+                               const char *sobre, int modo, TempsPub *tp, int cedo) {
+  return publicarEpisodiosEscolhidos(corpo, alvoItem, titulo, sobre, modo, tp,
+                                     cedo, 0);
+}
+
 static int publicarEpisodios(const char *corpo, int alvoItem, const char *titulo,
                              const char *sobre, int modo, TempsPub *tp) {
   return publicarEpisodiosEx(corpo, alvoItem, titulo, sobre, modo, tp, 0);
+}
+
+// A source selected as the better episode list owns the topology. This is
+// distinct from ordinary enrichment: merging the old numeric pairs would keep
+// both S1E13 and S2E1 when two providers number the same episode differently.
+static int publicarEpisodiosSubstituir(const char *corpo, int alvoItem,
+                                       const char *titulo, const char *sobre,
+                                       int modo, TempsPub *tp) {
+  return publicarEpisodiosEscolhidos(corpo, alvoItem, titulo, sobre, modo, tp,
+                                     0, 1);
 }
 
 // O Cinemeta as vezes conhece MENOS episodios que o addon de metadados do
@@ -7680,14 +7699,16 @@ static int episodiosDoAddon(int alvoItem, const char *serie, const char *titulo,
            "usando a lista do addon com os nomes do Cinemeta\n",
            titulo, melhorNome, melhor, nCine);
     fflush(stdout);
-    publicarEpisodios(melhorCorpo, alvoItem, titulo, corpoCine, DESC_MESCLA_TEXTO, tp);
+    publicarEpisodiosSubstituir(melhorCorpo, alvoItem, titulo, corpoCine,
+                                DESC_MESCLA_TEXTO, tp);
     arte_reserva_episodios(serie, melhorCorpo);
   } else if (melhor > nCine || (aplicar && melhor >= nCine)) {
     printf("[desc] %s: %s tem %d episodios contra %d do Cinemeta; usando a lista do addon\n",
            titulo, melhorNome, melhor, nCine);
     fflush(stdout);
-    publicarEpisodios(melhorCorpo, alvoItem, titulo, aplicar ? corpoCine : NULL,
-                      DESC_MESCLA_VAZIOS, tp);
+    publicarEpisodiosSubstituir(melhorCorpo, alvoItem, titulo,
+                                aplicar ? corpoCine : NULL,
+                                DESC_MESCLA_VAZIOS, tp);
     arte_reserva_episodios(serie, melhorCorpo);
     usouTexto = aplicar;
   } else if (aplicar) {
@@ -8221,9 +8242,9 @@ static int episodiosDoCatalogo(int alvoItem, const char *titulo, const char *ser
   }
   // Lista de arquivos que ficou (sabe mais episodios): o nome dela e nome de
   // arquivo, entao o do Cinemeta entra por cima nos episodios que os dois tem.
-  publicarEpisodios(mf->corpo[fonte], alvoItem, titulo,
-                    outro >= 0 ? mf->corpo[outro] : NULL,
-                    modo, tp);
+  publicarEpisodiosSubstituir(mf->corpo[fonte], alvoItem, titulo,
+                              outro >= 0 ? mf->corpo[outro] : NULL,
+                              modo, tp);
   arte_reserva_episodios(serie, mf->corpo[fonte]);
   // Lista de arquivos nao e "texto do addon" (como em episodiosDoAddon): com 1
   // o TMDB so preencheria vazios e os nomes de arquivo que sobraram ficariam.

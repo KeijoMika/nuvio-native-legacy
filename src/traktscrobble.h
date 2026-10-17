@@ -14,7 +14,7 @@ enum { SCR_EV_TOCANDO = 1, SCR_EV_PAUSOU, SCR_EV_SAIU };
 typedef struct { char id[64]; int ativo; } ScrobbleEstado;
 typedef struct { char id[64]; int tvdbEp; } TraktScrobbleAlvo;
 int scrobble_alvo_congelar(TraktScrobbleAlvo *out, int *pronto, const char *id,
-                           int listaFinal, int tvdbEp);
+                           int listaFinal, int parFinalExiste, int tvdbEp);
 
 // Devolve a chamada a fazer (SCR_*) e avanca o estado.
 //   TOCANDO: start, salvo se ja ha um start em pe para o MESMO id (sem spam).
