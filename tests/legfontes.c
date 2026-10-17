@@ -46,7 +46,19 @@ static unsigned char *font(const char *file, size_t *n) {
   rewind(f); unsigned char *b = malloc((size_t)z); assert(b);
   assert(fread(b, 1, (size_t)z, f) == (size_t)z); fclose(f); *n = (size_t)z; return b;
 }
-static int failRemoval;
+static int failRemoval, failBackup;
+/* Android's app SELinux policy forbids hard links, including inside the
+ * app's own data directory. Keep that restriction in desktop coverage. */
+int checkedLink(const char *from, const char *to) {
+  (void)from; (void)to; errno = EACCES; return -1;
+}
+static FILE *checkedFopen(const char *file, const char *mode) {
+  size_t n = strlen(file);
+  if (failBackup && n >= 9 && !strcmp(file + n - 9, ".anterior") && !strcmp(mode, "wb")) {
+    errno = ENOSPC; return NULL;
+  }
+  return fopen(file, mode);
+}
 static int checkedUnlink(const char *file) {
   size_t n = strlen(file);
   if (failRemoval && n >= 8 && !strcmp(file + n - 8, ".excluir")) { errno = EACCES; return -1; }
@@ -55,7 +67,11 @@ static int checkedUnlink(const char *file) {
 /* Inject only a filesystem failure at the owned delete boundary. The whole
  * registry, rollback and preference file implementation remain production. */
 #define unlink checkedUnlink
+#define link checkedLink
+#define fopen checkedFopen
 #include "../src/legfontes.c"
+#undef fopen
+#undef link
 #undef unlink
 int main(int argc, char **argv) {
   assert(argc == 2); CHECK(TTF_Init() == 0);
@@ -119,14 +135,26 @@ int main(int argc, char **argv) {
     CHECK(afterN == priorN && !memcmp(after, prior, priorN)); free(after);
   }
   free(prior);
+  /* A backup failure must stop before either preference or callback changes. */
+  failBackup = 1;
+  CHECK(!legfontes_escolher_transacao(0, -1, commit, &commitResult));
+  CHECK(commits == 2 && legfontes_selecionada(0) == 0);
+  failBackup = 0;
   commitResult = 1;
   CHECK(legfontes_escolher_transacao(1, -1, commit, &commitResult));
   CHECK(commits == 3 && legfontes_selecionada(0) == 0 && legfontes_selecionada(1) == -1);
   CHECK(legfontes_escolher(1, 0));
+  /* Primary picker: imported -> bundled -> imported with hard links denied. */
+  CHECK(legfontes_escolher_transacao(0, -1, commit, &commitResult));
+  CHECK(commits == 4 && legfontes_selecionada(0) == -1 && legfontes_selecionada(1) == 0);
+  CHECK(legfontes_escolher_transacao(0, 0, commit, &commitResult));
+  CHECK(commits == 5 && legfontes_selecionada(0) == 0);
+  legfontes_dir(other); legfontes_dir(root);
+  CHECK(legfontes_selecionada(0) == 0 && legfontes_selecionada(1) == 0);
   CHECK(!legfontes_escolher(2, 0)); CHECK(!legfontes_escolher(0, 99));
   /* Failed atomic preference write must keep the selected font and file. */
   snprintf(p, sizeof p, "%s/fontes-legenda.txt.tmp", root); CHECK(!mkdir(p, 0700));
-  CHECK(!legfontes_escolher_transacao(0, -1, commit, &commitResult)); CHECK(commits == 3);
+  CHECK(!legfontes_escolher_transacao(0, -1, commit, &commitResult)); CHECK(commits == 5);
   CHECK(!legfontes_remover(0)); CHECK(legfontes_caminho(0) != NULL);
   CHECK(legfontes_selecionada(0) == 0 && legfontes_selecionada(1) == 0);
   CHECK(!rmdir(p));
