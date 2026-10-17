@@ -155,7 +155,7 @@ static void limparCacheTexto(void) {
 }
 
 void txt_definir_fonte_interface(TxtFamilia familia) {
-  if (familia < TXT_FAMILIA_INTER || familia >= TXT_FAMILIA_N ||
+  if (familia < TXT_FAMILIA_INTER || (familia >= TXT_FAMILIA_N && familia != TXT_FAMILIA_IMPORTADA_UI) ||
       familia == fonteInterface) return;
   fonteInterface = familia;
   limparCacheTexto();
@@ -725,14 +725,20 @@ static void fdEsquecer(void) { memset(fdMem, 0, sizeof fdMem); memset(lgMem, 0, 
 //      ultimo a CJK embarcada (DroidSansFallback-Subset.ttf).
 static TTF_Font *fonteDeLento(TxtFamilia familia, TxtEstilo estilo, const char *s,
                               TTF_Font *principal);
-// At most one size per subtitle slot and scale is open at a time. FreeType
-// reads the private file lazily; the registry does not keep the font bytes.
+// Subtitle slots need only one size each. The interface uses several styles
+// in the same frame, so keep its faces per style and scale, opened lazily.
+// FreeType reads the private file lazily; no extra font-byte copies are kept.
 static struct { TTF_Font *face; int corpo; } importadas[TXT_NCAM][2];
+static struct { TTF_Font *face; int corpo; } interfaceImportada[TXT_NCAM][TXT_NFONTES];
 static unsigned importadasRevisao;
 static int familiaImportada(TxtFamilia f) {
-  return f == TXT_FAMILIA_IMPORTADA1 || f == TXT_FAMILIA_IMPORTADA2;
+  return f == TXT_FAMILIA_IMPORTADA1 || f == TXT_FAMILIA_IMPORTADA2 || f == TXT_FAMILIA_IMPORTADA_UI;
 }
 static void importadasFechar(int k) {
+  for (int i = 0; i < TXT_NFONTES; i++) {
+    if (interfaceImportada[k][i].face) TTF_CloseFont(interfaceImportada[k][i].face);
+    memset(&interfaceImportada[k][i], 0, sizeof interfaceImportada[k][i]);
+  }
   for (int slot = 0; slot < 2; slot++) {
     if (importadas[k][slot].face) TTF_CloseFont(importadas[k][slot].face);
     memset(&importadas[k][slot], 0, sizeof importadas[k][slot]);
@@ -747,9 +753,25 @@ static void importadasAtualizar(void) {
   limparCacheTexto(); fdEsquecer();
 }
 static TTF_Font *importadaDe(TxtFamilia familia, TxtEstilo estilo) {
-  int slot = familia == TXT_FAMILIA_IMPORTADA2;
+  int ui = familia == TXT_FAMILIA_IMPORTADA_UI;
+  int slot = ui ? LEGFONTE_INTERFACE : familia == TXT_FAMILIA_IMPORTADA2;
   int corpo = (int)(corpoAtual(estilo) * ESC_T + 0.5f);
   importadasAtualizar();
+  if (ui) {
+    // Keep the diagnostic log's fixed-width columns aligned.
+    if (ESTILOS[estilo].peso == PESO_MONO_R || ESTILOS[estilo].peso == PESO_MONO_B) return NULL;
+    if (corpo != interfaceImportada[camada][estilo].corpo) {
+      const char *caminho = legfontes_caminho(slot);
+      if (!caminho) return NULL;
+      if (interfaceImportada[camada][estilo].face) TTF_CloseFont(interfaceImportada[camada][estilo].face);
+      TTF_Font *f = TTF_OpenFont(caminho, corpo);
+      if (f && ESTILOS[estilo].peso == PESO_BOLD) TTF_SetFontStyle(f, TTF_STYLE_BOLD);
+      interfaceImportada[camada][estilo].face = f;
+      interfaceImportada[camada][estilo].corpo = corpo;
+      arabeBoldFechar(); fdEsquecer();
+    }
+    return interfaceImportada[camada][estilo].face;
+  }
   const char *caminho = legfontes_caminho(slot);
   if (!caminho) return NULL;
   if (corpo != importadas[camada][slot].corpo) {
@@ -1409,7 +1431,7 @@ int txt_iniciar(const char *dirRecursos, float escala) {
   for (int i = 0; i < (int)(sizeof fallback / sizeof fallback[0]); i++)
     if (carregarFamilia(fallback[i])) {
       fonteInterfaceFallback = fallback[i];
-      if (fonteInterface < TXT_FAMILIA_INTER || fonteInterface >= TXT_FAMILIA_N)
+      if (!familiaImportada(fonteInterface) && (fonteInterface < TXT_FAMILIA_INTER || fonteInterface >= TXT_FAMILIA_N))
         fonteInterface = fallback[i];
       marco("fontes: prontas");
       return 1;

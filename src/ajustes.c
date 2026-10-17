@@ -2152,10 +2152,15 @@ static int ajLegendaPrincipal(int op) { return op >= AJ_LEG1_TAMANHO && op <= AJ
 static int ajLegendaSecundaria(int op) {
   return (op >= AJ_LEG2_POS && op <= AJ_LEG2_BORDA) || (op >= AJ_LEG2_FONTE && op <= AJ_LEG2_RESTAURAR);
 }
-static int ajFonte(int op) { return op == AJ_LEG1_FONTE || op == AJ_LEG2_FONTE; }
+static int ajFonte(int op) { return op == AJ_LEG1_FONTE || op == AJ_LEG2_FONTE || op == AJ_FONTE_UI; }
+static int ajFonteSlot(int op) { return op == AJ_FONTE_UI ? LEGFONTE_INTERFACE : op == AJ_LEG2_FONTE; }
+static void ajFonteInterfaceAplicar(void) {
+  txt_definir_fonte_interface(legfontes_selecionada(LEGFONTE_INTERFACE) >= 0
+    ? TXT_FAMILIA_IMPORTADA_UI : (TxtFamilia)valor[AJ_FONTE_UI]);
+}
 static int ajFonteBase(int op) { return TXT_FAMILIA_N + (op == AJ_LEG2_FONTE); }
 static int ajFonteAtual(int op) {
-  int i = legfontes_selecionada(op == AJ_LEG2_FONTE);
+  int i = legfontes_selecionada(ajFonteSlot(op));
   return i >= 0 ? ajFonteBase(op) + i : op == AJ_LEG1_FONTE ? player_leg_estilo()->familia : valor[op];
 }
 static const char *ajFonteNome(int op, int v) {
@@ -4520,7 +4525,7 @@ void ajustes_dir(const char *dir) {
   aplicarIdioma(AJ_LEG_LINGUA2);
   aplicarIdioma(AJ_AUD_LINGUA);
   aplicarIdioma(AJ_AUD_LINGUA2);
-  txt_definir_fonte_interface((TxtFamilia)valor[AJ_FONTE_UI]);
+  ajFonteInterfaceAplicar();
   gfx_escala_ui_definir(ajustes_tamanho_ui());
   interfaceAplicar();
   // O teto de imagens escolhido vale desde o arranque, nao so quando a tela
@@ -5859,7 +5864,7 @@ int ajustes_iniciar(void) {
   // ANTES de conferir: e rotulosDeIdioma quem preenche nLingua.
   rotulosDeIdioma();
   conferirPadroes();
-  txt_definir_fonte_interface((TxtFamilia)valor[AJ_FONTE_UI]);
+  ajFonteInterfaceAplicar();
   // #149: aqui havia `valor[AJ_ENVIO_AUTO] = 1` (desligado), o padrao do envio
   // automatico escrito fora do vetor porque o vetor estava sete casas curto. Mesmo
   // defeito do bloco abaixo: esta funcao roda a cada abertura da tela, depois
@@ -8419,11 +8424,12 @@ static void notaLigarPar(int op) {
 static int ajOrigemDireto = AJLOG_AJUSTES;   // quem chamou: a tela, ou a Central via ajustes_rapido_passo
 static int ajFonteConfirmar(void *u) { (void)u; return gravar(); }
 static int ajFonteAplicar(int op, int novo) {
-  int slot = op == AJ_LEG2_FONTE, base = ajFonteBase(op), n = legfontes_n();
+  int slot = ajFonteSlot(op), base = ajFonteBase(op), n = legfontes_n();
   int anterior = legfontes_selecionada(slot);
   if (novo >= base && novo < base + n) {
     int ok = legfontes_escolher(slot, novo - base);
     if (ok && !slot) player_leg_estilo_tocou(PLR_LEG_FONTE);
+    if (ok && op == AJ_FONTE_UI) ajFonteInterfaceAplicar();
     return ok;
   }
 #ifdef NV_ANDROID
@@ -8432,7 +8438,11 @@ static int ajFonteAplicar(int op, int novo) {
 #else
   int excluir = base + n;
 #endif
-  if (novo == excluir && anterior >= 0) return legfontes_remover(anterior);
+  if (novo == excluir && anterior >= 0) {
+    int ok = legfontes_remover(anterior);
+    if (ok) ajFonteInterfaceAplicar();
+    return ok;
+  }
   if (novo < 0 || novo >= base) return 0;
   if (!slot) {
     if (!player_leg_fonte_definir(novo)) return 0;
@@ -8440,6 +8450,7 @@ static int ajFonteAplicar(int op, int novo) {
   } else {
     int antes = valor[op]; valor[op] = novo;
     if (!legfontes_escolher_transacao(slot, -1, ajFonteConfirmar, NULL)) { valor[op] = antes; return 0; }
+    if (op == AJ_FONTE_UI) ajFonteInterfaceAplicar();
   }
   return 1;
 }
@@ -8481,7 +8492,6 @@ static int definirValorDireto(int op, int novo) {
   }
   if (op == AJ_LEG_LINGUA || op == AJ_LEG_LINGUA2 || op == AJ_AUD_LINGUA || op == AJ_AUD_LINGUA2) aplicarIdioma(op);
   if (op == AJ_IDIOMA) { idiomaEscolhido(); desc_repetir(); }
-  if (op == AJ_FONTE_UI) txt_definir_fonte_interface((TxtFamilia)novo);
   if (op == AJ_TAMANHO_UI) gfx_escala_ui_definir(ajustes_tamanho_ui());
   if (op == AJ_INTERFACE_MODO) {
     interfaceAplicar();
@@ -8815,6 +8825,7 @@ static void eventoTela(const SDL_Event *e) {
 static void aj2Atualizar(float dt);
 void ajustes_fontes_atualizar(void) {
   const char *fonteStatus = legfontes_atualizar();
+  ajFonteInterfaceAplicar();
   if (fonteStatus) uxNotificar(fonteStatus);
 }
 void ajustes_atualizar(float dt, Uint32 agora) {
@@ -8990,7 +9001,7 @@ static int nValores(int op) {
 #ifdef NV_ANDROID
     n++;
 #endif
-    return n + (legfontes_selecionada(op == AJ_LEG2_FONTE) >= 0);
+    return n + (legfontes_selecionada(ajFonteSlot(op)) >= 0);
   }
   if (op == AJ_LEG_LINGUA || op == AJ_LEG_LINGUA2 || op == AJ_AUD_LINGUA || op == AJ_AUD_LINGUA2) return nLingua > 0 ? nLingua : 1;
   if (op == AJ_TRAILER_AUDIO) return nTrAud > 0 ? nTrAud : 1;

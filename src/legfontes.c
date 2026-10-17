@@ -18,7 +18,7 @@
 typedef struct { char id[21], nome[96], nomeAss[96], caminho[768]; } Fonte;
 static Fonte fontes[LEGFONTES_MAX];
 static int nFontes, lidas, aplicada, importando = -1;
-static char pasta[640], prefs[700], escolha[2][21];
+static char pasta[640], prefs[700], escolha[LEGFONTES_SLOTS][21];
 static unsigned revisao = 1;
 #ifdef NV_ANDROID
 static NvPerfilSessao importacaoSessao;
@@ -137,13 +137,15 @@ static int nomeFace(const void *b, size_t n, char *nome, size_t tam) {
   return ok;
 }
 static int entradaValida(const char *s);
-static int gravarEscolhas(const char novas[2][21]) {
+static int gravarEscolhas(const char novas[LEGFONTES_SLOTS][21]) {
   if (!prefs[0]) return 0;
   char tmp[708];
   snprintf(tmp, sizeof tmp, "%s.tmp", prefs);
   FILE *f = fopen(tmp, "w");
   if (!f) return 0;
-  fprintf(f, "%s\n%s\n", novas[0], novas[1]);
+// Append the interface selection after the two legacy subtitle lines.
+  // Old two-line files default to bundled UI; old readers keep their slots.
+  for (int i = 0; i < LEGFONTES_SLOTS; i++) fprintf(f, "%s\n", novas[i]);
   int erro = ferror(f);
   if (fclose(f)) erro = 1;
   if (erro || rename(tmp, prefs)) { unlink(tmp); return 0; }
@@ -182,7 +184,7 @@ void legfontes_dir(const char *dir) {
     FILE *f = fopen(prefs, "r");
     if (f) {
       char linha[64];
-      for (int i = 0; i < 2 && fgets(linha, sizeof linha, f); i++) {
+      for (int i = 0; i < LEGFONTES_SLOTS && fgets(linha, sizeof linha, f); i++) {
         linha[strcspn(linha, "\r\n")] = 0;
         if (idValido(linha)) memcpy(escolha[i], linha, 21);
       }
@@ -220,7 +222,7 @@ int legfontes_n(void) { carregar(); return nFontes; }
 const char *legfontes_nome(int i) { carregar(); return i >= 0 && i < nFontes ? fontes[i].nome : ""; }
 int legfontes_selecionada(int slot) {
   carregar();
-  if (slot < 0 || slot > 1) return -1;
+  if (slot < 0 || slot >= LEGFONTES_SLOTS) return -1;
   for (int i = 0; i < nFontes; i++) if (!strcmp(fontes[i].id, escolha[slot])) return i;
   return -1;
 }
@@ -234,7 +236,7 @@ const char *legfontes_nome_ass(int slot) {
 }
 unsigned legfontes_revisao(void) { return revisao; }
 typedef struct {
-  char ids[2][21]; const char *origem, *tomb;
+  char ids[LEGFONTES_SLOTS][21]; const char *origem, *tomb;
   int (*confirmar)(void *); void *u;
 } EscolhaCommit;
 typedef struct { char caminho[716]; int existia; } EscolhaAnterior;
@@ -299,7 +301,7 @@ static int confirmarEscolha(void *u) {
 }
 int legfontes_escolher_transacao(int slot, int i, int (*confirmar)(void *), void *u) {
   carregar();
-  if (slot < 0 || slot > 1 || i < -1 || i >= nFontes) return 0;
+  if (slot < 0 || slot >= LEGFONTES_SLOTS || i < -1 || i >= nFontes) return 0;
   EscolhaCommit c = {0}; memcpy(c.ids, escolha, sizeof escolha);
   c.confirmar = confirmar; c.u = u;
   snprintf(c.ids[slot], sizeof c.ids[slot], "%s", i >= 0 ? fontes[i].id : "");
@@ -315,7 +317,7 @@ int legfontes_remover(int i) {
   carregar();
   if (i < 0 || i >= nFontes) return 0;
   EscolhaCommit c = {0}; memcpy(c.ids, escolha, sizeof escolha);
-  for (int slot = 0; slot < 2; slot++) if (!strcmp(c.ids[slot], fontes[i].id)) c.ids[slot][0] = 0;
+  for (int slot = 0; slot < LEGFONTES_SLOTS; slot++) if (!strcmp(c.ids[slot], fontes[i].id)) c.ids[slot][0] = 0;
   char tomb[800]; snprintf(tomb, sizeof tomb, "%s.excluir", fontes[i].caminho);
   c.origem = fontes[i].caminho; c.tomb = tomb;
   int principal = !strcmp(escolha[0], fontes[i].id);
@@ -334,7 +336,7 @@ static int entradaValida(const char *s) {
   return 1;
 }
 int legfontes_importar(int slot, const char *arquivo) {
-  if (slot < 0 || slot > 1 || !pasta[0] || !entradaValida(arquivo)) return 0;
+  if (slot < 0 || slot >= LEGFONTES_SLOTS || !pasta[0] || !entradaValida(arquivo)) return 0;
   char entrada[768], id[21], destino[768], nome[96], nomeAss[96]; size_t n;
   snprintf(entrada, sizeof entrada, "%s/%s", pasta, arquivo);
   unsigned char *b = ler(entrada, &n);
@@ -373,7 +375,7 @@ int legfontes_importar(int slot, const char *arquivo) {
 }
 int legfontes_pedir_importacao(int slot) {
 #ifdef NV_ANDROID
-  if (slot < 0 || slot > 1 || !pasta[0] || importando >= 0) return 0;
+  if (slot < 0 || slot >= LEGFONTES_SLOTS || !pasta[0] || importando >= 0) return 0;
   importacaoSessao = nv_perfil_sessao_ler();
   snprintf(importacaoPasta, sizeof importacaoPasta, "%s", pasta);
   if (!nv_perfil_sessao_atual(importacaoSessao) || !android_importar_fonte(slot)) return 0;
