@@ -20,7 +20,7 @@ int perfis_sessao_atual(uint64_t e) { return e == epoch; }
 int perfis_sessao_travar(uint64_t e) { return e == epoch; }
 void perfis_sessao_destravar(void) {}
 static char event[80]; static int requests;
-int android_importar_fonte(int slot) { assert(slot == 0 || slot == 1); requests++; return 1; }
+int android_importar_fonte(int slot) { assert(slot >= 0 && slot < LEGFONTES_SLOTS); requests++; return 1; }
 int android_fonte_evento(char *out, size_t n) {
   if (!event[0]) return 0;
   snprintf(out, n, "%s", event); event[0] = 0; return 1;
@@ -151,7 +151,21 @@ int main(int argc, char **argv) {
   CHECK(commits == 5 && legfontes_selecionada(0) == 0);
   legfontes_dir(other); legfontes_dir(root);
   CHECK(legfontes_selecionada(0) == 0 && legfontes_selecionada(1) == 0);
-  CHECK(!legfontes_escolher(2, 0)); CHECK(!legfontes_escolher(0, 99));
+  /* Old two-line files remain readable. A third independent choice must not
+   * change either subtitle slot, including after reload or deletion. */
+  char first[64], second[64];
+  snprintf(pref, sizeof pref, "%s/fontes-legenda.txt", root);
+  FILE *legacy = fopen(pref, "r"); CHECK(legacy != NULL);
+  CHECK(fgets(first, sizeof first, legacy) && fgets(second, sizeof second, legacy)); fclose(legacy);
+  legacy = fopen(pref, "w"); CHECK(legacy != NULL);
+  CHECK(fputs(first, legacy) >= 0 && fputs(second, legacy) >= 0); CHECK(!fclose(legacy));
+  legfontes_dir(other); legfontes_dir(root);
+  CHECK(legfontes_selecionada(LEGFONTE_INTERFACE) == -1);
+  CHECK(legfontes_escolher(LEGFONTE_INTERFACE, 0));
+  legfontes_dir(other); legfontes_dir(root);
+  CHECK(legfontes_selecionada(LEGFONTE_INTERFACE) == 0);
+  CHECK(legfontes_selecionada(0) == 0 && legfontes_selecionada(1) == 0);
+  CHECK(!legfontes_escolher(3, 0)); CHECK(!legfontes_escolher(0, 99));
   /* Failed atomic preference write must keep the selected font and file. */
   snprintf(p, sizeof p, "%s/fontes-legenda.txt.tmp", root); CHECK(!mkdir(p, 0700));
   CHECK(!legfontes_escolher_transacao(0, -1, commit, &commitResult)); CHECK(commits == 5);
@@ -166,7 +180,7 @@ int main(int argc, char **argv) {
   failRemoval = 0;
   CHECK(legfontes_escolher(0, -1)); CHECK(legfontes_selecionada(1) == 0);
   CHECK(legfontes_remover(0)); CHECK(legfontes_n() == 0);
-  CHECK(legfontes_caminho(0) == NULL && legfontes_caminho(1) == NULL);
+  CHECK(legfontes_caminho(0) == NULL && legfontes_caminho(1) == NULL && legfontes_caminho(LEGFONTE_INTERFACE) == NULL);
   /* A late provider result owns the OLD staging directory, never a new one. */
   CHECK(legfontes_pedir_importacao(0)); CHECK(!legfontes_pedir_importacao(1));
   stage(root, "entrada-ab.tmp", b, n);
@@ -182,6 +196,14 @@ int main(int argc, char **argv) {
   CHECK(legfontes_atualizar() == NULL); CHECK(requests == 3);
   CHECK(legfontes_pedir_importacao(1)); epoch++; snprintf(event, sizeof event, "F");
   CHECK(legfontes_atualizar() == NULL); /* no old-profile failure toast */
+  /* The Android result targets the interface slot captured before launch. */
+  CHECK(legfontes_pedir_importacao(LEGFONTE_INTERFACE));
+  stage(other, "entrada-de.tmp", b, n);
+  snprintf(event, sizeof event, "R:entrada-de.tmp");
+  CHECK(legfontes_atualizar() != NULL);
+  CHECK(legfontes_selecionada(LEGFONTE_INTERFACE) == 0);
+  CHECK(legfontes_selecionada(0) == -1 && legfontes_selecionada(1) == -1);
+  CHECK(legfontes_remover(0));
   /* CJK-sized valid files are accepted, and the byte cap rejects before load. */
   size_t largeN = 9u * 1024u * 1024u; unsigned char *large = calloc(1, largeN); assert(large);
   assert(n < largeN); memcpy(large, b, n); stage(other, "entrada-ef.tmp", large, largeN);
