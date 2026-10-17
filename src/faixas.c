@@ -725,7 +725,9 @@ static void estDeFrac(int i, float f) {
 }
 static void estAbrir(int i) {
   ctl = ctlVis = i; ctlRep = 0;
+  int fonteLocal = legfontes_selecionada(0);
   ctlSub = i == EST_COR ? player_leg_estilo()->cor
+         : i == EST_FONTE && fonteLocal >= 0 ? TXT_FAMILIA_N + fonteLocal
          : i == EST_FONTE ? player_leg_estilo()->familia : 0;
   if (i == EST_COR_BORDA) {
     unsigned rgb = ajustes_leg_borda_rgb(player_leg_estilo()->corBorda);
@@ -749,6 +751,12 @@ static void estEscolher(int i) {   // amostra / fonte `i`: aplica ao vivo
     e->corBorda = i;
     player_leg_estilo_tocou(PLR_LEG_COR_BORDA);
   } else {
+    if (i >= TXT_FAMILIA_N) {
+      int local = i - TXT_FAMILIA_N;
+      if (legfontes_selecionada(0) == local && !pres) return;
+      player_leg_fonte_local_definir(local);
+      return;
+    }
     if (e->familia == i && !pres && legfontes_selecionada(0) < 0) return;
     player_leg_fonte_definir(i);
     return;
@@ -1161,9 +1169,9 @@ static int estiloTecla(SDL_Keycode k, int rep) {
     if (ok) { if (t > 1) estEscolher(ctlSub); ctl = -1; return 1; }
     if (t == 1) { if (dx) estPasso(ctl, dx, rep); }
     else if (t == 2) { if (dx) estEscolher((ctlSub + dx + VIDEO_LEG_NCORES) % VIDEO_LEG_NCORES); }
-    else {   // fontes: 2 colunas
+    else {   // fontes: 2 colunas, bundled followed by imported faces
       int n = ctlSub + dx + dy * 2;
-      if (n >= 0 && n < TXT_FAMILIA_N) estEscolher(n);
+      if (n >= 0 && n < TXT_FAMILIA_N + legfontes_n()) estEscolher(n);
     }
     return 1;
   }
@@ -1899,9 +1907,9 @@ static void celulaEstilo(int i, GfxRect r, float a, int ativa) {
 #define IL_EST_FILEIRAS ((FX_N_ESTILO + FX_BARRA_COLS - 1) / FX_BARRA_COLS)
 static float estiloGradeH(void) {
   float h = IL_EST_CEL_H * IL_EST_FILEIRAS + 6.0f * (IL_EST_FILEIRAS - 1);
-  if (telefoneui_ativo() && (ctl == EST_FONTE || (ctlVis == EST_FONTE && ctlAnim > .005f))) {
-    int rows = (TXT_FAMILIA_N + 1) / 2;
-    float fontes = estiloToqueMin() * rows + 8.0f * (rows - 1);
+  if (ctl == EST_FONTE || (ctlVis == EST_FONTE && ctlAnim > .005f)) {
+    int rows = (TXT_FAMILIA_N + legfontes_n() + 1) / 2;
+    float fontes = estiloCelulaH() * rows + 8.0f * (rows - 1);
     if (fontes > h) h = fontes;
   }
   return h;
@@ -2011,16 +2019,23 @@ static void paletaCtl(GfxRect r, float a, int ativo) {
 // A LISTA de fontes: cada nome escrito NA PROPRIA fonte, 2 colunas, no lugar da
 // grade (mesma altura). A em uso leva o check no acento; o foco, a superficie.
 static void fontesCtl(GfxRect r, float a, int ativo) {
-  int rows = (TXT_FAMILIA_N + 1) / 2;
+  int total = TXT_FAMILIA_N + legfontes_n(), rows = (total + 1) / 2;
   float vao = 8.0f, cw = (r.w - vao) * 0.5f, ch = (r.h - vao * (rows - 1)) / rows, ar, ag, ab;
   int i;
   ajustes_acento_marca(&ar, &ag, &ab);
-  for (i = 0; i < TXT_FAMILIA_N; i++) {
+  int fonteLocal = legfontes_selecionada(0);
+  for (i = 0; i < total; i++) {
     GfxRect c = { r.x + (i % 2) * (cw + vao), r.y + (i / 2) * (ch + vao), cw, ch };
-    float ai = a * anim_clamp(ctlAnim * 1.7f - (float)i * 0.12f, 0.0f, 1.0f);
-    int em = i == player_leg_estilo()->familia, sel = i == ctlSub;
+    float ai = a * anim_clamp(ctlAnim * 1.7f - (float)i * 0.06f, 0.0f, 1.0f);
+    int importada = i >= TXT_FAMILIA_N;
+    int em = importada ? fonteLocal == i - TXT_FAMILIA_N
+                       : fonteLocal < 0 && i == player_leg_estilo()->familia;
+    int sel = i == ctlSub;
     float tw = cw - 40.0f - 34.0f;
-    TxtLinha n = txt_linha_corta_familia(TXT_G30B, TXT_FAMILIAS_PT[i], 243, 242, 239, sel ? 255 : 220, tw, (TxtFamilia)i);
+    const char *nome = importada ? legfontes_nome(i - TXT_FAMILIA_N) : TXT_FAMILIAS_PT[i];
+    TxtLinha n = importada
+               ? txt_linha_corta(TXT_G30B, nome, 243, 242, 239, sel ? 255 : 220, tw)
+               : txt_linha_corta_familia(TXT_G30B, nome, 243, 242, 239, sel ? 255 : 220, tw, (TxtFamilia)i);
     if (sel) plrui_linha_foco(c, 22.0f, ai); else fundoCtl(c, ai);
     txt_desenhar_alpha(n, c.x + 22.0f, c.y + (c.h - (float)n.h) * 0.5f, ai);
     if (em) gfx_icone((GfxRect){ c.x + c.w - 22.0f - 26.0f, c.y + (c.h - 26.0f) * 0.5f, 26.0f, 26.0f }, "pl_check", ar, ag, ab, ai);

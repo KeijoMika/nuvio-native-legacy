@@ -1309,6 +1309,14 @@ int player_leg_fonte_definir(int familia) {
   novo.familia = familia;
   return estiloSemFonteLocal(&novo, PLR_LEG_FONTE);
 }
+int player_leg_fonte_local_definir(int indice) {
+  player_leg_estilo_carregar();
+  VideoLegendaEstilo novo = legEstilo;
+  EstiloCommit c = { &novo, PLR_LEG_FONTE };
+  if (!legfontes_escolher_transacao(0, indice, estiloConfirmar, &c)) return 0;
+  video_legenda_estilo(&legEstilo);
+  return 1;
+}
 int player_leg_estilo_restaurar(void) {
   return estiloSemFonteLocal(player_leg_estilo_padrao(), PLR_LEG_NADA);
 }
