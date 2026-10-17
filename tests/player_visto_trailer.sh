@@ -23,7 +23,7 @@ cc "${flags[@]}" -Dajustes_cw_concluido=nv_base_ajustes_cw_concluido -Dajustes_m
 cc "${flags[@]}" -Dvisto_titulo=nv_base_visto_titulo -Dvisto_episodios=nv_base_visto_episodios -c src/visto.c -o "$dir/visto.o"
 # Episode responses are controlled by the fixture, without HTTP threads.
 renomes=()
-for nome in episodios episodios_garantir episodios_carregando episodios_pendente; do
+for nome in episodios episodios_garantir episodios_carregando episodios_pendente refazer_continuar; do
   renomes+=("-Ddesc_$nome=nv_base_desc_$nome")
 done
 cc "${flags[@]}" "${renomes[@]}" -c src/descoberta.c -o "$dir/descoberta.o"

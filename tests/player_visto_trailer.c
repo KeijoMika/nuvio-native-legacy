@@ -52,6 +52,9 @@ void desc_episodios(int idx, int temporada) { (void)idx; (void)temporada; }
 void desc_episodios_garantir(int idx) { (void)idx; }
 void desc_episodios_pendente(void) {}
 int desc_episodios_carregando(int idx) { (void)idx; return carregando; }
+// A detached Home refresh publishes a real catalog, which would race the next
+// scenario's fixture. This test observes player writes, not rebuilding Home.
+void desc_refazer_continuar(void) {}
 #include "rede.h"
 
 // Keep background marker lookups offline too.
