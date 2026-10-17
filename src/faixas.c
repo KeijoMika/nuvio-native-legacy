@@ -1,4 +1,5 @@
 #include "faixas.h"
+#include "legfontes.h"
 #include "ponteiro.h"
 #include "rolagemtoque.h"
 #include "telefoneui.h"
@@ -621,7 +622,7 @@ static void valorEstilo(int linha, char *dst, size_t tam) {
       else
         snprintf(dst, tam, "%d%%", e->tamanho);
       break;
-    case 1: snprintf(dst, tam, "%s", TXT_FAMILIAS_PT[e->familia >= 0 && e->familia < TXT_FAMILIA_N ? e->familia : 0]); break;
+    case 1: snprintf(dst, tam, "%s", legfontes_selecionada(0) >= 0 ? legfontes_nome(legfontes_selecionada(0)) : TXT_FAMILIAS_PT[e->familia >= 0 && e->familia < TXT_FAMILIA_N ? e->familia : 0]); break;
     case 2: snprintf(dst, tam, "%s", VIDEO_LEG_CORES_PT[e->cor % VIDEO_LEG_NCORES]); break;
     case 3: snprintf(dst, tam, "%s", EST_OPAC[e->opacidade > 3 ? 3 : e->opacidade]); break;
     case 4: snprintf(dst, tam, "%s", EST_FUNDO[e->fundo > 4 ? 4 : e->fundo]); break;
@@ -655,10 +656,8 @@ static void ciclarEstilo(int linha) {
     case 6: e->borda   = (e->borda + 1) % 3; player_leg_estilo_tocou(PLR_LEG_BORDA); break;
     case 8: e->negrito = !e->negrito; player_leg_estilo_tocou(PLR_LEG_NEGRITO); break;
     case EST_RESTAURAR:
-      *e = (VideoLegendaEstilo){ 120, 0, 0, 3, 1, 0, 0, TXT_FAMILIA_INTER };
-      // Restaurar e voltar ao normal do app, e o normal e respeitar o arquivo.
-      player_leg_estilo_tocou(PLR_LEG_NADA);
-      break;
+      player_leg_estilo_restaurar();
+      return;
     default: return;
   }
   player_leg_estilo_mudou();
@@ -750,9 +749,9 @@ static void estEscolher(int i) {   // amostra / fonte `i`: aplica ao vivo
     e->corBorda = i;
     player_leg_estilo_tocou(PLR_LEG_COR_BORDA);
   } else {
-    if (e->familia == i && !pres) return;
-    e->familia = i;
-    player_leg_estilo_tocou(PLR_LEG_FONTE);
+    if (e->familia == i && !pres && legfontes_selecionada(0) < 0) return;
+    player_leg_fonte_definir(i);
+    return;
   }
   player_leg_estilo_mudou();
 }
