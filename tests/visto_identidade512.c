@@ -22,7 +22,7 @@ static const char *idLista = "tt21975436", *tipoLista = "series";
 static int consultas, porId, porNumero, simklEnvios, diarios, drenagens;
 static int confirmados;
 static long long gestoMs = 100;
-static int ultimoVisto, perfilTrakt, perfilSimkl, perfilDiario;
+static int ultimoVisto, perfilTrakt, perfilSimkl, perfilDiario, tvdbDiario[VT_LOTE];
 static VistoPar paresTrakt[VT_LOTE], paresSimkl[VT_LOTE], paresDiario[VT_LOTE];
 static TraktEpisodioAlvo alvosRecebidos[VT_LOTE];
 static int criarFila(pthread_t *t, const pthread_attr_t *a, void *(*f)(void *), void *arg) {
@@ -99,11 +99,12 @@ int contapend_episodios(const char *id,const char *tipo,const VistoPar *p,int n,
 int contapend_titulo(const char *id,const char *tipo,int v) {
   (void)id;(void)tipo;(void)v;assert(!"unexpected title journal");return 0;
 }
-void contapend_reenviar_com(int (*f)(const char *,const char *,const VistoPar *,int,int,int,const int *,int)) {
+void contapend_reenviar_com(int (*f)(const char *,const char *,const VistoPar *,int,int,int,const int *,int,const int *)) {
   (void)f;
 }
-long long contapend_gesto(const char *id,const char *tipo,const VistoPar *p,int n,
-                          int v,int destinos,const int *temps,int nt) {
+long long contapend_gesto_alvos(const char *id,const char *tipo,const VistoPar *p,
+                          const int *tvdb,int n,int v,int destinos,
+                          const int *temps,int nt) {
   (void)v;(void)temps;(void)nt;
   if (!(travaPerfil && !strcmp(id,"tt21975436")))
     fprintf(stderr, "unexpected journal: lock=%d id=%s type=%s\n", travaPerfil,
@@ -112,7 +113,12 @@ long long contapend_gesto(const char *id,const char *tipo,const VistoPar *p,int 
   if (destinos & VISTO_CONTA) {
     diarios++; perfilDiario=perfil; memcpy(paresDiario,p,(size_t)n*sizeof *p);
   }
+  for (int i=0;i<n;i++) tvdbDiario[i]=tvdb ? tvdb[i] : 0;
   return ++gestoMs;
+}
+long long contapend_gesto(const char *id,const char *tipo,const VistoPar *p,int n,
+                          int v,int destinos,const int *temps,int nt) {
+  return contapend_gesto_alvos(id,tipo,p,NULL,n,v,destinos,temps,nt);
 }
 int contapend_gesto_atual(const char *id,int t,int e,long long ms) {
   (void)t;(void)e; return travaPerfil && !strcmp(id,"tt21975436") && ms>0;
@@ -127,7 +133,8 @@ static void zerarTeste(void) {
   assert(!pendente && !travaPerfil);perfil=1;falharFio=trocarDurante=0;
   indiceLista=7;idLista="tt21975436";tipoLista="series";tvdbLista=11209906;versaoLista=1;
   consultas=porId=porNumero=simklEnvios=diarios=drenagens=confirmados=0;
-  ultimoVisto=perfilTrakt=perfilSimkl=perfilDiario=0;memset(alvosRecebidos,0,sizeof alvosRecebidos);
+  ultimoVisto=perfilTrakt=perfilSimkl=perfilDiario=0;
+  memset(alvosRecebidos,0,sizeof alvosRecebidos);memset(tvdbDiario,0,sizeof tvdbDiario);
 }
 int main(void) {
   VistoPar p[2]={{2,2},{2,3}},original[2]={{2,2},{2,3}};
@@ -137,6 +144,7 @@ int main(void) {
   executarFila();p[0]=original[0];
   assert(porId==1 && !porNumero && perfilTrakt==1);
   assert(alvosRecebidos[0].tvdbEp==11209906 && alvosRecebidos[1].tvdbEp==0);
+  assert(tvdbDiario[0]==11209906 && tvdbDiario[1]==0);
   assert(!memcmp(paresTrakt,original,sizeof original));
   puts("ok  queued targets survive catalog and caller-buffer replacement");
   zerarTeste();assert(visto_episodios_item(7,"tt21975436","series",p,2,1,VISTO_TRAKT));
@@ -171,5 +179,11 @@ int main(void) {
   zerarTeste();falharFio=1;assert(!visto_episodios_item(7,"tt21975436","series",p,2,1,VISTO_TRAKT|VISTO_CONTA));
   assert(diarios==1 && !pendente && !porId && !porNumero && !drenagens && !travaPerfil);
   puts("ok  worker creation failure preserves the account journal");
-  puts("visto_identidade512: 11 scenarios passed");return 0;
+  zerarTeste();int retryTvdb[2]={11209906,0};
+  assert(perfis_sessao_travar(1));
+  assert(visto_reenviar("tt21975436","series",p,2,1,VISTO_TRAKT,NULL,0,retryTvdb)==VISTO_TRAKT);
+  perfis_sessao_destravar();
+  assert(porId==1 && !porNumero && alvosRecebidos[0].tvdbEp==11209906);
+  puts("ok  journal retry preserves exact TVDB targets");
+  puts("visto_identidade512: 12 scenarios passed");return 0;
 }

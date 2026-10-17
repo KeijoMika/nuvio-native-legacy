@@ -267,6 +267,7 @@ char *rede_baixar(const char *u, int t) {
     if (strstr(u, rotas[r].trecho)) return rotas[r].resp ? strdup(rotas[r].resp) : NULL;
   if (strstr(u, "cinemeta")) {
     if (strstr(u, "/meta/series/tt0388629.json") && cineSerie) return strdup(cineSerie);
+    if (strstr(u, "/meta/series/tt21975436.json") && cineSerie) return strdup(cineSerie);
     if (strstr(u, "/meta/movie/tt13293588.json"))  return strdup(META_FILME_ERRADO);
     if (strstr(u, "/meta/series/tt13293588.json")) return strdup(cineSerie ? cineSerie : META_SERIE);
     if (strstr(u, "/meta/movie/tt0111161.json"))   return strdup(META_FILME_OK);
@@ -474,6 +475,46 @@ int main(void) {
     assert(publicarEpisodiosEx("{\"videos\":[]}", 0, "Alternate numbering",
                               NULL, 0, &tp, 0) == 0);
     assert(cat_n_episodios(0) == 2);
+  }
+  // Kaiju No. 8: Cinemeta's complete-looking 23-episode S1 must still be
+  // replaced when the selected metadata addon proves a 35-episode S1/S2
+  // topology. Keeping both numeric layouts scatters duplicate episodes.
+  {
+    char cine[8192], addon[12288];
+    size_t a = (size_t)snprintf(cine, sizeof cine,
+      "{\"meta\":{\"id\":\"tt21975436\",\"type\":\"series\","
+      "\"name\":\"Kaiju No. 8\",\"videos\":[");
+    size_t b = (size_t)snprintf(addon, sizeof addon,
+      "{\"meta\":{\"id\":\"tt21975436\",\"type\":\"series\","
+      "\"name\":\"Kaiju No. 8\",\"videos\":[");
+    for (int i = 1; i <= 23; i++)
+      a += (size_t)snprintf(cine + a, sizeof cine - a,
+        "%s{\"season\":1,\"episode\":%d,\"ids\":{\"tvdb\":%d}}",
+        i > 1 ? "," : "", i, 1000 + i);
+    for (int i = 1; i <= 35; i++) {
+      int t = i <= 12 ? 1 : 2, e = i <= 12 ? i : i - 12;
+      b += (size_t)snprintf(addon + b, sizeof addon - b,
+        "%s{\"season\":%d,\"episode\":%d,\"ids\":{\"tvdb\":%d}}",
+        i > 1 ? "," : "", t, e, 1000 + i);
+    }
+    snprintf(cine + a, sizeof cine - a, "]}}");
+    snprintf(addon + b, sizeof addon - b, "]}}");
+    nFake = 0; nRotas = 0; addonMeta = 1; addonTipo = "/series/";
+    fakeMetaExterno = 0; fakeSoCinemeta = 0; fakeIdioma = "en-US";
+    cineSerie = cine; addonResp = addon;
+    limparCacheMeta();
+    catalogoCom("tt21975436", "series", "Kaiju No. 8");
+    abrir();
+    assert(cat_n_episodios(0) == 35);
+    int velho = 0, novo = 0;
+    for (int i = 0; i < cat_n_episodios(0); i++) {
+      const CatEp *x = cat_episodio(0, i);
+      velho += x->temporada == 1 && x->episodio == 13;
+      novo += x->temporada == 2 && x->episodio == 1 && x->tvdbEp == 1013;
+    }
+    assert(!velho && novo == 1);
+    addonMeta = 0; addonResp = NULL; cineSerie = NULL; nRotas = 0;
+    limparCacheMeta();
   }
   // Samsung 2.0.4: One Piece renumerado por um addon de fontes.
   {

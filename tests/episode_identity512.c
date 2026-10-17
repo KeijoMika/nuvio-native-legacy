@@ -53,11 +53,11 @@ int main(void) {
   {
     TraktScrobbleAlvo frozen = {{0}, 0}; int ready = 0;
     ScrobbleEstado state = {{0}, 0};
-    assert(!scrobble_alvo_congelar(&frozen, &ready, "tt21975436:1:14", 0, 0));
+    assert(!scrobble_alvo_congelar(&frozen, &ready, "tt21975436:1:14", 0, 0, 0));
     assert(!ready && !frozen.id[0]);
     // The playing event cannot queue a numeric start from provisional data.
     assert(!ready && scrobble_decidir(&state, SCR_EV_TOCANDO, NULL, 2.0) == SCR_NADA);
-    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:2:2", 1, 11209906));
+    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:2:2", 1, 1, 11209906));
     assert(ready && frozen.tvdbEp == 11209906 && !strcmp(frozen.id, "tt21975436:2:2"));
     // If final publication and pause cross, there was no numeric session to
     // pause. The next playing tick starts the exact session and its later
@@ -65,12 +65,22 @@ int main(void) {
     assert(scrobble_decidir(&state, SCR_EV_PAUSOU, frozen.id, 42.0) == SCR_NADA);
     assert(scrobble_decidir(&state, SCR_EV_TOCANDO, frozen.id, 2.0) == SCR_START);
     assert(scrobble_decidir(&state, SCR_EV_PAUSOU, frozen.id, 42.0) == SCR_PAUSE);
-    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:9:9", 1, 999));
+    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:9:9", 1, 1, 999));
     assert(frozen.tvdbEp == 11209906 && !strcmp(frozen.id, "tt21975436:2:2"));
     memset(&frozen, 0, sizeof frozen); ready = 0;
-    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:2:3", 1, 0));
-    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:2:3", 1, 123456));
+    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:2:3", 1, 1, 0));
+    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:2:3", 1, 1, 123456));
     assert(frozen.tvdbEp == 0); // no worker-time metadata upgrade
+
+    // A final publication removed the provisional S1E13 pair. Numeric
+    // scrobbling must stay disabled, while a TVDB id captured before the
+    // replacement remains a safe target even though that pair disappeared.
+    memset(&frozen, 0, sizeof frozen); ready = 0;
+    assert(!scrobble_alvo_congelar(&frozen, &ready, "tt21975436:1:13", 1, 0, 0));
+    assert(!ready);
+    assert(scrobble_alvo_congelar(&frozen, &ready, "tt21975436:1:13",
+                                  1, 0, 10567809));
+    assert(ready && frozen.tvdbEp == 10567809);
   }
 
   puts("episode_identity512: PASS");

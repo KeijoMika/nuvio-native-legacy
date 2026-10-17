@@ -34,7 +34,13 @@ int main(void) {
   c = title(1); cat_definir_tudo(&c, 1, NULL, 0); cat_definir_episodios(0, v, 3);
   assert(!cat_episodios_finais(0, c.imdb));
   assert(cat_episodio_tvdb(0, c.imdb, 2, 1) == 0);
+  assert(cat_episodio_tvdb_qualquer(0, c.imdb, 2, 1) == 10567809);
+  assert(!cat_episodio_existe_final(0, c.imdb, 2, 1));
   assert(!cat_episodio_por_tvdb(0, c.imdb, 10567809, &t, &e));
+
+  c = title(0); cat_definir_tudo(&c, 1, NULL, 0); cat_definir_episodios(0, v, 3);
+  assert(cat_episodio_existe_final(0, c.imdb, 2, 1));
+  assert(!cat_episodio_existe_final(0, c.imdb, 1, 13));
 
   c = title(0);
   CatEp special[] = {ep(0,1,7001)};
