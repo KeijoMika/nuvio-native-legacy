@@ -17,6 +17,7 @@
 #include "nuvem.h"
 #include "cwordem.h"
 #include "js.h"
+#include "metaep.h"
 #include "recomenda.h"
 #include "trakt.h"
 #include "simkl.h"
@@ -7322,22 +7323,36 @@ static int metaArquivosCompativeis(const char *arquivos, const char *catalogo) {
 // Inclui especiais (temporada 0) sem renumerar o par nem o id do video.
 static int parsearEpisodios(const char *corpo, CatEp *eps, int max) {
   int n = 0;
+  unsigned char parAmbiguo[VIDEOS_MAX] = {0};
   const char *p = metaContarEpisodios(corpo, NULL) ? js_array(corpo, NULL, "videos") : NULL;
   EpSet set = { 0 };
-  while (p && n < max) {
+  while (p) {
     const char *f = js_fim(p);
     int t = videoTemporada(p, f);
     int ne = t >= 0 ? (int)js_num(p, f, "episode", 0) : 0;
+    int tvdb = metaep_tvdb_video(p, f);
+    int novo = t >= 0 && (ne <= 0 || epSetNovo(&set, t, ne));
+    // Duplicate files for one displayed episode can disagree about identity.
+    // Keep the first source URL, but do not let either ID become a Trakt proof.
+    if (t >= 0 && !novo)
+      for (int i = 0; i < n; i++)
+        if (eps[i].temporada == t && eps[i].episodio == ne) {
+          if (!parAmbiguo[i] && eps[i].tvdbEp > 0 && tvdb > 0 && eps[i].tvdbEp != tvdb) {
+            eps[i].tvdbEp = 0; parAmbiguo[i] = 1;
+          } else if (!parAmbiguo[i] && eps[i].tvdbEp <= 0 && tvdb > 0)
+            eps[i].tvdbEp = tvdb;
+        }
     // Repeticao sai JA AQUI, antes do corte de `max`: descartada so depois de
     // ordenar, as vagas iam para copias dos primeiros episodios e o resto
     // da serie nem era lido. Fica o primeiro da resposta; sem numero de
     // episodio nao e repeticao.
-    if (t >= 0 && (ne <= 0 || epSetNovo(&set, t, ne))) {
+    if (novo && n < max) {
       CatEp *e = &eps[n];
       char d[24] = "";
       memset(e, 0, sizeof *e);
       e->temporada = t;
       e->episodio = ne;
+      e->tvdbEp = tvdb;
       js_texto(p, f, "name", e->nome, sizeof e->nome);
       // O id do video (cat_id_stream): e ele que se manda aos addons de fonte
       // quando o titulo nao e do IMDb. Addon que usa "title" no lugar de "name"
@@ -7362,6 +7377,16 @@ static int parsearEpisodios(const char *corpo, CatEp *eps, int max) {
     p = js_prox(f);
   }
   free(set.v);
+  // The same exact ID assigned to different source pairs is ambiguous. Keep
+  // both playable cards, but never translate or scrobble either by that ID.
+  { unsigned char ambiguo[VIDEOS_MAX] = {0};
+    for (int i = 0; i < n; i++) if (eps[i].tvdbEp > 0)
+      for (int j = i + 1; j < n; j++)
+        if (eps[j].tvdbEp == eps[i].tvdbEp &&
+            (eps[j].temporada != eps[i].temporada || eps[j].episodio != eps[i].episodio))
+          ambiguo[i] = ambiguo[j] = 1;
+    for (int i = 0; i < n; i++) if (ambiguo[i]) eps[i].tvdbEp = 0;
+  }
   for (int i = 1; i < n; i++) {
     CatEp k = eps[i];
     int j;
@@ -7520,8 +7545,26 @@ static int publicarEpisodiosEx(const char *corpo, int alvoItem, const char *titu
   alvoItem = epPublicacaoIniciar(alvoItem);
   if (n && alvoItem >= 0 && (!cedo || !cat_n_episodios(alvoItem))) {
     int antigos = cat_n_episodios(alvoItem);
-    CatEp *estavel = antigos > 0 && epPedidoAtual() ? malloc(sizeof(CatEp) * VIDEOS_MAX) : NULL;
-    if (estavel) {
+    CatItem atual;
+    int parcial = !cedo && cat_copiar_item(alvoItem, &atual) && atual.epsParciais;
+    CatEp *estavel = antigos > 0 && epPedidoAtual() && !parcial
+                   ? malloc(sizeof(CatEp) * VIDEOS_MAX) : NULL;
+    if (parcial) {
+      // An early list exists only to make the page useful while the selected
+      // metadata source resolves. It must not contribute extra topology to the
+      // final list: continuous S1E13 and split S2E1 can be the same episode.
+      // Text/art enrichment was already applied above to matching final pairs.
+      descCatEpisodios(alvoItem, eps, n);
+      if (tp) temporadasDosEps(eps, n, tp);
+      if (cat_copiar_item(alvoItem, &atual)) {
+        atual.epsParciais = 0;
+        if (tp) {
+          atual.nTemporadas = tp->n;
+          memcpy(atual.temporadas, tp->t, sizeof(int) * (size_t)tp->n);
+        }
+        descCatAtualizar(cat_atualizar_item, alvoItem, &atual);
+      }
+    } else if (estavel) {
       int k = 0;
       // Mantem os pares e a ordem ja vistos; novos pares entram no fim.
       // ponytail: busca O(n²), limitada a 2400 pares; indexar se o teto crescer.
