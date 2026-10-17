@@ -239,13 +239,26 @@ typedef struct {
 } EscolhaCommit;
 typedef struct { char caminho[716]; int existia; } EscolhaAnterior;
 static int prepararPreferencias(EscolhaAnterior *a) {
-  // Prepare the old file before either preference changes. Rollback is a
-  // same-directory rename, not a second content write that could run out of
-  // disk space after the player's atomic write has already failed.
+  // Prepare the old file before either preference changes. Android forbids
+  // hard links even in private app storage, so use an ordinary copy. Rollback
+  // remains a same-directory rename requiring no further content writes.
   snprintf(a->caminho, sizeof a->caminho, "%s.anterior", prefs);
   if (unlink(a->caminho) && errno != ENOENT) return 0;
-  a->existia = link(prefs, a->caminho) == 0;
-  return a->existia || errno == ENOENT;
+  a->existia = 0;
+  FILE *origem = fopen(prefs, "rb");
+  if (!origem) return errno == ENOENT;
+  FILE *copia = fopen(a->caminho, "wb");
+  if (!copia) { fclose(origem); return 0; }
+  char bloco[1024]; size_t n;
+  int erro = 0;
+  while ((n = fread(bloco, 1, sizeof bloco, origem)))
+    if (fwrite(bloco, 1, n, copia) != n) { erro = 1; break; }
+  if (ferror(origem)) erro = 1;
+  if (fclose(origem)) erro = 1;
+  if (fclose(copia)) erro = 1;
+  if (erro) { unlink(a->caminho); return 0; }
+  a->existia = 1;
+  return 1;
 }
 static void liberarPreferencias(EscolhaAnterior *a) { if (a->existia) unlink(a->caminho); }
 static void restaurarPreferencias(EscolhaAnterior *a) {
