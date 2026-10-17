@@ -131,6 +131,11 @@ int main(int argc,char **argv) {
   CHECK(assrender_fonte_local_transacao(NULL,accept,NULL));CHECK(!assrender_fonte_local_ativa(path));
   style.overrides=0;pthread_mutex_lock(&assTrava);ass_plain_style_locked(&style);pthread_mutex_unlock(&assTrava);CHECK(current()==base);
   CHECK(assrender_fonte_local_transacao(path,accept,NULL));CHECK(current()==variant);
+  // Attachment-cache rollover clears libass memory faces. The imported face
+  // must be registered again before the new attachment is admitted.
+  assBytesFontesVistas = ASS_FONTES_TETO_BYTES;
+  CHECK(assrender_adicionar_fonte("rollover.ttf",extra,extraN));
+  CHECK(assrender_fonte_local_ativa(path));CHECK(current()==variant);
   // Untagged Arabic requires the normal system fallback for the selected
   // Latin-only fixture. An authored inline font must still resolve attachments.
   char mixed[2400];size_t docN=strlen(doc);

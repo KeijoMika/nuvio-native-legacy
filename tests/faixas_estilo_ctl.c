@@ -14,10 +14,15 @@ const Legenda *addons_legenda(int i) { (void)i; return NULL; }
 const char *player_id_canal(void) { return ""; }
 const char *i18n(const char *s) { return s; }
 static VideoLegendaEstilo estilo;
-static int tocou, mudou;
+static int tocou, mudou, fonteLocal = -1;
 VideoLegendaEstilo *player_leg_estilo(void) { return &estilo; }
 void player_leg_estilo_mudou(void) { mudou++; }
 void player_leg_estilo_tocou(int m) { if (m == PLR_LEG_COR) tocou++; }
+int legfontes_n(void) { return 2; }
+const char *legfontes_nome(int i) { return i == 0 ? "Imported One" : i == 1 ? "Imported Two" : ""; }
+int legfontes_selecionada(int slot) { return slot == 0 ? fonteLocal : -1; }
+int player_leg_fonte_definir(int familia) { estilo.familia = familia; fonteLocal = -1; return 1; }
+int player_leg_fonte_local_definir(int indice) { if (indice < 0 || indice >= legfontes_n()) return 0; fonteLocal = indice; return 1; }
 static int ass;
 int assrender_ativo(void) { return ass; }
 int assrender_texto_simples(void) { return 0; }
@@ -89,8 +94,18 @@ int main(void) {
   tecla(SDLK_DOWN, 0); assert(estilo.familia == 3);
   tecla(SDLK_UP, 0); tecla(SDLK_LEFT, 0); assert(estilo.familia == 0);
   tecla(SDLK_UP, 0); assert(estilo.familia == 0);
-  assert(alturaEstilo() == h0);
+  assert(alturaEstilo() > h0); // imported rows remain fully visible
   tecla(SDLK_BACKSPACE, 0); assert(ctl == -1);
+
+  // The same in-player menu reaches imported faces, applies them, and reopens
+  // with the correct check/focus. Picking a bundled face clears the override.
+  tecla(SDLK_RETURN, 0); ctlSub = TXT_FAMILIA_N - 2;
+  tecla(SDLK_DOWN, 0); assert(fonteLocal == 0 && ctlSub == TXT_FAMILIA_N);
+  tecla(SDLK_RETURN, 0); assert(ctl == -1);
+  tecla(SDLK_RETURN, 0); assert(ctlSub == TXT_FAMILIA_N);
+  estEscolher(TXT_FAMILIA_N + 1); assert(fonteLocal == 1);
+  estEscolher(2); assert(fonteLocal == -1 && estilo.familia == 2);
+  estilo.familia = 0; ctl = -1;
 
   // Hover only focuses: nothing is applied until the click.
   tecla(SDLK_RETURN, 0); ponteiroSub(4, 0); assert(ctlSub == 4 && estilo.familia == 0);
