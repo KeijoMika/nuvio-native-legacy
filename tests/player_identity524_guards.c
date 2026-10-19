@@ -5,6 +5,7 @@
 #undef main
 #include "dados.h"
 #include "progresso.h"
+#include "traktscrobble.h"
 
 static CatItem observed;
 static int observations;
@@ -20,9 +21,19 @@ void nv_identity_desc_episodios(int ix, int season) {
 void nv_identity_intro_pedir(const char *id, long tmdb, int t, int e, double a, double p) {
   (void)id; (void)tmdb; (void)t; (void)e; (void)a; (void)p;
 }
+void nv_identity_intro_mapeado(const char *id, long tmdb, int t, int e, int it, int ie, double a, double p) {
+  (void)it; (void)ie; nv_identity_intro_pedir(id, tmdb, t, e, a, p);
+}
 void nv_identity_trakt_marcar(const char *id, double p, double d, double a, int fim) {
   (void)p; (void)d; (void)a; (void)fim; trackerCalls++;
   snprintf(trackerId, sizeof trackerId, "%s", id ? id : "");
+}
+// The player now dispatches its frozen canonical target through this boundary.
+// Capture outbound identity without requiring a real authenticated Trakt account.
+int nv_identity_scrobble_alvo(int evento, const TraktScrobbleAlvo *alvo,
+                               double pos, double dur, double assistido, int fim) {
+  if (evento == SCR_EV_SAIU) nv_identity_trakt_marcar(alvo->id, pos, dur, assistido, fim);
+  return SCR_NADA;
 }
 void nv_identity_parental_pedir(const char *id) {
   parentalRequests++; snprintf(parentalId, sizeof parentalId, "%s", id ? id : "");
