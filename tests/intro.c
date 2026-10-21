@@ -31,6 +31,10 @@
 #include "nvtmp.h"
 static char dadosTeste[NVT_MAX];
 const char *dados_dir(void){return dadosTeste;}
+char *dados_caminho(char *dst,unsigned cap,const char *nome) {
+  if(!dadosTeste[0] || !nome || !nome[0])return NULL;
+  snprintf(dst,cap,"%s/%s",dadosTeste,nome);return dst;
+}
 void dados_fs_travar(void){}
 void dados_fs_liberar(void){}
 void dados_marcar_sujo(int leve){(void)leve;}
