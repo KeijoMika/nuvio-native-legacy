@@ -830,6 +830,16 @@ static int itemPronto(const CatItem *d) {
          (d->nota > 0 || jaTentada(d->imdb));
 }
 
+// Filme na fileira cujo id e uma serie com temporadas: o nome da serie.
+// Vale sem copia no catalogo. O /meta/movie de tt9054364 e outro filme (#524).
+static void corrigirFilmeColidido(CatItem *d) {
+  char alt[sizeof d->titulo];
+  if (!d || strcmp(d->tipo, "movie")) return;
+  if (!desc_titulo_serie(d->imdb, alt, sizeof alt) || !alt[0] ||
+      !strcmp(alt, d->titulo)) return;
+  snprintf(d->titulo, sizeof d->titulo, "%s", alt);
+}
+
 // ENFEITAR EM PARALELO.
 //
 // Arte vem do metahub (sem GET). O Cinemeta so entra quando falta sinopse/
@@ -894,6 +904,9 @@ static void enfeitarFila(FilaEnf *f) {
 int trakt_enfeitar_lote_sessao(CatItem *saida, int n, uint64_t sessao) {
   int jaFeitos = 0, q0;
   if (!nv_perfil_sessao_atual(sessao) || n <= 0) return 0;
+  // Antes do atalho "ja pronto": esse atalho nao chama enfeitar, e era por
+  // ele que o filme colidido continuava com o nome do Trakt.
+  for (q0 = 0; q0 < n; q0++) corrigirFilmeColidido(&saida[q0]);
   // QUEM JA TEM TUDO NAO VOLTA A REDE. O item vindo do Trakt com
   // `?extended=full` chega com arte e sinopse (ver doBlocoTrakt); o item vindo
   // do progresso LOCAL chega zerado — metahub cobre a arte sem Cinemeta, e o
@@ -2124,6 +2137,11 @@ int trakt_perfil(PerfilDados *d) {
       for(int i=0;i<nRanking;i++)if(imdb[0]&&!strcmp(ranking[i].id,imdb)){hi=i;break;}
       if(hi<0&&imdb[0]&&nRanking<100){hi=nRanking++;PerfilDestaque *h=&ranking[hi];
         snprintf(h->id,sizeof h->id,"%s",imdb);snprintf(h->titulo,sizeof h->titulo,"%s",titulo);
+        if(!(t>=0&&e>0)){
+          char alt[sizeof h->titulo];
+          if(desc_titulo_serie(imdb,alt,sizeof alt)&&alt[0])
+            snprintf(h->titulo,sizeof h->titulo,"%s",alt);
+        }
         if(t>=0&&e>0)snprintf(h->detalhe,sizeof h->detalhe,i18n("T%dE%d"),t,e);else snprintf(h->detalhe,sizeof h->detalhe,"Filme");
         if(imdb[0]){snprintf(h->poster,sizeof h->poster,"https://images.metahub.space/poster/medium/%s/img",imdb);
           snprintf(h->backdrop,sizeof h->backdrop,"https://images.metahub.space/background/medium/%s/img",imdb);}}
