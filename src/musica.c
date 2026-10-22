@@ -14,7 +14,6 @@
 #endif
 
 #define MUS_TAB 8
-#define MUS_GUARDADAS_MAX 48
 
 typedef struct {
   char chave[24];
@@ -199,6 +198,21 @@ int mus_guardado(const char *imdb, int temp) {
   r = linhaDe(b, chave, NULL);
   free(b);
   return r;
+}
+
+int mus_listar(MusSalva *out, int max) {
+  char *b = dados_ler(arquivo()), *p = b;
+  int n = 0;
+  while (p && *p && n < max) {
+    char *end = strchr(p, '\n');
+    if (end) *end = 0;
+    MusSalva s = {0};
+    if (sscanf(p, "%15[^:]:%d\t%127[^\t]\t%95[^\n]", s.imdb, &s.temp, s.titulo, s.artista) >= 3)
+      out[n++] = s;
+    p = end ? end + 1 : NULL;
+  }
+  free(b);
+  return n;
 }
 
 static void limpo(char *dst, size_t tam, const char *s) {

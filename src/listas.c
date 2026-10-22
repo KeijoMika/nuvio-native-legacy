@@ -1,5 +1,6 @@
 // Ver listas.h para o que cada fonte entrega de verdade. Aqui fica o COMO.
 #include "listas.h"
+#include "musica.h"
 #include "trakt.h"
 #include "simklauth.h"
 #include "nuvem.h"
@@ -473,6 +474,16 @@ static int montarNuvio(void) {
     snprintf(d->colId, sizeof d->colId, "%s", f->id);
     n++;
   }
+  if (n < LST_MAX) {
+    LstLista *d = &tabela[n++];
+    memset(d, 0, sizeof *d);
+    d->fonte = LST_NUVIO;
+    snprintf(d->titulo, sizeof d->titulo, "Músicas");
+    snprintf(d->colId, sizeof d->colId, "musicas");
+    d->curtidas = -1;
+    MusSalva saved[MUS_GUARDADAS_MAX];
+    d->itens = mus_listar(saved, MUS_GUARDADAS_MAX);
+  }
   nTabela = n;
   if (!n) snprintf(aviso, sizeof aviso,
                    "Nenhuma coleção na sua conta Nuvio ainda");
@@ -767,6 +778,21 @@ void lst_abrir(const LstLista *l, const char *midia) {
   snprintf(itMidia, sizeof itMidia, "%s", midia && midia[0] ? midia : l->midia);
   pthread_mutex_unlock(&itTrava);
 
+  if (l->fonte == LST_NUVIO && !strcmp(l->colId, "musicas")) {
+    MusSalva saved[MUS_GUARDADAS_MAX];
+    int n = mus_listar(saved, MUS_GUARDADAS_MAX);
+    CatItem *copy = n ? calloc((size_t)n, sizeof *copy) : NULL;
+    if (n && !copy) return;
+    for (int i = 0; i < n; i++) {
+      snprintf(copy[i].imdb, sizeof copy[i].imdb, "%s", saved[i].imdb);
+      snprintf(copy[i].titulo, sizeof copy[i].titulo, "%s", saved[i].titulo);
+      snprintf(copy[i].tipo, sizeof copy[i].tipo, "%s", saved[i].temp ? "series" : "movie");
+    }
+    pthread_mutex_lock(&itTrava);
+    free(itens); itens = copy; nItens = n; itSimkl = 1;
+    pthread_mutex_unlock(&itTrava);
+    return;
+  }
   if (l->fonte == LST_SIMKL) {
 #ifndef LST_SO_ITENS
     pthread_t fio;

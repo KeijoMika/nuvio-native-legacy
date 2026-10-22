@@ -41,7 +41,11 @@ int main(void) {
   CK(mus_alternar_guardado("tt1", 2, "Album B", "Art") == 1);
   CK(mus_alternar_guardado("tt1", 0, "Album A", "Art") == 0);
   CK(!mus_guardado("tt1", 0) && mus_guardado("tt1", 2));
+  MusSalva saved[48];
+  CK(mus_listar(saved, 48) == 1);
+  CK(!strcmp(saved[0].imdb, "tt1") && saved[0].temp == 2 && !strcmp(saved[0].titulo, "Album B"));
   perfil = 2; CK(!mus_guardado("tt1", 2)); // outro perfil nao ve
+  CK(mus_listar(saved, 48) == 0);
   printf(falhas ? "musica: %d falhas\n" : "musica: ok\n", falhas);
   return falhas != 0;
 }
