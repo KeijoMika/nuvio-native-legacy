@@ -4686,8 +4686,9 @@ static int bombearAsync(int maximo) {
 
 int tex_bombear(int max_por_quadro) {
 #if defined(NV_ANDROID) || defined(NV_TEX_ASYNC_TEST)
-  if (envioThread && SDL_AtomicGet(&envioEstado) >= 0)
-    return bombearAsync(max_por_quadro);
+  /* Failed shared-context startup must never restore frame-thread uploads.
+   * Keep decoded art queued and existing textures visible until shutdown. */
+  return bombearAsync(max_por_quadro);
 #endif
   int subiu = 0, trabalhou = 0, porClasse[3] = {0};
   unsigned char blocked[MAX_ITENS_ABS] = {0};

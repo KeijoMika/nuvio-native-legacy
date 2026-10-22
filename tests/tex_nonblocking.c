@@ -120,6 +120,26 @@ int main(void) {
   liberarSup(itens[1].sup); itens[1].sup = NULL;
   glDeleteTextures(1, &itens[2].tex);
   encerrarEnvioAsync();
+  /* Startup failure (no worker) and worker MakeCurrent failure must both
+   * defer new art instead of submitting pixels on the frame thread. */
+  itens[1].sup = SDL_CreateRGBSurfaceWithFormat(0, 64, 64, 32,
+                                               SDL_PIXELFORMAT_ABGR8888);
+  assert(itens[1].sup);
+  itens[1].estado = DECODIFICADO;
+  orcamento = 32L * 1024 * 1024;
+  start = SDL_GetTicks();
+  assert(tex_bombear(1) == 0);
+  assert(SDL_GetTicks() - start < 50);
+  assert(itens[1].estado == DECODIFICADO && itens[1].sup);
+  iniciarEnvioAsync();
+  assert(envioThread);
+  SDL_AtomicSet(&envioEstado, -2);
+  start = SDL_GetTicks();
+  assert(tex_bombear(1) == 0);
+  assert(SDL_GetTicks() - start < 50);
+  assert(itens[1].estado == DECODIFICADO && itens[1].sup);
+  encerrarEnvioAsync();
+  liberarSup(itens[1].sup); itens[1].sup = NULL;
 #endif
   glDeleteTextures(1, &itens[0].tex);
   SDL_DestroySemaphore(locked); SDL_DestroyMutex(mtx);
