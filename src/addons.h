@@ -167,6 +167,7 @@ void addons_buscar_renovar(const char *imdb, const char *tipo);
 void addons_drenar(void);
 // 1 enquanto a busca real de VOD esta no ar publicando por addon.
 int  addons_busca_parcial(void);
+int  addons_busca_incompleta(void); // Finished search still missing responses.
 // Milissegundos desde o disparo dessa busca; 0 fora dela.
 unsigned addons_busca_ms(void);
 // Quantos addons ainda nao responderam (contando quem espera a segunda chance)

@@ -777,7 +777,8 @@ AddEstado addons_estado(void) {
         else stream_definir_lista(resultado, nResultado);
       }
       if (progPublicou)
-        printf("[addons] busca completa em %u ms\n", (unsigned)(SDL_GetTicks() - progInicio));
+        printf("[addons] busca %s em %u ms\n", addons_busca_incompleta() ? "parcial encerrada" : "completa",
+               (unsigned)(SDL_GetTicks() - progInicio));
     }
     progLigado = 0; progPublicou = 0; progExtraPublicou = 0;
     progLimpar();
@@ -3348,6 +3349,10 @@ static void resumoDaLista(Resumo *rs) {
 // CANAL TEM FRASE PROPRIA (issue #112). "nao tem este titulo" le como se o
 // canal nao existisse no addon; o que o FrostView diz com {"streams":[]} e que
 // AGORA nao ha link para ele — os mesmos canais voltam a ter fonte depois.
+int addons_busca_incompleta(void) {
+  return resumo.semResposta || resumo.extraIncompleta;
+}
+
 int addons_motivo_vazio(char *dst, unsigned n) {
   const Resumo *r = &resumo;
   int canal = !strcmp(alvoTipo, "tv") || !strcmp(alvoTipo, "channel") ||
