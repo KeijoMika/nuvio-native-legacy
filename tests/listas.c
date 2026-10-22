@@ -90,9 +90,7 @@ static void testeSimkl(void) {
   CONFERE(!strcmp(v[1].imdb, "tt6710474"), "imdb do segundo");
   free(j);
 
-  // Anime e um TERCEIRO tipo no Simkl: na lista de TV a resposta tem a raiz
-  // "anime" (e o objeto interno "anime"), que o leitor tem de juntar com o
-  // "shows" — era o que faltava no relato: "Simkl has anime too".
+  // Simkl anime movies belong to Movies, including the usual show envelope.
   j = ler("tests/fixtures/simkl_plantowatch_series_anime.json");
   n = lst_ler_simkl_itens(j, 1, v, 16);
   CONFERE(n == 3, "show + anime, including missing IMDb (got %d)", n);
@@ -101,6 +99,10 @@ static void testeSimkl(void) {
   CONFERE(!strcmp(v[1].imdb, "tt22248376") && !strcmp(v[1].tipo, "series"),
           "o anime vira series (veio %s)", v[1].imdb);
   CONFERE(!strcmp(v[1].meta, "2023"), "ano do anime em meta (veio %s)", v[1].meta);
+  n = lst_ler_simkl_itens(j, 0, v, 16);
+  CONFERE(n == 1, "only the anime movie belongs to Movies (got %d)", n);
+  CONFERE(!strcmp(v[0].imdb, "tt4788602") && !strcmp(v[0].tipo, "movie"),
+          "anime movie keeps movie metadata lookup type (got %s / %s)", v[0].imdb, v[0].tipo);
   free(j);
 }
 
