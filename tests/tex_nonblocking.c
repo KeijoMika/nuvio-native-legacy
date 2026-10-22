@@ -97,6 +97,28 @@ int main(void) {
     SDL_Delay(5); tex_bombear(1);
   }
   assert(itens[0].estado == PRONTO && itens[0].w == 1024);
+  /* A budget-blocked hero must not starve a smaller queued poster. */
+  nMax = 3;
+  orcamento = bytesUsados + 64L * 64 * 4;
+  quadroAtual = 2;
+  itens[0].ultimoQuadro = quadroAtual;
+  itens[1].sup = SDL_CreateRGBSurfaceWithFormat(0, 1024, 1024, 32,
+                                               SDL_PIXELFORMAT_ABGR8888);
+  itens[2].sup = SDL_CreateRGBSurfaceWithFormat(0, 32, 32, 32,
+                                               SDL_PIXELFORMAT_ABGR8888);
+  assert(itens[1].sup && itens[2].sup);
+  itens[1].estado = itens[2].estado = DECODIFICADO;
+  itens[1].urgente = 1;
+  itens[2].ultimoQuadro = quadroAtual;
+  tex_bombear(1);
+  assert(itens[1].estado == DECODIFICADO && itens[1].sup);
+  assert(itens[2].estado == ENVIANDO);
+  for (int i = 0; i < 200 && itens[2].estado != PRONTO; i++) {
+    SDL_Delay(5); tex_bombear(1);
+  }
+  assert(itens[2].estado == PRONTO && itens[0].estado == PRONTO);
+  liberarSup(itens[1].sup); itens[1].sup = NULL;
+  glDeleteTextures(1, &itens[2].tex);
   encerrarEnvioAsync();
 #endif
   glDeleteTextures(1, &itens[0].tex);

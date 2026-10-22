@@ -4655,11 +4655,13 @@ static int bombearAsync(int maximo) {
     liberarSup(envioSup); envioSup = NULL; envioTex = 0;
     SDL_AtomicSet(&envioEstado, 0);
   }
-  int alvo = -1;
-  for (int i = 0; i < nMax; i++)
-    if (itens[i].estado == DECODIFICADO && itens[i].sup &&
-        (alvo < 0 || itens[i].urgente > itens[alvo].urgente)) alvo = i;
-  if (alvo >= 0) {
+  unsigned char blocked[MAX_ITENS_ABS] = {0};
+  for (int passo = 0; passo < nMax; passo++) {
+    int alvo = -1;
+    for (int i = 0; i < nMax; i++)
+      if (!blocked[i] && itens[i].estado == DECODIFICADO && itens[i].sup &&
+          (alvo < 0 || itens[i].urgente > itens[alvo].urgente)) alvo = i;
+    if (alvo < 0) break;
     Item *it = &itens[alvo];
     SDL_Surface *s = it->sup;
     int mip = temPiramide(s->w, s->h, it->card) &&
@@ -4673,7 +4675,9 @@ static int bombearAsync(int maximo) {
       it->estado = ENVIANDO;
       SDL_AtomicSet(&envioEstado, 1);
       SDL_SemPost(envioAcordar);
+      break;
     }
+    blocked[alvo] = 1;  // Retry next frame; smaller uploads may still fit.
   }
   SDL_UnlockMutex(mtx);
   return subiu;
