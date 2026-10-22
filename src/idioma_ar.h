@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ اختر معاينة"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ العودة إلى المرشحات   ·   رجوع: القائمة"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ العودة إلى الإجراءات   ·   رجوع: قائمة القوائم"),
+  T("↑ nota em estrelas", "↑ التقييم بالنجوم"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   ضبط · OK   تأكيد · رجوع   إلغاء"),
   T("↑ ↓   Escolher categoria", "↑ ↓   اختيار فئة"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   اختيار · OK   تأكيد · رجوع   إلغاء"),

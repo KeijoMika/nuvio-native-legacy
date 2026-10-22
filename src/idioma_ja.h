@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ プレビューを選ぶ"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ フィルターに戻る   ·   戻る: メニュー"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ 操作に戻る   ·   戻る: リスト一覧"),
+  T("↑ nota em estrelas", "↑ 星で評価"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   カテゴリを選択"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

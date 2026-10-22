@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Vybrat náhled"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Zpět k filtrům   ·   Zpět: nabídka"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Zpět k akcím   ·   Zpět: seznam seznamů"),
+  T("↑ nota em estrelas", "↑ hodnocení hvězdami"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Vyberte kategorii"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

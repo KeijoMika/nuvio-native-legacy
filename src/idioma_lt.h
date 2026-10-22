@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Pasirinkti peržiūrą"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Atgal į filtrus   ·   Atgal: meniu"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Atgal į veiksmus   ·   Atgal: sąrašų sąrašas"),
+  T("↑ nota em estrelas", "↑ įvertinimas žvaigždutėmis"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Pasirinkti kategoriją"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

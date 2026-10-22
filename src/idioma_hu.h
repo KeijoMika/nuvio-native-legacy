@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Előnézet választása"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Vissza a szűrőkhöz   ·   Vissza: menü"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Vissza a műveletekhez   ·   Vissza: listák listája"),
+  T("↑ nota em estrelas", "↑ csillagos értékelés"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Válassz kategóriát"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

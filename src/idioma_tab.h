@@ -6187,6 +6187,7 @@
   { "↑ Escolher a prévia", "↑ Pick a preview" },
   { "↑ Voltar aos filtros   ·   Voltar: menu", "↑ Back to filters   ·   Back: menu" },
   { "↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Back to the actions   ·   Back: list of lists" },
+  { "↑ nota em estrelas", "↑ star rating" },
   { "↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel" },
   { "↑ ↓   Escolher categoria", "↑ ↓   Pick a category" },
   { "↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel" },

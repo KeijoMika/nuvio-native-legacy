@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Izaberi pregled"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Nazad na filtere   ·   Nazad: meni"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Nazad na radnje   ·   Nazad: lista lista"),
+  T("↑ nota em estrelas", "↑ ocena zvezdicama"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Izaberi kategoriju"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

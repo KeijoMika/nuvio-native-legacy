@@ -6187,6 +6187,7 @@
   T("↑ Escolher a prévia", "↑ Выбрать предпросмотр"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Назад к фильтрам   ·   Назад: меню"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Назад к действиям   ·   Назад: перечень списков"),
+  T("↑ nota em estrelas", "↑ оценка звёздами"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Выберите категорию"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

@@ -142,6 +142,25 @@ static void cartao(void) {
     free(b); }
 }
 
+static void nota(void) {
+  CHECA(reacao_nota("tt0111161") == 5, "atalho Mais ou menos grava nota 5");
+  CHECA(reacao_nota("tt0903747") == 8, "atalho Gostei grava nota 8");
+  CHECA(reacao_nota("tt9999999") == 0, "sem nota = 0");
+  reacao_nota_definir("tt0111161", 9);
+  CHECA(reacao_nota("tt0111161") == 9 && reacao_estado("tt0111161") == REACAO_GOSTEI,
+        "4,5 estrelas vira Gostei");
+  reacao_nota_definir("tt0111161", 1);
+  CHECA(reacao_nota("tt0111161") == 1 && reacao_estado("tt0111161") == REACAO_NAO, "meia estrela vira Nao gostei");
+  reacao_nota_definir("tt0111161", 11);
+  CHECA(reacao_nota("tt0111161") == 1, "nota fora de 1 a 10 ignorada");
+  reacao_nota_definir("tt0903747:1:2", 7);
+  CHECA(reacao_nota("tt0903747:1:2") == 7 && reacao_nota("tt0903747") == 8, "episodio guarda so a propria nota");
+  { char *b = dados_ler("notas-p1.txt");
+    if (!b) b = dados_ler("notas.txt");
+    CHECA(b && strstr(b, "tt0111161\t1\t") && strstr(b, "tt0903747:1:2\t7\t"), "notas gravadas por perfil");
+    free(b); }
+}
+
 static void fila(void) {
   CatItem f = item("tt0068646:0:0", "movie", "O \"Poderoso\" \\ Chefao\nII\t");
   CatItem s = item("tt0903747", "series", "Breaking Bad");
@@ -278,6 +297,7 @@ int main(void) {
   if (strcmp(dados_dir(), dir)) { puts("reacao: dados_dir() nao e NUVIO_DADOS; recusando rodar"); return 1; }
   regra();
   cartao();
+  nota();
   fila();
   if (falhas) { printf("reacao: %d falha(s)\n", falhas); return 1; }
   printf("reacao: tudo ok (%s)\n", recomenda_ativo() ? "com servico" : "sem servico");

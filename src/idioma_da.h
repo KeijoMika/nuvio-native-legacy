@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Vælg forhåndsvisning"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Tilbage til filtrene   ·   Tilbage: menu"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Tilbage til handlingerne   ·   Tilbage: liste over lister"),
+  T("↑ nota em estrelas", "↑ stjernebedømmelse"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Vælg kategori"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

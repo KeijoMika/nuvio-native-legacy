@@ -6187,6 +6187,7 @@
   T("↑ Escolher a prévia", "↑ Elegir la vista previa"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Atrás a los filtros   ·   Atrás: menú"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Atrás a las acciones   ·   Atrás: lista de listas"),
+  T("↑ nota em estrelas", "↑ nota en estrellas"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Ajustar · OK   Confirmar · Atrás   Cancelar"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Elegir categoría"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Elegir · OK   Confirmar · Atrás   Cancelar"),

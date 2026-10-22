@@ -14,6 +14,7 @@
 #include "posplay.h"
 #include "text.h"
 #include "trakt.h"
+#include "simkl.h"
 #include "plrui.h"
 #include "recomenda.h"
 #include "recresp.h"
@@ -57,6 +58,87 @@ int reacao_regra_perguntar(int ehSerie, int temProximo, int proxOutraTemporada,
 
 int reacao_nota_trakt(int r) {
   return r == REACAO_GOSTEI ? 8 : r == REACAO_MAIS_MENOS ? 5 : r == REACAO_NAO ? 2 : 0;
+}
+
+extern const char *cat_tipo_por_imdb(const char *imdb);
+static char *campo(char **p);
+// --- nota (meia estrela, 1 a 10 = a escala do Trakt e do Simkl) ---------------------
+//
+// notas[-p<N>].txt, por perfil: imdb TAB nota TAB epoch. A chave e o imdb puro
+// do titulo ou "tt:S:E" do episodio. Os tres botoes dos creditos sao o atalho:
+// 8, 5 e 2 (4, 2,5 e 1 estrela).
+typedef struct { char id[32]; int nota; long long quando; } Nota;
+static Nota notas[RX_MAX];
+static int  nNotas, notasPerfil = -999;
+
+static const char *arquivoNotas(void) {
+  static char nome[40];
+  int p = perfis_ativo();
+  if (p <= 0) snprintf(nome, sizeof nome, "notas.txt");
+  else snprintf(nome, sizeof nome, "notas-p%d.txt", p);
+  return nome;
+}
+
+static void carregarNotas(void) {
+  char *b, *p;
+  if (notasPerfil == perfis_ativo()) return;
+  notasPerfil = perfis_ativo();
+  nNotas = 0;
+  b = dados_ler(arquivoNotas());
+  if (!b) return;
+  for (p = b; *p && nNotas < RX_MAX;) {
+    char *fim = strchr(p, '\n'), *q = p;
+    if (fim) *fim = 0;
+    if (!strncmp(q, "tt", 2)) {
+      Nota n;
+      memset(&n, 0, sizeof n);
+      snprintf(n.id, sizeof n.id, "%s", campo(&q));
+      n.nota = atoi(campo(&q));
+      n.quando = atoll(q);
+      if (n.nota >= 1 && n.nota <= 10) notas[nNotas++] = n;
+    }
+    if (!fim) break;
+    p = fim + 1;
+  }
+  free(b);
+}
+
+static Nota *achaNota(const char *id) {
+  int i;
+  carregarNotas();
+  for (i = 0; i < nNotas; i++) if (!strcmp(notas[i].id, id)) return &notas[i];
+  return NULL;
+}
+
+int reacao_nota(const char *imdb) {
+  char id[32];
+  Nota *n;
+  if (!imdb || !imdb[0]) return 0;
+  if (!strchr(imdb, ':')) atividade_id_puro(id, sizeof id, imdb);
+  else snprintf(id, sizeof id, "%s", imdb);
+  n = achaNota(id);
+  return n ? n->nota : 0;
+}
+
+static void salvarNota(const char *id, int nota) {
+  static char buf[RX_MAX * 64 + 32];
+  size_t k = 0;
+  int i;
+  Nota *n = achaNota(id);
+  if (!n) {
+    if (nNotas >= RX_MAX) { memmove(notas, notas + 1, sizeof notas[0] * (size_t)(RX_MAX - 1)); nNotas--; }
+    n = &notas[nNotas++];
+    snprintf(n->id, sizeof n->id, "%s", id);
+  }
+  n->nota = nota;
+  n->quando = (long long)time(NULL);
+  for (i = 0; i < nNotas && k < sizeof buf; i++)
+    k += (size_t)snprintf(buf + k, sizeof buf - k, "%s\t%d\t%lld\n", notas[i].id, notas[i].nota, notas[i].quando);
+  dados_gravar(arquivoNotas(), buf);
+}
+
+int reacao_nota_para_reacao(int nota) {
+  return nota >= 7 ? REACAO_GOSTEI : nota >= 4 ? REACAO_MAIS_MENOS : nota >= 1 ? REACAO_NAO : REACAO_NENHUMA;
 }
 
 // --- arquivo, por perfil ------------------------------------------------------------
@@ -195,6 +277,8 @@ static struct {
   long long rec;
   int    envia;                  // "vai ver sua resposta" so com envio de verdade
   int    foco;
+  int    estrelas;               // foco na fileira de estrelas (CIMA); BAIXO volta as pilulas
+  int    nota;                   // 1 a 10 em meia estrela; 0 = ainda sem escolha
   // 0 = gostei/nao gostei; 1 = "mandar uma mensagem?" (so com rec de origem).
   int    passo;
   int    escrevendo;             // o teclado de tela esta aberto por este cartao
@@ -261,9 +345,19 @@ void reacao_fechar(void) {
   durVista = durEstavel = 0.0;
 }
 
-void reacao_responder(const char *imdb, int v) {
+static void responder(const char *imdb, int v, int nota);
+void reacao_responder(const char *imdb, int v) { responder(imdb, v, reacao_nota_trakt(v)); }
+
+// Nota de 1 a 10 (meia estrela); grava, manda ao Trakt/Simkl e vale como a
+// reacao do titulo. Episodio ("tt:S:E") guarda so a nota, local.
+void reacao_nota_definir(const char *imdb, int nota) {
+  if (!imdb || nota < 1 || nota > 10) return;
+  if (strchr(imdb, ':')) { salvarNota(imdb, nota); return; }
+  responder(imdb, reacao_nota_para_reacao(nota), nota);
+}
+
+static void responder(const char *imdb, int v, int nota) {
   Reacao *r;
-  int nota;
   if (v < -1 || v > 1) return;
   r = linhaDe(imdb);
   r->estado = v;
@@ -276,16 +370,18 @@ void reacao_responder(const char *imdb, int v) {
     snprintf(r->titulo, sizeof r->titulo, "%s", c.titulo);
     semTab(r->nome); semTab(r->titulo);
   }
+  if (!r->midia[0]) snprintf(r->midia, sizeof r->midia, "%s", cat_tipo_por_imdb(r->imdb));
   gravar();
   // A RESPOSTA A QUEM MANDOU: a rec vai para "Assistidas" com a reacao.
   if (r->rec > 0) recresp_responder(r->rec, v, NULL);
   atividade_reacao(r->imdb, r->midia, r->titulo,
                    c.imdb[0] && !strcmp(c.imdb, r->imdb) ? c.poster : "", v, r->rec);
-  nota = reacao_nota_trakt(v);
+  salvarNota(r->imdb, nota);
   // SO COM O TRAKT LIGADO. Sem ele a resposta fica nesta TV (e no servico,
   // se a pessoa permitiu) e o Trakt nao fica sabendo — e e o certo.
   if (nota && trakt_ativo()) trakt_avaliar(r->imdb, r->midia, nota);
-  printf("[reacao] %s -> %d%s\n", r->imdb, v, nota && trakt_ativo() ? " (nota no Trakt)" : "");
+  if (nota && simkl_ativo()) simkl_avaliar(r->imdb, r->midia, nota);
+  printf("[reacao] %s -> %d nota %d%s\n", r->imdb, v, nota, trakt_ativo() ? " (Trakt)" : "");
   fflush(stdout);
 }
 
@@ -377,6 +473,25 @@ int reacao_evento(const SDL_Event *e, int controlesVisiveis) {
       e->key.keysym.scancode == NV_SCANCODE_BACK) {
     c.aberto = 0;               // pula; a pendencia fica
     return 1;
+  }
+  // A FILEIRA DE ESTRELAS (so no passo 1 da pergunta): CIMA entra, BAIXO volta.
+  if (c.passo == 0 && k == SDLK_UP && !c.estrelas) {
+    c.estrelas = 1; c.desde = ultimoAgora;
+    if (!c.nota) c.nota = reacao_nota(c.imdb) ? reacao_nota(c.imdb) : reacao_nota_trakt(VALOR[c.foco]);
+    return 1;
+  }
+  if (c.estrelas) {
+    c.desde = ultimoAgora;
+    if (k == SDLK_DOWN) { c.estrelas = 0; return 1; }
+    if (k == SDLK_LEFT)  { if (c.nota > 1) c.nota--; return 1; }
+    if (k == SDLK_RIGHT) { if (c.nota < 10) c.nota++; return 1; }
+    if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
+      reacao_nota_definir(c.imdb, c.nota);
+      if (respondeAmigo() && c.nome[0]) { c.passo = 1; c.foco = 0; c.estrelas = 0; return 1; }
+      c.aberto = 0;
+      return 1;
+    }
+    return c.modoDetalhe;
   }
   if (k == SDLK_LEFT)  { if (c.foco > 0) c.foco--; c.desde = ultimoAgora; return 1; }
   if (k == SDLK_RIGHT) { if (c.foco < 2) c.foco++; c.desde = ultimoAgora; return 1; }
@@ -477,6 +592,34 @@ static void reacaoTelefoneDesenhar(const char *perg, const char *orig, const cha
 }
 #endif
 
+// A FILEIRA DE ESTRELAS (meia estrela, 1 a 10): cinco estrelas de 44 px; a
+// cheia e a meia pela mesma forma recortada. Foco = acento do tema; sem foco, o
+// valor que ja existe (c.nota) em branco suave.
+#define ESTRELA_LINHA 76.0f
+static void estrelasDesenhar(float x, float y, float a) {
+  const float t = 44.0f, g = 8.0f;
+  int v = c.nota ? c.nota : reacao_nota(c.imdb), i;
+  float al = c.estrelas ? a : a * 0.6f;
+  char dica[96];
+  TxtLinha l;
+  for (i = 0; i < 5; i++) {
+    float sx = x + (float)i * (t + g);
+    GfxRect r = { sx, y, t, t };
+    float cr = c.estrelas ? 0.961f : 0.953f, cg = c.estrelas ? 0.773f : 0.949f, cb = c.estrelas ? 0.259f : 0.937f;
+    gfx_icone(r, "pl_star", 0.953f, 0.949f, 0.937f, al * 0.35f);
+    if (v >= 2 * i + 2) gfx_icone(r, "pl_star-f", cr, cg, cb, al);
+    else if (v == 2 * i + 1) {
+      gfx_recorte(sx, y, t * 0.5f, t);
+      gfx_icone(r, "pl_star-f", cr, cg, cb, al);
+      gfx_sem_recorte();
+    }
+  }
+  if (c.estrelas) snprintf(dica, sizeof dica, "%d,%d / 5", v / 2, v % 2 ? 5 : 0);
+  else snprintf(dica, sizeof dica, "%s", i18n("↑ nota em estrelas"));
+  l = txt_linha(TXT_ILHA_GENERO, dica, 243, 242, 239, 160);
+  txt_desenhar_alpha(l, x + 5.0f * (t + g) + 12.0f, y + (t - (float)l.h) * 0.5f, a * (c.estrelas ? 1.0f : 0.6f));
+}
+
 static void reacao_desenharCorpo_(Uint32 agora, float baseY);
 // Camada ampliada (escala.h): o corpo desenha na tela virtual.
 void reacao_desenhar(Uint32 agora, float baseY) {
@@ -508,7 +651,7 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
   if (pw + 72.0f > w) w = pw + 72.0f;
   lead = (float)txt_linha(TXT_ILHA_PERGUNTA, "Ág", 245, 246, 248, 255).h + 6.0f;
   hp = txt_bloco_corta(TXT_ILHA_PERGUNTA, perg, 0, 0, 0, -4000.0f, -4000.0f, w - 72.0f, lead, 0.0f, 2);
-  h = 34.0f + (orig[0] ? 30.0f + 8.0f : 0.0f) + hp + 26.0f + 60.0f + 24.0f + 22.0f + 30.0f;
+  h = 34.0f + (orig[0] ? 30.0f + 8.0f : 0.0f) + hp + 26.0f + 60.0f + 24.0f + 22.0f + 30.0f + (c.passo == 0 ? ESTRELA_LINHA : 0.0f);
   x = NV_TELA_W - RX_MARGEM - w;
   y = baseY - h + (1.0f - a) * 24.0f;
   if (c.modoPainel) {
@@ -542,6 +685,7 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
         bx += bw + 12.0f;
       } }
     ty += 60.0f + 24.0f;
+    if (c.passo == 0) { estrelasDesenhar(tx, ty, a); ty += ESTRELA_LINHA; }
     { float yc = ty + 11.0f, tw = 0.0f;
       if (ver[0]) {
         TxtLinha lv = txt_linha_corta(TXT_ILHA_GENERO, ver, 243, 242, 239, 128, w * 0.5f);

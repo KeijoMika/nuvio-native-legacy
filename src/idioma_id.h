@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Pilih pratinjau"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Kembali ke filter   ·   Kembali: menu"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Kembali ke aksi   ·   Kembali: daftar dari daftar"),
+  T("↑ nota em estrelas", "↑ nilai bintang"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Pilih kategori"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

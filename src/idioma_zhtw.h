@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ 選擇預覽"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ 回到篩選   ·   返回：選單"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ 回到操作   ·   返回：清單的清單"),
+  T("↑ nota em estrelas", "↑ 星等評分"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   選擇分類"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

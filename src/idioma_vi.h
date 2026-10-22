@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Chọn bản xem trước"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Về bộ lọc   ·   Quay lại: menu"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Về các thao tác   ·   Quay lại: danh sách các danh sách"),
+  T("↑ nota em estrelas", "↑ chấm sao"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Chọn danh mục"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

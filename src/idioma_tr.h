@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Önizleme seç"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Filtrelere dön   ·   Geri: menü"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Eylemlere dön   ·   Geri: listelerin listesi"),
+  T("↑ nota em estrelas", "↑ yıldız puanı"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Bir kategori seç"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

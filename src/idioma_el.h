@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Επιλογή προεπισκόπησης"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Πίσω στα φίλτρα   ·   Πίσω: μενού"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Πίσω στις ενέργειες   ·   Πίσω: λίστα λιστών"),
+  T("↑ nota em estrelas", "↑ βαθμολογία με αστέρια"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Επιλογή κατηγορίας"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

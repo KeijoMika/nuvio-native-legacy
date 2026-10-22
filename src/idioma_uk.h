@@ -6187,6 +6187,7 @@
   T("↑ Escolher a prévia", "↑ Вибрати попередній перегляд"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Назад до фільтрів   ·   Назад: меню"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Назад до дій   ·   Назад: перелік списків"),
+  T("↑ nota em estrelas", "↑ оцінка зірками"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Оберіть категорію"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),

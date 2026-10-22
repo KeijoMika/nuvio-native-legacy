@@ -6188,6 +6188,7 @@
   T("↑ Escolher a prévia", "↑ Välj förhandsvisning"),
   T("↑ Voltar aos filtros   ·   Voltar: menu", "↑ Tillbaka till filtren   ·   Tillbaka: meny"),
   T("↑ Voltar às ações   ·   Voltar: lista de listas", "↑ Tillbaka till åtgärderna   ·   Tillbaka: lista över listor"),
+  T("↑ nota em estrelas", "↑ stjärnbetyg"),
   T("↑ ↓   Ajustar · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Adjust · OK   Confirm · Back   Cancel"),
   T("↑ ↓   Escolher categoria", "↑ ↓   Välj kategori"),
   T("↑ ↓   Escolher · OK   Confirmar · Voltar   Cancelar", "↑ ↓   Choose · OK   Confirm · Back   Cancel"),
