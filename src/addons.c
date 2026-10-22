@@ -2420,6 +2420,8 @@ static int aceitaStream(const AddonPedido *p, const char *tipo, const char *id) 
     if (!strstr(p->streamTipos, marca)) return 0;
   }
   if (!p->nStreamPref) return 1;
+  char longo[IDCANAL_LONGO_MAX + 1];
+  id = idcanal_longo(id, longo, sizeof longo);
   for (int k = 0; k < p->nStreamPref; k++)
     if (!strncmp(id, p->streamPref[k], strlen(p->streamPref[k]))) return 1;
   return 0;

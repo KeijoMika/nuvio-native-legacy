@@ -17,7 +17,7 @@ static const char streams[] = "{\"streams\":[{\"url\":\"https://fixture.invalid/
 static int calls;
 static char expected[512];
 char *rede_baixar(const char *url, int seconds) {
-  assert(seconds == 30);
+  assert(seconds == (strstr(expected, "/stream/tv/") ? 12 : 30));
   assert(!strcmp(url, expected));
   calls++;
   return strdup(streams);
@@ -60,6 +60,24 @@ int main(void) {
     assert(nResultado == 1);
     free(resultado); resultado = NULL; nResultado = 0;
   }
-  assert(calls == 2);
-  puts("PASS custom series video ID and movie ID reach their stream resource");
+  char longId[160], alias[64];
+  memset(longId, 'a', sizeof longId - 1); longId[sizeof longId - 1] = 0;
+  memcpy(longId, "cnc:", 4);
+  assert(idcanal_curto(longId, alias, sizeof alias));
+  assert(!strncmp(alias, "~c:", 3));
+  strcpy(addon[0].streamTipos, "|tv|");
+  strcpy(addon[0].streamPref[0], "cnc:"); addon[0].nStreamPref = 1;
+  strcpy(addon[1].streamPref[0], "tt"); addon[1].nStreamPref = 1;
+  copiarPedido(0, &owner);
+  assert(aceitaStream(&owner, "tv", alias));
+  assert(!aceitaStream(&owner, "tv", "other:channel"));
+  snprintf(expected, sizeof expected, "https://fixture.invalid/stream/tv/%s.json", longId);
+  addons_definir_origem(addon[0].base);
+  addons_buscar(alias, "tv");
+  assert(fioVivo);
+  pthread_join(fio, NULL); fioVivo = 0;
+  assert(nResultado == 1);
+  free(resultado); resultado = NULL; nResultado = 0;
+  assert(calls == 3);
+  puts("PASS custom video IDs and long channel aliases reach their stream resource");
 }
