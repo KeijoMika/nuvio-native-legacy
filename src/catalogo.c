@@ -1550,6 +1550,13 @@ static void aplicarUmEm(CatItem *v, int i, double posSeg, double durSeg, int tem
 // A COPIA QUE A PESSOA TIROU NAO E FONTE. Isto rodava DEPOIS de
 // podarContinuar(removidoVence) e o card tirado ja nao estava no vetor; agora
 // roda antes da publicacao (e da poda), entao a mesma regra entra aqui.
+// A Next Up seed shares the watched episode's timestamp, but points ahead.
+// Replaying that episode's progress must not turn the seed back into it.
+static int aSeguirAdiante(const CatItem *item, int t, int e, long long ms) {
+  return !strcmp(item->tipo, "series") && item->progresso == 0 &&
+         item->retomadoMs > 0 && item->retomadoMs >= ms && e > 0 &&
+         (item->temporada > t || (item->temporada == t && item->episodio > e));
+}
 static void espalharEm(CatItem *v, int m) {
   int i, j, k, nf = 0, *fontes;
   for (i = 0; i < m; i++) if (v[i].progresso > 0 && v[i].imdb[0]) nf++;
@@ -1563,6 +1570,7 @@ static void espalharEm(CatItem *v, int m) {
     for (k = 0; k < nf; k++) {
       i = fontes[k];
       if (!mesmaCopiaEm(v, i, j)) continue;
+      if (aSeguirAdiante(&v[j], v[i].temporada, v[i].episodio, v[i].retomadoMs)) continue;
       if (v[j].progresso > 0 && v[i].retomadoMs <= v[j].retomadoMs) continue;
       if (melhor < 0 || v[i].retomadoMs > v[melhor].retomadoMs) melhor = i;
     }
@@ -1605,7 +1613,8 @@ static int aplicarProgressoEm(CatItem *v, int m, const ProgRegistro *regs, int k
           v[j].retomadoMs > 0 && v[j].retomadoMs > regs[i].lastWatchedMs) maisNova = 1;
     for (j = 0; j < m; j++) {
       if (tocado[j] || !v[j].imdb[0] || !mesmoTitulo(v[j].imdb, regs[i].contentId)) continue;
-      if (maisNova) { tocado[j] = 1; continue; }
+      if (maisNova || aSeguirAdiante(&v[j], regs[i].temporada, regs[i].episodio,
+                                   regs[i].lastWatchedMs)) { tocado[j] = 1; continue; }
       // O ITEM QUE JA E MAIS NOVO QUE O DISCO NAO VOLTA NO TEMPO. O item do
       // Trakt (pausado ou "a seguir", issue #66) traz o instante em
       // retomadoMs; um registro local mais velho — o S1E1 a 3% de 8/9 quando
