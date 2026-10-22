@@ -281,6 +281,56 @@ static void failureBackendIsolation(void) {
   assert(fontefalha_arquivo("fontefalha.txt"));
 }
 
+static void failureDialogIsolation(void) {
+  const char *names[] = { "Admin", "Ana", "Other" };
+  const char *files[] = { "fontefalha.txt", "fontefalha-test-p1.txt" };
+  perfis_teste_definir(names, NULL, 3, 1);
+  for (int f = 0; f < 2; f++) {
+    assert(fontefalha_arquivo(files[f]));
+    assert(fontefalha_definir_provedores(1));
+    const char *keys[] = { "addon-a", "addon-b" };
+    fontefalha_addons_registrar(keys, 2);
+    char *before = dados_ler(files[f]);
+    assert(before);
+    for (int dialog = 0; dialog < 3; dialog++) {
+      assert(dados_gravar("ajustes-locais-p1.txt", "0\n"));
+      assert(dados_gravar("ajustes-locais-p2.txt", "0\n"));
+      assert(dados_gravar("ajustes-locais-p3.txt", "1\n"));
+      assert(ajustes_edicao_iniciar(2));
+      frAberta = 0;
+      if (!dialog) {
+        ffAbrir();
+        ffCategoria = FONTEFILTRO_RESOLUCAO; ffValorFoco = 0;
+        ffEscolher();
+      } else {
+        faAbrir(dialog == 1);
+        if (frAberta) {
+          if (dialog == 2) {
+            faN = 2;
+            for (int i = 0; i < 2; i++) {
+              memset(&faItem[i], 0, sizeof faItem[i]);
+              faItem[i].servico = -1;
+              snprintf(faItem[i].chave, sizeof faItem[i].chave, "%s", keys[i]);
+            }
+          }
+          faMover(0, 1);
+        }
+      }
+      ajustes_edicao_encerrar();
+      char *after = dados_ler(files[f]);
+      assert(after && !strcmp(before, after)); free(after);
+      for (int i = 1; i <= 3; i++) {
+        char marker[64]; snprintf(marker, sizeof marker, "ajustes-locais-p%d.txt", i);
+        after = dados_ler(marker);
+        assert(after && !strcmp(after, i == 3 ? "1\n" : "0\n")); free(after);
+      }
+      assert(!frAberta && perfis_ativo() == 1);
+    }
+    free(before);
+  }
+  assert(fontefalha_arquivo("fontefalha.txt"));
+}
+
 static void admin(void) {
   char h[65], *arq;
   admin_sha256_hex((const unsigned char *)"abc", 3, h);
@@ -385,6 +435,7 @@ int main(void) {
   edicao();
   pollOptoutIsolation();
   failureBackendIsolation();
+  failureDialogIsolation();
   admin();
   infantil();
   gate();

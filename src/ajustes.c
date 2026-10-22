@@ -3085,7 +3085,9 @@ float ajustes_tamanho_ajustes(void) {
 static int ajLayoutSelecionavel(void) { return !telefoneui_ativo(); }
 static int ajOpcaoDisponivel(int op) {
   // These controls use active-profile stores rather than the edited value array.
-  if (edPerfil && (ajFalhaBackend(op) || ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR ||
+  if (edPerfil && (ajFalhaBackend(op) || op == AJ_FILTROS_FONTES ||
+                   op == AJ_FALHA_PROVEDOR_ORDEM || op == AJ_FALHA_ADDON_ORDEM ||
+                   ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR ||
                    op == AJ_FONTE_ORDEM || op == AJ_FONTE_ADDONS_PERM ||
                    op == AJ_FONTE_PLUGINS_PERM || op == AJ_FONTE_REGEX_PADRAO ||
                    op == AJ_FONTE_REGEX_MODELO || op == AJ_ENQUETES)) return 0;
@@ -8956,6 +8958,7 @@ static int faLimite(int i) {
                               : fontefalha_addon_limite(faItem[i].chave);
 }
 static void faAbrir(int provedores) {
+  if (!ajOpcaoDisponivel(provedores ? AJ_FALHA_PROVEDOR_ORDEM : AJ_FALHA_ADDON_ORDEM)) return;
   faRetornarFolha = 0; frAberta = provedores ? 4 : 5; faFoco = faCol = 0; faMontar();
 }
 static void faAbrirLimite(int i) {
@@ -9060,6 +9063,7 @@ static const char *ffResumo(void) {
   return texto;
 }
 static void ffAbrir(void) {
+  if (!ajOpcaoDisponivel(AJ_FILTROS_FONTES)) return;
   uxCancelar(); faRetornarFolha = 0; frAberta = 6;
   ffCategoria = -1; ffFoco = ffValorFoco = 0;
 }
