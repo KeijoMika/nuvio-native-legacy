@@ -422,6 +422,8 @@ static int viewItem(int i,CatItem *out) {return itemDaLista(ordenaPorAno()&&i<or
 // lista sem mudar seu tamanho. Chaves pequenas evitam guardar outro CatItem.
 typedef struct { char id[64], tipo[8]; long tmdb; } VtChave;
 static VtChave focoChave;
+static VtChave fluxoChaves[VT_MAX];
+static int fluxoChavesN, fluxoPendente;
 static unsigned gradeRevisao, gradePonteiroRevisao;
 static int gradeRevisaoValida, gradePonteiroValido, focoLembrado = -1;
 static void guardarChave(VtChave *chave, const CatItem *it) {
@@ -447,6 +449,7 @@ static void limparFocoCatalogo(void) {
   gradeRevisaoValida = 0;
   gradePonteiroValido = 0;
   focoLembrado = -1;
+  fluxoChavesN = fluxoPendente = 0;
 }
 static int atualizarGrade(void);
 
@@ -841,6 +844,16 @@ static void cel(int i, float x, float y, float w, float h, int lin, int col) {
 static void ordenar(int n) {
   static int years[VT_MAX];
   int old = orderN > 0 && foco < orderN ? order[foco] : (orderN < 0 ? -1 : foco);
+  // Keep the displayed prefix intact until the catalog reaches its end.
+  if (lay == VT_LAY_FLUXO && !desc_vertudo_fim() && !desc_vertudo_erro()) {
+    if (orderN > 0) {
+      for (int i = orderN; i < n; i++) order[i] = i;
+      orderN = n;
+      fluxoPendente = 1;
+      return;
+    }
+    fluxoPendente = 1;
+  } else if (lay == VT_LAY_FLUXO) fluxoPendente = 0;
   for (int i = 0; i < n; i++) { CatItem it; order[i] = i;
     years[i] = itemDaLista(i, &it) ? yearOf(&it) : 9999; }
   for (int i = 1; i < n; i++) { int v = order[i], j = i;
@@ -968,8 +981,19 @@ static int atualizarGrade(void) {
   int n = nItens(), mudou = gradeRevisaoValida && gradeRevisao != revisao;
   if (n > VT_MAX) n = VT_MAX;
   if (mudou) {
-    orderN = -1; celLay = -1;
+    int acrescentou = lay == VT_LAY_FLUXO && orderN > 0 &&
+                      n >= orderN && fluxoChavesN == orderN;
+    for (int i = 0; acrescentou && i < fluxoChavesN; i++) {
+      CatItem it;
+      if (!itemDaLista(i, &it) || !mesmaChave(&fluxoChaves[i], &it)) acrescentou = 0;
+    }
+    if (!acrescentou) orderN = -1;
+    celLay = -1;
     ctxhold_cancelar(&hold);
+  }
+  if (lay == VT_LAY_FLUXO && fluxoPendente &&
+      (desc_vertudo_fim() || desc_vertudo_erro())) {
+    ordenar(n); celLay = -1;
   }
   if (precisaMontar(n)) { montar(n); focoLembrado = -1; }
   if (mudou && (focoChave.id[0] || focoChave.tmdb > 0)) {
@@ -977,6 +1001,13 @@ static int atualizarGrade(void) {
       CatItem it;
       if (viewItem(i, &it) && mesmaChave(&focoChave, &it)) { foco = i; break; }
     }
+  }
+  if (lay == VT_LAY_FLUXO && (!gradeRevisaoValida || mudou)) {
+    for (int i = 0; i < n; i++) {
+      CatItem it;
+      guardarChave(&fluxoChaves[i], itemDaLista(i, &it) ? &it : NULL);
+    }
+    fluxoChavesN = n;
   }
   gradeRevisao = revisao; gradeRevisaoValida = 1;
   lembrarFoco();
@@ -3069,7 +3100,9 @@ static GfxRect cartaoArte(int i, GfxRect r0, const char *arte, float ac, Uint32 
     else r = foco_zoom(r0, 1.0f);
   }
   t = arte && arte[0] ? tex_obter_larg(arte, r0.w) : 0;
-  aArte = i < VT_MAX ? revela_arte(&revArte[i], t != 0, agora) : 1.0f;
+  // Reveal state belongs to the poster, even after the final chronological sort.
+  int arteIdx = lay == VT_LAY_FLUXO && i < orderN ? order[i] : i;
+  aArte = arteIdx < VT_MAX ? revela_arte(&revArte[arteIdx], t != 0, agora) : 1.0f;
   if (!t || aArte < 0.999f)
     gfx_cor(r, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, ac);
   if (t) {
