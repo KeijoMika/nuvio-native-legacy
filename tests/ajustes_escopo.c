@@ -224,6 +224,22 @@ static void edicao(void) {
   assert(valor[AJ_VIDRO] == 1 && valor[AJ_HERO] == 1 && valor[AJ_RELOGIO] == 0);   // o ativo voltou inteiro
 }
 
+static void accountActionsIsolation(void) {
+  const char *names[] = { "Admin", "Ana" };
+  const int actions[] = { AJ_TRAKT, AJ_SIMKL, AJ_DISCORD, AJ_SAIR };
+  perfis_teste_definir(names, NULL, 2, 1);
+  assert(ajustes_edicao_iniciar(2));
+  uxCancelar();
+  for (int i = 0; i < 4; i++) {
+    assert(!ajOpcaoDisponivel(actions[i]));
+    uxAbrirEditor(actions[i]);
+    assert(!uxEditor);
+  }
+  ajustes_edicao_encerrar();
+  assert(perfis_ativo() == 1);
+  for (int i = 0; i < 4; i++) assert(ajOpcaoDisponivel(actions[i]));
+}
+
 static void identityControlsIsolation(void) {
   const char *names[] = { "Admin", "Ana" };
   const int controls[] = { AJ_PERFIL_PESQ, AJ_PERFIL_EDITAR, AJ_PERFIL_INFANTIL };
@@ -499,6 +515,7 @@ int main(void) {
   migracao();
   copia();
   edicao();
+  accountActionsIsolation();
   identityControlsIsolation();
   pollOptoutIsolation();
   failureBackendIsolation();

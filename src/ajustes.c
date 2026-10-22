@@ -3091,7 +3091,8 @@ static int ajOpcaoDisponivel(int op) {
                    op == AJ_FONTE_ORDEM || op == AJ_FONTE_ADDONS_PERM ||
                    op == AJ_FONTE_PLUGINS_PERM || op == AJ_FONTE_REGEX_PADRAO ||
                    op == AJ_FONTE_REGEX_MODELO || op == AJ_ENQUETES ||
-                   op == AJ_PERFIL_PESQ || op == AJ_PERFIL_EDITAR || op == AJ_PERFIL_INFANTIL)) return 0;
+                   op == AJ_PERFIL_PESQ || op == AJ_PERFIL_EDITAR || op == AJ_PERFIL_INFANTIL ||
+                   op == AJ_TRAKT || op == AJ_SIMKL || op == AJ_DISCORD || op == AJ_SAIR)) return 0;
   if (op == AJ_AMPLIAR_UI)
     return painel4k() && !telefoneui_ativo();
   if (op == AJ_ARTE_TOM) return valor[AJ_TEMA] == AJ_TEMA_DINAMICA;
