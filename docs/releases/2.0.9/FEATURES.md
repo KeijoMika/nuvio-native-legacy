@@ -56,8 +56,16 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`.
 
 ## Pending (not yet integrated)
 
 - **Safer proxy playback and buffer fallback**: Pending fixes protect request headers after HTTPS downgrades, restore native buffering after proxy fallback, prevent concurrent clients from restarting the active stream and unblock near-forward native seeks when the origin stalls. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `agente/205-ur673`, `d365dd646`; latest fix needs review.
+
+- **Artwork recovery on low-memory TVs**: Request smaller artwork and recover from memory pressure without leaving visible images grey. Platforms: webOS. Refs: #676, `agente/205-676-arte`, `e3427954b`.
+
+- **Stable Home row focus**: Keep the selected item identity current after navigation so later row refreshes preserve focus. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #677, `agente/205-677-foco`, `e94610c5b`.
+
+- **Personalized add-on catalogs**: Apply required manifest defaults when requesting catalogs such as AI for you. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #678, `agente/205-678-aiforyou`, `99d7014da`.
+
+- **Library anime categories and filter focus**: Place Simkl anime movies under Movies and retain focus on the media-type control after switching categories. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-lib-anime-foco`, `bf3da4bc2`, `6e9f8233c`.
