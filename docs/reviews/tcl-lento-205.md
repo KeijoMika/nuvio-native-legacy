@@ -73,3 +73,21 @@ stalls requires moving GL uploads to a shared-context worker with asynchronous
 completion; that cross-platform lifecycle change is not implemented here.
 New stage logs are needed to identify the exact remaining driver operation.
 No push or deployment.
+
+## P1 follow-up
+
+Android now submits decoded artwork on one shared EGL context with a private
+1x1 pbuffer. One ENVIANDO slot retains its surface and previous texture until
+all base/mip submissions and glFinish complete on the worker. The frame pump
+uses try-lock publication and skips renderer warm-up, whose mutable state
+belongs to the drawing context. Large uploads use the same worker rather than
+frame-thread stripes. Shutdown joins before freeing surfaces or contexts.
+Other production platforms retain the existing pump. If shared-context startup
+fails, Android retains the synchronous fallback; that case has no stall guarantee.
+
+The injected 250 ms GL call blocks the committed baseline for 251 ms (assertion,
+rc 134); the worker pump returns in 0 ms. The module regression passes (rc 0),
+including queued retention, contended publication, missing CPU mips and a large
+promotion retaining its old artwork until completion. Final local build and
+C syntax/whitespace checks pass. These are host checks; Android EGL lifecycle,
+device FPS, memory and visual behavior remain unverified. No push or deployment.
