@@ -33,11 +33,7 @@
 #endif
 #define PLUG_REDE_S        15                 // por fetch
 #ifndef PLUG_PARALELOS
-#if defined(__EMSCRIPTEN__) || defined(NV_WEBOS) || defined(NV_TPK40)
-#define PLUG_PARALELOS     2
-#else
-#define PLUG_PARALELOS     3
-#endif
+#define PLUG_PARALELOS     8
 #endif
 
 typedef struct {
@@ -856,6 +852,7 @@ typedef struct {
   char tmdb[24]; const char *tipo; int t, e;
   int cancel;              // atomico: 1 = descarta tudo; 2 = corte (fica o que terminou)
   int vivos, terminados;
+  int prazoMs;             // Short slots for large installed pools.
   pthread_mutex_t m;
   Stream **res; int *nRes;
   AvisoFn aviso; void *avisoU;
@@ -869,11 +866,11 @@ static int rodadaParou(Rodada *r) {
   return __atomic_load_n(&r->cancel, __ATOMIC_ACQUIRE) || rede_job_estado(r->job) != REDE_OK;
 }
 
-static char *codigoDe(const Scraper *s, RedeJob *job) {
+static char *codigoDe(const Scraper *s, RedeJob *job, int prazoMs) {
   long idade;
   char *t = cacheLer(s->url, &idade), *corpo;
   if (t && idade >= 0 && idade < PLUG_CACHE_S) return t;
-  corpo = baixar(s->url, PLUG_CODIGO_MAX, 15000, job);
+  corpo = baixar(s->url, PLUG_CODIGO_MAX, prazoMs, job);
   if (corpo && strlen(corpo) > 20) {
     if (rede_job_estado(job) == REDE_OK) cacheGravar(s->url, corpo);
     free(t);
@@ -882,11 +879,11 @@ static char *codigoDe(const Scraper *s, RedeJob *job) {
   free(corpo);
   return t;   // a rede falhou: fica o codigo velho, se houver
 }
-static char *codigoDeCapturado(const Scraper *s, RedeJob *job) {
+static char *codigoDeCapturado(const Scraper *s, RedeJob *job, int prazoMs) {
   long idade;
   char *t = cacheLer(s->url, &idade);
   if (t && idade >= 0 && idade < PLUG_CACHE_S) return t;
-  char *corpo = baixar(s->url, PLUG_CODIGO_MAX, 15000, job);
+  char *corpo = baixar(s->url, PLUG_CODIGO_MAX, prazoMs, job);
   if (corpo && strlen(corpo) > 20) { free(t); return corpo; }
   free(corpo); return t;
 }
@@ -903,7 +900,7 @@ static void rodarScrapers(Rodada *r) {
     pthread_mutex_unlock(&r->m);
     if (i < 0 || rodadaParou(r)) return;
     s = &r->lista[i];
-    cod = r->capturada ? codigoDeCapturado(s, r->job) : codigoDe(s, r->job);
+    cod = r->capturada ? codigoDeCapturado(s, r->job, r->prazoMs) : codigoDe(s, r->job, r->prazoMs);
     if (!cod) {
       if (r->capturada) __atomic_store_n(&r->incompleta, 1, __ATOMIC_RELEASE);
       if (!rodadaParou(r)) __atomic_add_fetch(&r->terminados, 1, __ATOMIC_RELAXED);
@@ -917,7 +914,10 @@ static void rodarScrapers(Rodada *r) {
     p.tmdbId = r->tmdb; p.tipo = r->tipo; p.temporada = r->t; p.episodio = r->e;
     p.tmdbChave = r->capturada ? r->capturada->chaveTmdb : desc_chave_tmdb_reserva();
     p.ajustesJson = "{}";
-    p.prazoMs = PLUG_PRAZO_MS; p.redeSegundos = PLUG_REDE_S;
+    p.prazoMs = r->prazoMs; p.redeSegundos = r->prazoMs < 15000 ? r->prazoMs / 1000 : PLUG_REDE_S;
+    // Eight 4 MiB stacks; JS heap/network retain the existing global caps
+    // (64/16 MiB on webOS). No increase to the TV memory budget.
+    p.memoriaMax = r->n > 16 ? 8L * 1024 * 1024 : 0;
     p.verLog = r->capturada ? r->capturada->log : getenv("NUVIO_PLUGINS_LOG") != NULL;
     p.cancelado = &r->cancel;
     p.job = r->job; p.grupo = r->capturada ? r->capturada->grupo : grupoDe();
@@ -1018,6 +1018,7 @@ int plugins_consultar(const char *id, const char *tipo, int (*cancelado)(void *)
   printf("[plugins] %s %s (tmdb %s): %d scraper(s)\n", serie ? "serie" : "filme", id, r.tmdb, r.n);
   fflush(stdout);
 
+  r.prazoMs = r.n > 16 ? 3000 : PLUG_PRAZO_MS;
   fios = r.n < PLUG_PARALELOS ? r.n : PLUG_PARALELOS;
   { pthread_attr_t a;
     pthread_attr_init(&a);
@@ -1051,7 +1052,7 @@ int plugins_consultar(const char *id, const char *tipo, int (*cancelado)(void *)
   }
   pthread_mutex_lock(&trava);
   if (!descartar && gerAtual() == ger) {
-    ultimoResumo = (PlugResumo){r.n, r.terminados, r.cancel == 2 ? r.n - r.terminados : 0};
+    ultimoResumo = (PlugResumo){r.n, r.terminados, r.n - r.terminados};
     int mudou = 0;
     for (k = 0; k < r.n; k++) if (r.nRes[k] > 0)
       for (int j = 0; j < E.nScr; j++) {
@@ -1123,6 +1124,7 @@ int plugins_consulta_consultar(const PluginsConsulta *c, const char *id, const c
   pthread_mutex_init(&r.m, NULL); r.aviso = aviso; r.avisoU = avisoU;
   if (aviso) for (int i = 0; i < r.n; i++) aviso(avisoU, i, r.lista[i].nome, 1, NULL, 0);
   unsigned long inicio = agoraMsPlug();
+  r.prazoMs = r.n > 16 ? 3000 : PLUG_PRAZO_MS;
   pthread_t fios[PLUG_PARALELOS]; int criados = 0;
   int nf = r.n < PLUG_PARALELOS ? r.n : PLUG_PARALELOS;
   pthread_attr_t a; pthread_attr_init(&a); pthread_attr_setstacksize(&a, pj_pilha());

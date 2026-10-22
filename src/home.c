@@ -28,6 +28,7 @@
 #include "fileiras.h"
 #include "curadoria.h"
 #include "continuar.h"
+#include "proximo.h"
 #include "vertudo.h"
 #include "ctxmenu.h"
 #include "marco.h"
@@ -279,9 +280,8 @@ int home_pediu_pessoa_social(CatItem *saida) {
 }
 int home_pediu_social(void) { int v=pedidoSocial;pedidoSocial=0;return v; }
 
-// Pedido de abrir o GUIA DE CANAIS: o "Ver tudo" de uma fileira de canal nao
-// leva a grade de cartazes — leva ao guia, e o OK num cartao de canal abre o
-// guia ja focado nele. `guiaId` guarda o id para guia_focar_id.
+// Guide request retained for the navigation API. Addon catalog cards use
+// the normal detail and See all paths; Guide remains its own screen.
 static int pedidoGuia;
 static char guiaId[80];
 static int fileiraEhCanal(const Fileira *f) {
@@ -1399,7 +1399,19 @@ static const CatItem *cat_item_exato(int i) {
 // (404 do metahub) cai na arte do titulo, como no destaque.
 static const char *arte_card_retomada(const CatItem *item) {
   if (item && ajustes_cw_thumb_episodio() && !strcmp(item->tipo, "series")) {
-    const char *ep = artehero_url_episodio(item);
+    CatItem copia = *item;
+    ProxSugestao prox;
+    const char *ep;
+    // Match continuar_desenhar: a completed card advertises the next episode.
+    if (item->progresso >= ajustes_cw_concluido()) {
+      int idx = cat_indice_titulo(item->imdb, cat_indice_por_imdb(item->imdb));
+      if (idx >= 0 && prox_seguinte(item, cat_episodio(idx, 0), cat_n_episodios(idx),
+                                  ajustes_cw_concluido(), (long long)time(NULL) * 1000LL, &prox)) {
+        copia.temporada = prox.temporada;
+        copia.episodio = prox.episodio;
+      }
+    }
+    ep = artehero_url_episodio(&copia);
     if (ep && !tex_falhou(ep))
       return posterprov_card_formato(item->origem, item->imdb, item->tmdb, item->tipo, ep, 1);
   }
@@ -2321,10 +2333,14 @@ static void posCapturar(void) {
     // confiavel que o indice: a publicacao incremental pode ja ter trocado o
     // bloco do catalogo quando este snapshot for capturado.
     { int a, idx = fileiraItemIndice(&fileiras[r], p->coluna);
-      const CatItem *it = cat_item(idx);
+      const CatItem *it = p->coluna < fileiras[r].n ? cat_item(idx) : NULL;
       p->itemId[0] = p->itemTipo[0] = 0;
       for (a = 0; a < antigoN; a++)
-        if (!strcmp(antigo[a].chave, p->chave) && antigo[a].itemId[0]) {
+        // Keep the saved identity across publications, but refresh it after
+        // navigation. See More is a synthetic tile with no catalogue ID.
+        if (p->coluna < fileiras[r].n &&
+            !strcmp(antigo[a].chave, p->chave) && antigo[a].itemId[0] &&
+            antigo[a].coluna == p->coluna) {
           if (r != foco.fileira || !strcmp(antigoFoco, p->chave)) {
             snprintf(p->itemId, sizeof p->itemId, "%s", antigo[a].itemId);
             snprintf(p->itemTipo, sizeof p->itemTipo, "%s", antigo[a].itemTipo);
@@ -2621,20 +2637,10 @@ static void home_evento_(const SDL_Event *e) {
           vertudo_colecao(col_folder(fileiras[foco.fileira].folders[foco.coluna]));
         }
       } else if (noVerTudo) {
-        if (fileiraEhCanal(&fileiras[foco.fileira])) {
-          pedidoGuia = 1; guiaId[0] = 0;
-        } else {
-          vertudo_abrir(fileiras[foco.fileira].base, fileiras[foco.fileira].catTipo,
-                        fileiras[foco.fileira].catId, fileiras[foco.fileira].titulo);
-        }
+        vertudo_abrir(fileiras[foco.fileira].base, fileiras[foco.fileira].catTipo,
+                      fileiras[foco.fileira].catId, fileiras[foco.fileira].titulo);
       } else if (dur >= NV_HOLD_MS) {
         abrirMenuCartaz();
-      } else if (fileiraEhCanal(&fileiras[foco.fileira])) {
-        // OK num cartao de canal abre o guia focado nele — o canal nao tem
-        // pagina de detalhe que ajude: nao ha episodios, elenco ou "sobre".
-        const CatItem *ci = cat_item_exato(fileiraItemIndice(&fileiras[foco.fileira], foco.coluna));
-        pedidoGuia = 1;
-        snprintf(guiaId, sizeof guiaId, "%s", ci ? ci->imdb : "");
       } else {
         // OK num card da retomada TOCA de onde parou quando o ajuste pede
         // (issue #93): abrirTitulo seguido de detail_pedir_reproduzir cai no
@@ -3212,6 +3218,7 @@ static void sincronizarFileiras(void) {
     int t = fil_tipo(fileiras[i].chave);
     fileiras[i].escala = fil_escala(fileiras[i].chave);
     fileiras[i].fator = fil_tipo_fator(t);
+    if (fileiraEhCanal(&fileiras[i])) fileiras[i].tipo = FILEIRA_LARGA;
     fileiras[i].tipoAuto = fileiras[i].tipo;
     fileiras[i].formaAuto = fileiras[i].forma;
     // Grupo de colecao: TODOS os estilos do catalogo valem, com a pasta no
@@ -5735,8 +5742,12 @@ static void alvoCard(float x, float y, float w, float h, int r, int c) {
   ponteiro_alvo(x, y, w, h, ponteiroCard, NULL, r, c);
 }
 
+static void desenhaRedonda(const CatItem *ci, GLuint t, const char *caminho,
+                           float px, float py, float d, float f);
+
 static void desenhaAtalhos(int r, float y) {
   float w = larguraFil(r), h = alturaFil(r);
+  const int redonda = fileiras[r].estiloCol == FILEIRA_REDONDA;
   static int ultimo=-1;static Uint32 desde;
   // Estado do ramo de GIF (#29), SEPARADO do da sequencia de JPEG desde o #141:
   // o GIF passou a poder sair da CAPA, e a troca de fonte no mesmo cartaz
@@ -5766,7 +5777,7 @@ static void desenhaAtalhos(int r, float y) {
     alvoCard(x, cy, cw, ch, r, c);
     // O ANEL E OPCIONAL (Ajustes > Foco no cartaz). Sem ele o foco continua
     // dito pelo tamanho e pela animacao do cartaz — o que sai e so a borda.
-    if (f > .01f && ajustes_borda_foco()) {
+    if (!redonda && f > .01f && ajustes_borda_foco()) {
       float menor = cw < ch ? cw : ch;
       float ar, ag, ab; ajustes_acento(&ar, &ag, &ab);
       if (ajustes_vidro()) gfx_vidro_cartao(card, raio, f, 1.0f);
@@ -5775,7 +5786,7 @@ static void desenhaAtalhos(int r, float y) {
         cw + 2*NV_ANEL_FOCO, ch + 2*NV_ANEL_FOCO},
         (raio * menor + NV_ANEL_FOCO) / (menor + 2*NV_ANEL_FOCO), ar, ag, ab, f);
     }
-    gfx_cor(card, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, 1);
+    if (!redonda) gfx_cor(card, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, 1);
     const ColFolder *folder=col_folder(fileiras[r].folders[c]);if(!folder)continue;
     const char *arte = col_capa(folder);
     // POR CARTAZ, e nao estatico: diz se ESTE quadro esta desenhando o GIF, e a
@@ -5893,6 +5904,10 @@ static void desenhaAtalhos(int r, float y) {
         }
         if(seqTex)tex=seqTex;
       }
+    }
+    if (redonda) {
+      desenhaRedonda(NULL, tex, gifDesenhando ? NULL : arte, x, cy, cw, f);
+      continue;
     }
     if (tex) {
       gfx_tex_aspect_atual = gifDesenhando ? 0.0f : tex_aspecto(arte);
@@ -7116,10 +7131,11 @@ float home_vitrine_topo(float filH) {
     default:                   return ANC(NV_SHELF_TOP);
   }
 }
-void home_vitrine_medida(float *w, float *h, float *passo, float *rotH) {
-  *w = larguraDe(FILEIRA_NORMAL); *h = alturaDe(FILEIRA_NORMAL);
-  *passo = *w + gapDe(FILEIRA_NORMAL);
-  *rotH = temRotulo(FILEIRA_NORMAL) ? NV_POSTER_COPY_H : 0.0f;
+void home_vitrine_medida(float *w, float *h, float *passo, float *rotH, int redonda) {
+  TipoFileira tipo = redonda ? FILEIRA_REDONDA : FILEIRA_NORMAL;
+  *w = larguraDe(tipo); *h = alturaDe(tipo);
+  *passo = *w + gapDe(tipo);
+  *rotH = temRotulo(tipo) ? NV_POSTER_COPY_H : 0.0f;
 }
 // 1 quando a arte do destaque do item ja esta decodificada (e pede o decode).
 int home_vitrine_arte_pronta(const CatItem *ci) {
@@ -7158,12 +7174,17 @@ float home_vitrine_texto(const CatItem *ci, float topo, float teto, float alfa) 
 }
 // Um cartaz de fileira normal. `base` e a caixa em repouso (o rotulo fica nela)
 // e `card` a caixa com o foco ja aplicado.
-void home_vitrine_cartao(const CatItem *ci, GfxRect base, GfxRect card, float alfa) {
+void home_vitrine_cartao(const CatItem *ci, GfxRect base, GfxRect card, float alfa, int redonda, float foco) {
   int deitado = ajustes_posteres_deitados();
   const char *cam = arte_por_formato(ci, deitado);
   float raio = raioDe(card.w, card.h), og = gfx_opacidade_grupo;
   GLuint t = cam ? tex_obter_larg(cam, card.w) : 0;
   gfx_opacidade_grupo = alfa;
+  if (redonda) {
+    desenhaRedonda(ci, t, cam, card.x, card.y, card.w, foco);
+    gfx_opacidade_grupo = og;
+    return;
+  }
   gfx_veu_card_limpar();
   if (t) veusDoCard(ci, FILEIRA_NORMAL, deitado, 0.0f, 0);
   desenhaArteCard(card, FILEIRA_NORMAL, cam, t, ci, 0.0f, raio, 1.0f, 0.0f);
@@ -7215,8 +7236,9 @@ static void desenhaRedonda(const CatItem *ci, GLuint t, const char *caminho,
   gfx_rect(miolo, 0, GFX_DISCO, 0, 0, 0, 0, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G,
            NV_COR_ESQUELETO_B, 1);
   if (t) {
-    gfx_tex_aspect_atual = tex_aspecto(caminho);
-    gfx_rect(miolo, t, GFX_AVATAR, 0, 0.0f, 0.10f, 0, 1, 1, 1, 1);
+    gfx_tex_aspect_atual = caminho ? tex_aspecto(caminho) : 0.0f;
+    // Collection covers stay centered; catalog portraits keep their face crop.
+    gfx_rect(miolo, t, GFX_AVATAR, 0, 0.0f, ci ? 0.10f : 0.0f, 0, 1, 1, 1, 1);
     gfx_tex_aspect_atual = 0.0f;
   }
   if (ci && ajustes_selo_visto() && cat_visto(ci)) badges_check_cartao(disco, 1, 1.0f);
