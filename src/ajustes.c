@@ -704,6 +704,13 @@ typedef enum {
   // fileiraFormato): o estilo. LOCAL (o web nao tem). No fim:
   // valor[]/CHAVE[] posicionais.
   AJ_PLR_FORMATO,
+  // Comentarios do Trakt no painel de pausa (pausacom.h). LOCAL (o web nao tem),
+  // ligado de fabrica. No fim: valor[]/CHAVE[] posicionais.
+  AJ_PAUSA_COMENTARIOS,
+  // Notas (IMDb, Rotten Tomatoes...) no painel de pausa. LOCAL, ligado de fabrica.
+  AJ_PAUSA_NOTAS,
+  // Elenco (fotos, nomes e papeis) no painel de pausa. LOCAL, DESLIGADO de fabrica.
+  AJ_PAUSA_ELENCO,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -1346,7 +1353,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Idioma da legenda",          V_LINGUA, 2),
   ESC("Idioma do áudio",            V_LINGUA, 2),
   // `playback_pause_overlay` (settingsScreen.js:6320). Liga o painel que
-  // sobe cinco segundos depois de pausar; ver pausao.h.
+  // sobe quatro segundos depois de pausar; ver pausao.h.
   ESC("Painel ao pausar",           V_LIGA, 2),   // pauseOverlayEnabled
   ESC("Escolher a fonte ao reproduzir", V_LIGA, 2), // local: ver ajustes_fonte_manual
   ESC("Fonte automática",           V_FONTE_AUTO, 2),  // local: ver fonteauto.h
@@ -1829,6 +1836,9 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Dolby Vision P7 para P8.1 (experimental)", V_LIGA, 2),
   ESC("Registro na rede local", V_LIGA, 2),                   // local: logRedeLocal
   ESC("Formato no player", V_PLR_FORMATO, 6),          // local: plrFormatoLocal
+  ESC("Comentários do Trakt ao pausar", V_LIGA, 2),   // local: pausaComentariosLocal
+  ESC("Notas ao pausar", V_LIGA, 2),                  // local: pausaNotasLocal
+  ESC("Elenco ao pausar", V_LIGA, 2),                 // local: pausaElencoLocal
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2153,6 +2163,9 @@ static const char *CHAVE[] = {
   "dv7ConversionLocal",
   "logRedeLocal",
   "plrFormatoLocal",
+  "pausaComentariosLocal",
+  "pausaNotasLocal",
+  "pausaElencoLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2795,6 +2808,9 @@ int ajustes_720p(void)                { return valor[AJ_RESOLUCAO] == RES_720 &&
 int ajustes_dolby_vision(void)        { return lig(AJ_DV); }
 int ajustes_dolby_atmos(void)         { return lig(AJ_ATMOS); }
 int ajustes_pausa_overlay(void)       { return lig(AJ_PAUSA_OVERLAY); }
+int ajustes_pausa_comentarios(void)   { return lig(AJ_PAUSA_COMENTARIOS); }
+int ajustes_pausa_notas(void)         { return lig(AJ_PAUSA_NOTAS); }
+int ajustes_pausa_elenco(void)        { return lig(AJ_PAUSA_ELENCO); }
 int ajustes_reacao_creditos(void)     { return lig(AJ_REACAO_CREDITOS); }
 int ajustes_plr_formato(void)         { int v = valor[AJ_PLR_FORMATO]; return v >= 0 && v < PLR_FMT_N ? v : PLR_FMT_ORIGINAL; }
 int ajustes_pular_abertura(void)      { return lig(AJ_PULAR_ABERTURA); }
@@ -6000,6 +6016,9 @@ static int somenteDesteAparelho(int op) {
     case AJ_OCULTAR_FILMES_VISTOS: /* por perfil desta TV; fora do blob da conta */
     case AJ_BIB_HOME:       /* #507: idem */
     case AJ_REACAO_CREDITOS: /* o web nao tem a pergunta */
+    case AJ_PAUSA_COMENTARIOS: /* o web nao tem os comentarios do Trakt no painel de pausa */
+    case AJ_PAUSA_NOTAS: /* nem as notas */
+    case AJ_PAUSA_ELENCO: /* nem o elenco */
     case AJ_PULAR_ABERTURA: case AJ_PULAR_RESUMO: case AJ_PROXIMO_AUTO: case AJ_PULAR_CREDITOS: case AJ_PROXIMO_CONTAGEM: /* idem: local desta TV */
     case AJ_PLR_FORMATO: /* o web nao tem a fileira de formato */
     case AJ_SEEKR_LIGADO: case AJ_SEEKR_FITA: case AJ_SEEKR_AJUSTE: /* o web nao tem o Seekr */
@@ -7070,6 +7089,10 @@ static int inativa(int op) {
     // nao existe nesta TV — o "Explorar" daqui e outra tela. A escolha vem e
     // vai para a conta, mas aqui nao muda nada, e a linha tem de dizer isso.
     case AJ_DESCOBRIR:    return 1;
+    // Comentarios do Trakt no painel de pausa: a linha fica apagada sem o painel.
+    case AJ_PAUSA_COMENTARIOS: return !lig(AJ_PAUSA_OVERLAY);
+    case AJ_PAUSA_NOTAS: return !lig(AJ_PAUSA_OVERLAY);
+    case AJ_PAUSA_ELENCO: return !lig(AJ_PAUSA_OVERLAY);
     // Tela de descanso: o estilo depende de haver descanso; os titulos, de ele
     // ser a vitrine.
     case AJ_DESCANSO_ESTILO: return valor[AJ_ESMAECER] == 0;
@@ -7375,6 +7398,9 @@ static const char *ajudaOpcaoBase(int op) {
     }
     case AJ_PLR_FORMATO: return "A fileira com o formato do vídeo e do áudio. Texto: embaixo do título, em negrito. Pílula: o mesmo texto dentro da pílula da hora. Marcas: Dolby Vision e Atmos com o logo. Selos: os selos do seu pacote, como na lista de fontes. Original: as marcas brancas no canto de cima, com o codec do áudio.";
     case AJ_REACAO_CREDITOS: return "Nos créditos de um filme, ou no fim de uma temporada, um cartão pequeno pergunta o que você achou. Some sozinho em 8 s. Com o Trakt ligado, a resposta vira nota lá.";
+    case AJ_PAUSA_COMENTARIOS: return "Com o painel ao pausar ligado, comentários públicos do Trakt sobre o que você está vendo passam em rodízio. Não precisa de conta; sem comentários ou sem rede, nada aparece.";
+    case AJ_PAUSA_NOTAS: return "Com o painel ao pausar ligado, mostra as notas do título (IMDb, Rotten Tomatoes, Metacritic, TMDB e outras) embaixo do ano e da duração. Num episódio, só as notas do próprio episódio. Fonte sem nota não aparece.";
+    case AJ_PAUSA_ELENCO: return "Com o painel ao pausar ligado, mostra o elenco (foto, nome e papel) embaixo da sinopse. Desligado, o painel fica só com a ficha, as notas e o comentário.";
     case AJ_STALKER_PORTAL: return "Os canais do portal entram no Guia de TV, junto com os dos addons. Endereço sem http:// e sem barra no fim: meu-portal.exemplo.tv:8080";
     case AJ_STALKER_MAC: return "O MAC que o provedor cadastrou para você. É credencial: vale como senha, e só aparece nesta tela mascarado.";
     case AJ_STALKER_LIMPAR: return "Apaga o portal e o MAC deste perfil, e os canais dele somem do Guia. Sair da conta também apaga.";
@@ -10331,6 +10357,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_QUALIDADE: case AJ_DV: case AJ_ATMOS: case AJ_LEG_LINGUA: case AJ_LEG_LINGUA2: case AJ_CACHE_SEEK: case AJ_BUFFER: case AJ_PLAYER_EXTERNO: case AJ_PLAYER_ANIME: case AJ_ESTAT_TAMANHO: case AJ_ESTAT_LADO:
     case AJ_DV_MKV:
     case AJ_LEG_FORCADA:
+    case AJ_PAUSA_COMENTARIOS: case AJ_PAUSA_NOTAS: case AJ_PAUSA_ELENCO:
     case AJ_AUD_LINGUA: case AJ_AUD_LINGUA2: case AJ_PAUSA_OVERLAY: case AJ_PLR_CLASSIF: case AJ_TELA_ABERTURA: case AJ_ABERTURA_ADDON: case AJ_ABERTURA_FUNDO: case AJ_ABERTURA_ESTILO: case AJ_FONTE_MANUAL:
     case AJ_PLR_FORMATO:
     case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_FONTE_ORDEM_ADDON: case AJ_SELOS_CORES: case AJ_FONTE_TOCAR_CONFERINDO: case AJ_FONTE_AQUECER: case AJ_FONTE_CONFERIR_VARIAS: case AJ_FONTE_PREPARAR: case AJ_FONTE_PRECARREGAR:

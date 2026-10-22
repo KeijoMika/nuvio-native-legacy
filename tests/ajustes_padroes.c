@@ -264,6 +264,16 @@ int main(void) {
   AJ_LOG_REDE == AJ_DV7 + 1 && AJ_N > AJ_LOG_REDE);
   assert(valor[AJ_LOG_REDE] == 1 && valorPadrao[AJ_LOG_REDE] == 1 &&
          uxValorPadrao(AJ_LOG_REDE) == 1 && !ajustes_log_rede()); // V_LIGA: 1 = Off
+  // Comentarios do Trakt no painel de pausa: ligado de fabrica; fora do blob do web (como reacaoCreditosLocal).
+  assert(valor[AJ_PAUSA_COMENTARIOS] == 0 && valorPadrao[AJ_PAUSA_COMENTARIOS] == 0 && ajustes_pausa_comentarios());
+  assert(!strcmp(CHAVE[AJ_PAUSA_COMENTARIOS], "pausaComentariosLocal") && somenteDesteAparelho(AJ_PAUSA_COMENTARIOS) && !dePerfil(AJ_PAUSA_COMENTARIOS));
+  // Cada opcao nova confere a SUA posicao (depois das ja existentes), sem fixar
+  // o fim da lista: duas opcoes acrescentadas em PRs diferentes nao se quebram.
+  assert(AJ_PAUSA_COMENTARIOS > AJ_LOG_REDE && AJ_PAUSA_NOTAS == AJ_PAUSA_COMENTARIOS + 1 && AJ_PAUSA_ELENCO == AJ_PAUSA_NOTAS + 1 && AJ_N > AJ_PAUSA_ELENCO);
+  assert(valor[AJ_PAUSA_ELENCO] == 1 && valorPadrao[AJ_PAUSA_ELENCO] == 1 && !ajustes_pausa_elenco());   // V_LIGA: 1 = Off
+  assert(!strcmp(CHAVE[AJ_PAUSA_ELENCO], "pausaElencoLocal") && somenteDesteAparelho(AJ_PAUSA_ELENCO) && !dePerfil(AJ_PAUSA_ELENCO));
+  assert(valor[AJ_PAUSA_NOTAS] == 0 && valorPadrao[AJ_PAUSA_NOTAS] == 0 && ajustes_pausa_notas());
+  assert(!strcmp(CHAVE[AJ_PAUSA_NOTAS], "pausaNotasLocal") && somenteDesteAparelho(AJ_PAUSA_NOTAS) && !dePerfil(AJ_PAUSA_NOTAS));
   // #492: retomada morna e o prazo do video pronto
   assert(valor[AJ_RETOMADA_MORNA] == 0 && ajustes_retomada_morna());   // V_LIGA: 0 = Ligado
   assert(!strcmp(CHAVE[AJ_RETOMADA_MORNA], "retomadaMornaLocal") && somenteDesteAparelho(AJ_RETOMADA_MORNA) && !dePerfil(AJ_RETOMADA_MORNA));

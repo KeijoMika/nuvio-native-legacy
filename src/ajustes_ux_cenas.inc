@@ -723,6 +723,21 @@ static void ajcCenaFormato(int op) {
     ajc_barra(x, my + h * 0.5f - 3.5f, 56.0f, 0.9f * a);
   }
 }
+// Texto escuro (sobre a pilula amarela e o quadrado verde).
+static void ajcTextoEscuro(const char *t, float px, float x, float y, float a) {
+  ajTextoMini(t, ajc_px(px), 1, ajc_x(x), ajc_y(y), 26, 26, 26, a);
+}
+// O painel da pausa, igual nos dois casos: o veu, o vidro, o titulo e a peca
+// de pause (desligado) ou de play (ligado). O que o painel mostra fica no caso.
+static void ajcPausaPainel(int op) {
+  ajc_ret(0, 0, 640, 360, 0, 0, 0, 0, 0.45f);
+  ajc_vidro(40, 76, 330, 150, 18, 1);
+  ajc_ret(60, 96, 170, 20, 6, 1, 1, 1, 0.9f);
+  ajc_barra(60, 124, 270, 0.5f);
+  if (ajcLig(op) < 0.5f) ajc_ladrilho("aj_pause", 380, 150, 60, 0, 0.9f);   // desligado: so o pause
+  else ajc_play(380, 150, 56, 0.75f + 0.25f * ajc_onda(4.0f));
+  ajcChaveCanto(ajcLig(op));
+}
 // Player: o video com a barra de tempo; cada opcao acende a sua peca.
 static void ajcCenaPlayer(int op) {
   float f = ajc_fase(6.0f);
@@ -743,6 +758,52 @@ static void ajcCenaPlayer(int op) {
       if (ajcLig(op) < 0.5f) ajc_ladrilho("aj_pause", 320, 150, 60, 0, 0.9f);   // desligado: so o pause, sem painel
       else ajc_play(320, 150, 50, 1 - k * 0.4f);
       ajcChaveCanto(ajcLig(op)); break; }
+    case AJ_PAUSA_COMENTARIOS: {   // pausado com o painel: um comentario do Trakt; as bolinhas giram
+      float k = ajcLig(op), s = ajc_onda(4.0f), a = k * (0.85f + 0.15f * s), y = 128 + (1 - s) * 3.0f;
+      int at = ajc_passo(2.0f, 3), j;
+      ajcPausaPainel(op);
+      if (k > 0.01f) {   // o cartao de vidro: sempre no lugar, a onda so o sobe uns pixels
+        ajc_ret(60, y, 290, 76, 12, 0.08f, 0.085f, 0.10f, 0.9f * a);
+        ajc_vidro(60, y, 290, 76, 12, a);
+        ajc_icone("aj_quote", 82, y + 24, 22, 0.9f * a);
+        ajc_barra(104, y + 15, 180, 0.85f * a);
+        ajc_barra(104, y + 29, 140, 0.5f * a);
+        ajc_barra(104, y + 54, 52, 0.35f * a);
+        ajc_barra(164, y + 54, 26, 0.35f * a);
+        for (j = 0; j < 3; j++) ajc_bolinha(306 + j * 14, y + 57, 7, 1, 1, 1, (j == at ? 0.95f : 0.3f) * a);
+      }
+      break; }
+    case AJ_PAUSA_NOTAS: {   // pausado com o painel: as notas do titulo, na linha de baixo do ano
+      float k = ajcLig(op), s = ajc_onda(4.0f), a = k * (0.85f + 0.15f * s), cy = 152 + (1 - s) * 3.0f, x = 56, w;
+      const float p = 14;
+      ajcPausaPainel(op);
+      if (k > 0.01f) {   // a linha nunca some: a onda so a sobe uns pixels e acende
+        ajc_ret(x, cy - 14, 50, 28, 14, 0.96f, 0.77f, 0.18f, a);             // IMDb: pilula amarela com a nota
+        ajcTextoEscuro("8.4", p, x + (50 - ajcLargura("8.4", p, 1)) * 0.5f, cy - p * 0.625f, a);
+        x += 50 + 8; ajc_barra(x, cy - 3.5f, 16, 0.5f * a); x += 16 + 10;
+        ajc_bolinha(x + 11, cy, 22, 0.93f, 0.27f, 0.22f, a);                  // Rotten Tomatoes: bolinha vermelha
+        x += 22 + 6; w = ajcLargura("91%", p, 1);
+        ajcTexto("91%", p, 1, x, cy - p * 0.625f, 0.95f * a); x += w + 8;
+        ajc_barra(x, cy - 3.5f, 16, 0.5f * a); x += 16 + 10;
+        ajc_ret(x, cy - 12, 24, 24, 6, 0.30f, 0.80f, 0.45f, a);              // Metacritic: quadrado verde
+        ajcTextoEscuro("78", p, x + (24 - ajcLargura("78", p, 1)) * 0.5f, cy - p * 0.625f, a);
+        x += 24 + 8; ajc_barra(x, cy - 3.5f, 16, 0.5f * a); x += 16 + 10;
+        ajc_bolinha(x + 10, cy, 20, 0.93f, 0.11f, 0.14f, a);                  // Trakt: bolinha vermelha da marca
+        x += 20 + 6; ajc_barra(x, cy - 3.5f, 16, 0.5f * a);
+      }
+      ajc_barra(60, 186, 270, 0.3f * k);
+      break; }
+    case AJ_PAUSA_ELENCO: {   // pausado com o painel: a fileira do elenco, fotos redondas com nome e papel
+      float k = ajcLig(op), s = ajc_onda(4.0f), a = k * (0.85f + 0.15f * s);
+      ajcPausaPainel(op);
+      if (k > 0.01f)
+        for (i = 0; i < 6; i++) {
+          float cx = 62 + i * 56, cy = 250 + (1 - s) * 3.0f;
+          ajc_bolinha(cx, cy, 36, 0.62f, 0.64f, 0.68f, a * (i % 2 ? 0.55f : 0.75f));   // foto
+          ajc_barra(cx - 18, cy + 24, 36, 0.55f * a);                                   // nome
+          ajc_barra(cx - 12, cy + 33, 24, 0.3f * a);                                    // papel
+        }
+      break; }
     case AJ_REACAO_CREDITOS: {   // nos creditos: a pergunta aparece
       float k = ajcLig(op) * ajc_onda(4.0f);
       for (i = 0; i < 6; i++) ajc_barra(250, 60 + i * 24 - 30 * f, 140, 0.25f);
