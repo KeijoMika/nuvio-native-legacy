@@ -58,6 +58,7 @@
 #include "perfis.h"
 #include "ltv.h"
 #include "guia.h"
+#include "perfilinfantil.h"
 #include "traktauth.h"
 #include "trakt.h"
 #include "simklauth.h"
@@ -704,6 +705,10 @@ typedef enum {
   // fileiraFormato): o estilo. LOCAL (o web nao tem). No fim:
   // valor[]/CHAVE[] posicionais.
   AJ_PLR_FORMATO,
+  // PERFIL INFANTIL (perfilinfantil.h): marca do perfil ativo, local a esta TV.
+  // O estado NAO mora em valor[]: e perfil_infantil_ativo(), reescrito a cada
+  // quadro (como Perfil pesquisavel). No fim: valor[]/CHAVE[] posicionais.
+  AJ_PERFIL_INFANTIL,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -1829,6 +1834,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Dolby Vision P7 para P8.1 (experimental)", V_LIGA, 2),
   ESC("Registro na rede local", V_LIGA, 2),                   // local: logRedeLocal
   ESC("Formato no player", V_PLR_FORMATO, 6),          // local: plrFormatoLocal
+  ESC("Perfil infantil",                 V_LIGA, 2),             // local: perfilinfantil.c (por perfil)
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2153,6 +2159,7 @@ static const char *CHAVE[] = {
   "dv7ConversionLocal",
   "logRedeLocal",
   "plrFormatoLocal",
+  "-perfilInfantil",   // estado em perfilinfantil.c, nunca no ajustes.txt
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2280,6 +2287,32 @@ static void pstTesteRecolher(void);
 static const char *pstTexto(int op);
 static void uxNotificar(const char *s);
 static int gravar(void);
+static int dePerfil(int i);
+static int perfilGravarVetor(int perfil, const int *v);
+static int perfilLerVetor(int perfil, int *v, char *tem);
+static int limita(int op, int v);
+// 2.1: sessao de edicao dos ajustes de OUTRO perfil (ver ajustes_edicao_iniciar).
+static int edPerfil;
+static int edSalvo[AJ_N];   // os valores do perfil ativo enquanto valor[] e do outro
+// Durante a edicao, mudar ajuste nao e mudanca do perfil ativo: nada vai para a
+// pendencia dele (gravar() marca a do perfil editado).
+static void protegerLocais(void) { if (!edPerfil) sync_proteger_ajustes_locais(); }
+// ajustes_ux_perfil.inc: a folha do perfil, o administrador e o bloqueio.
+static void pfAbrir(void);
+static void pfEntrada(void);
+static void pfSaida(void);
+static void pfVigiar(void);
+static void pfPinCancelado(void);
+static int  pfDigitado(const char *pin);
+static int  pfTela;
+static void pfDesenhar(void);
+#ifdef AJUSTES_TESTE
+void perfis_teste_definir(const char *const *nomes, const int *pin, int quantos, int ativo);
+static void pfAbrirPin(const char *titulo, const char *dica);
+#endif
+static void pfFaixaEdicao(void);
+static void pfRotuloChip(char *dst, size_t n);
+static void reaplicarEfeitosPerfil(void);
 static void aplicarIdioma(int op);
 static int somenteDesteAparelho(int op);
 // Segundos restantes antes de refazer a busca de legendas. Declarada aqui, e
@@ -5084,8 +5117,13 @@ void ajustes_dir(const char *dir) {
 static int gravar(void) {
   char caminho[600], tmp[600];
   FILE *f;
-  int i;
+  int i, vv[AJ_N];
   if (!dirAjustes[0]) return 0;
+  // 2.1: com a edicao de outro perfil em curso, o arquivo da TV leva os valores
+  // do perfil ATIVO (edSalvo) nas chaves do perfil: se o app cair no meio, o
+  // proximo arranque nao herda o visual do perfil que estava sendo editado.
+  memcpy(vv, valor, sizeof vv);
+  if (edPerfil) for (i = 0; i < AJ_N; i++) if (dePerfil(i)) vv[i] = edSalvo[i];
   snprintf(caminho, sizeof caminho, "%s/ajustes.txt", dirAjustes);
   snprintf(tmp, sizeof tmp, "%s/ajustes.tmp", dirAjustes);
   f = fopen(tmp, "w");
@@ -5103,7 +5141,7 @@ static int gravar(void) {
       fprintf(f, "idiomaFonteLocal %d\n", idiomaFonteGravada);
       continue;
     }
-    fprintf(f, "%s %d\n", CHAVE[i], valor[i]);
+    fprintf(f, "%s %d\n", CHAVE[i], vv[i]);
   }
   fprintf(f, "notaTituloFontes");
   for (i = 0; i < EX_NFONTES; i++) fprintf(f, " %d", ajustes_nota_fonte(i));
@@ -5123,9 +5161,18 @@ static int gravar(void) {
   // destaque, fonte ao reproduzir) sobrevivia so ate a proxima descarga que
   // OUTRO modulo pedisse — e num app que so navegou, ate o proximo arranque,
   // onde voltava ao padrao. Na LG o disco e real e nada disto acontecia.
+    if (edPerfil) {   // o perfil editado leva os valores atuais; a parte da conta fica pendente dele
+    int antes[AJ_N], k, mudouConta = 0;
+    char tem[AJ_N];
+    memcpy(antes, valorPadrao, sizeof antes);
+    perfilLerVetor(edPerfil, antes, tem);
+    for (k = 0; k < AJ_N; k++) if (dePerfil(k) && ajustes_escopo(k) == 2 && antes[k] != valor[k]) mudouConta = 1;
+    perfilGravarVetor(edPerfil, valor);
+    if (mudouConta) sync_marcar_ajustes_pendentes_perfil(edPerfil);
+  }
   dados_marcar_sujo(0);
   ajLogDiff();
-  if (ajOrigem) sync_proteger_ajustes_locais();
+  if (ajOrigem) protegerLocais();
   legenda2_atualizar_offset_manual(ajustes_leg2_atraso());
   // Provedor de poster ou idioma da interface mudaram? So reconfigura se a
   // configuracao final for outra (reconfigurar zera a memoria de falhas).
@@ -5709,7 +5756,7 @@ static char *ajustesWebBlob(const char *json);
 int ajustes_aplicar_blob(const char *json) {
   const char *fim;
   int i, mudou = 0, reconhecidas = 0;
-  if (!json || !*json) return 0;
+  if (!json || !*json || edPerfil) return 0;
   const char *original = json;
   char *web = ajustesWebBlob(json);
   if (!web) return 0;
@@ -5917,6 +5964,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_HOME_LAYOUT:    /* a Dinamica nao tem par na conta (selected_layout) */
     case AJ_PERFIL_PESQ:    /* estado em recomenda.c, por conta: nunca no blob */
     case AJ_PERFIL_EDITAR:
+    case AJ_PERFIL_INFANTIL: /* marca por perfil em perfilinfantil.c; a conta nao tem a coluna */
     case AJ_P2P_LIGADO:     /* o servidor P2P e um aparelho da rede desta casa */
     case AJ_P2P_LIMITE:     /* #334: o disco e desta TV */
     case AJ_P2P_DESTINO:    /* #205: pendrive USB desta TV */
@@ -6014,6 +6062,41 @@ static int somenteDesteAparelho(int op) {
   }
 }
 
+// O que descreve ESTA TV (hardware, rede, memoria, idioma da interface) ou ja
+// tem armazenamento proprio por perfil: igual para todos os perfis. Decisao do
+// dono (06/10/2026): vidro, fundo, tamanho da UI, relogio, destaque/trailer,
+// linhas do titulo e legenda 2 saem daqui e passam a ser por perfil; 4K,
+// memoria, rede e idioma da interface ficam. Segredos nunca estao em valor[].
+static int soNaTv(int op) {
+  switch (op) {
+    case AJ_ICONE_APP: case AJ_LOGO_APP: case AJ_ABERTURA:
+    case AJ_IDIOMA: case AJ_FONTE_UI: case AJ_ANIM:
+    case AJ_RESOLUCAO: case AJ_TEX_MB: case AJ_QUALIDADE_IMG: case AJ_GPU_EFEITOS:
+    case AJ_MEDIDOR: case AJ_ENVIO_AUTO: case AJ_AVANCADAS: case AJ_ITENS_FILEIRA:
+    case AJ_FIL_LIMITE: case AJ_FIL_ORDEM:
+    case AJ_ESMAECER: case AJ_BRILHO_PLAYER: case AJ_PROPORCAO_PADRAO: case AJ_MANTER_VIDEO:
+    case AJ_DESCANSO_ESTILO: case AJ_DESCANSO_FONTE:
+    case AJ_CACHE_SEEK: case AJ_TRAILER_ZOOM_TPK: case AJ_LEG_SYNC_AUDIO:
+    case AJ_LIVETV_RES: case AJ_LIVETV_FORMATO: case AJ_LIVETV_ESPERA:
+    case AJ_LIVETV_DIAG: case AJ_LIVETV_MODO: case AJ_LIVETV_PROXY:
+    case AJ_P2P_LIGADO: case AJ_JF_LIGADO: case AJ_POSTER_PROV: case AJ_EPG_PAIS:
+    case AJ_P2P_LIMITE: case AJ_P2P_DESTINO: case AJ_RELOGIO_12H:
+    case AJ_AUDIO_OFFSET: case AJ_DTS_AC3: case AJ_DV_MKV: case AJ_DV7:
+    case AJ_RETOMADA_MORNA: case AJ_MANTER_PRAZO: case AJ_BUFFER:
+    case AJ_INTERFACE_MODO: case AJ_MIC_BUSCA: case AJ_TECLADO_ANDROID:
+    case AJ_TUNNELING: case AJ_HDR_INTERFACE: case AJ_HDR_UI: case AJ_LEG_SYNC_AUTO:
+    case AJ_PLAYER_EXTERNO: case AJ_PLAYER_ANIME: case AJ_VIDRO_QUALIDADE:
+    case AJ_DET_SO_CINEMETA: case AJ_BUSCA_CINEMETA:
+    case AJ_FONTE_MANUAL: case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_FONTE_PRAZO:
+    case AJ_ADDONS_PRINCIPAL:
+    case AJ_SELOS_PACOTE: case AJ_SELOS_PACOTE_ADD: case AJ_SELOS_PACOTE_REM:
+    case AJ_PERFIL_PESQ: case AJ_PERFIL_EDITAR: case AJ_PERFIL_INFANTIL:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 // AJUSTES POR PERFIL NESTA TV. ajustes.txt e um so por aparelho; a conta guarda
 // um blob por perfil, mas um perfil que nunca salvou ajustes na conta nao tem
 // blob — e ai a troca de perfil nao trazia nada, ficava o que o perfil anterior
@@ -6023,124 +6106,135 @@ static int somenteDesteAparelho(int op) {
 // A copia por perfil guarda SO o que e do perfil: o que a conta tambem guarda
 // (o mesmo conjunto que ajustes_mesclar_blob considera). O que descreve esta
 // TV (somenteDesteAparelho, idioma, fonte da interface) nao muda com o perfil.
-// O que e do PERFIL mas a conta nao guarda (o web nao tem estas escolhas):
-// onde o historico vai e se o social existe. Entram na copia por perfil
-// (ajustes-p<N>.txt) e continuam FORA do blob (somenteDesteAparelho).
-static int perfilLocal(int i) {
-  return i == AJ_GUIA_ORDEM || i == AJ_GUIA_FONTE || i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
-         i == AJ_MENU_TOPO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
-  return i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
-         i == AJ_MENU_TOPO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS || i == AJ_BIB_HOME;
+static int perfilLocal(int op) { return dePerfil(op) && somenteDesteAparelho(op); }
+// 2.1: TRES ESCOPOS (plano ajustes-por-perfil). somenteDesteAparelho continua
+// decidindo so o que NUNCA entra no blob da conta; quem decide o que muda com o
+// perfil e escopoDe. Perfil-local = gosto da pessoa: fica em ajustes-p<N>.txt
+// desta TV e nunca sobe para a conta.
+typedef enum { ESC_NENHUM = 0, ESC_TV, ESC_PERFIL_CONTA, ESC_PERFIL_LOCAL } EscopoAj;
+static EscopoAj escopoDe(int op) {
+  if (op < 0 || op >= AJ_N) return ESC_NENHUM;
+  if (OPCOES[op].tipo == OP_LEITURA || OPCOES[op].tipo == OP_ACAO) return ESC_NENHUM;
+  if (!CHAVE[op] || CHAVE[op][0] == '-') return ESC_NENHUM;
+  if (soNaTv(op)) return ESC_TV;
+  return somenteDesteAparelho(op) ? ESC_PERFIL_LOCAL : ESC_PERFIL_CONTA;
 }
-
+int ajustes_escopo(int op) { return (int)escopoDe(op); }
 static int dePerfil(int i) {
-  if (OPCOES[i].tipo == OP_LEITURA || OPCOES[i].tipo == OP_ACAO) return 0;
-  if (!CHAVE[i] || CHAVE[i][0] == '-') return 0;
-  if (i == AJ_FONTE_UI || i == AJ_IDIOMA) return 0;
-  if (perfilLocal(i)) return 1;
-  return !somenteDesteAparelho(i);
-}
-
-static void nomePerfil(char *dst, size_t tam, int perfil) {
-  snprintf(dst, tam, "ajustes-p%d.txt", perfil);
+  EscopoAj e = escopoDe(i);
+  return e == ESC_PERFIL_CONTA || e == ESC_PERFIL_LOCAL;
 }
 
 void ajustes_perfil_padrao(void) {
   int i;
   for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = valorPadrao[i];
   bibliotecaFonteEscolhida = 0;
-  aplicarIdioma(AJ_LEG_LINGUA); aplicarIdioma(AJ_LEG_LINGUA2); aplicarIdioma(AJ_AUD_LINGUA);
+  aplicarIdioma(AJ_LEG_LINGUA); aplicarIdioma(AJ_LEG_LINGUA2);
+  aplicarIdioma(AJ_AUD_LINGUA); aplicarIdioma(AJ_AUD_LINGUA2);
   ajSombraSync();
 }
 
-void ajustes_perfil_guardar(int perfil) {
+static void nomePerfil(char *dst, size_t tam, int perfil) {
+  snprintf(dst, tam, "ajustes-p%d.txt", perfil);
+}
+
+// Grava o vetor `v` (um valor por opcao) como copia do perfil: so chaves
+// dePerfil, nunca um arquivo pela metade. 1 se gravou.
+static int perfilGravarVetor(int perfil, const int *v) {
   char nome[32], buf[AJ_N * 56];
   size_t p = 0;
   int i;
-  if (perfil <= 0) return;
-  p = (size_t)snprintf(buf, sizeof buf, "bibliotecaFonteEscolhidaLocal %d\n", bibliotecaFonteEscolhida);
+  if (perfil <= 0) return 0;
+  nomePerfil(nome, sizeof nome, perfil);
+  char *anterior = dados_ler(nome);
+  int fonteEscolhida = perfil == perfis_ativo() && !edPerfil ? bibliotecaFonteEscolhida :
+                       anterior && strstr(anterior, "bibliotecaFonteEscolhidaLocal 1\n");
+  free(anterior);
+  p = (size_t)snprintf(buf, sizeof buf, "bibliotecaFonteEscolhidaLocal %d\n", fonteEscolhida);
   for (i = 0; i < AJ_N; i++) {
     int k;
     if (!dePerfil(i)) continue;
-    k = snprintf(buf + p, sizeof buf - p, "%s %d\n", CHAVE[i], valor[i]);
-    if (k < 0 || (size_t)k >= sizeof buf - p) return;   // nunca um arquivo pela metade
+    k = snprintf(buf + p, sizeof buf - p, "%s %d\n", CHAVE[i], v[i]);
+    if (k < 0 || (size_t)k >= sizeof buf - p) return 0;
     p += (size_t)k;
   }
   nomePerfil(nome, sizeof nome, perfil);
-  dados_gravar(nome, buf);
-  fonteregra_perfil_guardar(perfil);
+  return dados_gravar(nome, buf);
 }
 
-int ajustes_perfil_restaurar(int perfil) {
+// Le a copia do perfil: tem[i] = 1 para cada chave dePerfil presente e v[i] o
+// valor (limitado). Devolve 0 quando nao ha arquivo.
+static int perfilLerVetor(int perfil, int *v, char *tem) {
   char nome[32], *t, *l;
-  int mudou = 0, colecaoPropria = perfil == perfis_ativo(), fonteEscolhida = 0;
+  memset(tem, 0, AJ_N);
   if (perfil <= 0) return 0;
-  // As listas e a regex do auto-play (#202) seguem o perfil do mesmo jeito.
-  fonteregra_perfil_restaurar(perfil);
   nomePerfil(nome, sizeof nome, perfil);
   t = dados_ler(nome);
-  if (!t) {
-    // A new/older profile must not inherit another profile's collection default.
-    if (colecaoPropria && valor[AJ_COLECAO_EXIBICAO] != 0) { valor[AJ_COLECAO_EXIBICAO] = 0; mudou++; }
-    if (bibliotecaFonteEscolhida) { bibliotecaFonteEscolhida = 0; mudou++; }
-    if (mudou) gravar();
-    return 0;
-  }
-  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuAbas = 0, viuColecao = 0;
+  if (!t) return 0;
+  int focoAntigo = -1;
   for (l = t; l && *l; ) {
     char chave[64], *fim = strchr(l, '\n');
-    int v, i;
+    int x, i;
     if (fim) *fim = 0;
-    // Perfil guardado antes dos tres modos (ver focoTrailerMigrar).
-    if (sscanf(l, "%63s %d", chave, &v) == 2 && !strcmp(chave, "focusedPosterBackdropTrailerEnabled"))
-      focoAntigo = v;
-    else if (sscanf(l, "%63s %d", chave, &v) == 2 && !strcmp(chave, "bibliotecaFonteEscolhidaLocal"))
-      fonteEscolhida = v == 1;
-    else if (sscanf(l, "%63s %d", chave, &v) == 2)
+    if (sscanf(l, "%63s %d", chave, &x) == 2 && !strcmp(chave, "focusedPosterBackdropTrailerEnabled"))
+      focoAntigo = x;
+    else if (sscanf(l, "%63s %d", chave, &x) == 2)
       for (i = 0; i < AJ_N; i++) {
         if (!dePerfil(i) || strcmp(CHAVE[i], chave)) continue;
-        // An explicit restore of another profile must not replace the active
-        // profile's local collection default.
-        if (i == AJ_COLECAO_EXIBICAO && !colecaoPropria) continue;
-        // This new profile-local choice must not inherit the previous profile
-        // through limita()'s legacy fallback when an old file is malformed.
-        if (i == AJ_COLECAO_EXIBICAO && (v < VT_LAY_AUTO || v >= VT_LAY_N)) v = VT_LAY_AUTO;
-        v = limita(i, v);
-        if (i == AJ_FOCO_TRAILER) viuFoco = 1;
-        if (i == AJ_MENU_TOPO) viuTopo = 1;
-        if (i == AJ_ABAS_ESTILO) viuAbas = 1;
-        if (i == AJ_COLECAO_EXIBICAO) viuColecao = 1;
-        if (v != valor[i]) { valor[i] = v; mudou++; }
+        if (i == AJ_COLECAO_EXIBICAO && (x < VT_LAY_AUTO || x >= VT_LAY_N)) x = VT_LAY_AUTO;
+        v[i] = limita(i, x);
+        tem[i] = 1;
         break;
       }
     l = fim ? fim + 1 : NULL;
   }
-  if (colecaoPropria && !viuColecao && valor[AJ_COLECAO_EXIBICAO] != 0) {
-    valor[AJ_COLECAO_EXIBICAO] = 0; mudou++;
+  if (!tem[AJ_FOCO_TRAILER] && focoAntigo >= 0) {
+    v[AJ_FOCO_TRAILER] = focoTrailerMigrar(focoAntigo);
+    tem[AJ_FOCO_TRAILER] = 1;
   }
-  if (!viuFoco && focoAntigo >= 0) {
-    int v = focoTrailerMigrar(focoAntigo);
-    if (v != valor[AJ_FOCO_TRAILER]) { valor[AJ_FOCO_TRAILER] = v; mudou++; }
-  }
-  // Copia de antes do #461 nao tem menuTopoLocal, e a conta nao o guarda: sem
-  // isto o topo ligado pelo perfil anterior vazaria para este.
-  if (!viuTopo && valor[AJ_MENU_TOPO]) { valor[AJ_MENU_TOPO] = 0; mudou++; }
-  // Idem para o estilo das abas (#205).
-  if (!viuAbas && valor[AJ_ABAS_ESTILO]) { valor[AJ_ABAS_ESTILO] = 0; mudou++; } }
   free(t);
-  // Legacy profile files preserve account precedence until this profile chooses.
+  return 1;
+}
+
+void ajustes_perfil_guardar(int perfil) {
+  if (perfil <= 0 || edPerfil) return;   // com a edicao de outro perfil em curso valor[] nao e do ativo
+  perfilGravarVetor(perfil, valor);
+  fonteregra_perfil_guardar(perfil);
+}
+
+int ajustes_perfil_restaurar(int perfil) {
+  int v[AJ_N], i, mudou = 0;
+  char tem[AJ_N];
+  if (perfil <= 0) return 0;
+  // As listas e a regex do auto-play (#202) seguem o perfil do mesmo jeito.
+  fonteregra_perfil_restaurar(perfil);
+  memcpy(v, valor, sizeof v);
+  int existe = perfilLerVetor(perfil, v, tem);
+  if (!tem[AJ_MENU_TOPO]) { v[AJ_MENU_TOPO] = 0; tem[AJ_MENU_TOPO] = 1; }
+  if (!tem[AJ_ABAS_ESTILO]) { v[AJ_ABAS_ESTILO] = 0; tem[AJ_ABAS_ESTILO] = 1; }
+  if (perfil != perfis_ativo()) tem[AJ_COLECAO_EXIBICAO] = 0;
+  else if (!tem[AJ_COLECAO_EXIBICAO]) { v[AJ_COLECAO_EXIBICAO] = 0; tem[AJ_COLECAO_EXIBICAO] = 1; }
+  char nome[32], *texto;
+  nomePerfil(nome, sizeof nome, perfil);
+  texto = dados_ler(nome);
+  int fonteEscolhida = texto && strstr(texto, "bibliotecaFonteEscolhidaLocal 1\n");
+  free(texto);
   if (bibliotecaFonteEscolhida != fonteEscolhida) { bibliotecaFonteEscolhida = fonteEscolhida; mudou++; }
+  for (i = 0; i < AJ_N; i++)
+    if (tem[i] && v[i] != valor[i]) { valor[i] = v[i]; mudou++; }
   if (mudou) {
     gravar();
     aplicarIdioma(AJ_LEG_LINGUA);
     aplicarIdioma(AJ_LEG_LINGUA2);
     aplicarIdioma(AJ_AUD_LINGUA);
     aplicarIdioma(AJ_AUD_LINGUA2);
+    gfx_escala_ui_definir(ajustes_tamanho_ui());
+    gfx_escala_txt_definir(ajustes_escala_texto());
   }
   printf("[ajustes] ajustes do perfil %d restaurados desta TV (%d mudaram)\n",
          perfil, mudou);
   fflush(stdout);
-  return 1;
+  return existe;
 }
 
 // Arquivos privados por conta e perfil dos provedores (debrid, escopo, falhas e
@@ -6180,6 +6274,169 @@ void ajustes_perfil_esquecer(void) {
   fonteregra_perfil_esquecer();
   provedoresPrivadosEsquecer();
   if (valor[AJ_COLECAO_EXIBICAO] != 0) { valor[AJ_COLECAO_EXIBICAO] = 0; gravar(); }
+  dados_apagar("ajustes-escopo.txt");
+  dados_apagar("ajustes.txt.pre21");
+  dados_apagar("admin-pin.txt");
+}
+
+// MIGRACAO 2.1 (uma vez). Ate a 2.0.x so ~60 chaves eram por perfil; as outras
+// (vidro, fundo, relogio, destaque...) viviam so no ajustes.txt da TV. Para
+// ninguem ver mudanca visual no upgrade: cada perfil conhecido parte do que a
+// TV usa hoje. Perfil sem copia ganha uma copia completa do valor[] atual;
+// perfil com copia antiga mantem o que tem e completa SO as chaves que faltam
+// (as que passaram a ser por perfil) com o valor atual, inclusive no ativo.
+// Backup unico do ajustes.txt
+// antes de qualquer coisa. Idempotente: o marcador so e gravado com perfis na
+// mao (sem perfis nao ha para quem copiar; roda de novo quando a lista chegar).
+int ajustes_migrar_escopo_para(const int *perfis, int n, int ativo) {
+  char *m, *bk;
+  int k, gravados = 0;
+  (void)ativo;
+  if (n <= 0 || !perfis) return 0;
+  m = dados_ler("ajustes-escopo.txt");
+  if (m && atoi(m) >= 2) { free(m); return 0; }
+  free(m);
+  bk = dados_ler("ajustes.txt.pre21");
+  if (!bk) {
+    char *t = dados_ler("ajustes.txt");
+    if (t) {
+      int ok = dados_gravar("ajustes.txt.pre21", t);
+      free(t);
+      if (!ok) return 0;
+    }
+  } else free(bk);
+  for (k = 0; k < n; k++) {
+    int v[AJ_N];
+    char tem[AJ_N];
+    if (perfis[k] <= 0) continue;
+    memcpy(v, valor, sizeof v);
+    perfilLerVetor(perfis[k], v, tem);
+    if (!perfilGravarVetor(perfis[k], v)) return 0;
+    gravados++;
+  }
+  if (!gravados || !dados_gravar("ajustes-escopo.txt", "2\n")) return 0;
+  printf("[ajustes] migracao 2.1: %d perfil(is) partem dos ajustes desta TV\n", n);
+  fflush(stdout);
+  return 1;
+}
+
+int ajustes_migrar_escopo(void) {
+  int ids[CONTA_PERFIL_MAX + 1], n = 0, i;
+  for (i = 0; i < perfis_n() && n < CONTA_PERFIL_MAX; i++) {
+    const ContaPerfil *p = perfis_item(i);
+    if (p && p->indice > 0) ids[n++] = p->indice;
+  }
+  return ajustes_migrar_escopo_para(ids, n, perfis_ativo());
+}
+
+// Efeitos que o valor[] do perfil dispara fora desta tabela (idiomas de
+// legenda/audio e o tamanho da UI). Chamado depois de trocar o valor[] inteiro.
+static void reaplicarEfeitosPerfil(void) {
+  aplicarIdioma(AJ_LEG_LINGUA);
+  aplicarIdioma(AJ_LEG_LINGUA2);
+  aplicarIdioma(AJ_AUD_LINGUA);
+  aplicarIdioma(AJ_AUD_LINGUA2);
+  gfx_escala_ui_definir(ajustes_tamanho_ui());
+  gfx_escala_txt_definir(ajustes_escala_texto());
+}
+
+// Poe em valor[] (perfil ATIVO) as chaves do perfil de `v` e grava.
+static void aplicarVetorAtivo(const int *v, const char *tem) {
+  int i;
+  for (i = 0; i < AJ_N; i++) if (dePerfil(i) && (!tem || tem[i])) valor[i] = v[i];
+  gravar();
+  reaplicarEfeitosPerfil();
+}
+
+// Leva as chaves DO PERFIL de src[] (so as marcadas em tem[], ou todas) para o
+// perfil `destino`. Devolve quantas mudaram, -1 em falha. Ver ajustes.h.
+static int levarParaPerfil(const int *src, const char *tem, int destino) {
+  int dst[AJ_N], i, mudou = 0, mudouConta = 0;
+  char tdst[AJ_N];
+  const int ativo = destino == perfis_ativo();
+  if (edPerfil || destino <= 0) return -1;
+  memcpy(dst, valorPadrao, sizeof dst);
+  if (ativo) memcpy(dst, valor, sizeof dst);
+  else perfilLerVetor(destino, dst, tdst);
+  for (i = 0; i < AJ_N; i++) {
+    if (!dePerfil(i) || (tem && !tem[i]) || dst[i] == src[i]) continue;
+    dst[i] = src[i];
+    mudou++;
+    if (escopoDe(i) == ESC_PERFIL_CONTA) mudouConta++;
+  }
+  if (ativo) aplicarVetorAtivo(dst, NULL);
+  else if (!perfilGravarVetor(destino, dst)) return -1;
+  if (mudouConta) sync_marcar_ajustes_pendentes_perfil(destino);
+  printf("[ajustes] ajustes levados ao perfil %d: %d mudaram (%d da conta, pendentes)\n", destino, mudou, mudouConta);
+  fflush(stdout);
+  return mudou;
+}
+
+int ajustes_copiar_perfil(int origem, int destino) {
+  int src[AJ_N];
+  char tem[AJ_N];
+  if (origem <= 0 || destino <= 0 || origem == destino || edPerfil) return -1;
+  memcpy(src, valorPadrao, sizeof src);
+  if (origem == perfis_ativo()) { memcpy(src, valor, sizeof src); memset(tem, 1, sizeof tem); }
+  else if (!perfilLerVetor(origem, src, tem)) return -1;
+  return levarParaPerfil(src, tem, destino);
+}
+
+int ajustes_restaurar_padrao_perfil(int perfil) {
+  if (perfil <= 0 || edPerfil) return -1;
+  return levarParaPerfil(valorPadrao, NULL, perfil);
+}
+
+int ajustes_edicao_perfil(void) { return edPerfil; }
+
+int ajustes_edicao_iniciar(int perfil) {
+  int v[AJ_N], i;
+  char tem[AJ_N];
+  if (edPerfil || perfil <= 0 || perfil == perfis_ativo()) return 0;
+  perfilGravarVetor(perfis_ativo(), valor);   // a verdade do ativo fica em disco antes de valor[] mudar
+  memcpy(edSalvo, valor, sizeof edSalvo);
+  memcpy(v, valor, sizeof v);                 // o que o perfil nao tem partiu do que a TV usa
+  perfilLerVetor(perfil, v, tem);
+  edPerfil = perfil;
+  for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = v[i];
+  reaplicarEfeitosPerfil();
+  printf("[ajustes] editando os ajustes do perfil %d (ativo: %d)\n", perfil, perfis_ativo());
+  fflush(stdout);
+  return 1;
+}
+
+void ajustes_edicao_encerrar(void) {
+  int i, alvo = edPerfil;
+  if (!alvo) return;
+  perfilGravarVetor(alvo, valor);
+  edPerfil = 0;
+  for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = edSalvo[i];
+  gravar();
+  reaplicarEfeitosPerfil();
+  printf("[ajustes] edicao do perfil %d encerrada\n", alvo);
+  fflush(stdout);
+}
+
+// Padroes seguros de perfil infantil: sem enquetes nem Seekr, sem as notas de
+// terceiros no titulo, classificacao indicativa no player. V_LIGA: 0 = Ligado.
+void ajustes_padroes_infantis(int perfil) {
+  static const struct { int op, v; } P[] = {
+    { AJ_ENQUETES, 1 }, { AJ_SEEKR_LIGADO, 1 }, { AJ_PLR_CLASSIF, 0 },
+    { AJ_NT_IMDB, 1 }, { AJ_NT_TOMATES, 1 }, { AJ_NT_AUDIENCIA, 1 }, { AJ_NT_META, 1 }, { AJ_NT_METAUSER, 1 },
+  };
+  int v[AJ_N], i;
+  char tem[AJ_N];
+  if (perfil <= 0 || edPerfil) return;
+  if (perfil == perfis_ativo()) {
+    for (i = 0; i < (int)(sizeof P / sizeof *P); i++) valor[P[i].op] = P[i].v;
+    gravar();
+    return;
+  }
+  memcpy(v, valorPadrao, sizeof v);
+  perfilLerVetor(perfil, v, tem);
+  for (i = 0; i < AJ_N; i++) if (!tem[i]) v[i] = valor[i];
+  for (i = 0; i < (int)(sizeof P / sizeof *P); i++) v[P[i].op] = P[i].v;
+  perfilGravarVetor(perfil, v);
 }
 
 // Onde esta o valor de `chave` dentro de [ini,fim): *vi aponta o primeiro
@@ -6480,6 +6737,7 @@ int ajustes_iniciar(void) {
   extplayer_atualizar_apps();   // app instalado com o Nuvio aberto
 #endif
   ppReconciliar();
+  pfEntrada();
   ajMovReiniciar();
   faRetornarFolha = 0; faAddonEditar[0] = 0; ajFalhaEspelhar(); ajLegendaEspelhar(); ajIptvEspelhar();
   uxVeioBusca = uxAbrirOp >= 0;
@@ -6513,7 +6771,7 @@ int ajustes_iniciar(void) {
 #endif
   // Reabre na categoria em que estava, com o foco no indice (ver focoIndice).
   if (secAtual < 0 || secAtual >= nSecoes) secAtual = 0;
-  focoIndice = 1; uxChipAv = 0;
+  focoIndice = 1; uxChipAv = 0; uxTopo = -1;
   focarSecao(secAtual);
   uxTopo = -1; uxCabLayout = 0;
   // "Experimentar a cor viva" (cartao de novidades): abre em Aparencia com o
@@ -6553,7 +6811,7 @@ void ajustes_encerrar(void) {
   ajIptvLimparForm(); teclado_esquecer();
   // One network cycle for all row changes made in this visit (low-end TVs).
   if (fileirasBusca) { fileirasBusca = 0; desc_repetir(); }
-  pediuRelogio = 0; faRetornarFolha = 0; uxCancelar(); uxRetornarOp = -1; guiaFechar(); ajlog_vazar_tudo();
+  pediuRelogio = 0; faRetornarFolha = 0; pfSaida(); uxCancelar(); uxRetornarOp = -1; guiaFechar(); ajlog_vazar_tudo();
 }
 int ajustes_quer_sair(void) { return sair; }
 int ajustes_pediu_relogio(void) { int v = pediuRelogio; pediuRelogio = 0; return v; }
@@ -7629,6 +7887,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_DEBRID_RD: return "Chave de API do Real-Debrid (real-debrid.com/apitoken). Só precisa se a sua conta Nuvio não a traz. Fica só nesta TV e aparece mascarada.";
     case AJ_DEBRID_TB: return "Chave de API do TorBox. Só precisa se a sua conta Nuvio não a traz. Fica só nesta TV e aparece mascarada.";
     case AJ_DEBRID_PM: return "Chave de API do Premiumize. Só precisa se a sua conta Nuvio não a traz. Fica só nesta TV e aparece mascarada.";
+    case AJ_PERFIL_INFANTIL: return "Marca o perfil em uso como infantil. No Assistir Juntos, o servidor só aceita salas com quem a conta já conhece e o chat livre do celular fica desligado. A marca é só deste perfil, nesta TV. Se o perfil tem PIN, pede o PIN para mudar.";
     case AJ_PERFIL_PESQ: return "Desligado por padrão. Ligado, outras pessoas do Nuvio podem te achar pelo apelido e ver o que você escolher mostrar: bio, gêneros favoritos, foto e o que assistiu recentemente. Nunca aparecem e-mail, conta, addons nem aparelho. Desligar apaga o perfil do servidor na hora.";
     case AJ_PERFIL_EDITAR: return "Apelido, bio, gêneros e o que mostrar no perfil; a atividade compartilhada só com amigos (desligada por padrão); pedidos de amizade recebidos e a lista de bloqueados.";
     case AJ_P2P_LIMITE: return "Quanto do armazenamento da TV o P2P pode usar enquanto toca; Automático usa até metade do espaço livre. Se o vídeo for maior, ele continua tocando e a TV guarda só o trecho perto de onde você está (em pendrive FAT ou exFAT, ele para no limite).";
@@ -8984,7 +9243,7 @@ static void frEvento(SDL_Keycode k) {
     if (frFoco == 0) fonteregra_limpar(plugin);
     else fonteregra_alternar(plugin, frNome[frFoco - 1]);
     // Sobe para a conta como os outros ajustes do perfil (#85).
-    sync_proteger_ajustes_locais();
+    protegerLocais();
     uxNotificar("Ajuste salvo nesta TV.");
   }
 }
@@ -9185,6 +9444,58 @@ static void notaLigarPar(int op) {
   if (mdb) valor[AJ_MDB_LIGADO] = 0;
 }
 static int ajOrigemDireto = AJLOG_AJUSTES;   // quem chamou: a tela, ou a Central via ajustes_rapido_passo
+// PERFIL INFANTIL: mudar a marca de um perfil COM PIN pede o PIN (verificado no
+// servidor, perfis_verificar_pin, que BLOQUEIA: roda num fio). Sem PIN, aplica
+// na hora. O PIN digitado vai para o fio, e e apagado la; nao ha log dele.
+static void uxNotificar(const char *s);
+static pthread_t kidFio;
+static atomic_int kidEstado;           // 0 livre, 1 verificando, 2 aceito, 3 recusado, 4 sem rede
+static int kidIdx, kidAlvo;
+static char kidPin[24];
+static int kidFioVivo;
+static void *kidTrabalho(void *u) {
+  int v = perfis_verificar_pin(kidIdx, kidPin);
+  (void)u;
+  memset(kidPin, 0, sizeof kidPin);
+  atomic_store(&kidEstado, v > 0 ? 2 : (v == 0 ? 3 : 4));
+  return NULL;
+}
+static void kidPedirPin(void) {
+  teclado_abrir_com("PIN do perfil", "Digite o PIN para mudar a marca de perfil infantil.", 8, "0123456789", NULL);
+  teclado_tipo(TECLADO_TIPO_SENHA);
+  teclado_mascarar(1);
+  stCampo = AJ_PERFIL_INFANTIL;
+}
+static int kidMudar(int ligado) {
+  const ContaPerfil *p = perfis_item_ativo();
+  if (ligado == perfil_infantil_ativo()) return 1;
+  if (atomic_load(&kidEstado) == 1) return 1;   // ja verificando
+  if (p && p->temPin) { kidIdx = p->indice; kidAlvo = ligado; kidPedirPin(); return 1; }
+  if (!perfil_infantil_definir(perfis_ativo(), ligado)) return 0;
+  uxNotificar(ligado ? "Perfil infantil ligado neste perfil." : "Perfil infantil desligado neste perfil.");
+  return 1;
+}
+static void kidDigitado(const char *pin) {
+  snprintf(kidPin, sizeof kidPin, "%s", pin);
+  if (kidFioVivo) { pthread_join(kidFio, NULL); kidFioVivo = 0; }
+  atomic_store(&kidEstado, 1);
+  if (pthread_create(&kidFio, NULL, kidTrabalho, NULL) != 0) {
+    memset(kidPin, 0, sizeof kidPin);
+    atomic_store(&kidEstado, 4);
+  } else kidFioVivo = 1;
+}
+static void kidRecolher(void) {
+  int e = atomic_load(&kidEstado);
+  if (e < 2) return;
+  if (kidFioVivo) { pthread_join(kidFio, NULL); kidFioVivo = 0; }
+  atomic_store(&kidEstado, 0);
+  if (e == 2) {
+    if (perfil_infantil_definir(kidIdx, kidAlvo))
+      uxNotificar(kidAlvo ? "Perfil infantil ligado neste perfil." : "Perfil infantil desligado neste perfil.");
+  } else if (e == 3) uxNotificar("PIN incorreto");
+  else uxNotificar("Sem conexão para conferir o PIN.");
+}
+
 static int definirValorDireto(int op, int novo) {
   int antes, memoriaAntes = memoriaEscolhida, bibliotecaAntes = bibliotecaFonteEscolhida;
   if (op < 0 || op >= AJ_N || !ajOpcaoDisponivel(op) ||
@@ -9226,6 +9537,7 @@ static int definirValorDireto(int op, int novo) {
   int posicaoAntes = valor[AJ_LEG2_POSICAO];
   if (op == AJ_LEG2_POS) valor[AJ_LEG2_POSICAO] = 0;
   if (op == AJ_VIDRO_FOSCO && novo == 2) gpun_fosco_reiniciar();
+  if (op == AJ_PERFIL_INFANTIL) return kidMudar(novo == 0);
   antes = valor[op];
   if (novo == antes && !(op == AJ_LEG2_POS && posicaoAntes != 0) &&
       (op != AJ_TEX_MB || memoriaEscolhida) && (op != AJ_SALVOS_DEST || bibliotecaFonteEscolhida)) return 1;
@@ -9287,8 +9599,7 @@ static int definirValorDireto(int op, int novo) {
   // Modelo de regex (#202): escolher um troca o padrao; "Personalizado" so
   // deixa o padrao como esta.
   if (op == AJ_FONTE_REGEX_MODELO && novo > 0) fonteregra_definir_regex(fonteregra_modelo(novo));
-  ajSombra[op] = valor[op];   // espelhos acima (limite, pacote) ja valem como gravados
-  sync_proteger_ajustes_locais();
+  protegerLocais();
   return 1;
 }
 static void mudarValorDireto(int op, int dir) {
@@ -9316,6 +9627,7 @@ static int ehInterruptor(int op) {
 
 #include "ajustes_ux_dados.inc"
 #include "ajustes_ux_interacao.inc"
+#include "ajustes_ux_perfil.inc"
 
 static const char *uxCaminho(int op);
 static const char *uxBloco(int op);
@@ -9370,6 +9682,7 @@ static void eventoTela(const SDL_Event *e) {
       return;
     } }
   // A folha de aviso de memoria (mais fileiras/itens) e modal e vem antes de tudo.
+  if (pfTela) { pfEvento(k); return; }
   if (riscoFolha) { riscoFolhaEvento(k); return; }
   if (hcAberta) { hcEvento(k); return; }
   if (frAberta) { frEvento(k); return; }
@@ -9648,6 +9961,9 @@ void ajustes_atualizar(float dt, Uint32 agora) {
   montarTela();
   valor[AJ_PERFIL_PESQ] = recomenda_pesquisavel() ? 0 : 1;   // V_LIGA: 0 = Ligado
   valor[AJ_FONTE_REGEX_MODELO] = fonteregra_modelo_atual();   // espelho do padrao (#202)
+  valor[AJ_PERFIL_INFANTIL] = perfil_infantil_ativo() ? 0 : 1;
+  kidRecolher();
+  pfVigiar();
   p2pTesteRecolher();
   pstTesteRecolher();
   adTesteRecolher();
@@ -9684,6 +10000,8 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       else if (stCampo == AJ_XTREAM_SERVIDOR) { xtream_definir_servidor(teclado_texto()); if (teclado_texto()[0]) registro_aviso_legal(); }
       else if (stCampo == AJ_XTREAM_USUARIO)  xtream_definir_usuario(teclado_texto());
       else if (stCampo == AJ_XTREAM_SENHA)    xtream_definir_senha(teclado_texto());
+      else if (stCampo == AJ_PERFIL_INFANTIL) { kidDigitado(teclado_texto()); teclado_esquecer(); }
+      else if (stCampo == PF_CAMPO) { if (pfDigitado(teclado_texto())) r = TECLADO_NADA; }
       else if (stCampo == AJ_FANART_CHAVE)    fanartDefinir(teclado_texto());
       else if (stCampo == AJ_SEEKR_CHAVE)     { seekrDefinir(teclado_texto()); atomic_store_explicit(&skTeste, 0, memory_order_release); }
       else if (stCampo == AJ_SELOS_PACOTE_ADD) spAdicionar(teclado_texto());
@@ -9697,7 +10015,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       else if (stCampo == AJ_FILTRO_GRUPOS) ffGruposDefinir(teclado_texto());
       else if (stCampo == AJ_FONTE_REGEX_PADRAO) {
         int e = fonteregra_definir_regex(teclado_texto());
-        sync_proteger_ajustes_locais();
+        protegerLocais();
         uxNotificar(e < 0 ? "Regex inválida: ignorada" : "Ajuste salvo nesta TV.");
       }
       else if (stCampo == AJ_JF_SERVIDOR)     jellyfin_definir_servidor(teclado_texto());
@@ -9729,6 +10047,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       if (r == TECLADO_PRONTO) stCampo = 0;
     } else if (r == TECLADO_CANCELOU) {
       int tipo=iptvForm.nova && iptvForm.entradaInicial ? iptvForm.tipo : 0;
+      if (stCampo == PF_CAMPO) pfPinCancelado();
       if (stCampo == AJ_JF_ENTRAR || stCampo == AJ_EM_ENTRAR) { teclado_esquecer(); memset(jfUsuario, 0, sizeof jfUsuario); }
       stCampo = 0;
       if(tipo) { teclado_esquecer();ajIptvListaAbrir(tipo); }
@@ -10389,7 +10708,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_DESCANSO_ESTILO: case AJ_DESCANSO_FONTE:
       return AJPV_INTERFACE;
     case AJ_PERFIL_ATIVO: case AJ_SYNC: case AJ_SAIR:
-    case AJ_PERFIL_PESQ: case AJ_PERFIL_EDITAR: case AJ_ADDONS_PRINCIPAL: case AJ_PROVEDORES_ESCOPO: case AJ_ENQUETES:
+    case AJ_PERFIL_PESQ: case AJ_PERFIL_EDITAR: case AJ_PERFIL_INFANTIL: case AJ_ADDONS_PRINCIPAL: case AJ_PROVEDORES_ESCOPO: case AJ_ENQUETES:
       return AJPV_CONTA;
     case AJ_SALVOS_DEST: case AJ_TRAKT: case AJ_SIMKL: case AJ_DISCORD: case AJ_HIST_CONTA: case AJ_SOCIAL:
       return AJPV_RASTREIO;
@@ -10441,6 +10760,7 @@ static AjPreview familiaPreviaOpcao(int op) {
 }
 
 #include "ajustes_ux_desenho.inc"
+#include "ajustes_ux_perfil_desenho.inc"
 
 #ifdef AJUSTES_TESTE
 void teclado_teste_texto(const char *t);
@@ -10483,6 +10803,8 @@ static void ajDesenharTudo(Uint32 agora) {
 #endif
     ESCALA_REAL_INI(); desenhaFileiras(); ESCALA_REAL_FIM(); }
   if (riscoFolha) desenhaRiscoFolha();
+  if (pfTela) pfDesenhar();
+  else pfFaixaEdicao();
   if (frAberta == 7) desenhaFolhaOrdem();
   else if (frAberta == 6) desenhaFolhaFiltros();
   else if (frAberta >= 4) desenhaFolhaFalha();
@@ -10603,6 +10925,19 @@ void ajustes_teste_ux_captura(int cenario) {
   if (cenario == 7) { focarOpcao(AJ_LARGURA_DP); uxAbrirEditor(AJ_LARGURA_DP); uxEvento(SDLK_DOWN); }
   if (cenario == 8) { focarSecao(0); uxIndice = 1; focoIndice = 1; uxChipAv = 1; }
   if (cenario == 9) { valor[AJ_IDIOMA] = IDIOMA_EN + 1; focarOpcao(AJ_HOME_LAYOUT); uxAbrirEditor(AJ_HOME_LAYOUT); }
+  if (cenario >= 30 && cenario <= 36) {   // 2.1: ajustes por perfil
+    static const char *const NOMES[3] = { "Henrique", "Ana", "Davi" };
+    perfis_teste_definir(NOMES, NULL, 3, cenario == 35 ? 3 : 1);
+    edPerfil = 0;
+    pfEntrada();
+    if (cenario == 35) { perfil_infantil_definir(3, 1); perfil_ajustes_travar(3, 1); pfEntrada(); pfVigiar(); }
+    if (cenario == 30) { focoIndice = 1; uxIndice = 1; uxChipAv = 0; uxTopo = AJ2_T_PERFIL; }
+    if (cenario == 31) { focarOpcao(AJ_VIDRO); focoIndice = 0; }
+    if (cenario == 32) { focoIndice = 1; uxIndice = 1; uxTopo = AJ2_T_PERFIL; pfAbrir(); }
+    if (cenario == 33) { focoIndice = 1; uxIndice = 1; uxTopo = AJ2_T_PERFIL; pfAbrir(); pfTela = PF_COPIAR; pfMarca[0] = 1; pfFoco = 2; }
+    if (cenario == 34) { focoIndice = 1; uxIndice = 1; uxTopo = AJ2_T_PERFIL; pfAbrir(); pfTela = PF_EDITAR; pfPend = PA_EDITAR; pfFase = 3; pfAbrirPin("Crie o PIN de administrador", "De 4 a 8 números. Vale só nesta TV e protege os ajustes dos outros perfis."); }
+    if (cenario == 36) { ajustes_edicao_iniciar(2); focarOpcao(AJ_VIDRO); focoIndice = 0; }
+  }
   if (cenario == 21) focarOpcao(getenv("NUVIO_SHOT_TRAILER_AUDIO") ? AJ_TRAILER_AUDIO : AJ_FOCO_TRAILER);
   if (cenario == 22) { focarOpcao(AJ_FOCO_TRAILER); uxAbrirEditor(AJ_FOCO_TRAILER); }
   // Upscaling algorithm row (needs NUVIO_PANEL_SIZE=3840x2160): FSR 1 shows Sharpness.

@@ -1746,6 +1746,7 @@ int main(int argc, char **argv) {
   plex_ligar_aos_addons();   // Plex: server file as one more source on matching titles
   // Ajustes tambem sao do USUARIO, nao do pacote.
   ajustes_dir(dirDados);
+  ajustes_migrar_escopo();   // 2.1: cada perfil parte do que esta TV usa hoje (uma vez, com backup)
   // Icone do app (apoiadores): a arte vem do pacote; o alias do launcher do
   // Android e a abertura do .wgt seguem o que ficou gravado (idempotente).
   iconeapp_iniciar(dirArte);

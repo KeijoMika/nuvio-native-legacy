@@ -103,7 +103,7 @@ static float aj2Ln = 58.0f, aj2Gap = 3.0f, aj2GtEx = 18.0f, aj2Fade = 70.0f;
 // Ambar, Violeta): o `fill` tinge o fundo e a `marca` (a versao clara do
 // matiz, feita para o escuro) pinta o icone. Nao dependem do acento escolhido.
 #define AJ2_CHIP_ICO 28.0f
-static const unsigned char AJ2_CHIP_TEMA[3] = { 2, 5, 3 };   // Oceano, Ambar, Violeta
+static const unsigned char AJ2_CHIP_TEMA[4] = { 2, 5, 3, 4 };   // Oceano, Ambar, Violeta, e o do perfil (2.1)
 static struct {
   float x[3], w[3];        // posicao (relativa ao miolo da ilha) e largura abertas
   int lin[3], linhas;      // a fileira de cada uma
@@ -699,7 +699,7 @@ static void aj2TopoTexto(int t, char *b, size_t n, char *det, size_t nd) {
   } else if (t == AJ2_T_DIF) {
     snprintf(b, n, "%s", i18n("Diferentes do padrão"));
     if (uxNDifs) snprintf(det, nd, " · %d", uxNDifs);
-  } else snprintf(b, n, i18n("Perfil: %s"), textoLeitura(AJ_PERFIL_ATIVO));
+  } else pfRotuloChip(b, n);
 }
 static const char *aj2TopoIcone(int t) {
   return t == AJ2_T_BUSCA ? "aj_search" : t == AJ2_T_AV ? (lig(AJ_AVANCADAS) ? "aj_eye" : "aj_eye-off")

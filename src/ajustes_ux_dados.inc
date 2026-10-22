@@ -37,9 +37,14 @@ static int uxDiferente(int op) {
  * Audio/legenda, inclusive "Da conta", continuam no conjunto dePerfil: a
  * escolha e guardada por perfil nesta TV, sem prometer que ja sincronizou. */
 static const char *uxEscopoValor(int op, int v) {
-  if (op == AJ_TEMA && v >= AJ_TEMA_DINAMICA) return "Só nesta TV";
-  if (op == AJ_TMDB_IDIOMA && v == 0) return "Só nesta TV";
-  return op >= 0 && op < AJ_N && dePerfil(op) ? "Conta/perfil" : "Só nesta TV";
+  if (op == AJ_TEMA && v >= AJ_TEMA_DINAMICA) return "Só este perfil, nesta TV";
+  if (op == AJ_TMDB_IDIOMA && v == 0) return "Só este perfil, nesta TV";
+  switch (escopoDe(op)) {   // 2.1: tres escopos
+    case ESC_PERFIL_CONTA: return "Conta/perfil";
+    case ESC_PERFIL_LOCAL: return "Só este perfil, nesta TV";
+    case ESC_TV: return "Todos os perfis desta TV";
+    default: return "Só nesta TV";
+  }
 }
 
 static const char *uxEscopo(int op) {
@@ -315,7 +320,7 @@ static const char *uxCaminhoAntigo(int op) {
     case AJ_JF_LIGADO: case AJ_JF_SERVIDOR: case AJ_JF_ENTRAR: case AJ_JF_SAIR:
     case AJ_EM_SERVIDOR: case AJ_EM_ENTRAR: case AJ_EM_SAIR:
     case AJ_PX_ENTRAR: case AJ_PX_SERVIDOR: case AJ_PX_SAIR:
-    case AJ_PERFIL_ATIVO: case AJ_SYNC: case AJ_PERFIL_PESQ: case AJ_PERFIL_EDITAR: case AJ_SAIR:
+    case AJ_PERFIL_ATIVO: case AJ_SYNC: case AJ_PERFIL_PESQ: case AJ_PERFIL_EDITAR: case AJ_PERFIL_INFANTIL: case AJ_SAIR:
     case AJ_TRAKT: case AJ_SIMKL: case AJ_DISCORD: case AJ_SALVOS_DEST: case AJ_CW_FONTE: case AJ_CW_PROXIMO: case AJ_ENQUETES:
     case AJ_HIST_CONTA: case AJ_SOCIAL:
       return "Contas e serviços";

@@ -1,0 +1,240 @@
+// ESCOPO DOS AJUSTES (2.1): TV | perfil+conta | perfil local; migracao unica do
+// ajustes.txt; copia entre perfis. Sem SDL na tela.
+#include "../src/ajustes.c"
+#include <assert.h>
+#include <unistd.h>
+#include "../src/admin.h"
+#include "../src/perfilinfantil.h"
+
+static int tem(const char *t, int op) {
+  char alvo[96];
+  snprintf(alvo, sizeof alvo, "%s ", CHAVE[op]);
+  return t && strstr(t, alvo) != NULL;
+}
+
+static void escopos(void) {
+  int i, n[4] = { 0, 0, 0, 0 };
+  for (i = 0; i < AJ_N; i++) {
+    int e = ajustes_escopo(i);
+    assert(e >= 0 && e <= 3);
+    n[e]++;
+    // Nada com cara de segredo viaja com o perfil.
+    if (e >= 2) {
+      const char *c = CHAVE[i];
+      assert(!strcasestr(c, "token") && !strcasestr(c, "senha") && !strcasestr(c, "password") &&
+             !strcasestr(c, "secret") && !strstr(c, "Chave") && !strcasestr(c, "apikey"));
+    }
+    // Acao, leitura e chave "-" nunca tem escopo.
+    if (OPCOES[i].tipo == OP_ACAO || OPCOES[i].tipo == OP_LEITURA || CHAVE[i][0] == '-') assert(e == 0);
+    // O que e local nunca entra no blob da conta.
+    if (e == 3) assert(somenteDesteAparelho(i));
+    if (e == 2) assert(!somenteDesteAparelho(i));
+  }
+  assert(n[1] > 20 && n[2] > 20 && n[3] > 40);
+  // Corte aprovado pelo dono (06/10): estes passam a ser do perfil...
+  assert(ajustes_escopo(AJ_VIDRO) == 3 && ajustes_escopo(AJ_FUNDO) == 3 && ajustes_escopo(AJ_TAMANHO_UI) == 3);
+  assert(ajustes_escopo(AJ_RELOGIO) == 3 && ajustes_escopo(AJ_HERO_TRAILER_SOM) == 3);
+  assert(ajustes_escopo(AJ_NT_IMDB) == 3 && ajustes_escopo(AJ_LEG2_POS) == 3 && ajustes_escopo(AJ_CW_RETIDO_TAMBEM) == 3);
+  // ...e estes continuam da TV.
+  assert(ajustes_escopo(AJ_RESOLUCAO) == 1 && ajustes_escopo(AJ_TEX_MB) == 1 && ajustes_escopo(AJ_IDIOMA) == 1);
+  assert(ajustes_escopo(AJ_LIVETV_RES) == 1 && ajustes_escopo(AJ_FONTE_UI) == 1 && ajustes_escopo(AJ_GPU_EFEITOS) == 1);
+  assert(ajustes_escopo(AJ_TEMA) == 2 && ajustes_escopo(AJ_HERO) == 2);
+}
+
+static void blobIgnoraLocal(void) {
+  char blob[512];
+  char *saida = NULL;
+  valor[AJ_VIDRO] = 1; valor[AJ_RELOGIO] = 1;
+  snprintf(blob, sizeof blob, "{\"%s\":0,\"%s\":0}", CHAVE[AJ_VIDRO], CHAVE[AJ_RELOGIO]);
+  ajustes_aplicar_blob(blob);
+  assert(valor[AJ_VIDRO] == 1 && valor[AJ_RELOGIO] == 1);
+  // A costura tambem nao toca nas chaves locais, mesmo que o blob as traga.
+  snprintf(blob, sizeof blob, "{\"%s\":true,\"%s\":true}", CHAVE[AJ_VIDRO], CHAVE[AJ_RELOGIO]);
+  ajustes_mesclar_blob(blob, &saida);
+  assert(!saida || (strstr(saida, "true") && !strstr(saida, "false")));
+  free(saida);
+}
+
+static void migracao(void) {
+  int perfis[2] = { 1, 2 };
+  char *t, *a, *b;
+  // TV 2.0.x: ajustes.txt com vidro desligado e relogio ligado; o perfil 2 ja
+  // tinha uma copia antiga (so chaves de conta) com o destaque desligado.
+  valor[AJ_VIDRO] = 1; valor[AJ_RELOGIO] = 0; valor[AJ_HERO] = 0; valor[AJ_RESOLUCAO] = RES_4K;
+  assert(gravar());
+  { char antigo[96]; snprintf(antigo, sizeof antigo, "%s 1\n", CHAVE[AJ_HERO]); dados_gravar("ajustes-p2.txt", antigo); }
+  assert(ajustes_migrar_escopo_para(perfis, 2, 1) == 1);
+  // Backup do arquivo da TV, uma vez.
+  t = dados_ler("ajustes.txt.pre21");
+  assert(t && tem(t, AJ_VIDRO));
+  free(t);
+  // Perfil 1 (ativo, sem copia): completo, com as chaves locais de agora.
+  a = dados_ler("ajustes-p1.txt");
+  assert(tem(a, AJ_VIDRO) && tem(a, AJ_RELOGIO) && tem(a, AJ_HERO) && !tem(a, AJ_RESOLUCAO));
+  // Perfil 2: manteve o que era dele e ganhou as locais com o valor da TV.
+  b = dados_ler("ajustes-p2.txt");
+  { char alvo[96]; snprintf(alvo, sizeof alvo, "%s 1\n", CHAVE[AJ_HERO]); assert(strstr(b, alvo)); }
+  { char alvo[96]; snprintf(alvo, sizeof alvo, "%s 1\n", CHAVE[AJ_VIDRO]); assert(strstr(b, alvo)); }
+  { char alvo[96]; snprintf(alvo, sizeof alvo, "%s 0\n", CHAVE[AJ_RELOGIO]); assert(strstr(b, alvo)); }
+  assert(!tem(b, AJ_RESOLUCAO));
+  free(a); free(b);
+  // Segunda vez: nada muda (nem o backup, mesmo com o ajustes.txt diferente).
+  valor[AJ_VIDRO] = 0; gravar();
+  assert(ajustes_migrar_escopo_para(perfis, 2, 1) == 0);
+  t = dados_ler("ajustes.txt.pre21");
+  { char alvo[96]; snprintf(alvo, sizeof alvo, "%s 1\n", CHAVE[AJ_VIDRO]); assert(strstr(t, alvo)); }
+  free(t);
+  // Existing active-profile values must survive, too.
+  dados_apagar("ajustes-escopo.txt");
+  valor[AJ_HERO] = 0;
+  { char antigo[96]; snprintf(antigo, sizeof antigo, "%s 1\n", CHAVE[AJ_HERO]);
+    assert(dados_gravar("ajustes-p1.txt", antigo)); }
+  assert(ajustes_migrar_escopo_para(perfis, 2, 1) == 1);
+  t = dados_ler("ajustes-p1.txt");
+  { char alvo[96]; snprintf(alvo, sizeof alvo, "%s 1\n", CHAVE[AJ_HERO]); assert(strstr(t, alvo)); }
+  free(t);
+  // Sem perfis na mao, nao marca como feito.
+  dados_apagar("ajustes-escopo.txt");
+  assert(ajustes_migrar_escopo_para(NULL, 0, 1) == 0);
+  t = dados_ler("ajustes-escopo.txt");
+  assert(!t);
+  // A failed destination write must leave migration retryable.
+  dados_apagar("ajustes-p2.txt");
+  char bloqueio[1024];
+  snprintf(bloqueio, sizeof bloqueio, "%s/ajustes-p2.txt", dados_dir());
+  assert(mkdir(bloqueio, 0700) == 0);
+  assert(ajustes_migrar_escopo_para(perfis, 2, 1) == 0);
+  assert(!dados_ler("ajustes-escopo.txt"));
+  assert(rmdir(bloqueio) == 0);
+  assert(ajustes_migrar_escopo_para(perfis, 2, 1) == 1);
+  // Troca de perfil agora leva o vidro junto.
+  valor[AJ_VIDRO] = 0;
+  ajustes_perfil_guardar(1);
+  valor[AJ_VIDRO] = 1;
+  assert(ajustes_perfil_restaurar(1) == 1 && valor[AJ_VIDRO] == 0);
+}
+
+
+static int linhaVale(const char *t, int op, int v) {
+  char alvo[96];
+  snprintf(alvo, sizeof alvo, "%s %d\n", CHAVE[op], v);
+  return t && strstr(t, alvo) != NULL;
+}
+
+static void copia(void) {
+  char *a, *b, *c, *pend;
+  int n;
+  // Perfil ativo = 1. Estado do 1: vidro desligado, relogio ligado, destaque desligado.
+  valor[AJ_VIDRO] = 1; valor[AJ_RELOGIO] = 0; valor[AJ_HERO] = 1; valor[AJ_RESOLUCAO] = RES_4K;
+  { int d[AJ_N]; memcpy(d, valorPadrao, sizeof d); d[AJ_VIDRO] = 0; d[AJ_RELOGIO] = 1; d[AJ_HERO] = 0; perfilGravarVetor(2, d); }
+  dados_apagar("ajustes-locais-p2.txt");
+  n = ajustes_copiar_perfil(1, 2);
+  assert(n >= 3);
+  b = dados_ler("ajustes-p2.txt");
+  assert(linhaVale(b, AJ_VIDRO, 1) && linhaVale(b, AJ_RELOGIO, 0) && linhaVale(b, AJ_HERO, 1));
+  assert(!tem(b, AJ_RESOLUCAO));   // nunca o que descreve a TV
+  free(b);
+  assert(valor[AJ_VIDRO] == 1 && valor[AJ_RESOLUCAO] == RES_4K);   // origem intacta
+  pend = dados_ler("ajustes-locais-p2.txt");   // a parte da conta fica pendente do destino
+  assert(pend && pend[0] == '1');
+  free(pend);
+  // Idempotente: copiar de novo nao muda nada.
+  assert(ajustes_copiar_perfil(1, 2) == 0);
+  // Cadeia: 2 -> 3 (a origem e o arquivo do 2, o 1 continua ativo).
+  assert(ajustes_copiar_perfil(2, 3) >= 0);
+  c = dados_ler("ajustes-p3.txt");
+  assert(linhaVale(c, AJ_VIDRO, 1) && linhaVale(c, AJ_HERO, 1) && !tem(c, AJ_RESOLUCAO));
+  free(c);
+  // Invalidos.
+  assert(ajustes_copiar_perfil(1, 1) == -1 && ajustes_copiar_perfil(0, 2) == -1 && ajustes_copiar_perfil(7, 2) == -1);
+  // Restaurar o padrao de um perfil que nao e o ativo: so as chaves dele.
+  assert(ajustes_restaurar_padrao_perfil(2) > 0);
+  a = dados_ler("ajustes-p2.txt");
+  assert(linhaVale(a, AJ_VIDRO, valorPadrao[AJ_VIDRO]) && linhaVale(a, AJ_HERO, valorPadrao[AJ_HERO]));
+  free(a);
+  assert(valor[AJ_VIDRO] == 1);   // o ativo nao foi tocado
+}
+
+static void edicao(void) {
+  char *t, *p2, *pend;
+  // Ativo = 1 (vidro desligado, destaque desligado). O 2 tem vidro ligado, destaque ligado.
+  valor[AJ_VIDRO] = 1; valor[AJ_HERO] = 1; valor[AJ_RELOGIO] = 0;
+  { int d[AJ_N]; memcpy(d, valorPadrao, sizeof d); d[AJ_VIDRO] = 0; d[AJ_HERO] = 0; d[AJ_RELOGIO] = 1; perfilGravarVetor(2, d); }
+  dados_apagar("ajustes-locais-p2.txt");
+  assert(ajustes_edicao_iniciar(1) == 0);   // o ativo nao se edita como "outro"
+  assert(ajustes_edicao_iniciar(2) == 1 && ajustes_edicao_perfil() == 2);
+  assert(valor[AJ_VIDRO] == 0 && valor[AJ_HERO] == 0 && valor[AJ_RELOGIO] == 1);
+  assert(ajustes_copiar_perfil(2, 3) == -1);   // sem copia no meio da edicao
+  valor[AJ_HERO] = 1; valor[AJ_RELOGIO] = 0;
+  assert(gravar());
+  // O arquivo da TV continua com os valores do ativo; o do perfil editado levou a mudanca.
+  t = dados_ler("ajustes.txt");
+  assert(linhaVale(t, AJ_VIDRO, 1) && linhaVale(t, AJ_RELOGIO, 0) && linhaVale(t, AJ_HERO, 1) == 1);
+  free(t);
+  p2 = dados_ler("ajustes-p2.txt");
+  assert(linhaVale(p2, AJ_HERO, 1) && linhaVale(p2, AJ_RELOGIO, 0) && linhaVale(p2, AJ_VIDRO, 0));
+  free(p2);
+  pend = dados_ler("ajustes-locais-p2.txt");
+  assert(pend && pend[0] == '1');
+  free(pend);
+  // O blob da conta nao entra em valor[] enquanto ele e de outro perfil.
+  assert(ajustes_aplicar_blob("{\"x\":1}") == 0);
+  // guardar nao grava o valor[] do perfil editado como se fosse do ativo.
+  dados_apagar("ajustes-p1.txt");
+  ajustes_perfil_guardar(1);
+  { char *p1 = dados_ler("ajustes-p1.txt"); assert(!p1); }
+  ajustes_edicao_encerrar();
+  assert(ajustes_edicao_perfil() == 0);
+  assert(valor[AJ_VIDRO] == 1 && valor[AJ_HERO] == 1 && valor[AJ_RELOGIO] == 0);   // o ativo voltou inteiro
+}
+
+static void admin(void) {
+  char h[65], *arq;
+  admin_sha256_hex((const unsigned char *)"abc", 3, h);
+  assert(!strcmp(h, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
+  admin_pin_esquecer();
+  assert(!admin_pin_definido() && !admin_pin_conferir("1234"));
+  assert(!admin_pin_definir("12") && !admin_pin_definir("12a45") && !admin_pin_definir("123456789"));
+  assert(admin_pin_definir("4821") && admin_pin_definido());
+  assert(admin_pin_conferir("4821") && !admin_pin_conferir("4822") && !admin_pin_conferir("") && !admin_pin_conferir(NULL));
+  arq = dados_ler("admin-pin.txt");
+  assert(arq && !strstr(arq, "4821"));   // nunca em claro
+  free(arq);
+  assert(admin_pin_definir("90210") && admin_pin_conferir("90210") && !admin_pin_conferir("4821"));
+  ajustes_perfil_esquecer();   // sair da conta apaga o PIN e o marcador de escopo
+  assert(!admin_pin_definido());
+}
+
+static void infantil(void) {
+  perfil_infantil_esquecer();
+  assert(!perfil_ajustes_travados(2));
+  assert(perfil_ajustes_travar(2, 1) && !perfil_ajustes_travados(2));   // so vale com a marca de infantil
+  assert(perfil_infantil_definir(2, 1) && perfil_ajustes_travados(2) && !perfil_ajustes_travados(3));
+  assert(perfil_ajustes_travar(2, 0) && !perfil_ajustes_travados(2));
+  perfil_ajustes_travar(2, 1);
+  perfil_infantil_esquecer();
+  assert(!perfil_infantil(2) && !perfil_ajustes_travados(2));
+  // Padroes seguros no perfil infantil (nao ativo).
+  { int d[AJ_N]; memcpy(d, valorPadrao, sizeof d); perfilGravarVetor(2, d); }
+  ajustes_padroes_infantis(2);
+  { char *t = dados_ler("ajustes-p2.txt");
+    assert(linhaVale(t, AJ_ENQUETES, 1) && linhaVale(t, AJ_SEEKR_LIGADO, 1) && linhaVale(t, AJ_NT_IMDB, 1) && linhaVale(t, AJ_PLR_CLASSIF, 0));
+    free(t); }
+}
+
+int main(void) {
+  char dir[] = "/tmp/nuvio-aj-escopo-XXXXXX";
+  assert(mkdtemp(dir));
+  setenv("NUVIO_DADOS", dir, 1);
+  dados_iniciar(dir);
+  ajustes_dir(dir);
+  escopos();
+  blobIgnoraLocal();
+  migracao();
+  copia();
+  edicao();
+  admin();
+  infantil();
+  puts("ajustes_escopo: tudo ok");
+  return 0;
+}
