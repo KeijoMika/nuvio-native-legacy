@@ -106,7 +106,9 @@ internal class LivePlaylistDataSource private constructor(
         }
     }
 
-    private val tsPacket = ByteArray(188)
+    private var tsPacket = ByteArray(188)
+    private val queuedPackets = ArrayDeque<ByteArray>()
+    private val pesHeaders = mutableMapOf<Int, MutableList<Pair<ByteArray, Int>>>()
     private var packetPosition = 188
     private var timestampOffset = 0L
     private var lastTimestamp = -1L
@@ -130,6 +132,8 @@ internal class LivePlaylistDataSource private constructor(
         }
         connectionHasData = false
         packetPosition = 188
+        queuedPackets.clear()
+        pesHeaders.clear()
         timestampOffset = 0L
         lastTimestamp = -1L
         reconnectTimestamp = false
@@ -169,13 +173,21 @@ internal class LivePlaylistDataSource private constructor(
         if (!upstreamOpen) return C.RESULT_END_OF_INPUT
         if (liveTsSpec == null) return upstream.read(buffer, offset, length)
         if (packetPosition == 188) {
-            var size = 0
-            while (size < 188) {
-                val count = readLiveTs(tsPacket, size, 188 - size)
-                if (count <= 0) throw IOException("Incomplete live TS packet")
-                size += count
+            if (queuedPackets.isEmpty()) {
+                do {
+                    val packet = ByteArray(188)
+                    var size = 0
+                    while (size < 188) {
+                        val count = readLiveTs(packet, size, 188 - size)
+                        if (count <= 0) throw IOException("Incomplete live TS packet")
+                        size += count
+                    }
+                    queuedPackets.addLast(packet)
+                    rebaseTimestamps(packet)
+                    if (queuedPackets.size > 8192) throw IOException("Live TS PES header stalled")
+                } while (pesHeaders.isNotEmpty())
             }
-            rebaseTimestamps()
+            tsPacket = queuedPackets.removeFirst()
             packetPosition = 0
         }
         val count = minOf(length, 188 - packetPosition)
@@ -199,6 +211,7 @@ internal class LivePlaylistDataSource private constructor(
             headers = upstream.responseHeaders
             connectionHasData = false
             reconnectTimestamp = true
+            pesHeaders.clear()
             // An HTTP response may end mid-packet; never splice two sessions' packets.
             if (offset != 0) throw IOException("Truncated live TS packet")
             count = upstream.read(buffer, offset, length)
@@ -209,9 +222,8 @@ internal class LivePlaylistDataSource private constructor(
     }
 
     // Keep PCR, PTS and DTS on the same clock across independent HTTP sessions.
-    // Work on complete packets so upstream/caller read sizes cannot split a timestamp.
-    private fun rebaseTimestamps() {
-        val b = tsPacket
+    // Hold packets until each PES timestamp is complete, including interleaved PIDs.
+    private fun rebaseTimestamps(b: ByteArray) {
         if (b[0] != 0x47.toByte()) throw IOException("Invalid live TS sync byte")
         val mask = 0x1ffffffffL
         fun adjusted(raw: Long): Long {
@@ -246,12 +258,33 @@ internal class LivePlaylistDataSource private constructor(
                 b[10] = ((b[10].toInt() and 127) or ((value.toInt() and 1) shl 7)).toByte()
             }
         }
-        if (control and 1 == 0 || b[1].toInt() and 0x40 == 0 || payload + 14 > 188) return
-        if (b[payload] != 0.toByte() || b[payload + 1] != 0.toByte() || b[payload + 2] != 1.toByte()) return
-        val flags = b[payload + 7].toInt() and 0xc0
-        if (flags != 0x80 && flags != 0xc0) return
-        fun rewrite(at: Int) {
-            if (at + 5 > 188) throw IOException("Split live TS PES timestamp")
+        if (control and 1 == 0 || payload >= 188) return
+        val pid = ((b[1].toInt() and 31) shl 8) or (b[2].toInt() and 255)
+        if (b[1].toInt() and 0x40 != 0) pesHeaders[pid] = mutableListOf()
+        val parts = pesHeaders[pid] ?: return
+        for (at in payload until 188) {
+            parts.add(b to at)
+            val header = ByteArray(parts.size) { i -> parts[i].first[parts[i].second] }
+            if (header.size == 3 && !header.contentEquals(byteArrayOf(0, 0, 1))) {
+                pesHeaders.remove(pid)
+                return
+            }
+            if (header.size < 9) continue
+            val flags = header[7].toInt() and 0xc0
+            if (flags != 0x80 && flags != 0xc0) {
+                pesHeaders.remove(pid)
+                return
+            }
+            if (header.size < if (flags == 0xc0) 19 else 14) continue
+            rewritePesTimestamp(header, 9, ::adjusted)
+            if (flags == 0xc0) rewritePesTimestamp(header, 14, ::adjusted)
+            parts.forEachIndexed { i, (packet, index) -> packet[index] = header[i] }
+            pesHeaders.remove(pid)
+            return
+        }
+    }
+
+    private fun rewritePesTimestamp(b: ByteArray, at: Int, adjusted: (Long) -> Long) {
             val raw = ((b[at].toLong() and 14) shl 29) or ((b[at + 1].toLong() and 255) shl 22) or
                 ((b[at + 2].toLong() and 254) shl 14) or ((b[at + 3].toLong() and 255) shl 7) or
                 ((b[at + 4].toLong() and 254) shr 1)
@@ -261,14 +294,13 @@ internal class LivePlaylistDataSource private constructor(
             b[at + 2] = ((((value shr 15).toInt() and 127) shl 1) or 1).toByte()
             b[at + 3] = (value shr 7).toByte()
             b[at + 4] = (((value.toInt() and 127) shl 1) or 1).toByte()
-        }
-        rewrite(payload + 9)
-        if (flags == 0xc0) rewrite(payload + 14)
     }
 
     override fun close() {
         prefix = null
         liveTsSpec = null
+        queuedPackets.clear()
+        pesHeaders.clear()
         connectionHasData = false
         resolvedUri = null
         headers = emptyMap()

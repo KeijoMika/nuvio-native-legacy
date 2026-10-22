@@ -60,7 +60,9 @@ class LiveTsDataSourceTest {
         assertEquals(101, upstream.closes)
     }
 
-    @Test fun reconnectWithResetPtsKeepsMedia3SampleTimesAdvancing() {
+    @Test fun reconnectWithSplitPesHeadersKeepsMedia3SampleTimesAdvancing() {
+        // Include every header split, especially adaptation length 166 (17 payload bytes).
+        for (payloadBytes in (1..19).toList() + 176) {
         // One PES per connection: PCR=PTS-DTS lead, PTS=1s, DTS=0.9s.
         val packet = ByteArray(188) { 0xff.toByte() }
         packet[0] = 0x47; packet[1] = 0x41; packet[2] = 0; packet[3] = 0x30
@@ -78,13 +80,34 @@ class LiveTsDataSourceTest {
         byteArrayOf(0, 0, 1, 0xe0.toByte(), 0, 0, 0x80.toByte(), 0xc0.toByte(), 10)
             .copyInto(packet, 12)
         putTimestamp(21, 90_000, 0x30); putTimestamp(26, 81_000, 0x10)
+        val first = packet.copyOf()
+        first.fill(0xff.toByte(), 12)
+        first[4] = (183 - payloadBytes).toByte()
+        packet.copyInto(first, 188 - payloadBytes, 12, 12 + payloadBytes)
+        val packets = mutableListOf(first)
+        var copied = payloadBytes
+        while (copied < 19) {
+            // Another PID and an adaptation-only packet must not become PES bytes.
+            packets += ByteArray(188).also { it[0] = 0x47; it[3] = 0x10 }
+            packets += ByteArray(188).also {
+                it[0] = 0x47; it[1] = 1; it[3] = 0x20; it[4] = 183.toByte()
+            }
+            val count = minOf(3, 19 - copied)
+            packets += ByteArray(188) { 0xff.toByte() }.also {
+                it[0] = 0x47; it[1] = 1; it[2] = 0; it[3] = 0x30
+                it[4] = (183 - count).toByte(); it[5] = 0
+                packet.copyInto(it, 188 - count, 12 + copied, 12 + copied + count)
+            }
+            copied += count
+        }
+        val stream = packets.fold(ByteArray(0)) { bytes, next -> bytes + next }
         val upstream = object : DataSource {
             var position = 0
-            override fun open(spec: DataSpec): Long { position = 0; return 188 }
+            override fun open(spec: DataSpec): Long { position = 0; return stream.size.toLong() }
             override fun read(b: ByteArray, o: Int, n: Int): Int {
-                if (position == 188) return C.RESULT_END_OF_INPUT
-                val count = minOf(n, 17, 188 - position)
-                packet.copyInto(b, o, position, position + count); position += count
+                if (position == stream.size) return C.RESULT_END_OF_INPUT
+                val count = minOf(n, 17, stream.size - position)
+                stream.copyInto(b, o, position, position + count); position += count
                 return count
             }
             override fun close() = Unit
@@ -101,13 +124,21 @@ class LiveTsDataSourceTest {
                 ((b[at + 4].toLong() and 254) shr 1)
         var previous = -1L
         repeat(3) {
-            val bytes = ByteArray(188)
+            val bytes = ByteArray(stream.size)
             var size = 0
             while (size < bytes.size) size += source.read(bytes, size, minOf(13, bytes.size - size))
-            val pts = timestamp(bytes, 21)
+            val pes = mutableListOf<Byte>()
+            for (start in bytes.indices step 188) {
+                val control = (bytes[start + 3].toInt() ushr 4) and 3
+                if (bytes[start + 1].toInt() and 31 != 1 || control and 1 == 0) continue
+                val payload = if (control and 2 != 0) 5 + (bytes[start + 4].toInt() and 255) else 4
+                pes.addAll(bytes.slice(start + payload until start + 188))
+            }
+            val header = pes.toByteArray()
+            val pts = timestamp(header, 9)
             val sampleUs = adjuster.adjustTsTimestamp(pts)
             assertTrue("Reconnected PTS must advance beyond queued samples", sampleUs > previous)
-            assertEquals(9_000L, (pts - timestamp(bytes, 26)) and 0x1ffffffffL)
+            assertEquals(9_000L, (pts - timestamp(header, 14)) and 0x1ffffffffL)
             val clock = ((bytes[6].toLong() and 255) shl 25) or
                 ((bytes[7].toLong() and 255) shl 17) or ((bytes[8].toLong() and 255) shl 9) or
                 ((bytes[9].toLong() and 255) shl 1) or ((bytes[10].toLong() and 128) shr 7)
@@ -115,6 +146,7 @@ class LiveTsDataSourceTest {
             previous = sampleUs
         }
         source.close()
+        }
     }
 
     @Test fun vodAndHlsSegmentsKeepFiniteLengthAndEof() {
