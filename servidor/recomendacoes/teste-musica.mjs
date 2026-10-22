@@ -9,6 +9,7 @@ const pedidos = [];
 const J = (o) => new Response(JSON.stringify(o), { status: 200 });
 const fonte = (grupos) => async (alvo, opts) => {
   pedidos.push({ alvo, opts });
+  if (alvo.includes("v3-cinemeta.strem.io/meta/")) return J({ meta: { name: "Inception", year: "2010" } });
   if (alvo.includes("/release-group?")) return J({ "release-groups": grupos });
   if (alvo.includes("/release?")) return J({ releases: [{ media: [{ tracks: [
     { title: "Time", length: 275000, "artist-credit": [{ name: "Hans Zimmer" }] },
@@ -25,7 +26,7 @@ let r = await rotaMusica(U("/musica/v1/tt1375666?t=Inception&y=2010"), env, font
 let d = await r.json();
 ok("achou: faixas com titulo, artista e duracao", r.status === 200 && d.faixas.length === 2 && d.faixas[0].dur === 275 && d.faixas[1].artista === "Hans Zimmer");
 ok("achou: capa 600 https e link da Apple", d.album.capa.includes("600x600bb") && d.album.apple.startsWith("https://music.apple.com/"));
-ok("MusicBrainz leva User-Agent", pedidos[0].opts.headers["user-agent"].startsWith("NuvioLegacy"));
+ok("MusicBrainz leva User-Agent", pedidos.find((p) => p.alvo.includes("musicbrainz.org")).opts.headers["user-agent"].startsWith("NuvioLegacy"));
 ok("cache 30 dias", env.MUS.ttl[0] === CACHE_ACHOU);
 const n = pedidos.length;
 await rotaMusica(U("/musica/v1/tt1375666?t=Inception&y=2010"), env, fonte([OST]));
@@ -33,7 +34,16 @@ ok("segunda consulta sai do KV", pedidos.length === n);
 
 env = { MUS: kv() };
 r = await rotaMusica(U("/musica/v1/tt1375666?t=Inception&y=2014"), env, fonte([OST]));
-ok("ano fora de +-1: nao mostra trilha (vazio, cache 7 dias)", (await r.json()).vazio === true && env.MUS.ttl[0] === CACHE_VAZIO);
+ok("caller year cannot poison cache", (await r.json()).faixas.length === 2 && env.MUS.ttl[0] === CACHE_ACHOU);
+
+env = { MUS: kv() };
+r = await rotaMusica(U("/musica/v1/tt1375666?t=Unrelated&y=1999"), env, fonte([OST]));
+assert.equal((await r.json()).album?.titulo, OST.title, "caller title cannot poison cache");
+r = await rotaMusica(U("/musica/v1/tt1375666?t=Inception&y=2010"), env, fonte([OST]));
+assert.equal((await r.json()).album?.titulo, OST.title, "legitimate lookup survives hostile first request");
+env = { MUS: kv() };
+r = await rotaMusica(U("/musica/v1/tt1375666?t=Inception&y=2010"), env, fonte([]));
+ok("canonical miss cached seven days", (await r.json()).vazio && env.MUS.ttl[0] === CACHE_VAZIO);
 ok("escolher: score baixo recusado", escolher([{ ...OST, score: 80 }], "Inception", 2010, 0) === null);
 ok("escolher: titulo diferente recusado", escolher([{ ...OST, title: "Interstellar OST" }], "Inception", 2010, 0) === null);
 ok("escolher: temporada certa", escolher([{ ...OST, title: "Show: Season 2 (Score)", "first-release-date": "2020-01-01" }], "Show", 2019, 2) !== null

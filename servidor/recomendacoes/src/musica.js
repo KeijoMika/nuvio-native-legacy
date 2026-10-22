@@ -82,12 +82,19 @@ export async function rotaMusica(url, env, buscar = fetch, limite = null, ip = "
   const ano = parseInt(url.searchParams.get("y") || "", 10) || 0;
   const temp = parseInt(url.searchParams.get("s") || "", 10) || 0;
   if (!m || !ID_IMDB.test(m[1]) || !titulo || /[\u0000-\u001f]/.test(titulo)) return resp({ erro: "pedido invalido" }, 400);
-  const chave = `m:${m[1]}:${temp}`;
+  const chave = `m2:${m[1]}:${temp}`;
   const guardado = await env?.MUS?.get(chave);
   if (guardado) return resp(JSON.parse(guardado), 200, { "cache-control": "public, max-age=3600" });
   if (limite && !(await limite(env, "musica:" + ip, 30, 600, Math.floor(agora / 1000)))) return resp({ erro: "muitos pedidos" }, 429);
   let t;
-  try { t = await trilha(buscar, titulo, ano, temp); } catch { return resp({ erro: "fonte indisponivel" }, 502); }
+  try {
+    const tipo = temp > 0 ? "series" : "movie";
+    const d = await json(buscar, `https://v3-cinemeta.strem.io/meta/${tipo}/${m[1]}.json`);
+    const nome = String(d.meta?.name || "").trim();
+    const anoId = parseInt(d.meta?.year || d.meta?.releaseInfo || "", 10);
+    if (!nome || !Number.isFinite(anoId)) throw new Error("missing canonical metadata");
+    t = await trilha(buscar, nome, anoId, temp);
+  } catch { return resp({ erro: "fonte indisponivel" }, 502); }
   const corpo = t || { vazio: true };
   await env?.MUS?.put(chave, JSON.stringify(corpo), { expirationTtl: t ? CACHE_ACHOU : CACHE_VAZIO });
   return resp(corpo, 200, { "cache-control": "public, max-age=3600" });
