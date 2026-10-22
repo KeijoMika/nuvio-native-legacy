@@ -24,7 +24,7 @@ class LiveTsDataSourceTest {
             if (length == 0) return 0
             if (remaining == 0) return C.RESULT_END_OF_INPUT
             val count = minOf(length, remaining)
-            buffer.fill(0x47, offset, offset + count)
+            repeat(count) { i -> buffer[offset + i] = if ((188 - remaining + i) % 188 == 0) 0x47 else 0x00 }
             remaining -= count
             return count
         }
@@ -58,6 +58,63 @@ class LiveTsDataSourceTest {
         assertEquals(101, upstream.requests.size)
         source.close()
         assertEquals(101, upstream.closes)
+    }
+
+    @Test fun reconnectWithResetPtsKeepsMedia3SampleTimesAdvancing() {
+        // One PES per connection: PCR=PTS-DTS lead, PTS=1s, DTS=0.9s.
+        val packet = ByteArray(188) { 0xff.toByte() }
+        packet[0] = 0x47; packet[1] = 0x41; packet[2] = 0; packet[3] = 0x30
+        packet[4] = 7; packet[5] = 0x10
+        fun putTimestamp(at: Int, ticks: Long, prefix: Int) {
+            packet[at] = (prefix or (((ticks shr 30).toInt() and 7) shl 1) or 1).toByte()
+            packet[at + 1] = (ticks shr 22).toByte()
+            packet[at + 2] = (((ticks shr 15).toInt() and 127) * 2 + 1).toByte()
+            packet[at + 3] = (ticks shr 7).toByte()
+            packet[at + 4] = ((ticks.toInt() and 127) * 2 + 1).toByte()
+        }
+        val pcr = 72_000L
+        repeat(4) { packet[6 + it] = (pcr shr (25 - it * 8)).toByte() }
+        packet[10] = (((pcr and 1).toInt() shl 7) or 0x7e).toByte(); packet[11] = 0
+        byteArrayOf(0, 0, 1, 0xe0.toByte(), 0, 0, 0x80.toByte(), 0xc0.toByte(), 10)
+            .copyInto(packet, 12)
+        putTimestamp(21, 90_000, 0x30); putTimestamp(26, 81_000, 0x10)
+        val upstream = object : DataSource {
+            var position = 0
+            override fun open(spec: DataSpec): Long { position = 0; return 188 }
+            override fun read(b: ByteArray, o: Int, n: Int): Int {
+                if (position == 188) return C.RESULT_END_OF_INPUT
+                val count = minOf(n, 17, 188 - position)
+                packet.copyInto(b, o, position, position + count); position += count
+                return count
+            }
+            override fun close() = Unit
+            override fun getUri() = Uri.parse("https://origin.test/live/u/p/42.ts")
+            override fun addTransferListener(listener: TransferListener) = Unit
+        }
+        val factory = DataSource.Factory { upstream }
+        val source = LivePlaylistDataSource.Factory(factory, factory, liveTsUri = upstream.uri).createDataSource()
+        source.open(DataSpec(upstream.uri!!))
+        val adjuster = androidx.media3.common.util.TimestampAdjuster(0)
+        fun timestamp(b: ByteArray, at: Int): Long =
+            ((b[at].toLong() and 14) shl 29) or ((b[at + 1].toLong() and 255) shl 22) or
+                ((b[at + 2].toLong() and 254) shl 14) or ((b[at + 3].toLong() and 255) shl 7) or
+                ((b[at + 4].toLong() and 254) shr 1)
+        var previous = -1L
+        repeat(3) {
+            val bytes = ByteArray(188)
+            var size = 0
+            while (size < bytes.size) size += source.read(bytes, size, minOf(13, bytes.size - size))
+            val pts = timestamp(bytes, 21)
+            val sampleUs = adjuster.adjustTsTimestamp(pts)
+            assertTrue("Reconnected PTS must advance beyond queued samples", sampleUs > previous)
+            assertEquals(9_000L, (pts - timestamp(bytes, 26)) and 0x1ffffffffL)
+            val clock = ((bytes[6].toLong() and 255) shl 25) or
+                ((bytes[7].toLong() and 255) shl 17) or ((bytes[8].toLong() and 255) shl 9) or
+                ((bytes[9].toLong() and 255) shl 1) or ((bytes[10].toLong() and 128) shr 7)
+            assertEquals(18_000L, (pts - clock) and 0x1ffffffffL)
+            previous = sampleUs
+        }
+        source.close()
     }
 
     @Test fun vodAndHlsSegmentsKeepFiniteLengthAndEof() {
