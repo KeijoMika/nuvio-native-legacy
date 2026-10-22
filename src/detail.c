@@ -6657,7 +6657,7 @@ static void desenhaMusicas(float x, float y, float f, float a) {
       txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h;
       snprintf(linha, sizeof linha, "%s · %d:%02d", al.faixa[k].artista,
                al.faixa[k].dur / 60, al.faixa[k].dur % 60);
-      lt = txt_linha_corta(TXT_G18, linha, 205, 210, 220, 255, tw);
+      lt = txt_linha_corta(TXT_G18R, linha, 205, 210, 220, 255, tw);
       txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h + 4.0f;
     }
     snprintf(linha, sizeof linha, "‹ %d / %d ›", musPagina + 1, (al.n + 1) / 2);

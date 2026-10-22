@@ -636,6 +636,13 @@ int main(int argc, char **argv) {
     for (int q = 0; q < 90; q++) { SDL_Delay(16); quadros(1); }
     snprintf(nome, sizeof nome, "%s-musicas-movie.png", saida);
     gravar(nome);
+    ev.key.keysym.sym = SDLK_RIGHT; detail_evento(&ev);
+    assert(musPagina == 1);
+    quadros(1);
+    snprintf(nome, sizeof nome, "%s-musicas-last-page.png", saida);
+    gravar(nome);
+    ev.key.keysym.sym = SDLK_LEFT; detail_evento(&ev);
+    assert(musPagina == 0);
     ev.key.keysym.sym = SDLK_RETURN; detail_evento(&ev);
     ev.type = SDL_KEYUP; detail_evento(&ev);
     for (int q = 0; q < 45; q++) { SDL_Delay(16); quadros(1); }
