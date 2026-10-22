@@ -191,6 +191,9 @@ static void edicao(void) {
     assert(!definirValorDireto(op, 1));
   }
   assert(!ajOpcaoDisponivel(AJ_LEG1_RESTAURAR));
+  assert(!ajOpcaoDisponivel(AJ_FONTE_ORDEM));
+  assert(!ajOpcaoDisponivel(AJ_FONTE_ADDONS_PERM));
+  assert(!ajOpcaoDisponivel(AJ_FONTE_PLUGINS_PERM));
   assert(!ajOpcaoDisponivel(AJ_FONTE_REGEX_PADRAO));
   assert(!ajOpcaoDisponivel(AJ_FONTE_REGEX_MODELO));
   assert(!definirValorDireto(AJ_FONTE_REGEX_MODELO, 1));
@@ -215,6 +218,9 @@ static void edicao(void) {
   { char *p1 = dados_ler("ajustes-p1.txt"); assert(!p1); }
   ajustes_edicao_encerrar();
   assert(ajustes_edicao_perfil() == 0);
+  assert(ajOpcaoDisponivel(AJ_FONTE_ORDEM));
+  assert(ajOpcaoDisponivel(AJ_FONTE_ADDONS_PERM));
+  assert(ajOpcaoDisponivel(AJ_FONTE_PLUGINS_PERM));
   assert(valor[AJ_VIDRO] == 1 && valor[AJ_HERO] == 1 && valor[AJ_RELOGIO] == 0);   // o ativo voltou inteiro
 }
 
