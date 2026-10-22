@@ -1867,7 +1867,7 @@ int cat_id_stream(int indiceItem, int t, int e, char *dst, unsigned tam) {
   if (!c || !c->imdb[0]) return 0;
   idbase_copiar(c->imdb, base, sizeof base);
   if (t < 0 || e <= 0) { snprintf(dst, tam, "%s", c->imdb); return 1; }
-  if (!idbase_e_imdb(c->imdb) || t == 0) {
+  { // The provider's published video ID is authoritative for every series.
     n = cat_n_episodios(indiceItem);
     for (i = 0; i < n; i++) {
       const CatEp *ep = cat_episodio(indiceItem, i);

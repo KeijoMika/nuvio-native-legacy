@@ -711,6 +711,10 @@ typedef enum {
   AJ_PAUSA_NOTAS,
   // Elenco (fotos, nomes e papeis) no painel de pausa. LOCAL, DESLIGADO de fabrica.
   AJ_PAUSA_ELENCO,
+  // Onde a fileira de formato fica: embaixo do titulo ou no canto ("Original").
+  AJ_PLR_FORMATO_POS,
+  // Mostrar o codec do audio (E-AC-3, DTS-HD MA...) na fileira de formato. LOCAL, ligado de fabrica.
+  AJ_PLR_CODEC,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -763,7 +767,9 @@ static const char *V_LIGA[]      = { "Ligado", "Desligado" };
 static const char *V_LIGA_AUTO[] = { "Ligado", "Desligado", "Automático" };
 // Estilo da fileira de formato do player; o indice e o PLR_FMT_* de ajustes.h
 // e o gravado em "plrFormatoLocal".
-static const char *V_PLR_FORMATO[] = { "Texto", "Pílula", "Marcas", "Selos", "Original", "Desligado" };
+static const char *V_PLR_FORMATO[] = { "Texto", "Pílula", "Marcas", "Selos", "Desligado" };
+// Posicao da fileira; o indice e o PLR_POS_* de ajustes.h e o gravado em "plrFormatoPosLocal".
+static const char *V_PLR_FORMATO_POS[] = { "Embaixo do título", "Original" };
 // TRAILER DO CARTAZ EM FOCO EM TRES MODOS (dono, 07/10/2026). O indice e o
 // AJ_TRAILER_CARTAZ_* de ajustes.h e o gravado em "trailerCartazModo"; a chave
 // antiga (V_LIGA, a mesma do web) migra no carregar (focoTrailerMigrar) e a
@@ -1835,10 +1841,12 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Reprodução em túnel", V_VIDRO_FOSCO, 2),
   ESC("Dolby Vision P7 para P8.1 (experimental)", V_LIGA, 2),
   ESC("Registro na rede local", V_LIGA, 2),                   // local: logRedeLocal
-  ESC("Formato no player", V_PLR_FORMATO, 6),          // local: plrFormatoLocal
+  ESC("Formato no player", V_PLR_FORMATO, 5),          // local: plrFormatoLocal
   ESC("Comentários do Trakt ao pausar", V_LIGA, 2),   // local: pausaComentariosLocal
   ESC("Notas ao pausar", V_LIGA, 2),                  // local: pausaNotasLocal
   ESC("Elenco ao pausar", V_LIGA, 2),                 // local: pausaElencoLocal
+  ESC("Posição do formato no player", V_PLR_FORMATO_POS, 2),   // local: plrFormatoPosLocal
+  ESC("Mostrar o codec do áudio", V_LIGA, 2),          // local: plrCodecLocal
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2166,6 +2174,8 @@ static const char *CHAVE[] = {
   "pausaComentariosLocal",
   "pausaNotasLocal",
   "pausaElencoLocal",
+  "plrFormatoPosLocal",
+  "plrCodecLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2812,7 +2822,9 @@ int ajustes_pausa_comentarios(void)   { return lig(AJ_PAUSA_COMENTARIOS); }
 int ajustes_pausa_notas(void)         { return lig(AJ_PAUSA_NOTAS); }
 int ajustes_pausa_elenco(void)        { return lig(AJ_PAUSA_ELENCO); }
 int ajustes_reacao_creditos(void)     { return lig(AJ_REACAO_CREDITOS); }
-int ajustes_plr_formato(void)         { int v = valor[AJ_PLR_FORMATO]; return v >= 0 && v < PLR_FMT_N ? v : PLR_FMT_ORIGINAL; }
+int ajustes_plr_codec(void)           { return lig(AJ_PLR_CODEC); }
+int ajustes_plr_formato_pos(void)     { int v = valor[AJ_PLR_FORMATO_POS]; return v >= 0 && v < PLR_POS_N ? v : PLR_POS_CANTO; }
+int ajustes_plr_formato(void)         { int v = valor[AJ_PLR_FORMATO]; return v >= 0 && v < PLR_FMT_N ? v : PLR_FMT_MARCAS; }
 int ajustes_pular_abertura(void)      { return lig(AJ_PULAR_ABERTURA); }
 int ajustes_pular_resumo(void)        { return lig(AJ_PULAR_RESUMO); }
 int ajustes_proximo_auto(void)        { return lig(AJ_PROXIMO_AUTO); }
@@ -6020,7 +6032,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_PAUSA_NOTAS: /* nem as notas */
     case AJ_PAUSA_ELENCO: /* nem o elenco */
     case AJ_PULAR_ABERTURA: case AJ_PULAR_RESUMO: case AJ_PROXIMO_AUTO: case AJ_PULAR_CREDITOS: case AJ_PROXIMO_CONTAGEM: /* idem: local desta TV */
-    case AJ_PLR_FORMATO: /* o web nao tem a fileira de formato */
+    case AJ_PLR_FORMATO: case AJ_PLR_FORMATO_POS: case AJ_PLR_CODEC: /* o web nao tem a fileira de formato */
     case AJ_SEEKR_LIGADO: case AJ_SEEKR_FITA: case AJ_SEEKR_AJUSTE: /* o web nao tem o Seekr */
     case AJ_MENU_EXPLORAR: case AJ_MENU_GUIA: case AJ_MENU_AGENDA: case AJ_MENU_PERFIL:
     // Linha do titulo: o web nao tem, e nenhuma conta pode desliga-las aqui.
@@ -7093,6 +7105,8 @@ static int inativa(int op) {
     case AJ_PAUSA_COMENTARIOS: return !lig(AJ_PAUSA_OVERLAY);
     case AJ_PAUSA_NOTAS: return !lig(AJ_PAUSA_OVERLAY);
     case AJ_PAUSA_ELENCO: return !lig(AJ_PAUSA_OVERLAY);
+    // A posicao da fileira de formato so vale com a fileira ligada.
+    case AJ_PLR_FORMATO_POS: case AJ_PLR_CODEC: return valor[AJ_PLR_FORMATO] == PLR_FMT_OFF;
     // Tela de descanso: o estilo depende de haver descanso; os titulos, de ele
     // ser a vitrine.
     case AJ_DESCANSO_ESTILO: return valor[AJ_ESMAECER] == 0;
@@ -7396,7 +7410,9 @@ static const char *ajudaOpcaoBase(int op) {
       snprintf(b, sizeof b, i18n("Nos créditos, uma contagem de %d s toca o próximo episódio enquanto eles ainda rolam. Voltar cancela e deixa os créditos terminarem. Desligado, o cartão espera você apertar OK."), ajustes_proximo_contagem());
       return b;
     }
-    case AJ_PLR_FORMATO: return "A fileira com o formato do vídeo e do áudio. Texto: embaixo do título, em negrito. Pílula: o mesmo texto dentro da pílula da hora. Marcas: Dolby Vision e Atmos com o logo. Selos: os selos do seu pacote, como na lista de fontes. Original: as marcas brancas no canto de cima, com o codec do áudio.";
+    case AJ_PLR_FORMATO: return "A fileira com o formato do vídeo e do áudio. Texto: em negrito, sem fundo. Pílula: em pílulas, como a da hora. Marcas: todas as marcas com o logo, como sempre foi. Selos: os selos do seu pacote, como na lista de fontes. Desligado: sem a fileira.";
+    case AJ_PLR_FORMATO_POS: return "Onde a fileira de formato aparece: embaixo do título ou no canto da tela, do lado oposto ao da hora, como era antes (Original).";
+    case AJ_PLR_CODEC: return "Acrescenta o codec da faixa (E-AC-3, DTS-HD MA, TrueHD...) ao idioma e aos canais na fileira de formato. Desligado, fica só o idioma e os canais.";
     case AJ_REACAO_CREDITOS: return "Nos créditos de um filme, ou no fim de uma temporada, um cartão pequeno pergunta o que você achou. Some sozinho em 8 s. Com o Trakt ligado, a resposta vira nota lá.";
     case AJ_PAUSA_COMENTARIOS: return "Com o painel ao pausar ligado, comentários públicos do Trakt sobre o que você está vendo passam em rodízio. Não precisa de conta; sem comentários ou sem rede, nada aparece.";
     case AJ_PAUSA_NOTAS: return "Com o painel ao pausar ligado, mostra as notas do título (IMDb, Rotten Tomatoes, Metacritic, TMDB e outras) embaixo do ano e da duração. Num episódio, só as notas do próprio episódio. Fonte sem nota não aparece.";
@@ -10359,7 +10375,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_LEG_FORCADA:
     case AJ_PAUSA_COMENTARIOS: case AJ_PAUSA_NOTAS: case AJ_PAUSA_ELENCO:
     case AJ_AUD_LINGUA: case AJ_AUD_LINGUA2: case AJ_PAUSA_OVERLAY: case AJ_PLR_CLASSIF: case AJ_TELA_ABERTURA: case AJ_ABERTURA_ADDON: case AJ_ABERTURA_FUNDO: case AJ_ABERTURA_ESTILO: case AJ_FONTE_MANUAL:
-    case AJ_PLR_FORMATO:
+    case AJ_PLR_FORMATO: case AJ_PLR_FORMATO_POS: case AJ_PLR_CODEC:
     case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_FONTE_ORDEM_ADDON: case AJ_SELOS_CORES: case AJ_FONTE_TOCAR_CONFERINDO: case AJ_FONTE_AQUECER: case AJ_FONTE_CONFERIR_VARIAS: case AJ_FONTE_PREPARAR: case AJ_FONTE_PRECARREGAR:
     case AJ_FONTE_GRUPO: case AJ_FONTE_GRUPO_SESSOES:
     case AJ_LINK_REUSAR: case AJ_LINK_PRAZO:

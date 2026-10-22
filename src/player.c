@@ -612,24 +612,29 @@ static const char *textoAudioAtual(void) {
   }
   return txt;
 }
-// IDIOMA E CANAIS DA FAIXA TOCANDO, o texto da fileira de selos do filme
-// ("Inglês 5.1"); o codec fica nas Estatisticas. O idioma vem da
+// IDIOMA E CANAIS DA FAIXA TOCANDO, o texto da fileira de formato ("Inglês
+// 5.1"), com o CODEC no meio quando o dono quer (Ajustes > Mostrar o codec do
+// audio, ligado de fabrica): "Inglês · E-AC-3 5.1 Atmos". O idioma vem da
 // etiqueta do arquivo ("und" e vazio ficam de fora); "" sem nenhum dos dois.
 static const char *rotuloAudioOsd(void) {
-  static char txt[80], chave[64];
+  static char txt[112], chave[160];
   const VideoFaixa *f = video_audio(video_audio_atual());
   int pt = cacheboost_ganho_estado() == CB_GANHO_PASSTHROUGH;
+  const char *cod = ajustes_plr_codec() ? textoAudioAtual() : "";   // ja traz canais, Atmos e "receptor"
   char k[sizeof chave];
-  snprintf(k, sizeof k, "%d|%s|%d|%d|%d", video_audio_atual(), f ? f->idioma : "", f ? f->canais : 0, pt,
-           ajustes_idioma());
+  snprintf(k, sizeof k, "%d|%s|%d|%d|%d|%s", video_audio_atual(), f ? f->idioma : "", f ? f->canais : 0, pt,
+           ajustes_idioma(), cod);
   if (strcmp(k, chave)) {
     const char *nome = (f && f->idioma[0] && strcasecmp(f->idioma, "und")) ? i18n(ling_nome(f->idioma)) : "";
     const char *ch = f ? audioinfo_canais(f->canais) : "";
     memcpy(chave, k, sizeof chave);
-    snprintf(txt, sizeof txt, "%s%s%s", nome, nome[0] && ch[0] ? " " : "", ch);
-    if (txt[0] && pt) {
-      size_t n = strlen(txt);
-      snprintf(txt + n, sizeof txt - n, " \xc2\xb7 %s", i18n("receptor"));
+    if (cod[0]) snprintf(txt, sizeof txt, "%s%s%s", nome, nome[0] ? " \xc2\xb7 " : "", cod);
+    else {
+      snprintf(txt, sizeof txt, "%s%s%s", nome, nome[0] && ch[0] ? " " : "", ch);
+      if (txt[0] && pt) {
+        size_t n = strlen(txt);
+        snprintf(txt + n, sizeof txt - n, " \xc2\xb7 %s", i18n("receptor"));
+      }
     }
   }
   return txt;
@@ -2106,7 +2111,10 @@ static void tocarFonteInterno(const char *url) {
   zerarAssistido();
   mkvass_video_aberto(comVideo);
   aspArmar();
-  if (!comVideo) erroSemVideo();
+  if (!comVideo) {
+    fontesonda_recusa(url, video_erro_texto(), 1);
+    erroSemVideo();
+  }
   // No PiP a fonte nova retoca o mesmo canto — o destino de tela cheia do
   // aplicarAspecto so vale com a tela aberta.
   if (mini) { PlrRect r = miniDestino();
@@ -6734,22 +6742,25 @@ static void desenharOsd(Uint32 agora, float a, float ac, const CatItem *c) {
   desenharOsdCorpo(agora, a, ac, c);
   ESCALA_FIM();
 }
-// FILEIRA DE FORMATO, embaixo do titulo ("4K · Dolby Vision · Atmos · Inglês
-// 5.1", como no pedido #4141 do NuvioTV). Vem do FLUXO, nao de constante: selo
-// que mente e pior que selo ausente, porque e nele que o dono confia para saber
-// se pegou a versao boa. O estilo e escolha do dono (Ajustes > Reproducao >
-// Formato no player): PILULA (o padrao: pilulas da ilha do relogio, como
-// no pedido), TEXTO (o mesmo em negrito, solto, sem fundo), MARCAS (Dolby
-// Vision e Atmos na arte branca de badges.h, o resto em texto), SELOS (os do
-// pacote configurado, como na folha de Fontes), ORIGINAL (as marcas no canto de
-// cima, desenhadas mais abaixo) e DESLIGADO. Depois das marcas, o idioma e os
-// canais da faixa tocando. Devolve a altura (0 = nada a mostrar); `medir` so
-// faz a conta.
+// FILEIRA DE FORMATO ("4K · Dolby Vision · Atmos · Inglês 5.1", como no pedido
+// #4141 do NuvioTV). Vem do FLUXO, nao de constante: selo que mente e pior que
+// selo ausente, porque e nele que o dono confia para saber se pegou a versao
+// boa. Dois ajustes do dono (Reproducao > Durante e depois): o ESTILO (Formato
+// no player) e a POSICAO (embaixo do titulo, ao lado dele ou no canto de cima,
+// do lado oposto ao da ilha da hora).
+//   TEXTO  em negrito, solto; PILULA  pilulas da ilha do relogio (a mesma
+//   medida, material e letra da hora e do "termina as"); MARCAS  todas as marcas
+//   na arte branca de badges.h, o que o OSD sempre mostrou (o padrao, no canto); SELOS  os do pacote
+//   configurado, como na folha de Fontes; DESLIGADO  sem a fileira.
+// Depois das marcas, o idioma e os canais da faixa tocando. Devolve a altura (0
+// = nada a mostrar) e, em `larg`, a largura; `medir` so faz a conta.
 #define FORMATO_FIL_H 42.0f
-#define FORMATO_PIL_H 48.0f
+#define FORMATO_PIL_H 56.0f   // PIL_H da ilha do relogio (plrilha.c)
 typedef struct { int tipo; int g; const char *ic; FormatoMarca f; TxtLinha l; float w; } FmtPeca;   // tipo: 0 texto, 1 arte, 2 selos do pacote; g: grupo da pilula (0 resolucao, 1 video/som, 2 idioma); ic: simbolo pequeno antes do texto (pilula)
-#define FMT_IC 26.0f
-#define FMT_IC_GAP 8.0f
+#define FMT_IC 24.0f       // o icone da ilha: 24 com 12 de folga
+#define FMT_IC_GAP 12.0f
+#define FMT_PIL_PAD 24.0f  // a margem de dentro da ilha
+#define FMT_PIL_SEP 25.0f  // 12 + filete de 1 + 12, como entre a hora e o "termina as"
 static void fmtPecaDesenhar(const FmtPeca *p, float x, float yy, float H, float mh, float a,
                             const char *txtPac, float wPac, float hPac) {
   if (p->ic) {
@@ -6760,17 +6771,18 @@ static void fmtPecaDesenhar(const FmtPeca *p, float x, float yy, float H, float 
   else if (p->tipo == 2) stream_selos_medidos(txtPac, x, yy + (H - hPac) * 0.5f, wPac + 1.0f, hPac, 0.953f, a, 0);
   else marca_formato(p->f, x, yy + (H - mh) * 0.5f, mh, 0.953f, 0.949f, 0.937f, a);
 }
-static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir) {
+static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir, float *larg) {
   const float mh = 34.0f;
   const int estilo = ajustes_plr_formato(), pil = estilo == PLR_FMT_PILULA;
-  const float gap = 18.0f, H = pil ? FORMATO_PIL_H : FORMATO_FIL_H;
+  const float gap = estilo == PLR_FMT_MARCAS ? 22.0f : 18.0f, H = pil ? FORMATO_PIL_H : FORMATO_FIL_H;
   FormatoMarca selos[5];
   FmtPeca p[8];
   int nSelos = 0, n = 0, i;
-  float wPac = 0.0f;
+  float wPac = 0.0f, total = 0.0f;
   const float hPac = 30.0f;
   char txtPac[160] = "";
-  if (estilo == PLR_FMT_OFF || estilo == PLR_FMT_ORIGINAL) return 0.0f;   // Original: so o canto de cima
+  if (larg) *larg = 0.0f;
+  if (estilo == PLR_FMT_OFF) return 0.0f;
   // A classe sai da LARGURA primeiro: filme 2.39:1 em 1080p chega como
   // 1920x800. A faixa do 1440p (2560) fica SEM selo: ausente e mais honesto
   // que errado.
@@ -6797,7 +6809,6 @@ static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir)
   if (marcaDtsAtual() >= 0)     selos[nSelos++] = (FormatoMarca)marcaDtsAtual();
   const char *rotAudio = ehCanal() ? "" : rotuloAudioOsd();
   if (!nSelos && !rotAudio[0]) return 0.0f;
-  if (medir) return H;
   // SELOS: os do pacote que o dono configurou (Ajustes > Selos), a mesma arte
   // da folha de Fontes, casados com o que foi MEDIDO (o codec da faixa entra
   // no casamento). Sem pacote, ou sem casar nada, cai no texto.
@@ -6816,9 +6827,9 @@ static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir)
   }
   if (wPac > 0.0f) { p[n].tipo = 2; p[n].g = 1; p[n].ic = NULL; p[n].w = wPac; n++; }
   else for (i = 0; i < nSelos; i++, n++) {
-    // Na arte so os logos da Dolby (Vision, Atmos): as de resolucao, HDR e DTS
-    // (contorno largo, "p" pequeno, letra pesada) destoavam umas das outras.
-    int arte = estilo == PLR_FMT_MARCAS && (selos[i] == FMT_DV || selos[i] == FMT_ATMOS);
+    // MARCAS: todas as marcas na arte branca de badges.h, como o OSD sempre
+    // mostrou (4K, HDR, Dolby Vision, Atmos, DTS).
+    int arte = estilo == PLR_FMT_MARCAS;
     p[n].f = selos[i];
     p[n].tipo = arte;
     p[n].ic = NULL;
@@ -6832,16 +6843,30 @@ static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir)
         p[n].ic = "marca_dolby";
         if (selos[i] == FMT_ATMOS) nome = "Atmos";
       }
-      p[n].l = txt_linha(TXT_G23B, nome, 243, 242, 239, 255);
+      p[n].l = txt_linha(pil ? TXT_ILHA_NOME : TXT_G23B, nome, 243, 242, 239, 255);
       p[n].w = (float)p[n].l.w;
     }
     if (p[n].ic) p[n].w += FMT_IC + FMT_IC_GAP;
   }
   if (rotAudio[0]) {
+    // Na pilula, o idioma tem o peso do "termina as": o segundo dado da ilha.
     p[n].tipo = 0; p[n].g = 2; p[n].ic = pil ? "aj_audio-lines" : NULL;
-    p[n].l = txt_linha(TXT_G22M, rotAudio, 243, 242, 239, pil ? 235 : 255);
+    p[n].l = pil ? txt_linha(TXT_G19M, rotAudio, 243, 242, 239, 153) : txt_linha(TXT_G22M, rotAudio, 243, 242, 239, 255);
     p[n].w = (float)p[n].l.w + (p[n].ic ? FMT_IC + FMT_IC_GAP : 0.0f); n++;
   }
+  // LARGURA TOTAL (a conta que decide se cabe ao lado do titulo).
+  if (pil) {
+    int k = 0;
+    while (k < n) {
+      int g = p[k].g, m = k;
+      float W = FMT_PIL_PAD * 2.0f;
+      while (m < n && p[m].g == g) { W += p[m].w + (m > k ? FMT_PIL_SEP : 0.0f); m++; }
+      total += (k > 0 ? (g == 2 ? 28.0f : 10.0f) : 0.0f) + W;
+      k = m;
+    }
+  } else for (i = 0; i < n; i++) total += p[i].w + (i ? gap : 0.0f);
+  if (larg) *larg = total;
+  if (medir) return H;
   // ENTRADA ESCALONADA: o rasterizador faz poucas linhas por quadro e os
   // selos ja chegariam um a um; a curva assume a cadencia (90 ms, 10 px).
   // Conta de quando o OSD APARECEU, nao da ultima tecla: navegar nos
@@ -6854,30 +6879,28 @@ static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir)
 #define ENTRADA(k) (1.0f - (1.0f - anim_clamp((t0 - (k) * 0.09f) / 0.26f, 0.0f, 1.0f)) * \
                            (1.0f - anim_clamp((t0 - (k) * 0.09f) / 0.26f, 0.0f, 1.0f)))
   if (pil) {
-    // PILULAS SEPARADAS, como no pedido #4141: [4K]  [Dolby Vision • Atmos]  |  [Inglês 5.1].
-    // Cada grupo e uma pilula da ilha do relogio; pontos dentro do grupo, um
-    // filete entre os selos e o idioma.
-    const float dot = 24.0f, gp = 18.0f;
+    // PILULAS SEPARADAS, como no pedido #4141: [4K]  [Dolby Vision | Atmos]  |  [Inglês 5.1].
+    // Cada grupo e uma pilula da ilha do relogio (mesmo material, 56 de altura,
+    // margem de 24); dentro do grupo, o filete da ilha entre um dado e o outro.
     int k = 0;
     while (k < n) {
       int g = p[k].g, m = k;
-      float W = gp * 2.0f, eg = ENTRADA(k);
-      while (m < n && p[m].g == g) { W += p[m].w + (m > k ? dot : 0.0f); m++; }
+      float W = FMT_PIL_PAD * 2.0f, eg = ENTRADA(k);
+      while (m < n && p[m].g == g) { W += p[m].w + (m > k ? FMT_PIL_SEP : 0.0f); m++; }
       if (k > 0) {
         if (g == 2) {
-          if (eg > 0.004f) gfx_cor((GfxRect){ x + 13.0f, y + (H - 26.0f) * 0.5f, 2.0f, 26.0f }, 0.0f, 1, 1, 1, 0.30f * ac * eg);
+          if (eg > 0.004f) plrui_sep(x + 13.0f, y + H * 0.5f + (1.0f - eg) * 10.0f, ac * eg);
           x += 28.0f;
         } else x += 10.0f;
       }
       if (eg > 0.004f)
         plrui_material_video((GfxRect){ x, y + (1.0f - eg) * 10.0f, W, H }, H * 0.5f, ac * eg);
-      { float xi = x + gp;
+      { float xi = x + FMT_PIL_PAD;
         for (i = k; i < m; i++) {
           float e = ENTRADA(i), yy = y + (1.0f - e) * 10.0f;
-          if (i > k && e > 0.004f)
-            gfx_cor((GfxRect){ xi - dot * 0.5f - 2.0f, yy + H * 0.5f - 2.0f, 4.0f, 4.0f }, 0.5f, 1, 1, 1, 0.45f * ac * e);
+          if (i > k && e > 0.004f) plrui_sep(xi - 13.0f, yy + H * 0.5f, ac * e);
           if (e > 0.004f) fmtPecaDesenhar(&p[i], xi, yy, H, mh, ac * e, txtPac, wPac, hPac);
-          xi += p[i].w + dot;
+          xi += p[i].w + FMT_PIL_SEP;
         } }
       x += W; k = m;
     }
@@ -6986,9 +7009,11 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
       }
       yBase -= 12.0f;
     }
-    // A fileira de formato entre a meta e o titulo (o logo sobe junto).
-    { float hf = fileiraFormato(agora, cx, 0.0f, ac, 1);
-      if (hf > 0.0f) { yBase -= hf; fileiraFormato(agora, cx, yBase, ac, 0); yBase -= 14.0f; } }
+    // A fileira de formato (Ajustes > Posicao do formato no player): EMBAIXO,
+    // entre a meta e o titulo (o logo sobe junto). A posicao "Original", o canto
+    // de cima, e desenhada la embaixo, junto da ilha.
+    { float hfF = ajustes_plr_formato_pos() == PLR_POS_ABAIXO ? fileiraFormato(agora, cx, 0.0f, ac, 1, NULL) : 0.0f;
+      if (hfF > 0.0f) { yBase -= hfF; fileiraFormato(agora, cx, yBase, ac, 0, NULL); yBase -= 14.0f; } }
     if (logo) {
       float ar = tex_aspecto(marca), w = 480.0f, h = ar > 0.0f ? w / ar : 150.0f;
       if (h > 150.0f) { h = 150.0f; w = h * ar; }
@@ -7110,75 +7135,15 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // canto da Posicao do relogio. O canal nao tem fim.
   plrilha_relogio(ac, ehCanal() ? -1.0 : vel_tempo_real((double)(duracaoSeg - posSeg), velMed.efetiva));
 
-  // Selos de formato no alto, no canto OPOSTO ao da ilha. Vem do FLUXO, nao
-  // de constante: selo que mente e pior que selo ausente, porque e nele que o
-  // dono confia para saber se pegou a versao boa. Brancos e soltos, sem chapa.
-  // Estilo "Original" (Ajustes > Formato no player): as marcas brancas no canto de
-  // cima e o codec do audio em texto, como era antes da fileira sob o titulo.
-  if (ajustes_plr_formato() == PLR_FMT_ORIGINAL)
-  {
-    // A classe sai da LARGURA primeiro: filme 2.39:1 em 1080p chega como
-    // 1920x800. A faixa do 1440p (2560) fica SEM selo: ausente e mais honesto
-    // que errado.
-    FormatoMarca selos[4];
-    int nSelos = 0;
-    { int w = video_largura(), h = video_altura();
-      if (w >= 3200 || h >= 1800)       selos[nSelos++] = FMT_4K;
-      else if (w >= 2400)               { /* 1440p: sem selo */ }
-      else if (w >= 1800 || h >= 1000)  selos[nSelos++] = FMT_1080;
-      else if (w >= 1200 || h >= 700)   selos[nSelos++] = FMT_720;
-      else if (w > 0)                   selos[nSelos++] = FMT_SD; }
-    // "Dolby Vision" so quando o PIPELINE devolveu DolbyVision no videoInfo
-    // (MEDIDO: um MKV anunciado como DV volta HDR10 nesta TV).
-    if (video_tem_dolby_vision())                  selos[nSelos++] = FMT_DV;
-    else if (!strcasecmp(video_hdr(), "HDR10"))    selos[nSelos++] = FMT_HDR10;
-#if defined(__EMSCRIPTEN__) || defined(NV_TPK)
-    else {
-      // AVPlay nao confirma HDR ativo: o selo e o da FONTE, nunca Dolby Vision
-      // (TV Samsung nao tem DV; badges_fonte_hdr so conhece HDR10+/HDR10/HDR).
-      const Stream *fonte = stream_item(stream_atual());
-      int hdr = fonte ? badges_fonte_hdr_marca(fonte->badges) : -1;
-      if (hdr >= 0) selos[nSelos++] = (FormatoMarca)hdr;
+  // POSICAO "canto" da fileira de formato (Ajustes > Posicao do formato no
+  // player): no alto, no canto OPOSTO ao da ilha, centrada na altura dela, no
+  // estilo escolhido. As outras posicoes saem do bloco do titulo, acima.
+  if (ajustes_plr_formato_pos() == PLR_POS_CANTO) {
+    float lw = 0.0f, hf = fileiraFormato(agora, 0.0f, 0.0f, ac, 1, &lw);
+    if (hf > 0.0f) {
+      float xx = plrilha_direita() ? NV_ILHA_MARGEM_D : NV_VTELA_W - NV_ILHA_MARGEM_D - lw;
+      fileiraFormato(agora, xx, NV_ILHA_Y + (56.0f - hf) * 0.5f + desce, ac, 0, NULL);
     }
-#endif
-    if (video_tem_atmos())        selos[nSelos++] = FMT_ATMOS;
-    if (marcaDtsAtual() >= 0)     selos[nSelos++] = (FormatoMarca)marcaDtsAtual();
-    // #293: o codec da faixa tocando vira texto na mesma fileira, depois dos
-    // selos (a marca do DTS/Atmos diz o FORMATO; isto diz o que a faixa e).
-    const char *rotAudio = ehCanal() ? "" : textoAudioAtual();
-    TxtLinha lAudio = { 0 };
-    if (rotAudio[0]) lAudio = txt_linha(TXT_G18M, rotAudio, 243, 242, 239, 255);
-    { const float mh = 34.0f, ySelos = NV_ILHA_Y + (56.0f - mh) * 0.5f;   // 56 = PIL_H da ilha do player
-      float w[4], tot = 0.0f, x;
-      int i, esq = plrilha_direita();
-      if (lAudio.w > 0) tot += (nSelos ? 22.0f : 0.0f) + (float)lAudio.w;
-      // ENTRADA ESCALONADA: o rasterizador faz poucas linhas por quadro e os
-      // selos ja chegariam um a um; a curva assume a cadencia (90 ms, 10 px).
-      // Conta de quando o OSD APARECEU, nao da ultima tecla: navegar nos
-      // botoes ou no seek fazia os selos sumirem e voltarem a cada toque
-      // (dono, 11/10). Quadro sem selos ha mais de 300 ms = OSD fechou.
-      static Uint32 selosDesde, selosVisto;
-      if (!selosVisto || agora - selosVisto > 300 || ac < 0.01f) selosDesde = agora;
-      selosVisto = agora;
-      float t0 = (float)(agora - selosDesde) / 1000.0f;
-      for (i = 0; i < nSelos; i++) { w[i] = marca_formato_largura(selos[i], mh); tot += w[i] + (i ? 22.0f : 0.0f); }
-      // Espelho da ilha do relogio (plrilha.c): mesma margem, centro na altura dela.
-      x = esq ? NV_ILHA_MARGEM_D : NV_VTELA_W - NV_ILHA_MARGEM_D - tot;
-      for (i = 0; i < nSelos; i++) {
-        float ts = anim_clamp((t0 - i * 0.09f) / 0.26f, 0.0f, 1.0f);
-        float e  = 1.0f - (1.0f - ts) * (1.0f - ts);
-        if (e > 0.004f)
-          marca_formato(selos[i], x, ySelos + desce + (1.0f - e) * 10.0f, mh,
-                        0.953f, 0.949f, 0.937f, ac * 0.82f * e);
-        x += w[i] + 22.0f;
-      }
-      if (lAudio.w > 0) {
-        float ts = anim_clamp((t0 - nSelos * 0.09f) / 0.26f, 0.0f, 1.0f);
-        float e  = 1.0f - (1.0f - ts) * (1.0f - ts);
-        if (e > 0.004f)
-          txt_desenhar_alpha(lAudio, x, ySelos + desce + (mh - (float)lAudio.h) * 0.5f + (1.0f - e) * 10.0f,
-                             ac * 0.82f * e);
-      } }
   }
 
   // POR CIMA DE TUDO: o painel de pos-reproducao e o mais recente na tela.
