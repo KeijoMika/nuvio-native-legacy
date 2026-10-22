@@ -4765,24 +4765,6 @@ static void *montar(void *u) {
       if (cortados)
         printf("[desc] %d catalogo(s) so respondem com busca e nao viram fileira\n", cortados);
       nDecl = w2; }
-    // CANAL E DO GUIA, NAO DA HOME. Ligar um addon de TV ao vivo no guia fazia
-    // o catalogo "channel" virar candidato (e, por ser addon novo, ganhar a
-    // vaga garantida) e aparecer na home sem a pessoa pedir. So fica quem ela
-    // ja escolheu na TV (fil_escolhida); o guia nao depende disto, ele le o
-    // manifesto do addon.
-    { int r2, w2 = 0, canais = 0;
-      for (r2 = 0; r2 < nDecl; r2++) {
-        if (ehCanal(decls[r2].tipo) && fil_escolhida(decls[r2].chave) < 0) {
-          // Keep installed TV catalogs visible in management, outside Home.
-          foraCotaGuardar(&decls[r2]);
-          canais++;
-          continue;
-        }
-        if (w2 != r2) decls[w2] = decls[r2];
-        w2++;
-      }
-      if (canais) printf("[desc] %d catalogo(s) de canal ficam no guia, nao na home\n", canais);
-      nDecl = w2; }
     printf("[desc] %d catalogos declarados pelos addons\n", nDecl);
     // FANTASMAS. Addon removido da conta deixava os catalogos dele na lista de
     // fileiras — e na home — ate o proximo login (@rawldon). Aqui TODOS os
@@ -8361,14 +8343,16 @@ static void *buscarEps(void *u) {
   if (!pedido) snprintf(epAlvoId, sizeof epAlvoId, "%s", orig->imdb);
   snprintf(meuId, sizeof meuId, "%s", orig->imdb);
   // Copia sob a trava antes de sair para a rede; nenhum ponteiro de quadro.
-  // CANAL NAO PASSA AQUI. O Cinemeta so conhece filme/serie por id do IMDb
-  // ("tt..."); id de canal e "cs:channel:<hash>". "ehFilme = tipo != series"
-  // tratava canal como filme, pedia /meta/movie/<id> com um id que o
-  // Cinemeta nunca teve, E o corte no primeiro ':' (abaixo, ao montar
-  // `serie`) reduzia TODO canal a "cs" — a mesma chave de cache para todos,
-  // entao o primeiro canal aberto "vazava" elenco/genero/nota para os
-  // seguintes. Medido: nenhum canal tem tipo "movie" nem "series" (#37).
-  if (ehCanal(orig->tipo)) { epConcluir(); return NULL; }
+  // Live channels use only their publishing addon, with the exact ID/type.
+  // Never resolve them through Cinemeta or the movie/series metadata pipeline.
+  if (ehCanal(orig->tipo)) {
+    int addon = addonDaOrigem(orig->origem);
+    char *meta = addon >= 0 ? metaDoAddonT(addon, orig->tipo, orig->imdb, 8) : NULL;
+    if (meta && metaValida(meta) && !epPedidoSaiu())
+      metaPublicarPrimario(orig, meta, alvoItem);
+    free(meta);
+    epConcluir(); return NULL;
+  }
   // PERSONAL SERVER ITEM: the server is the only source of its page. No
   // Cinemeta, TMDB or addon /meta gets an opaque server id.
   if (jfid_e(orig->imdb)) {

@@ -952,9 +952,14 @@ static void montar(int n) {
       break; }
     default: {  // GRADE: preserva o recuo da rail fixa (#359).
       int cols = VT_COLS;
+      CatItem first;
+      int channel = n > 0 && viewItem(0, &first) &&
+        (!strcmp(first.tipo, "tv") || !strcmp(first.tipo, "channel") ||
+         !strcmp(first.tipo, "channels") || !strcmp(first.tipo, "live") || !strcmp(first.tipo, "iptv"));
+      float h = channel ? VT_CARD_W * 9.0f / 16.0f : VT_CARD_H;
       for (i = 0; i < n; i++)
-        cel(i, (i % cols) * (VT_CARD_W + VT_GAP_X), (i / cols) * (VT_CARD_H + VT_GRADE_GAP_Y),
-            VT_CARD_W, VT_CARD_H, i / cols, i % cols);
+        cel(i, (i % cols) * (VT_CARD_W + VT_GAP_X), (i / cols) * (h + VT_GRADE_GAP_Y),
+            VT_CARD_W, h, i / cols, i % cols);
       break; }
   }
   celN = n; celLay = lay;

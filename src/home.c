@@ -279,9 +279,8 @@ int home_pediu_pessoa_social(CatItem *saida) {
 }
 int home_pediu_social(void) { int v=pedidoSocial;pedidoSocial=0;return v; }
 
-// Pedido de abrir o GUIA DE CANAIS: o "Ver tudo" de uma fileira de canal nao
-// leva a grade de cartazes — leva ao guia, e o OK num cartao de canal abre o
-// guia ja focado nele. `guiaId` guarda o id para guia_focar_id.
+// Guide request retained for the navigation API. Addon catalog cards use
+// the normal detail and See all paths; Guide remains its own screen.
 static int pedidoGuia;
 static char guiaId[80];
 static int fileiraEhCanal(const Fileira *f) {
@@ -2621,20 +2620,10 @@ static void home_evento_(const SDL_Event *e) {
           vertudo_colecao(col_folder(fileiras[foco.fileira].folders[foco.coluna]));
         }
       } else if (noVerTudo) {
-        if (fileiraEhCanal(&fileiras[foco.fileira])) {
-          pedidoGuia = 1; guiaId[0] = 0;
-        } else {
-          vertudo_abrir(fileiras[foco.fileira].base, fileiras[foco.fileira].catTipo,
-                        fileiras[foco.fileira].catId, fileiras[foco.fileira].titulo);
-        }
+        vertudo_abrir(fileiras[foco.fileira].base, fileiras[foco.fileira].catTipo,
+                      fileiras[foco.fileira].catId, fileiras[foco.fileira].titulo);
       } else if (dur >= NV_HOLD_MS) {
         abrirMenuCartaz();
-      } else if (fileiraEhCanal(&fileiras[foco.fileira])) {
-        // OK num cartao de canal abre o guia focado nele — o canal nao tem
-        // pagina de detalhe que ajude: nao ha episodios, elenco ou "sobre".
-        const CatItem *ci = cat_item_exato(fileiraItemIndice(&fileiras[foco.fileira], foco.coluna));
-        pedidoGuia = 1;
-        snprintf(guiaId, sizeof guiaId, "%s", ci ? ci->imdb : "");
       } else {
         // OK num card da retomada TOCA de onde parou quando o ajuste pede
         // (issue #93): abrirTitulo seguido de detail_pedir_reproduzir cai no
@@ -3212,6 +3201,7 @@ static void sincronizarFileiras(void) {
     int t = fil_tipo(fileiras[i].chave);
     fileiras[i].escala = fil_escala(fileiras[i].chave);
     fileiras[i].fator = fil_tipo_fator(t);
+    if (fileiraEhCanal(&fileiras[i])) fileiras[i].tipo = FILEIRA_LARGA;
     fileiras[i].tipoAuto = fileiras[i].tipo;
     fileiras[i].formaAuto = fileiras[i].forma;
     // Grupo de colecao: TODOS os estilos do catalogo valem, com a pasta no
