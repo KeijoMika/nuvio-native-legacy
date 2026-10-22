@@ -30,6 +30,7 @@ internal class LivePlaylistDataSource private constructor(
         private val revalidation: DataSource.Factory,
         private val clock: () -> Long = { SystemClock.elapsedRealtime() },
         private val report: (String) -> Unit = {},
+        internal val liveTsUri: Uri? = null,
     ) : DataSource.Factory {
         private data class Seen(var snapshot: Snapshot, var progressAt: Long, var retryAt: Long = -60_000L)
         private val seen = LinkedHashMap<String, Seen>()
@@ -105,6 +106,8 @@ internal class LivePlaylistDataSource private constructor(
         }
     }
 
+    private var liveTsSpec: DataSpec? = null
+    private var connectionHasData = false
     private var prefix: ByteArrayInputStream? = null
     private var upstreamOpen = false
     private var resolvedUri: Uri? = null
@@ -116,8 +119,16 @@ internal class LivePlaylistDataSource private constructor(
     override fun open(dataSpec: DataSpec): Long {
         upstreamOpen = true
         val length = upstream.open(dataSpec)
+        liveTsSpec = dataSpec.takeIf {
+            it.uri == factory.liveTsUri && it.httpMethod == DataSpec.HTTP_METHOD_GET &&
+                it.position == 0L && it.length == C.LENGTH_UNSET.toLong()
+        }
+        connectionHasData = false
         resolvedUri = upstream.uri
         headers = upstream.responseHeaders
+        // A live TS connection is one portion of an endless stream, even when
+        // the server advertises Content-Length. Keep the extractor loading.
+        if (liveTsSpec != null) return C.LENGTH_UNSET.toLong()
         val http = dataSpec.uri.scheme.equals("http", true) || dataSpec.uri.scheme.equals("https", true)
         val manifest = dataSpec.uri.path?.endsWith(".m3u8", true) == true || headers.any { (key, values) ->
             key.equals("Content-Type", true) && values.any {
@@ -146,17 +157,42 @@ internal class LivePlaylistDataSource private constructor(
             if (read >= 0) return read
             prefix = null
         }
-        return if (upstreamOpen) upstream.read(buffer, offset, length) else C.RESULT_END_OF_INPUT
+        if (!upstreamOpen) return C.RESULT_END_OF_INPUT
+        var count = upstream.read(buffer, offset, length)
+        val spec = liveTsSpec
+        if (count == C.RESULT_END_OF_INPUT && spec != null) {
+            if (!connectionHasData) throw IOException("Empty live TS connection")
+            upstreamOpen = false
+            upstream.close()
+            upstreamOpen = true
+            // Reconnect the signed origin, not the expiring redirect or a byte
+            // range into the old broadcast. Preserve headers and request context.
+            upstream.open(spec)
+            resolvedUri = upstream.uri
+            headers = upstream.responseHeaders
+            connectionHasData = false
+            count = upstream.read(buffer, offset, length)
+            if (count == C.RESULT_END_OF_INPUT) throw IOException("Empty live TS reconnect")
+        }
+        if (count > 0) connectionHasData = true
+        return count
     }
 
     override fun close() {
         prefix = null
+        liveTsSpec = null
+        connectionHasData = false
         resolvedUri = null
         headers = emptyMap()
         if (upstreamOpen) { upstreamOpen = false; upstream.close() }
     }
 
     companion object {
+        // Only the Xtream continuous live endpoint; never VOD or HLS segments.
+        internal fun isLiveTs(uri: Uri): Boolean =
+            (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) &&
+                uri.path?.matches(Regex("/live/[^/]+/[^/]+/[^/]+\\.ts", RegexOption.IGNORE_CASE)) == true
+
         private const val MAX_MANIFEST_BYTES = 256 * 1024
         private fun readBounded(source: DataSource, check: () -> Unit = {}): ByteArray {
             val out = ByteArrayOutputStream()
