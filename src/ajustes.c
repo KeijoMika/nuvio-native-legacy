@@ -3084,6 +3084,9 @@ float ajustes_tamanho_ajustes(void) {
 // The phone always uses List. Keep the stored TV preference unchanged.
 static int ajLayoutSelecionavel(void) { return !telefoneui_ativo(); }
 static int ajOpcaoDisponivel(int op) {
+  // These editors use active-profile stores rather than the edited value array.
+  if (edPerfil && (ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR ||
+                   op == AJ_FONTE_REGEX_PADRAO || op == AJ_FONTE_REGEX_MODELO)) return 0;
   if (op == AJ_AMPLIAR_UI)
     return painel4k() && !telefoneui_ativo();
   if (op == AJ_ARTE_TOM) return valor[AJ_TEMA] == AJ_TEMA_DINAMICA;

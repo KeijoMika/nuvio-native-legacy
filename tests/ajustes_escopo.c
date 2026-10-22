@@ -56,6 +56,24 @@ static void blobIgnoraLocal(void) {
   ajustes_mesclar_blob(blob, &saida);
   assert(!saida || (strstr(saida, "true") && !strstr(saida, "false")));
   free(saida);
+  // C snapshots must omit local values and ignore them in legacy snapshots.
+  char *extras = ajustesExtras();
+  assert(extras);
+  for (int i = 0; i < AJ_N; i++) if (ajustes_escopo(i) == 3) {
+    char key[128];
+    snprintf(key, sizeof key, "\"c_%s\"", CHAVE[i]);
+    assert(!strstr(extras, key));
+    int before = valor[i];
+    snprintf(blob, sizeof blob, "{\"c_settings_v1\":{\"values\":{%s:%d}}}", key, before ? 0 : 1);
+    ajustesExtrasAplicar(blob, "{}");
+    assert(valor[i] == before);
+  }
+  free(extras);
+  int hero = valor[AJ_HERO];
+  snprintf(blob, sizeof blob, "{\"c_settings_v1\":{\"values\":{\"c_%s\":%d}}}", CHAVE[AJ_HERO], !hero);
+  ajustesExtrasAplicar(blob, "{}");
+  assert(valor[AJ_HERO] == !hero);
+  valor[AJ_HERO] = hero;
 }
 
 static void migracao(void) {
@@ -167,6 +185,15 @@ static void edicao(void) {
   assert(ajustes_edicao_iniciar(1) == 0);   // o ativo nao se edita como "outro"
   assert(ajustes_edicao_iniciar(2) == 1 && ajustes_edicao_perfil() == 2);
   assert(valor[AJ_VIDRO] == 0 && valor[AJ_HERO] == 0 && valor[AJ_RELOGIO] == 1);
+  // Active-profile file editors must be unreachable while editing another profile.
+  for (int op = AJ_LEG1_TAMANHO; op <= AJ_LEG1_COR_BORDA; op++) {
+    assert(!ajOpcaoDisponivel(op));
+    assert(!definirValorDireto(op, 1));
+  }
+  assert(!ajOpcaoDisponivel(AJ_LEG1_RESTAURAR));
+  assert(!ajOpcaoDisponivel(AJ_FONTE_REGEX_PADRAO));
+  assert(!ajOpcaoDisponivel(AJ_FONTE_REGEX_MODELO));
+  assert(!definirValorDireto(AJ_FONTE_REGEX_MODELO, 1));
   assert(ajustes_copiar_perfil(2, 3) == -1);   // sem copia no meio da edicao
   valor[AJ_HERO] = 1; valor[AJ_RELOGIO] = 0;
   assert(gravar());

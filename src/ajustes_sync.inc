@@ -1,6 +1,7 @@
 // Portable C preferences have their own versioned section. Web keys keep
 // their original types; unknown web features survive the textual merge.
 static int ajustePortavel(int op) {
+  if (somenteDesteAparelho(op)) return 0;
   if (OPCOES[op].tipo != OP_ESCOLHA && OPCOES[op].tipo != OP_NUMERO) return 0;
   if (ajLegendaPrincipal(op)) return 1;
   if (!CHAVE[op] || CHAVE[op][0] == '-') return 0;
