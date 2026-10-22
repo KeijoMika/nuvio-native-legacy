@@ -784,7 +784,7 @@ int main(void) {
     pedidosAnime[0] = 0;
     n = addons_consultar("kitsu:7442:5", "series", "https://aio.test", 1, NULL, NULL, &l);
     conferir("AIOStreams: kitsu + tt, tres arquivos (o repetido uma vez)", n, 3);
-    conferir("AIOStreams: um pedido por familia", strstr(pedidosAnime, "series/mal") != NULL, 0);
+    conferir("AIOStreams: queries declared MAL namespace", strstr(pedidosAnime, "series/mal") != NULL, 1);
     free(l); }
 
   remove(caminho);

@@ -2413,20 +2413,19 @@ static int streamAceita(const AddonPedido *a, const char *id) {
   return 0;
 }
 
-// Ids a mais para o addon `a`: no maximo um por FAMILIA (IMDb, site de anime)
-// que ele declara aceitar e que a do id do item nao cobre (`cobreOriginal` = o
-// addon aceita o id do item). Devolve quantos em `out`.
+// Query each declared mapped namespace once; ARM returns unique alternate IDs.
 static int streamIdsExtras(Consulta *c, const AddonPedido *a, int cobreOriginal,
                            char (*out)[ARM_ALT_TAM]) {
   struct ArmFontes *arm = c->arm;
-  int familia[2] = { 0, 0 }, n = 0, k;
+  int n = 0, k;
   if (!arm || a->nStreamPref <= 0) return 0;
-  if (cobreOriginal) familia[idbase_e_imdb(c->id) ? 0 : 1] = 1;
-  // Sem nenhum prefixo de familia que falte, nem pergunta ao ARM.
+
+  // Avoid ARM when the addon accepts only the original namespace.
   { int precisa = 0;
-    if (!familia[0] && streamAceita(a, "tt1") == 1) precisa = 1;
-    for (k = 0; k < ARM_COLS && !familia[1] && !precisa; k++) {
+    if ((!cobreOriginal || !idbase_e_imdb(c->id)) && streamAceita(a, "tt1") == 1) precisa = 1;
+    for (k = 0; k < ARM_COLS && !precisa; k++) {
       char amostra[32];
+      if (cobreOriginal && !strncmp(c->id, arm_prefixo(k), strlen(arm_prefixo(k)))) continue;
       snprintf(amostra, sizeof amostra, "%s1", arm_prefixo(k));
       if (streamAceita(a, amostra) == 1) precisa = 1;
     }
@@ -2441,10 +2440,8 @@ static int streamIdsExtras(Consulta *c, const AddonPedido *a, int cobreOriginal,
     }
   }
   pthread_mutex_unlock(&arm->trava);
-  for (k = 0; k < arm->n && n < 2; k++) {
-    int f = idbase_e_imdb(arm->alt[k]) ? 0 : 1;
-    if (familia[f] || streamAceita(a, arm->alt[k]) != 1) continue;
-    familia[f] = 1;
+  for (k = 0; k < arm->n && n < ARM_COLS + 1; k++) {
+    if (!strcmp(c->id, arm->alt[k]) || streamAceita(a, arm->alt[k]) != 1) continue;
     snprintf(out[n++], ARM_ALT_TAM, "%s", arm->alt[k]);
   }
   return n;
@@ -2599,7 +2596,7 @@ typedef struct {
   const AddonPedido *a;
   Uint32 inicio;
   int prazoS, ac, nExtra, xi;
-  char extra[2][ARM_ALT_TAM];
+  char extra[ARM_COLS + 1][ARM_ALT_TAM];
   Stream *l;
   int n, respondeu;
 } IdsExtras;
@@ -2685,7 +2682,7 @@ static void *fioFontes(void *u) {
     // outros prefixos e nao o do item, vai o MESMO episodio no id que ele fala
     // (streamIdsExtras); sem traducao, o id do item como sempre.
     const char *primario = c->id;
-    char extra[2][ARM_ALT_TAM];
+    char extra[ARM_COLS + 1][ARM_ALT_TAM];
     int nExtra = 0, xi = 0, ac = -1;
     int vod = !strcmp(c->tipo, "movie") || !strcmp(c->tipo, "series");
     if (vod) ac = streamAceita(origem, c->id);
