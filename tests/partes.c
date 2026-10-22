@@ -52,6 +52,12 @@ int main(void) {
     PartesLista a = {0};
     ok(partes_ler_item(air, NULL, 0, &a) && a.airlock == 1, "\"airlocked\":true reads as Airlock on");
     ok(partes_ler_item(nao, NULL, 0, &a) && a.airlock == 0, "\"airlocked\":false reads as Airlock off");
+    const char *flags[] = {"1", "\"true\"", "0", "\"false\"", "10"};
+    for (int i = 0; i < 5; i++) {
+      char item[160];
+      snprintf(item, sizeof item, "{\"id\":7,\"airlocked\":%s,\"files\":[{\"id\":10,\"name\":\"part.mkv\",\"size\":300000000}]}", flags[i]);
+      ok(partes_ler_item(item, NULL, 0, &a) && a.airlock == (i < 2), "Airlock accepts numeric/string flags without treating 10 as true");
+    }
     partes_lista_limpar(&a); }
   ok(l.n == 4 && strstr(l.arq[0].nome, "01") && strstr(l.arq[1].nome, "02") && strstr(l.arq[2].nome, "03"),
      "parts in natural order (01, 02, 03)");

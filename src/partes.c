@@ -285,7 +285,7 @@ int partes_ler_item(const char *item, const char *fim, int usenet, PartesLista *
   partes_lista_limpar(l);
   l->atual = -1;
   l->usenet = usenet;
-  { const char *a = raiz(item, fim, "airlocked"); l->airlock = a && !strncmp(a, "true", 4); }
+  { const char *a = raiz(item, fim, "airlocked"); l->airlock = a && (!strncmp(a, "true", 4) || (*a == '1' && (a[1] == ',' || a[1] == '}' || isspace((unsigned char)a[1]))) || !strncmp(a, "\"true\"", 6)); }
   l->item = (int)numRaiz(item, fim, "id", -1);
   if (l->item <= 0) return 0;
   { char h[64] = "";
@@ -924,7 +924,7 @@ static void publicar(const PedidoLista *pd, const PartesLista *l) {
 // Uma leitura de rede por vez: quem chega durante uma leitura espera e usa o
 // que ela trouxe.
 #define LISTA_VALIDADE_MS 120000u
-typedef struct { char *corpo; int st; unsigned em, conta; int fresco; } ListaCache;
+typedef struct { char *corpo; int st; unsigned em, conta; int fresco, renovar; } ListaCache;
 static ListaCache lcache[2];
 static pthread_mutex_t lcTrava = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t lcRede = PTHREAD_MUTEX_INITIALIZER;
@@ -953,6 +953,7 @@ static char *listaConta(int usenet, int pagina, int fresco, int *st, int *origem
   if (origem) *origem = 1;
   pthread_mutex_lock(&lcRede);
   pthread_mutex_lock(&lcTrava);
+  if (pagina == 0 && lcache[usenet].renovar) fresco = 1;
   r = pagina == 0 ? copiaCache(&lcache[usenet], fresco, st) : NULL;
   pthread_mutex_unlock(&lcTrava);
   if (r) { pthread_mutex_unlock(&lcRede); return r; }
@@ -971,7 +972,7 @@ static char *listaConta(int usenet, int pagina, int fresco, int *st, int *origem
       free(lcache[usenet].corpo);
       lcache[usenet].corpo = c; lcache[usenet].st = s;
       lcache[usenet].em = msAgora(); lcache[usenet].fresco = fresco;
-      lcache[usenet].conta = conta;
+      lcache[usenet].conta = conta; lcache[usenet].renovar = 0;
     }
     pthread_mutex_unlock(&lcTrava);
   }
@@ -1497,14 +1498,19 @@ static int airEstado = -2;             // ver partes_airlock_estado
 static int airLigado;
 static char airDetalhe[160];
 
-// A copia na memoria e o corpo guardado da lista passam a dizer o que o
-// TorBox acabou de aceitar; sem isto o proximo segurar mostraria o estado velho.
+// Update memo entries and bypass TorBox's stale list cache on the next fetch.
 static void airlockNaMemoria(int usenet, int item, int ligar) {
   pthread_mutex_lock(&trava);
   for (int i = 0; i < PARTES_MEMO; i++)
     if (memo[i].chave[0] && memo[i].l.item == item && memo[i].l.usenet == usenet) memo[i].l.airlock = ligar;
   pthread_mutex_unlock(&trava);
-  listaEsquecer();
+  pthread_mutex_lock(&lcRede);
+  pthread_mutex_lock(&lcTrava);
+  free(lcache[usenet].corpo);
+  memset(&lcache[usenet], 0, sizeof lcache[usenet]);
+  lcache[usenet].renovar = 1;
+  pthread_mutex_unlock(&lcTrava);
+  pthread_mutex_unlock(&lcRede);
 }
 
 static void *fioAirlock(void *u) {

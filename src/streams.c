@@ -4743,7 +4743,11 @@ static int partesEvento(const SDL_Event *e) {
   k = e->key.keysym.sym;
   if (k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE || k == SDLK_DELETE) {
     // Nas copias abertas pela linha "Escolher outra copia": volta aos arquivos.
-    if (ptCopias && ptL.estado == PARTES_PRONTO) { ptCopias = 0; ptMontar(); ptFoco = ptPrimeira(); ptRolAlvo = 0; return 1; }
+    if (ptCopias && ptL.estado == PARTES_PRONTO) {
+      ptCopias = 0; ptMontar(); ptFoco = ptPrimeira();
+      for (int r = 0; r < ptNLinhas; r++) if (ptLinhas[r].tipo == PR_ESCOLHER) { ptFoco = r; break; }
+      ptRolAlvo = 0; return 1;
+    }
     if (ptSemCopias) { ptSemCopias = 0; return 1; }
     ptAberto = 0; partes_cancelar(); return 1;
   }
@@ -5523,8 +5527,7 @@ static void desenhaPartes(float x, float w, int ptr, Uint32 agora) {
       if (ln->tipo == PR_AIRLOCK) {
         // A MESMA LINHA de "Escolher outra copia" (64 px, so o titulo); o que o
         // TorBox recusou aparece em vermelho na direita.
-        const int aqui = ptAirOcupado && ptAirItem == ptL.item && ptAirUsenet == ptL.usenet;   // o pedido em curso e DESTE item
-        const char *tit = aqui ? "Mudando o Airlock…" : ptL.airlock ? "Tirar do Airlock" : "Guardar no Airlock";
+        const char *tit = ptAirOcupado ? "Mudando o Airlock…" : ptL.airlock ? "Tirar do Airlock" : "Guardar no Airlock";
         TxtLinha tl = txt_linha_corta(TXT_PAINEL_ITEM, tit, sel ? 250 : 220, sel ? 250 : 220, sel ? 248 : 218, 255, iw - 40);
         txt_desenhar_alpha(tl, ix, ry + 16, a);
         if (ptAirMsg[0]) {

@@ -5,13 +5,13 @@
 #include "../src/partes.c"
 
 static unsigned account = 1;
-static int requests, switchDuringRequest, paginated;
+static int requests, switchDuringRequest, paginated, lastFresh;
 #define REQUESTED_HASH "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 unsigned debrid_tb_geracao(void) { return account; }
 int debrid_tb_disponivel(void) { return 1; }
 char *debrid_tb_mylist(int u, int id, int p, int f, int *st) {
   (void)u; (void)id; (void)p; (void)f;
-  requests++; *st = 200;
+  requests++; lastFresh = f; *st = 200;
   if (switchDuringRequest) account++;
   if (paginated) {
     if (p == 0) {
@@ -51,6 +51,12 @@ int main(void) {
   r = listaConta(0, 0, 0, &st, NULL);
   assert(r && requests == 2); free(r);
   puts("PASS account/key change bypasses account-list cache");
+  airlockNaMemoria(0, 42, 1);
+  r = listaConta(0, 0, 0, &st, NULL);
+  assert(r && requests == 3 && lastFresh == 1); free(r);
+  r = listaConta(0, 0, 0, &st, NULL);
+  assert(r && requests == 3); free(r);
+  puts("PASS Airlock edit bypasses server cache once, then reuses the fresh list");
 
   static Stream source;
   static PartesLista list, out;
