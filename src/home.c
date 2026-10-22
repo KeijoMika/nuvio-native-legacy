@@ -28,6 +28,7 @@
 #include "fileiras.h"
 #include "curadoria.h"
 #include "continuar.h"
+#include "proximo.h"
 #include "vertudo.h"
 #include "ctxmenu.h"
 #include "marco.h"
@@ -1398,7 +1399,19 @@ static const CatItem *cat_item_exato(int i) {
 // (404 do metahub) cai na arte do titulo, como no destaque.
 static const char *arte_card_retomada(const CatItem *item) {
   if (item && ajustes_cw_thumb_episodio() && !strcmp(item->tipo, "series")) {
-    const char *ep = artehero_url_episodio(item);
+    CatItem copia = *item;
+    ProxSugestao prox;
+    const char *ep;
+    // Match continuar_desenhar: a completed card advertises the next episode.
+    if (item->progresso >= ajustes_cw_concluido()) {
+      int idx = cat_indice_titulo(item->imdb, cat_indice_por_imdb(item->imdb));
+      if (idx >= 0 && prox_seguinte(item, cat_episodio(idx, 0), cat_n_episodios(idx),
+                                  ajustes_cw_concluido(), (long long)time(NULL) * 1000LL, &prox)) {
+        copia.temporada = prox.temporada;
+        copia.episodio = prox.episodio;
+      }
+    }
+    ep = artehero_url_episodio(&copia);
     if (ep && !tex_falhou(ep))
       return posterprov_card_formato(item->origem, item->imdb, item->tmdb, item->tipo, ep, 1);
   }
