@@ -127,22 +127,27 @@ if mode in ('all','preempt'):
     print('PASS replacement range preempts open movie GET',flush=True)
     if mode=='preempt':sys.exit(0)
 if mode in ('all','stalled-preempt'):
-    origin_stalled.clear();release_stall.clear()
-    p,url=daemon('/stall-after-start',64)
-    old=None
-    try:
-        assert origin_stalled.wait(2), 'origin did not stall after startup'
-        old=urllib.request.urlopen(urllib.request.Request(url,headers={'Range':'bytes=0-'}),timeout=2)
-        assert old.read(65536)==content(0,65536)
-        # Old response exhausts cached bytes; replacement must wake its reader.
-        begun=time.monotonic()
-        status,h,b=request(url,TOTAL-1024,TOTAL-1)
-        assert status==206 and b==content(TOTAL-1024,1024)
-        assert time.monotonic()-begun<2, 'replacement range starved behind stalled origin read'
-    finally:
-        if old:old.close()
-        close(p);release_stall.set()
-    print('PASS replacement range interrupts stalled origin read',flush=True)
+    for offset in [TOTAL-1024,512*1024]:
+        origin_stalled.clear();release_stall.clear()
+        p,url=daemon('/stall-after-start',64)
+        old=None
+        try:
+            assert origin_stalled.wait(2), 'origin did not stall after startup'
+            old=urllib.request.urlopen(urllib.request.Request(url,headers={'Range':'bytes=0-'}),timeout=2)
+            assert old.read(65536)==content(0,65536)
+            # Cached metadata must reuse the stalled transfer without restarting it.
+            before=len(requests)
+            status,h,b=request(url,1024,2047)
+            assert status==206 and b==content(1024,1024) and len(requests)==before
+            # Near-forward replacements inside FX_SKIP must also cancel the stall.
+            begun=time.monotonic()
+            with urllib.request.urlopen(urllib.request.Request(url,headers={'Range':f'bytes={offset}-{offset+1023}'}),timeout=3) as f:
+                assert f.status==206 and f.read()==content(offset,1024)
+            assert time.monotonic()-begun<2, 'replacement range starved behind stalled origin read'
+        finally:
+            if old:old.close()
+            close(p);release_stall.set()
+    print('PASS distant and near-forward replacements interrupt stalled origin; cached metadata reuses it',flush=True)
     if mode=='stalled-preempt':sys.exit(0)
 for mib in [64,128,256]:
     p,url=daemon('/movie.mkv',mib)

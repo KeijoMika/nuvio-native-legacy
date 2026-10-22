@@ -511,7 +511,7 @@ static int read_fluxo_pending(void *opaque,uint8_t *dst,int n,int pending_fd) {
     if(e->fx_req<0 && e->fx_eof && e->pos>=e->fx_hi) { pthread_mutex_unlock(&e->range_lock); return AVERROR_EOF; }
     if(e->fx_req<0 && e->fx_err) { pthread_mutex_unlock(&e->range_lock); return AVERROR(EIO); }
     /* Outside what the stream has or will soon have: start over there. */
-    if(e->fx_req<0 && (e->pos<e->fx_lo || e->pos>e->fx_hi+FX_SKIP)) {
+    if(e->fx_req<0 && (e->pos<e->fx_lo || e->pos>e->fx_hi+(e->source_stream?0:FX_SKIP))) {
       e->fx_req=e->pos;
       if(e->source_stream)__atomic_store_n(&e->source_cancel,1,__ATOMIC_RELAXED);
       pthread_cond_broadcast(&e->range_wake);
@@ -539,7 +539,7 @@ static int64_t seek_fluxo(void *opaque,int64_t offset,int whence) {
   if (base<0 || (offset>0 && base>INT64_MAX-offset) || (offset<0 && offset<-base)) { pthread_mutex_unlock(&e->range_lock); return AVERROR(EINVAL); }
   e->pos=base+offset;
   if(e->source_stream && e->fx_thread_ok &&
-     (e->pos<e->fx_lo || e->pos>e->fx_hi+FX_SKIP)) {
+     (e->pos<e->fx_lo || e->pos>e->fx_hi)) {
     e->fx_req=e->pos;
     __atomic_store_n(&e->source_cancel,1,__ATOMIC_RELAXED);
   }
