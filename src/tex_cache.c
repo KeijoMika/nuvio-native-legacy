@@ -474,12 +474,14 @@ static SDL_cond *condLivre;
 // vez por item retirado, nao por quadro. Reordenar a fila inteira custaria o
 // mesmo e perderia a ordem de chegada dos demais, que e o que faz a fileira
 // aparecer da esquerda para a direita em vez de embaralhada.
+static int quente(const Item *it);
 static int tirarFila(int *f, int *ini, int fim) {
-  int p = *ini, achou = -1, idx, nivel = 0;
+  int p = *ini, achou = -1, idx, nivel = -1;
   // NIVEL 2 = LOGO DE TITULO, 1 = tela cheia, 0 = o resto. O primeiro de maior
   // nivel vence; empate fica na ordem de chegada.
   while (p != fim) {
-    if (itens[f[p]].urgente > nivel) { achou = p; nivel = itens[f[p]].urgente; }
+    int prioridade = quente(&itens[f[p]]) * 3 + itens[f[p]].urgente;
+    if (prioridade > nivel) { achou = p; nivel = prioridade; }
     p = (p + 1) % MAX_FILA;
   }
   if (achou < 0) {
@@ -880,10 +882,11 @@ static volatile Uint32 pressaoAte;
 static int pressaoAtiva(void) {
   if (pressaoPct >= 100) return pressaoLivrePct < 100;
   if ((int)(SDL_GetTicks() - pressaoAte) >= 0) {
-    pressaoPct = 100;
-    printf("[tex] timed memory trim expired\n");
+    pressaoPct = pressaoPct <= 25 ? 50 : pressaoPct <= 50 ? 75 : 100;
+    pressaoAte = SDL_GetTicks() + 5000u;
+    printf("[tex] timed memory trim recovering: %d%%\n", pressaoPct);
     fflush(stdout);
-    return pressaoLivrePct < 100;
+    return pressaoPct < 100 || pressaoLivrePct < 100;
   }
   return 1;
 }
@@ -901,7 +904,7 @@ static long limiteBytes(void) {
     long tela = 0;
     for (int i = 0; i < nMax; i++)
       if (quente(&itens[i])) tela += bytesTextura(&itens[i]);
-    if (tela > lim) lim = tela;
+    if (tela > lim) lim = tela < orcamento ? tela : orcamento;
   }
   return lim;
 }
@@ -973,6 +976,7 @@ Java_space_nuvio_nativelegacy_NuvioActivity_nativeTrimMemoria(JNIEnv *env, jobje
 // pipeline); na varredura do quadro o slot falho fica, guardando o recuo.
 static void soltarCpu(int falhas) {
   for (int i = 0; i < nMax; i++) {
+    if (!falhas && quente(&itens[i])) continue;
     if (itens[i].estado == DECODIFICADO && itens[i].sup) {
       if (uplSup == itens[i].sup) uplSup = NULL;   // envio em curso revalida pelo idx
       liberarSup(itens[i].sup);
@@ -1148,7 +1152,7 @@ static int tetoDoHeroiQualidade(void) {
 #ifdef NV_TIZEN3_LITE
   return NV_TEX_HERO_LARG_MAX;
 #endif
-  if (qualidadeImg == 0) return 1280;
+  if (qualidadeImg == 0 || (orcMemTotal > 0 && orcMemTotal <= 1300)) return 1280;
 #ifdef __EMSCRIPTEN__
   // SAMSUNG: 1280 e o teto de fabrica (heap fixo de 256 MiB, ver a nota das
   // medidas), e numa TV 4K isso e um fundo esticado 1,5x — "o artwork parece
@@ -2094,6 +2098,23 @@ static int mesmoPedido(int idx, const char *pedido) {
          !strcmp(itens[idx].caminho, pedido);
 }
 
+// Under mtx: transfer ownership only to an idle consumer of the exact URL.
+static int salvarPedidoMovido(const char *pedido, const char *url, int limite,
+                              unsigned char *corpo, long n, int variante) {
+  for (int i = 0; i < nMax; i++) {
+    Item *it = &itens[i];
+    if (!mesmoPedido(i, pedido) || it->naFilaDec || !it->filaRedeEm ||
+        it->bruto || limiteDaVariante(it) != limite) continue;
+    if (!enfileirarDecodeSemEspera(i)) return 0;
+    it->bruto = corpo; it->nBruto = n;
+    it->limiteTamanho = strcmp(url, pedido) ? limite : 0;
+    it->varianteCache = variante;
+    snprintf(it->urlCache, sizeof it->urlCache, "%s", url);
+    return 1;
+  }
+  return 0;
+}
+
 static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *foiRede,
                           TexFetchTrace *trace) {
   const char *pedido = url;   // o caminho do item; `url` pode virar a variante
@@ -2172,9 +2193,9 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
     if (foiRede && *foiRede) cachearte_salvar(url, variante, corpo, n, 0);
     SDL_LockMutex(mtx);
     if (!mesmoPedido(idx, pedido)) {
-      SDL_UnlockMutex(mtx); free(corpo);
-      { char lb[160]; printf("[tex] bytes descartados: o slot virou outro pedido durante o download (%s)\n", urlLog(pedido, lb, sizeof lb)); }
-      fflush(stdout);
+      int salvo = salvarPedidoMovido(pedido, url, limitePedido, corpo, n, variante);
+      SDL_UnlockMutex(mtx);
+      if (!salvo) free(corpo);
       return -1;
     }
     free(itens[idx].bruto);
@@ -2232,9 +2253,9 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
     }
     SDL_LockMutex(mtx);
     if (!mesmoPedido(idx, pedido)) {
-      SDL_UnlockMutex(mtx); free(corpo);
-      { char lb[160]; printf("[tex] bytes descartados: o slot virou outro pedido durante o download (%s)\n", urlLog(pedido, lb, sizeof lb)); }
-      fflush(stdout);
+      int salvo = salvarPedidoMovido(pedido, url, limitePedido, corpo, n, NV_CACHE_ARTE_MEDIUM);
+      SDL_UnlockMutex(mtx);
+      if (!salvo) free(corpo);
       return -1;
     }
     free(itens[idx].bruto);
@@ -2262,8 +2283,8 @@ static int threadRede(void *arg) {
     while (rodando && (filaIni == filaFim || meu >= fiosRedeAtivos)) SDL_CondWait(cond, mtx);
     if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
     idx = tirarFila(fila, &filaIni, filaFim);
-    if (itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
-      if (itens[idx].estado == PENDENTE) desistir(idx);
+    if (itens[idx].naFilaDec || itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
+      if (!itens[idx].naFilaDec && itens[idx].estado == PENDENTE) desistir(idx);
       SDL_UnlockMutex(mtx);
       continue;
     }
@@ -2302,8 +2323,8 @@ static int threadRede(void *arg) {
                (unsigned)redeMs, (unsigned)trace.netMs, (unsigned)trace.resolveMs,
                (unsigned)trace.cacheMs, (unsigned)trace.persistMs, trace.netCalls,
                baixou, urgente);
-      // -1: o slot deixou de ser deste pedido durante o download (mesmoPedido);
-      // os bytes ja foram descartados e o item novo nao e tocado.
+      // -1: the original slot changed; bytes were transferred or freed.
+      // The replacement slot is never touched.
       if (baixou < 0) continue;
       if (!baixou) {
       // Falhou o download. Marca como falha AQUI para o recuo valer — antes o
