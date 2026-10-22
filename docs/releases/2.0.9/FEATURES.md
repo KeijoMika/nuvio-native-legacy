@@ -19,6 +19,14 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Fixes
 
+- **Supported add-on source searches**: Resolve pending manifests before searching sources so requests use the add-on's supported resources. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-stream-antes-manifesto`, `ea677f958`, `179148c79`, merge `cd006c785`.
+
+- **Continuous Android live playback**: Reconnect live transport streams before extractor EOF and preserve playback timestamps across reconnects and split PES packets. Platforms: Android. Refs: owner request, `agente/205-live-eof-android`, `fa65837dd`, `d7542ec37`, `4bfa8c935`, merge `fbc54d787`.
+
+- **Account polling recovery**: Keep the account bearer identity stable and back off unauthorized polling requests. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `2a336785b`, merge `2c94a7b37`.
+
+- **Identifiable Wikimedia requests**: Send the project's public contact when requesting Wikimedia content. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `be1a41bf8`.
+
 - **Primary Samsung subtitles**: Selected primary subtitle cues render during native fallback instead of remaining invisible. Platforms: Samsung .tpk. Refs: #671, #665, `19533c9ad`.
 
 - **Manual source selection everywhere**: Every playback request waits for your source choice when manual selection is enabled, and exact source picks are preserved. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #667, `3b0699466`, `e6544a115`.
@@ -75,16 +83,12 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
 
 - **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`.
 
 ## Pending (not yet integrated)
 
 - **Responsive artwork uploads on TCL**: Avoid waiting on contended texture uploads and GPU mipmap fallback so artwork work does not stall navigation. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `42cfd5215`.
-
-- **Only query supported add-on resources**: Wait for manifests before searching sources or subtitles so unsupported add-ons do not receive resource requests. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-stream-antes-manifesto`, `ea677f958`.
-
-- **Live Android streams across reconnects**: Reconnect live transport streams before extractor EOF and keep timestamps continuous across reconnects. Platforms: Android. Refs: owner request, `agente/205-live-eof-android`, `fa65837dd`, `d7542ec37`.
 
 - **Richer soundtrack catalog data**: Add Apple catalog artwork and track preview metadata with fallback lookup; the redesigned app UI and preview playback still await implementation and approval. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-musica-visual`, `3c65dda20`.
