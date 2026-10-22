@@ -901,13 +901,16 @@ static int descPedidoCoube(const char *base, int w, size_t tam) {
 
 // Catalog type and id are path segments, including ids containing '/' or '?'.
 // Keep extras separate and preserve the installed addon's query via nv_addon_url.
+static void catalogoExtras(const char *base, const char *tipo, const char *id,
+                           const char *extra, char *saida, size_t n);
 static int catalogoUrl(char *url, size_t n, const char *base, const char *tipo,
                        const char *id, const char *extra) {
-  char tipoUrl[24], idUrl[288];
+  char tipoUrl[24], idUrl[288], extras[1024];
+  catalogoExtras(base, tipo, id, extra, extras, sizeof extras);
   if (!nv_addon_id(tipoUrl, sizeof tipoUrl, tipo) ||
       !nv_addon_id(idUrl, sizeof idUrl, id)) { if (n) url[0] = 0; return -1; }
   return nv_addon_url(url, n, base, "/catalog/%s/%s%s%s.json", tipoUrl, idUrl,
-                      extra && *extra ? "/" : "", extra ? extra : "");
+                      extras[0] ? "/" : "", extras);
 }
 
 typedef struct {
@@ -2257,6 +2260,10 @@ static int maniIdentidadePendente(const char *url, unsigned versao, NvPerfilSess
 static int exigeBusca(const char *p, const char *f) {
   const char *ex = strstr(p, "\"extra\"");
   const char *o;
+  char required[512] = "";
+  js_bruto(p, f, "extraRequired", required, sizeof required);
+  if (strstr(required, "\"search\"") || strstr(required, "\"calendarVideosIds\"") ||
+      strstr(required, "\"lastVideosIds\"")) return 1;
   if (!ex || ex >= f) return 0;
   o = strchr(ex, '[');
   if (!o || o >= f) return 0;
@@ -2316,10 +2323,78 @@ static int aceitaSkip(const char *p, const char *f) {
 // com NV_ADDON_URL_MAX custariam ~900 KB. Por isso a comparacao e por PREFIXO
 // (nomeCatBase): com strcmp, a base cortada de um addon de URL longa nunca
 // casava com a inteira e o nome do catalogo dele nunca era achado (#201).
-static struct { char base[300], tipo[8], id[96], nome[96]; } nomeCat[NOMECAT_MAX];
+static struct { char base[300], tipo[8], id[96], nome[96], extras[768]; } nomeCat[NOMECAT_MAX];
 #define nomeCatBase(i, b) (!strncmp(nomeCat[i].base, (b), sizeof nomeCat[i].base - 1))
 static int nNomeCat, nomeCatProx;
 static pthread_mutex_t nomeCatTrava = PTHREAD_MUTEX_INITIALIZER;
+// Required defaults belong to the manifest, not to an addon's hostname.
+static void registrarExtrasCatalogo(const char *base, const char *tipo, const char *id,
+                                    const char *p, const char *f) {
+  char extras[768] = "";
+  for (const char *ex = js_array(p, f, "extra"); ex; ex = js_prox(js_fim(ex))) {
+    const char *end = js_fim(ex);
+    char name[64] = "", value[128] = "", encoded[384];
+    if (*ex != '{' || !js_texto_raiz_em(ex, end, "name", name, sizeof name)) continue;
+    char req[16] = "";
+    js_bruto(ex, end, "isRequired", req, sizeof req);
+    int required = !strcmp(req, "true") || !strcmp(req, "\"true\"");
+    char legacy[512] = "", key[68];
+    js_bruto(p, f, "extraRequired", legacy, sizeof legacy);
+    snprintf(key, sizeof key, "\"%s\"", name);
+    if (strstr(legacy, key)) required = 1;
+    if (!required || !strcmp(name, "search")) continue;
+    const char *option = js_array(ex, end, "options");
+    if (!strcmp(name, "skip")) snprintf(value, sizeof value, "0");
+    else if (!option || !js_cadeia(option, value, sizeof value)) continue;
+    // Encode the entire value: '&' and '/' must not become extra separators.
+    size_t z = 0;
+    for (const unsigned char *c = (const unsigned char *)value; *c; c++) {
+      if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') ||
+          (*c >= '0' && *c <= '9') || strchr("-._~", *c)) encoded[z++] = *c;
+      else { snprintf(encoded + z, 4, "%%%02X", *c); z += 3; }
+    }
+    encoded[z] = 0;
+    size_t used = strlen(extras);
+    if (used + strlen(name) + z + 3 >= sizeof extras) continue;
+    snprintf(extras + used, sizeof extras - used, "%s%s=%s", used ? "&" : "", name, encoded);
+  }
+  // Legacy manifests may require skip without declaring an extra object.
+  char legacy[512] = "";
+  js_bruto(p, f, "extraRequired", legacy, sizeof legacy);
+  if (strstr(legacy, "\"skip\"") && !strstr(extras, "skip=") && strlen(extras) + 8 < sizeof extras)
+    strcat(extras, extras[0] ? "&skip=0" : "skip=0");
+  pthread_mutex_lock(&nomeCatTrava);
+  for (int i = 0; i < nNomeCat; i++)
+    if (nomeCatBase(i, base) && !strcmp(nomeCat[i].tipo, tipo) && !strcmp(nomeCat[i].id, id)) {
+      snprintf(nomeCat[i].extras, sizeof nomeCat[i].extras, "%s", extras); break;
+    }
+  pthread_mutex_unlock(&nomeCatTrava);
+}
+static void catalogoExtras(const char *base, const char *tipo, const char *id,
+                           const char *extra, char *saida, size_t n) {
+  char defaults[768] = "";
+  snprintf(saida, n, "%s", extra ? extra : "");
+  pthread_mutex_lock(&nomeCatTrava);
+  for (int i = 0; i < nNomeCat; i++)
+    if (nomeCatBase(i, base) && !strcmp(nomeCat[i].tipo, tipo) && !strcmp(nomeCat[i].id, id)) {
+      snprintf(defaults, sizeof defaults, "%s", nomeCat[i].extras); break;
+    }
+  pthread_mutex_unlock(&nomeCatTrava);
+  char *save = NULL;
+  for (char *v = strtok_r(defaults, "&", &save); v; v = strtok_r(NULL, "&", &save)) {
+    const char *eq = strchr(v, '=');
+    int supplied = 0;
+    if (!eq) continue;
+    size_t key = (size_t)(eq - v) + 1;
+    for (const char *e = extra; e && *e; e = strchr(e, '&')) {
+      if (*e == '&') e++;
+      if (!strncmp(e, v, key)) { supplied = 1; break; }
+    }
+    size_t used = strlen(saida);
+    if (!supplied && used + strlen(v) + 2 < n)
+      snprintf(saida + used, n - used, "%s%s", used ? "&" : "", v);
+  }
+}
 static void registrarNomeCatalogo(const char *base, const char *tipo, const char *id, const char *nome) {
   int i;
   if (!base || !nome || !nome[0]) return;
@@ -2327,6 +2402,7 @@ static void registrarNomeCatalogo(const char *base, const char *tipo, const char
   for (i = 0; i < nNomeCat; i++)
     if (nomeCatBase(i, base) && !strcmp(nomeCat[i].tipo, tipo) && !strcmp(nomeCat[i].id, id)) break;
   if (i == nNomeCat) { i = nomeCatProx; nomeCatProx = (nomeCatProx + 1) % NOMECAT_MAX; if (nNomeCat < NOMECAT_MAX) nNomeCat++; }
+  nomeCat[i].extras[0] = 0;
   snprintf(nomeCat[i].base, sizeof nomeCat[i].base, "%s", base);
   snprintf(nomeCat[i].tipo, sizeof nomeCat[i].tipo, "%s", tipo);
   snprintf(nomeCat[i].id, sizeof nomeCat[i].id, "%s", id);
@@ -2569,6 +2645,7 @@ static int lerManifesto(int iAddon, const char *base, Decl *saida, int max,
       Decl local, *d;
       int exige = exigeBusca(p, f), guardar = 0;
       registrarNomeCatalogo(base, tipo, id, nome);
+      registrarExtrasCatalogo(base, tipo, id, p, f);
       if (!ativo) { p = js_prox(f); continue; }
       // QUEM A COTA LE sai de escolherPelaCota; sem escolha (cabem todos, ou a
       // memoria faltou) vale a regra antiga, os primeiros ate encher. Catalogo
@@ -5004,6 +5081,7 @@ static void *montar(void *u) {
               // erro e nao pode virar titulo pendurado na home — a rodada seguinte
               // pede outro no lugar dele.
               vazios++;
+              fil_registrar_de(&passadaVolta, d->chave, d->titulo, d->nomeAddon, d->tipo, 0);
               printf("[desc] catalogo vazio: %s\n", d->titulo);
               // Vazio valido: a chave continua na ESTRUTURA (snapshot, via
               // pendSnap), mas nao ocupa vaga na tela (#195). Desde 9b17d38
