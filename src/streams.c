@@ -4173,6 +4173,8 @@ static void montarBase(int automatica) {
   float y = 0;
   int g, i, k, m = -1, nt;
   int needed = filtro == -1 ? ondever_n(alvoPedido) : n;
+  int saved = !canalFolha && ajustes_fonte_manual() && preferida >= 0 && preferida < n &&
+              passaFiltro(preferida) ? preferida : -1;
   if (ordemCap < needed) {
     int cap = needed + 32;
     int *o = realloc(ordem, cap * sizeof *o);
@@ -4203,9 +4205,10 @@ static void montarBase(int automatica) {
     fitAtualizar();
     memset(secN, 0, sizeof secN);
     nOrdem = 0;
+    if (saved >= 0) porLinha(saved, &y, automatica);
     for (int fora = 0; fora < (ordemDoAddon() ? 1 : 2); fora++) for (k = 0; k < n; k++) {
       i = ORD(k);
-      if (!passaFiltro(i) || (!ordemDoAddon() && !!lista[i].foraCache != fora)) continue;
+      if (i == saved || !passaFiltro(i) || (!ordemDoAddon() && !!lista[i].foraCache != fora)) continue;
       (void)grupoRes(&lista[i]);
       porLinha(i, &y, automatica);
     }
@@ -4222,7 +4225,11 @@ static void montarBase(int automatica) {
   }
   fitAtualizar();
   nOrdem = 0;
-  if (melhorFolha >= 0 && melhorFolha < n && !lista[melhorFolha].foraCache && passaFiltro(melhorFolha) && nFiltrados() > 1 &&
+  if (saved >= 0) {
+    m = saved;
+    porLinha(m, &y, automatica);
+    y += FOLHA_SEC_GAP - FOLHA_LINHA_GAP;
+  } else if (melhorFolha >= 0 && melhorFolha < n && !lista[melhorFolha].foraCache && passaFiltro(melhorFolha) && nFiltrados() > 1 &&
       (melhorFolha >= fitN || fitClasses[melhorFolha] != SF_PESADA)) {
     m = melhorFolha;
     porLinha(m, &y, automatica);
