@@ -90,7 +90,8 @@ def request(url,start,end=None,method='GET'):
     r=f'bytes={start}-'+('' if end is None else str(end))
     with urllib.request.urlopen(urllib.request.Request(url,headers={'Range':r},method=method),timeout=15) as f:
         return f.status,dict(f.headers),f.read()
-if len(sys.argv)>4 and sys.argv[4]=='startup':
+mode=sys.argv[4] if len(sys.argv)>4 else 'all'
+if mode in ('all','startup'):
     source=origin+'/stall'
     p=subprocess.Popen([sys.argv[1],source,'64'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     begun=time.monotonic()
@@ -104,7 +105,23 @@ if len(sys.argv)>4 and sys.argv[4]=='startup':
     finally:
         if p.poll() is None:p.kill();p.communicate()
     print('PASS stalled startup: bounded fallback and cancellation',flush=True)
-    sys.exit(0)
+    if mode=='startup':sys.exit(0)
+if mode in ('all','preempt'):
+    p,url=daemon('/movie.mkv',64)
+    old=None
+    try:
+        old=urllib.request.urlopen(urllib.request.Request(url,headers={'Range':'bytes=0-'}),timeout=2)
+        assert old.read(1024)==content(0,1024)
+        # Leave old GET open, as native players do during EOF metadata/seek.
+        begun=time.monotonic()
+        status,h,b=request(url,TOTAL-1024,TOTAL-1)
+        assert status==206 and b==content(TOTAL-1024,1024)
+        assert time.monotonic()-begun<2, 'replacement range starved behind open movie GET'
+    finally:
+        if old:old.close()
+        close(p)
+    print('PASS replacement range preempts open movie GET',flush=True)
+    if mode=='preempt':sys.exit(0)
 for mib in [64,128,256]:
     p,url=daemon('/movie.mkv',mib)
     try:

@@ -29,7 +29,7 @@ struct MovieBuffer {
   pthread_mutex_t clients_lock;
   pthread_t threads[MB_CLIENTS];
   Client clients[MB_CLIENTS];
-  int fd, sockets[MB_CLIENTS], threads_n, stop, fallback, probe_done, probe_ok;
+  int fd, sockets[MB_CLIENTS], threads_n, stop, fallback, probe_done, probe_ok, preemptible;
   pthread_cond_t probe_wake;
   char source[8192], path[96], mime[40];
 };
@@ -38,8 +38,14 @@ static int stopped(MovieBuffer *s) { return __atomic_load_n(&s->stop,__ATOMIC_RE
 static int send_all(MovieBuffer *s,int fd,const void *data,size_t n) {
   const char *p=data;
   while(n && !stopped(s)) {
-    ssize_t sent=send(fd,p,n,MSG_NOSIGNAL);
-    if(sent<0 && errno==EINTR) continue;
+    if(s->preemptible) {
+      struct pollfd pending[2]={{s->fd,POLLIN,0},{fd,POLLOUT,0}};
+      int ready=poll(pending,2,3000);
+      if(ready<0 && errno==EINTR)continue;
+      if(ready<=0 || pending[0].revents || !(pending[1].revents&POLLOUT))return 0;
+    }
+    ssize_t sent=send(fd,p,n,MSG_NOSIGNAL | (s->preemptible?MSG_DONTWAIT:0));
+    if(sent<0 && (errno==EINTR || (s->preemptible && (errno==EAGAIN || errno==EWOULDBLOCK)))) continue;
     if(sent<=0) return 0;
     p+=sent;n-=(size_t)sent;
   }
@@ -145,6 +151,9 @@ static void serve(MovieBuffer *s,int fd) {
   if(partial) h=snprintf(header,sizeof header,"HTTP/1.1 206 Partial Content\r\nContent-Type: %s\r\nAccept-Ranges: bytes\r\nContent-Range: bytes %"PRId64"-%"PRId64"/%"PRId64"\r\nContent-Length: %"PRId64"\r\nConnection: close\r\n\r\n",mime,start,end,total,end-start+1);
   else h=snprintf(header,sizeof header,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nAccept-Ranges: bytes\r\nContent-Length: %"PRId64"\r\nConnection: close\r\n\r\n",mime,total);
   if(!send_all(s,fd,header,(size_t)h)||head)return;
+  /* Keep short metadata ranges serialized; replace long playback responses
+   * as soon as another request arrives, even while the old socket progresses. */
+  s->preemptible=end-start+1>4*1024*1024;
   unsigned char data[65536];
   while(start<=end && !stopped(s)) {
     int want=end-start+1>(int64_t)sizeof data?(int)sizeof data:(int)(end-start+1);
@@ -176,7 +185,8 @@ static void *worker(void *opaque) {
     s->sockets[c->slot]=fd;
     if(stopped(s))shutdown(fd,SHUT_RDWR);
     pthread_mutex_unlock(&s->clients_lock);
-    /* One worker serializes complete ranges on the single engine lane. */
+    /* One worker keeps engine reads serialized across replacement requests. */
+    s->preemptible=0;
     if(!stopped(s))serve(s,fd);
     pthread_mutex_lock(&s->clients_lock);s->sockets[c->slot]=-1;close(fd);pthread_mutex_unlock(&s->clients_lock);
   }
