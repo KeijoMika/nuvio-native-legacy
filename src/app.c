@@ -1239,6 +1239,11 @@ static const char *urlCanal(const Stream *s, char *buf, size_t n) {
   if (!s) return "";
   // Toda troca de fonte do guia passa aqui, inclusive a do watchdog.
   video_definir_cabecalhos(s->cabecalhos);
+  // Confirmed TS already plays directly; avoid another probe and a local 302.
+  if (s->tsContinuo) {
+    proxyts_definir_cabecalhos("");
+    return s->url;
+  }
   if (!strncmp(s->url, PROXYTS_PREFIXO, strlen(PROXYTS_PREFIXO))) {
     // Xtream: a lista ja vem marcada, e sem cabecalho de addon.
     proxyts_definir_cabecalhos(s->cabecalhos);

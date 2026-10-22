@@ -2899,7 +2899,7 @@ int stream_n_candidatas(void) {
 #define CANAL_PRAZO_S 3
 typedef struct {
   char url[4096], cabecalhos[512];
-  int altura, cabe, preferida;
+  int altura, cabe, preferida, tsContinuo;
 } CanalCandidata;
 typedef struct CanalConferencia {
   unsigned geracao;
@@ -2969,11 +2969,15 @@ static void *fioCanal(void *u) {
     }
     vetor[nc] = NULL;
     RedeMedida medida = {0};
-    RedeControle controle = { .cancelado = &c->cancelar };
+    // Continuous TS never ends: abort at the prefix, closing curl's socket.
+    RedeControle controle = { .max_bytes = 65536, .cancelado = &c->cancelar };
     if (canalCancelado(c)) return NULL;
     char *corpo = rede_baixar_medido_controle(a->url, CANAL_PRAZO_S, nc ? vetor : NULL, &controle, &medida);
     if (canalCancelado(c) || medida.cancelado) { free(corpo); return NULL; }
-    long tamanho = corpo ? (long)strlen(corpo) : 0;
+    long tamanho = corpo ? medida.bytes : 0;
+    c->candidatas[meu].tsContinuo = corpo && medida.status >= 200 && medida.status < 300 &&
+      tamanho > 376 && (unsigned char)corpo[0] == 0x47 &&
+      (unsigned char)corpo[188] == 0x47 && (unsigned char)corpo[376] == 0x47;
     // Header refusals are uncertain on WGT: AVPlay can send headers XHR cannot.
     if (corpo && medida.status >= 400 && a->cabecalhos[0]) {
       c->classes[meu] = 1;
@@ -2981,7 +2985,7 @@ static void *fioCanal(void *u) {
     } else if (!corpo) {
       c->classes[meu] = 3;
       printf("[fonte] %d muda: playlist nao respondeu em %ds\n", meu, CANAL_PRAZO_S);
-    } else if (strstr(corpo, "#EXTINF") || strstr(corpo, "#EXT-X-STREAM-INF")) c->classes[meu] = 1;
+    } else if (a->tsContinuo || strstr(corpo, "#EXTINF") || strstr(corpo, "#EXT-X-STREAM-INF")) c->classes[meu] = 1;
     else if (tamanho > CANAL_MORTA_MAX_B) {
       c->classes[meu] = 4;
       printf("[fonte] %d incerta: %ld B sem segmento (%s); quem decide e o player\n", meu, tamanho, tipoCorpo(corpo));
@@ -3040,6 +3044,8 @@ int stream_canal_primeira_viva_sessao(int tentativas, uint64_t sessao) {
   while (*link && *link != &c) link = &(*link)->proxima;
   if (*link) *link = c.proxima;
   if (atual && !canalCancelado(&c) && listaGeracao == c.geracao) {
+    // Publish only after all probe workers (and their connections) have exited.
+    for (q = 0; q < c.n; q++) lista[q].tsContinuo = c.candidatas[q].tsContinuo;
     static const unsigned char ordemClasse[] = {1, 4, 3, 2};
     canalOrdemN = 0;
     for (int cl = 0; cl < 4; cl++)
