@@ -1140,6 +1140,13 @@ static void fitPassivaPermitir(void) {
 #endif
 }
 
+static void origemFontes(const CatItem *c) {
+  char base[NV_ADDON_URL_MAX] = "";
+  if (c && !idbase_e_imdb(c->imdb))
+    addons_base_por_id_copiar(c->origem, base, sizeof base);
+  addons_definir_origem(base);
+}
+
 static void buscarParaPlayerModo(int renovar) {
   char alvo[64]; alvoPlayer(alvo,sizeof alvo);
   const char *idC = player_id_canal();
@@ -1162,6 +1169,7 @@ static void buscarParaPlayerModo(int renovar) {
   {
     const CatItem *c = cat_item(player_indice());
     if (c && alvo[0]) {
+      origemFontes(c);
       if (renovar) addons_buscar_renovar(alvo,c->tipo); else addons_buscar(alvo,c->tipo);
       addons_buscar_legendas(alvo,c->tipo);
     }
@@ -1189,6 +1197,7 @@ static void renovarListaDoPlayer(void) {
            (unsigned)stream_idade_ms(),
            stream_lista_do_alvo(alvoP) ? "" : " e de outro alvo", alvoP);
     stream_definir_alvo(alvoP);
+    origemFontes(ci);
     addons_buscar(alvoP, ci->tipo);
   }
 }
@@ -5728,7 +5737,7 @@ void app_atualizar(float dt, Uint32 agora) {
         // e serie, mesmo quando o catalogo ja trouxe elenco.
         if (!strcmp(ci->tipo, "series") || strcmp(ci->tipo, "movie") ||
             ci->nElenco == 0 || desc_elenco_precisa_pessoas(ci)) desc_episodios(i, 0);
-        { stream_definir_alvo(alvo); addons_buscar(alvo, ci->tipo); }
+        { stream_definir_alvo(alvo); origemFontes(ci); addons_buscar(alvo, ci->tipo); }
         aquecerAoAbrirTitulo();
         // Legendas do OpenSubtitles junto: sao dezenas por titulo e a busca
         // leva segundos. Pedir so quando o dono abre a folha de faixas faria
@@ -6579,7 +6588,7 @@ void app_atualizar(float dt, Uint32 agora) {
     else {
       const CatItem *ci=cat_item(detail_indice()); char id[64];
       idDoAlvo(ci,id,sizeof id);
-      if (ci) { stream_definir_alvo(id); addons_buscar_renovar(id,ci->tipo); }
+      if (ci) { stream_definir_alvo(id); origemFontes(ci); addons_buscar_renovar(id,ci->tipo); }
     }
   }
   { int t,e;
