@@ -56,6 +56,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`.
+
 ## Pending (not yet integrated)
 
-- **Safer proxy playback and buffer fallback**: Pending fixes protect request headers after HTTPS downgrades, restore native buffering after proxy fallback and prevent concurrent clients from restarting the active stream. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `agente/205-ur673`.
+- **Safer proxy playback and buffer fallback**: Pending fixes protect request headers after HTTPS downgrades, restore native buffering after proxy fallback, prevent concurrent clients from restarting the active stream and unblock near-forward native seeks when the origin stalls. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `agente/205-ur673`, `d365dd646`; latest fix needs review.
