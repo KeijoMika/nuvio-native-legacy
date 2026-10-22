@@ -1,7 +1,7 @@
 #!/bin/bash
 export TMPDIR="${TMPDIR:-/tmp}"
 TMPDIR="${TMPDIR%/}"
-# Capturas do cartao "O que achou?" (reacao.c), em BMP. Nao entra na suite.
+# Headless PNG captures of the rating card; excluded from the regular suite.
 #
 #   bash tests/reacao_shot.sh /pasta/de/saida
 set -eu

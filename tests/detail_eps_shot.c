@@ -712,6 +712,16 @@ int main(int argc, char **argv) {
     ajustes_dir(dados_dir()); }
 
   montarCatalogo();
+  if (getenv("NV_AVALIAR_SHOTS")) {
+    semear(1, T1_N, 3);
+    reacao_nota_definir(IMDB_SERIE ":1:2", 9);
+    abrir(0, 0); nosEpisodios(1); quadros(120);
+    snprintf(nome, sizeof nome, "%s/episode-rating.png", saida); gravar(nome);
+    reacao_nota_definir(IMDB_SERIE, 7);
+    nivel = 0; quadros(120);
+    snprintf(nome, sizeof nome, "%s/title-rating.png", saida); gravar(nome);
+    return 0;
+  }
   if (getenv("NV_EP_FINAL_SHOTS")) { episodeShots(saida); return 0; }
   if (getenv("NV_EP_PERF")) {
     assert(ajustes_home_layout() == HOME_LAYOUT_MODERNA && ajustes_vidro());
