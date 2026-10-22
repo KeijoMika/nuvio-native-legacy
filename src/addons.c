@@ -1493,8 +1493,8 @@ static void *legFioPuxa(void *u) {
     i = B->proximo < B->nLotes ? B->proximo++ : -1;
     pthread_mutex_unlock(&B->m);
     if (i < 0) return NULL;
-    // Addon que nao declara legenda nao e consultado.
-    if (!B->origens || !B->origens[i].ativo || !B->origens[i].legenda) continue;
+    // Only a known manifest can authorize a subtitles request.
+    if (!B->origens || !B->origens[i].ativo || !B->origens[i].sondado || !B->origens[i].legenda) continue;
     pthread_mutex_lock(&B->m);
     B->consultados++;
     pthread_mutex_unlock(&B->m);
@@ -2428,6 +2428,30 @@ static int aceitaStream(const AddonPedido *p, const char *tipo, const char *id) 
   return 0;
 }
 
+// Resolve unknown capabilities inside the search worker, never on the UI thread.
+// A failed manifest keeps the legacy optimistic stream fallback.
+static int resolverStream(Consulta *c, int i) {
+  AddonPedido *p = &c->origens[i];
+  if (!p->sondado) {
+    char url[NV_ADDON_PEDIDO_MAX];
+    char *corpo = NULL;
+    if (nv_addon_pedido_coube(p->nome,
+          nv_addon_url(url, sizeof url, p->base, "/manifest.json"), sizeof url)) {
+      corpo = rede_baixar(url, 12);
+      if (corpo) addons_manifesto_recebido(p->base, c->versao, c->sessao, corpo);
+      free(corpo);
+    }
+    if (consultaCancelada(c) || !nv_perfil_sessao_travar(c->sessao)) return 0;
+    pthread_mutex_lock(&addonTrava);
+    int atual = c->versao == versaoLista && i < nAddon && !strcmp(addon[i].base, p->base);
+    if (atual) copiarPedido(i, p);
+    pthread_mutex_unlock(&addonTrava);
+    nv_perfil_sessao_destravar();
+    if (!atual) return 0;
+  }
+  return aceitaStream(p, c->tipo, c->id);
+}
+
 static int prazoDoAddon(const Consulta *c, int i) {
   int s = c->timeout > 0 ? c->timeout : 12;
   if (c->rodada == 2) {
@@ -2491,6 +2515,7 @@ static void *fioFontes(void *u) {
     if (consultaCancelada(c)) continue;
     i = c->baldes[meu].idx; origem = &c->origens[i];
     if (!origem->ativo) continue;   // desligado na conta: nunca consultado
+    if (!resolverStream(c, i)) continue;
     if (semStreamSondado(c, i)) continue;   // a sonda terminou depois dos baldes
     // Id codificado como o Nuvio web (nv_addon_id): "tt123:1:2" sai igual.
     { char longo[IDCANAL_LONGO_MAX + 1];   // apelido de canal longo (idcanal.h)
@@ -2915,7 +2940,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
     if (!(base && *base) && (!folhaFeita || ultimaFolha != versaoLista)) {
       ultimaFolha = versaoLista; folhaFeita = 1;
       for (i = 0; i < c.nOrigens; i++) {
-        if (c.origens[i].ativo && c.origens[i].fonte) continue;
+        if (c.origens[i].ativo && c.origens[i].sondado && c.origens[i].fonte) continue;
         printf("[addons] fora da busca de fontes: %s (%s)\n", c.origens[i].nome,
                !c.origens[i].ativo ? "desligado" :
                c.origens[i].sondado ? "o manifesto nao declara stream"
