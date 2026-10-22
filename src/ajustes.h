@@ -130,6 +130,13 @@ int ajustes_dolby_atmos(void);
 // pauseOverlayEnabled: o painel de ficha que sobe alguns segundos depois de
 // pausar o video. Ver pausao.h.
 int ajustes_pausa_overlay(void);
+// Comentarios do Trakt no painel de pausa (pausacom.h). Ligado de fabrica. A
+// funcao so le o ajuste: quem mostra confere ajustes_pausa_overlay() tambem.
+int ajustes_pausa_comentarios(void);
+// Notas do titulo (ou do episodio) no painel de pausa. Ligado de fabrica.
+int ajustes_pausa_notas(void);
+// Elenco (fotos, nomes, papeis) no painel de pausa. Desligado de fabrica.
+int ajustes_pausa_elenco(void);
 int ajustes_classif_player(void);   // 1 = mostra a classificacao/guia parental no player (padrao)
 // "O que achou?" nos creditos (reacao.h). Ligado de fabrica.
 int ajustes_reacao_creditos(void);
