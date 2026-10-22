@@ -2414,7 +2414,7 @@ static int semSegunda(const AddonPedido *a) {
   return a->mudoSeg >= 2 || addonstats_segunda_s(a->estatistica, ADD_PRAZO_VOD_S) == 0;
 }
 static int aceitaStream(const AddonPedido *p, const char *tipo, const char *id) {
-  if (!p->ativo || !p->sondado || !p->fonte) return 0;
+  if (!p->ativo || !p->fonte) return 0;
   if (p->streamTipos[0]) {
     char marca[40];
     snprintf(marca, sizeof marca, "|%s|", tipo);
@@ -2426,6 +2426,30 @@ static int aceitaStream(const AddonPedido *p, const char *tipo, const char *id) 
   for (int k = 0; k < p->nStreamPref; k++)
     if (!strncmp(id, p->streamPref[k], strlen(p->streamPref[k]))) return 1;
   return 0;
+}
+
+// Resolve unknown capabilities inside the search worker, never on the UI thread.
+// A failed manifest keeps the legacy optimistic stream fallback.
+static int resolverStream(Consulta *c, int i) {
+  AddonPedido *p = &c->origens[i];
+  if (!p->sondado) {
+    char url[NV_ADDON_PEDIDO_MAX];
+    char *corpo = NULL;
+    if (nv_addon_pedido_coube(p->nome,
+          nv_addon_url(url, sizeof url, p->base, "/manifest.json"), sizeof url)) {
+      corpo = rede_baixar(url, 12);
+      if (corpo) addons_manifesto_recebido(p->base, c->versao, c->sessao, corpo);
+      free(corpo);
+    }
+    if (consultaCancelada(c) || !nv_perfil_sessao_travar(c->sessao)) return 0;
+    pthread_mutex_lock(&addonTrava);
+    int atual = c->versao == versaoLista && i < nAddon && !strcmp(addon[i].base, p->base);
+    if (atual) copiarPedido(i, p);
+    pthread_mutex_unlock(&addonTrava);
+    nv_perfil_sessao_destravar();
+    if (!atual) return 0;
+  }
+  return aceitaStream(p, c->tipo, c->id);
 }
 
 static int prazoDoAddon(const Consulta *c, int i) {
@@ -2491,6 +2515,7 @@ static void *fioFontes(void *u) {
     if (consultaCancelada(c)) continue;
     i = c->baldes[meu].idx; origem = &c->origens[i];
     if (!origem->ativo) continue;   // desligado na conta: nunca consultado
+    if (!resolverStream(c, i)) continue;
     if (semStreamSondado(c, i)) continue;   // a sonda terminou depois dos baldes
     // Id codificado como o Nuvio web (nv_addon_id): "tt123:1:2" sai igual.
     { char longo[IDCANAL_LONGO_MAX + 1];   // apelido de canal longo (idcanal.h)

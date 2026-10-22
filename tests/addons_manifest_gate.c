@@ -26,7 +26,7 @@ static void search(void) {
   Resumo result = {0};
   assert(consultar("tt1", "movie", NULL, 1, NULL, NULL, &out, &result, 1,
                    perfis_sessao_geracao()) == 0);
-  assert(result.consultados == (addon[1].sondado ? 1 : 0));
+  assert(result.consultados == 1);
   free(out);
   snprintf(legId, sizeof legId, "tt1");
   snprintf(legTipo, sizeof legTipo, "movie");
@@ -40,17 +40,18 @@ int main(void) {
     { .nome = "Streams only", .url = "https://exemplo.test/manifest.json", .ativo = 1 }
   };
   assert(addons_definir_lista(account, 2));
-  // Both capabilities are merely assumed at this point. Neither may send.
+  // Resolve unknown stream capabilities before querying; subtitles stay gated.
   search();
-  assert(pedidosLegendaStream == 0 && subtitleRequests == 0);
+  assert(pedidosLegendaManifesto == 1);
+  assert(pedidosLegendaStream == 0 && subtitleRequests == 1);
   addons_manifesto_lido(0, "{\"id\":\"subs\",\"resources\":[\"subtitles\"]}");
   addons_manifesto_lido(1, "{\"id\":\"streams\",\"resources\":[\"stream\"]}");
   resp[0] = "{\"streams\":[]}";
   search();
-  assert(pedidosLegendaStream == 0 && subtitleRequests == 1);
+  assert(pedidosLegendaStream == 0 && subtitleRequests == 2);
   // Repeated searches must never retry the subtitles-only stream endpoint.
   search();
-  assert(pedidosLegendaStream == 0 && subtitleRequests == 2);
-  puts("addons_manifest_gate: unknown resources skipped; declared resources preserved");
+  assert(pedidosLegendaStream == 0 && subtitleRequests == 3);
+  puts("addons_manifest_gate: manifests resolved; declared resources preserved");
   return 0;
 }
