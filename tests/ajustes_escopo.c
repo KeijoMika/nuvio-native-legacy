@@ -331,6 +331,48 @@ static void failureDialogIsolation(void) {
   assert(fontefalha_arquivo("fontefalha.txt"));
 }
 
+static void providerSharingIsolation(void) {
+  const char *names[] = { "Admin", "Ana" };
+  const char *files[] = { "provider-scope-test-p1.txt", "provider-scope-test-p2.txt",
+    "debrid-test-p1.txt", "debrid-test-p2.txt", "fontefalha-test-p1.txt", "fontefalha-test-p2.txt",
+    "ajustes-locais-p1.txt", "ajustes-locais-p2.txt" };
+  perfis_teste_definir(names, NULL, 2, 1);
+  assert(dados_gravar("sessao.txt", "test.eyJzdWIiOiJ0ZXN0In0.sig\n\n0\n"));
+  sessao_iniciar();
+  assert(!strcmp(sessao_usuario(), "test"));
+  for (int separate = 0; separate <= 1; separate++) {
+    char *before[8], path[128], afterPath[128];
+    assert(dados_gravar(files[0], separate ? "1\n" : "0\n"));
+    assert(dados_gravar(files[1], "1\n"));
+    assert(dados_gravar(files[2], ""));
+    assert(dados_gravar(files[3], ""));
+    assert(dados_gravar(files[5], "provedores 1\n"));
+    assert(dados_gravar(files[6], "0\n"));
+    assert(dados_gravar(files[7], "0\n"));
+    ajustes_provedores_abrir_sessao();
+    assert(ajustes_provedores_arquivo(path, sizeof path, "fontefalha"));
+    FonteFalhaConfig config, afterConfig;
+    fontefalha_config(&config);
+    for (int i = 0; i < 8; i++) { before[i] = dados_ler(files[i]); assert(before[i]); }
+    assert(ajustes_edicao_iniciar(2));
+    int available = ajOpcaoDisponivel(AJ_PROVEDORES_ESCOPO);
+    int changed = definirValorDireto(AJ_PROVEDORES_ESCOPO, !separate);
+    ajustes_edicao_encerrar();
+    for (int i = 0; i < 8; i++) {
+      char *after = dados_ler(files[i]);
+      assert(after && !strcmp(after, before[i]));
+      free(after); free(before[i]);
+    }
+    fontefalha_config(&afterConfig);
+    assert(!memcmp(&config, &afterConfig, sizeof config));
+    assert(ajustes_provedores_arquivo(afterPath, sizeof afterPath, "fontefalha"));
+    assert(!strcmp(path, afterPath));
+    assert(!available && !changed && perfis_ativo() == 1);
+    assert(valor[AJ_PROVEDORES_ESCOPO] == separate);
+    assert(ajOpcaoDisponivel(AJ_PROVEDORES_ESCOPO));
+  }
+}
+
 static void admin(void) {
   char h[65], *arq;
   admin_sha256_hex((const unsigned char *)"abc", 3, h);
@@ -436,6 +478,7 @@ int main(void) {
   pollOptoutIsolation();
   failureBackendIsolation();
   failureDialogIsolation();
+  providerSharingIsolation();
   admin();
   infantil();
   gate();

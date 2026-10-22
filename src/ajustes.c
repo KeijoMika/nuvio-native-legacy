@@ -3085,7 +3085,7 @@ float ajustes_tamanho_ajustes(void) {
 static int ajLayoutSelecionavel(void) { return !telefoneui_ativo(); }
 static int ajOpcaoDisponivel(int op) {
   // These controls use active-profile stores rather than the edited value array.
-  if (edPerfil && (ajFalhaBackend(op) || op == AJ_FILTROS_FONTES ||
+  if (edPerfil && (ajFalhaBackend(op) || op == AJ_PROVEDORES_ESCOPO || op == AJ_FILTROS_FONTES ||
                    op == AJ_FALHA_PROVEDOR_ORDEM || op == AJ_FALHA_ADDON_ORDEM ||
                    ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR ||
                    op == AJ_FONTE_ORDEM || op == AJ_FONTE_ADDONS_PERM ||
