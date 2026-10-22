@@ -133,6 +133,7 @@ static void avisarCascaAberto(int v) { (void)v; tex_pressao_reproducao(v); }
 #include "plrui.h"
 #include "escala.h"
 #include "plrilha.h"
+#include "neste.h"
 #include "cacheboost.h"
 #include "audioinfo.h"
 #include "legendasui.h"   /* F04: second subtitle band */
@@ -223,7 +224,7 @@ static void avisarCascaAberto(int v) { (void)v; tex_pressao_reproducao(v); }
 // IDs estaveis: a ordem visual e de navegacao vem de transporteAcoes.
 // Na serie, Anterior/Proximo ficam ao lado do Play; o restante conserva a ordem.
 enum { PLR_PLAY, PLR_CC, PLR_AUDIO, PLR_ASPECTO,
-       PLR_FONTES, PLR_EPISODIOS, PLR_PROXIMO, PLR_REINICIAR, PLR_NBTNS };
+       PLR_FONTES, PLR_EPISODIOS, PLR_PROXIMO, PLR_REINICIAR, PLR_NESTE, PLR_NBTNS };
 
 // Avanco em curso: enquanto vale, posSeg e do DONO e nao do pipeline.
 static int    scrubbing, scrubPassos, scrubTocava, scrubDir, scrubToque;
@@ -3197,6 +3198,26 @@ int player_recarregar_fonte(unsigned contexto) {
   return 1;
 }
 
+// NESTE EPISODIO: painel da ilha com o elenco convidado (TMDB), sem sincronia.
+static int nesteAberto, nesteT, nesteE;
+static char nesteImdb[16];
+static void corpoNeste(GfxRect r, float a, void *u) {
+  NesteElenco el;
+  float x = r.x + 36.0f, w = r.w - 72.0f, y = r.y + 18.0f;
+  NesteEstado st = neste_estado(nesteImdb, nesteT, nesteE, &el);
+  (void)u;
+  if (st != NESTE_PRONTO) {
+    txt_bloco_corta(TXT_ILHA_TEXTO, i18n(st == NESTE_CARREGANDO || st == NESTE_NADA ? "Carregando…" : "Sem elenco convidado listado."),
+                    158, 157, 155, x, y + 8.0f, w, 30.0f, a, 2);
+    return;
+  }
+  for (int i = 0; i < el.n; i++) {
+    y += txt_bloco_corta(TXT_ILHA_PERGUNTA, el.p[i].nome, 243, 242, 239, x, y, w * 0.5f - 12.0f, 30.0f, a, 1);
+    txt_bloco_corta(TXT_ILHA_TEXTO, el.p[i].personagem, 158, 157, 155, x + w * 0.5f, y - 30.0f + 3.0f, w * 0.5f, 30.0f, a, 1);
+    y += 4.0f;
+  }
+}
+
 typedef struct { int id, habilitada; } PlrAcao;
 static int transporteSerie(void) { return !ehCanal() && epT >= 0 && epE > 0; }
 static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
@@ -3211,6 +3232,7 @@ static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
   a[n++] = (PlrAcao){PLR_ASPECTO, 1};
   a[n++] = (PlrAcao){PLR_FONTES, 1};
   if (temUltimoBotao()) a[n++] = (PlrAcao){PLR_EPISODIOS, 1};
+  if (serie) a[n++] = (PlrAcao){PLR_NESTE, 1};
   return n;
 }
 static int transporteHabilitado(int id) {
@@ -4055,6 +4077,7 @@ static int ativarBotao(int i, int repetiu) {
     case PLR_CC: pedFaixas = 2; break;
     case PLR_AUDIO: pedFaixas = 1; break;
     case PLR_FONTES: pedFontes = 1; break;
+    case PLR_NESTE: nesteAberto = 1; nesteT = epT; nesteE = epE; break;
     case PLR_EPISODIOS:
       if (ehCanal()) pedGuia = 1;
       else if (epE > 0) episodios_abrir(idxAtual(), epT, epE);
@@ -4113,6 +4136,7 @@ void player_evento(const SDL_Event *e) {
   // Left/Right - never has it reappear under their hands and take the controls
   // away. Called before any handler returns.
   pausao_activity();
+  if (nesteAberto) { nesteAberto = 0; return; }
 
   // DIGITAR O NUMERO DO CANAL (M7): 1-9 (e o 0 com digitacao em curso) montam o
   // numero; 1,5 s sem tecla ou OK confirma; Voltar cancela so o numero.
@@ -5158,6 +5182,7 @@ static const char *iconeBotao(int i) {
     case PLR_FONTES:    return "pl_layers";
     case PLR_PROXIMO:   return "pl_chevron-right";
     case PLR_REINICIAR: return "pl_rotate-ccw";
+    case PLR_NESTE:     return "pl_users";
     default:            return epE > 0 ? "pl_list-video" : "pl_film";
   }
 }
@@ -5170,6 +5195,7 @@ static const char *rotuloBotao(int i) {
     case PLR_FONTES:    return "Fontes";
     case PLR_PROXIMO:   return "Próximo episódio";
     case PLR_REINICIAR: return "Assistir do começo";
+    case PLR_NESTE:     return "Neste episódio";
     default:            return ehCanal() ? "Guia" : epE > 0 ? "Epis\xc3\xb3""dios" : "Relacionados";
   }
 }
@@ -6458,6 +6484,19 @@ void player_desenhar(Uint32 agora) {
     pd.texto = i18n("Fonte");
     pd.w = erroLargura(); pd.h = alturaErro();
     pd.corpo = corpoErro; pd.modal = 1; pd.video = 1;
+    plrilha_pedir(&pd);
+  }
+
+  if (nesteAberto && (epT != nesteT || epE != nesteE || !aberto || saindo)) nesteAberto = 0;
+  if (nesteAberto) {
+    PlrIlhaPedido pd;
+    const CatItem *c = item();
+    snprintf(nesteImdb, sizeof nesteImdb, "%s", c ? c->imdb : "");
+    neste_pedir(nesteImdb, nesteT, nesteE);
+    memset(&pd, 0, sizeof pd);
+    pd.icone = "pl_users"; pd.texto = i18n("Neste episódio");
+    pd.semFim = 1; pd.aberta = 1; pd.video = 1;
+    pd.w = 640.0f; pd.h = 36.0f + 34.0f * NESTE_MAX; pd.corpo = corpoNeste;
     plrilha_pedir(&pd);
   }
 
