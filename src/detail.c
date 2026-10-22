@@ -79,6 +79,7 @@ static TituloTempo detalheTempo;
 #include "fundo.h"
 #include "notasui.h"
 #include "musica.h"
+#include "musicaui.h"
 #include "qrtex.h"
 #include <stdio.h>
 #include <string.h>
@@ -1305,7 +1306,7 @@ static MusEstado musEstadoAtual(MusAlbum *out) {
   if (!ci || !ci->imdb[0] || (ehSerie() && musTemp() <= 0)) return MUS_NADA;
   return mus_estado(ci->imdb, musTemp(), out);
 }
-static void musGuardar(void);   // definida junto do desenho
+static void musAbrir(void);
 static int musPagina;
 static void musPedir(void) {
   const CatItem *ci = cat_item(idx);
@@ -1548,6 +1549,7 @@ static void auditoriaEpisodios(void) {
 }
 
 static void abrirInterno(const HomeItem *it) {
+  musicaui_fechar();
   pediuRelogio = 0;
   sinopse_fechar();
   pediuMenu = 0;
@@ -1713,6 +1715,7 @@ static void abrirInterno(const HomeItem *it) {
 }
 
 void detail_fechar(void) {
+  musicaui_fechar();
   pessoaBuscaCancelar();
   pediuRelogio = 0;
   sinopse_fechar();
@@ -1725,6 +1728,7 @@ void detail_fechar(void) {
 // SECO: o proximo detail_atualizar ja a encerra (o mesmo fim da mola de
 // saida, com o logo restaurado), sem a pagina recolher por cima da home.
 void detail_fechar_seco(void) {
+  musicaui_fechar();
   pessoaBuscaCancelar();
   pediuRelogio = 0;
   sinopse_fechar();
@@ -2840,6 +2844,7 @@ static void executarMais(int dm) {
 }
 
 static void detail_evento_(const SDL_Event *e) {
+  if (musicaui_aberta()) { musicaui_evento(e); return; }
   pediuRelogio = 0;
   if (sinopse_aberta()) {
     if (!episodios_menu_aberto() && sinopse_comentario_aberto() && e->type == SDL_KEYDOWN &&
@@ -3127,7 +3132,7 @@ static void detail_evento_(const SDL_Event *e) {
                                                   extras_relacionado_poster(foco.coluna));
       }
     } else if (foco.fileira == SEC_MUSICAS) {
-      musGuardar();
+      musAbrir();
     } else if (foco.fileira == SEC_COLECAO) {
       // O mini card abre a LISTA da saga; e la que se escolhe a parte.
       abrirListaColecao();
@@ -3665,6 +3670,7 @@ static void toquePessoaFocar(int i, int b) { (void)b; pessoaFoco = i; }
 static float blocoAnt[3] = { -1.0f, -1.0f, -1.0f };   // Notas / Numeros / Progresso no quadro anterior
 
 static void detail_atualizar_(float dt, Uint32 agora) {
+  if (musicaui_aberta()) { musicaui_atualizar(agora); return; }
   if (aberto) revalidarIdx();
   pessoaBuscaAtualizar();
 #ifdef NV_TOUCH_UI
@@ -6595,91 +6601,38 @@ static void cartazColecao(GfxRect r, const char *po, float a) {
 // o nome em 40/800, a meta a 60%, a pilula "Ver coleção" e dois cartazes de
 // 130x195 em leque a direita. Foco: a pilula vira o botao no acento (o OK
 // abre a lista da saga) e o bloco sobe um degrau, sem anel.
-// MUSICAS: estado de "guardada" lido do arquivo uma vez por (titulo,temp) e
-// o QR gerado uma vez por URL; o quadro so desenha.
-static char musChave[48], musQrUrl[320];
-static int musGuard;
-static GLuint musQr;
+// Music section opens the approved full-screen album page.
+static char musChave[48];
 static void musSinc(const CatItem *ci) {
   char k[48];
   snprintf(k, sizeof k, "%s/%d", ci->imdb, musTemp());
-  if (strcmp(k, musChave)) { strcpy(musChave, k); musGuard = mus_guardado(ci->imdb, musTemp()); musPagina = 0; }
+  if (strcmp(k, musChave)) { strcpy(musChave, k); musPagina = 0; }
 }
-static void musGuardar(void) {
-  MusAlbum al;
+static void musAbrir(void) {
+  static MusAlbum al;
   const CatItem *ci = cat_item(idx);
   if (!ci || musEstadoAtual(&al) != MUS_PRONTO) return;
   musSinc(ci);
-  musGuard = mus_alternar_guardado(ci->imdb, musTemp(), al.titulo, al.artista);
+  musicaui_abrir(&al, ci->imdb, ci->titulo, atoi(ci->meta), musTemp());
 }
 
 static void desenhaMusicas(float x, float y, float f, float a) {
-  static MusAlbum al;   // grande demais para a pilha de um quadro de TV
-  const CatItem *ci = cat_item(idx);
-  GfxRect r = { x, y, MUS_W, MUS_H };
-  float pf = f < 0.0f ? 0.0f : (f > 1.0f ? 1.0f : f), tx, tw;
-  char url[320], linha[200];
-  if (!ci || musEstadoAtual(&al) != MUS_PRONTO) return;
-  musSinc(ci);
-  foco_anel(r, COL_CARD_RAIO / MUS_H, f, a);
+  static MusAlbum al;
+  if (musEstadoAtual(&al) != MUS_PRONTO) return;
+  GfxRect r = {x,y,MUS_W,MUS_H};
   cartaoVidro(r, 0, a);
-
-  // Capa quadrada a esquerda.
-  { GfxRect c = { x + COL_CARD_PAD, y + (MUS_H - MUS_CAPA) * 0.5f, MUS_CAPA, MUS_CAPA };
-    cartazColecao(c, al.capa, a); }
-
-  // QR a direita (abre a busca no celular); sem NV_REC_URL nao ha QR.
-  mus_url_celular(url, sizeof url, ci->imdb, ci->titulo, atoi(ci->meta), musTemp());
-  tx = x + COL_CARD_PAD + MUS_CAPA + 36.0f;
-  tw = MUS_W - COL_CARD_PAD - (tx - x);
-  if (url[0]) {
-    GfxRect q = { x + MUS_W - COL_CARD_PAD - MUS_QR, y + COL_CARD_PAD, MUS_QR, MUS_QR };
-    TxtLinha lq = txt_linha(TXT_G22M, i18n("Abrir no celular"), 205, 210, 220, 255);
-    if (strcmp(url, musQrUrl)) { strcpy(musQrUrl, url); qr_textura(&musQr, url); }
-    if (musQr) gfx_rect(q, musQr, GFX_SNAP, 0, 0, 0, 0, 0, 0, 0, a);
-    txt_desenhar_alpha(lq, q.x + (q.w - lq.w) * 0.5f, q.y + q.h + 12.0f, a * 0.95f);
-    tw -= MUS_QR + 36.0f;
-  }
-
-  // Texto: etiqueta, album, meta e as primeiras faixas.
-  { TxtLinha l0 = txt_linha_corta(TXT_G22M, i18n("Trilha sonora original"), 205, 210, 220, 255, tw);
-    float yt = y + COL_CARD_PAD - 4.0f;
-    txt_desenhar_alpha(l0, tx, yt, a * 0.95f); yt += l0.h + 6.0f;
-    { float h = txt_bloco_corta(TXT_TITULO3, al.titulo, 250, 251, 255, tx, yt, tw, 52.0f, a, 1);
-      yt += h + 6.0f; }
-    snprintf(linha, sizeof linha, "%s", al.artista);
-    { TxtLinha lm = txt_linha_corta(TXT_G22M, linha, 205, 210, 220, 255, tw);
-      txt_desenhar_alpha(lm, tx, yt, a * 0.9f); yt += lm.h + 8.0f; }
-    musPagina = mus_pagina(musPagina, al.n, 0);
-    for (int k = musPagina * 2; k < al.n && k < musPagina * 2 + 2; k++) {
-      snprintf(linha, sizeof linha, "%d. %s", al.faixa[k].n ? al.faixa[k].n : k + 1, al.faixa[k].titulo);
-      TxtLinha lt = txt_linha_corta(TXT_G22M, linha, 235, 238, 245, 255, tw);
-      txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h;
-      snprintf(linha, sizeof linha, "%s · %d:%02d", al.faixa[k].artista,
-               al.faixa[k].dur / 60, al.faixa[k].dur % 60);
-      lt = txt_linha_corta(TXT_G18R, linha, 205, 210, 220, 255, tw);
-      txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h + 4.0f;
-    }
-    snprintf(linha, sizeof linha, "‹ %d / %d ›", musPagina + 1, (al.n + 1) / 2);
-    TxtLinha lp = txt_linha(TXT_G22M, linha, 205, 210, 220, 255);
-    txt_desenhar_alpha(lp, tx + tw - lp.w, y + MUS_H - COL_CARD_PAD - 40.0f, a);
-
-  }
-
-  // PILULA "Guardar" / "Guardada": mesmo sinal de foco da pilula da colecao.
-  { float ar, ag, ab;
-    const char *rot = i18n(musGuard ? "Guardada" : "Guardar");
-    TxtLinha lr = txt_linha(TXT_G22M, rot, 235, 238, 245, 255);
-    GfxRect pil = { tx, y + MUS_H - COL_CARD_PAD - 48.0f, lr.w + 52.0f + 34.0f, 48.0f };
-    int tin = ajustes_tinta_foco(), cc;
-    ajustes_acento(&ar, &ag, &ab);
-    gfx_cor(pil, 0.5f, 1.0f, 1.0f, 1.0f, 0.14f * (1.0f - pf) * a);
-    if (pf > 0.01f) gfx_cor(pil, 0.5f, ar, ag, ab, pf * a);
-    cc = (int)(235.0f + (float)(tin - 235) * pf);
-    lr = txt_linha(TXT_G22M, rot, cc, cc, cc, 255);
-    { GfxRect ic = { pil.x + 20.0f, pil.y + 11.0f, 26.0f, 26.0f };
-      gfx_icone(ic, "aj_music", cc / 255.0f, cc / 255.0f, cc / 255.0f, a); }
-    txt_desenhar_alpha(lr, pil.x + 56.0f, pil.y + (pil.h - lr.h) * 0.5f, a); }
+  cartazColecao((GfxRect){x+32,y+32,MUS_CAPA,MUS_CAPA},al.capa,a);
+  float tx = x+MUS_CAPA+68, tw = MUS_W-MUS_CAPA-104;
+  TxtLinha l = txt_linha_corta(TXT_G22M,i18n("Trilha sonora original"),205,210,220,255,tw);
+  txt_desenhar_alpha(l,tx,y+40,a);
+  txt_bloco_corta(TXT_TITULO3,al.titulo,243,242,239,tx,y+85,tw,52,a,2);
+  l = txt_linha_corta(TXT_G22M,al.artista,205,210,220,255,tw);
+  txt_desenhar_alpha(l,tx,y+205,a);
+  l = txt_linha(TXT_G22M,i18n("Abrir álbum"),243,242,239,255);
+  GfxRect pil = {tx,y+MUS_H-92,l.w+64,56};
+  float ar,ag,ab; ajustes_acento(&ar,&ag,&ab);
+  gfx_cor(pil,.5f,ar,ag,ab,(.15f+.85f*f)*a);
+  txt_desenhar_alpha(l,tx+32,pil.y+(pil.h-l.h)*.5f,a);
 }
 
 static void desenhaColecao(float x, float y, float f, float a) {
@@ -8067,6 +8020,7 @@ static void maisDesenhar(void) {
 }
 
 static void detail_desenhar_(Uint32 agora) {
+  if (musicaui_aberta()) { musicaui_desenhar(agora); return; }
 #ifdef NV_TOUCH_UI
   toqueDetalheSincronizarModo();
 #endif

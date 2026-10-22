@@ -78,6 +78,8 @@ GLuint tex_obter_larg(const char *caminho, float largLayout);
 // Publica sob demanda a paleta ja extraida, inclusive de retratos opacos.
 // Chamar a cada quadro enquanto o decode nao terminou; nao pede novo decode.
 void tex_publicar_paleta(const char *caminho);
+// Eight-by-eight spatial RGBA averages computed during the existing decode.
+int tex_cores(const char *caminho, unsigned char out[8*8*4]);
 // Entrega a textura menor ja existente enquanto a maior e reprocessada.
 GLuint tex_obter_larg_qualquer(const char *caminho, float largLayout);
 // Para LOGO DE TITULO: igual as duas acima, mas o pedido fura a fila de rede e
