@@ -4405,6 +4405,9 @@ static int publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
     int ap = (sup->h > 0) && ((sup->h & (sup->h - 1)) == 0);
     if (!lp || !ap) comMip = 0; }
 #endif
+  // CPU mip allocation failure must not schedule GPU generation on the
+  // render thread. A linear base texture remains complete and usable.
+  if (comMip && mipCpuAtivo() && !sup->userdata) comMip = 0;
   if (envioFalhou(alvo, t, sup)) return 0;
   Uint32 mipEm = SDL_GetTicks();
   glBindTexture(GL_TEXTURE_2D, t);
@@ -4422,8 +4425,15 @@ static int publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   gfx_tex_esquecer(0);  // o bind do upload passou por fora do gfx_rect
   if (envioFalhou(alvo, t, sup)) return 0;
+  Uint32 mipMs = SDL_GetTicks() - mipEm;
+  Uint32 warmEm = SDL_GetTicks();
   gfx_tex_aquecer(t);
   if (envioFalhou(alvo, t, sup)) return 0;
+  Uint32 warmMs = SDL_GetTicks() - warmEm;
+  if (glMs >= NV_TEX_TRACE_UPLOAD_MS || mipMs >= NV_TEX_TRACE_UPLOAD_MS ||
+      warmMs >= NV_TEX_TRACE_UPLOAD_MS)
+    printf("[tex-trace] upload-stages hash=%08lx pixels_ms=%u mip_ms=%u warm_ms=%u\n",
+           hashCaminho(uploadPath), (unsigned)glMs, (unsigned)mipMs, (unsigned)warmMs);
   glMs += SDL_GetTicks() - mipEm;
 
   SDL_LockMutex(mtx);
@@ -4504,7 +4514,7 @@ int tex_bombear(int max_por_quadro) {
       if (trabalhou) break;  // residencia ocupa o quadro sozinha
       Uint64 passoEm = SDL_GetPerformanceCounter();
       int ok, alvo = uplIdx;
-      SDL_LockMutex(mtx);
+      if (SDL_TryLockMutex(mtx) != 0) break;
       ok = itens[alvo].estado == DECODIFICADO && itens[alvo].sup == uplSup &&
            !strcmp(itens[alvo].caminho, uplPath);
       SDL_UnlockMutex(mtx);
@@ -4553,7 +4563,8 @@ int tex_bombear(int max_por_quadro) {
     SDL_Surface *sup = NULL; int alvo = -1, nivel = -1, classe = 0;
     Uint32 filaEm = 0, filaWait = 0;
     char uploadPath[512] = "";
-    SDL_LockMutex(mtx);
+    // Defer queued work if a network/decode worker holds the cache lock.
+    if (SDL_TryLockMutex(mtx) != 0) break;
     for (int i = 0; i < nMax; i++)
       if (!blocked[i] && itens[i].estado == DECODIFICADO && itens[i].sup && itens[i].urgente > nivel) {
         alvo = i; nivel = itens[i].urgente;
