@@ -899,6 +899,15 @@ char *rede_patch_st(const char *url, int segundos, const char *const *cab,
   return r;
 }
 
+// PUT de JSON pela mesma ponte (o TorBox edita um item so por PUT).
+char *rede_colocar_st(const char *url, int segundos, const char *const *cab,
+                      const char *corpo, int *status) {
+  char *r = pedir2("PUT", url, segundos, cab, "Content-Type: application/json",
+                   corpo ? corpo : "", NULL, status, NULL, 0, NULL);
+  if (!r && status && *status > 0) return strdup("");
+  return r;
+}
+
 void rede_discord_ca(const char *caminho) { (void)caminho; }
 const char *rede_ultimo_erro(void) { return ""; }
 
@@ -2720,7 +2729,8 @@ void rede_discord_ca(const char *caminho) {
 #define OPT_CAINFO 10065
 
 static char *postarNativo(const char *url, int segundos, const char *const *cab,
-                          const char *corpo, int *status, int seguro, int *retryAfter) {
+                          const char *corpo, int *status, int seguro, int *retryAfter,
+                          const char *verbo) {
   Balde b = {0};
   CacaCab respostaCab = { NULL, 0, retryAfter };
   if (retryAfter) *retryAfter = 0;
@@ -2749,6 +2759,7 @@ static char *postarNativo(const char *url, int segundos, const char *const *cab,
   }
   curl_setopt(c, OPT_POST, (long)1);
   curl_setopt(c, OPT_POSTFIELDS, corpo ? corpo : "");
+  if (verbo) curl_setopt(c, OPT_CUSTOMREQUEST, verbo);
   if (slist_append) {
     int k;
     // JSON e o padrao (Supabase, Trakt); quem manda o proprio Content-Type
@@ -2783,35 +2794,49 @@ char *rede_postar_st(const char *url, int segundos, const char *const *cab,
   return rede_postar_st_retry(url, segundos, cab, corpo, status, NULL);
 }
 
-char *rede_postar_st_retry(const char *url, int segundos, const char *const *cab,
-                           const char *corpo, int *status, int *retryAfter) {
+// POST e PUT de JSON: a mesma rota (Android: libcurl primeiro, HttpURLConnection
+// se ela nao respondeu). `verbo` NULL = POST.
+static char *enviarNativo(const char *verbo, const char *url, int segundos, const char *const *cab,
+                          const char *corpo, int *status, int *retryAfter) {
 #ifdef NV_ANDROID
+  const char *v = verbo ? verbo : "POST";
   char *r;
   int st = 0;
   if (retryAfter) *retryAfter = 0;
   if (!url || !*url) { if (status) *status = 0; return NULL; }
   if (androidPrimeiro()) {   // st local: com status NULL o 4xx tambem volta com corpo, como no curl
-    r = viaAndroid("POST", url, segundos, cab, corpo ? corpo : "", &st, NULL, retryAfter, "libcurl fora");
+    r = viaAndroid(v, url, segundos, cab, corpo ? corpo : "", &st, NULL, retryAfter, "libcurl fora");
     if (status) *status = st;
     return r;
   }
-  r = postarNativo(url, segundos, cab, corpo, &st, 0, retryAfter);
+  r = postarNativo(url, segundos, cab, corpo, &st, 0, retryAfter, verbo);
   if (status) *status = st;
   if (!r && st == 0) {
-    r = androidDepois("POST", url, segundos, cab, corpo ? corpo : "", &st, retryAfter);
+    r = androidDepois(v, url, segundos, cab, corpo ? corpo : "", &st, retryAfter);
     if (status) *status = st;
   }
   return r;
 #else
-  return postarNativo(url, segundos, cab, corpo, status, 0, retryAfter);
+  return postarNativo(url, segundos, cab, corpo, status, 0, retryAfter, verbo);
 #endif
+}
+
+char *rede_postar_st_retry(const char *url, int segundos, const char *const *cab,
+                           const char *corpo, int *status, int *retryAfter) {
+  return enviarNativo(NULL, url, segundos, cab, corpo, status, retryAfter);
+}
+
+// PUT de JSON. Existe para o TorBox, que edita um item (airlocked) so por PUT.
+char *rede_colocar_st(const char *url, int segundos, const char *const *cab,
+                      const char *corpo, int *status) {
+  return enviarNativo("PUT", url, segundos, cab, corpo, status, NULL);
 }
 
 char *rede_postar_seguro_st(const char *url, int segundos, const char *const *cab,
                             const char *corpo, int *status) {
   if (status) *status = 0;
   if (!url || strncmp(url, "https://", 8)) return NULL;
-  return postarNativo(url, segundos, cab, corpo, status, 1, NULL);
+  return postarNativo(url, segundos, cab, corpo, status, 1, NULL, NULL);
 }
 
 // ------------------------------------------------------------ VAZAO (curl)

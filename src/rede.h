@@ -322,6 +322,10 @@ char *rede_postar_st(const char *url, int segundos, const char *const *cabecalho
 // POST with the response Retry-After (same parsing as rede_baixar_st_retry).
 char *rede_postar_st_retry(const char *url, int segundos, const char *const *cabecalhos,
                            const char *corpo, int *status, int *retryAfter);
+// PUT de JSON, mesmo contrato de rede_postar_st (NULL so em falha de transporte;
+// 4xx volta com corpo). Existe para o TorBox, que edita um item so por PUT.
+char *rede_colocar_st(const char *url, int segundos, const char *const *cabecalhos,
+                      const char *corpo, int *status);
 #ifdef __EMSCRIPTEN__
 // Authenticated JSON PATCH through the legacy WGT HTTP bridge.
 char *rede_patch_st(const char *url, int segundos, const char *const *cabecalhos,
