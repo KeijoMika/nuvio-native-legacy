@@ -5567,7 +5567,8 @@ static void desenhaMinhaNotaEpisodio(GfxRect th, const char *imdb, int temp, int
   snprintf(id, sizeof id, "%s:%d:%d", imdb, temp, epi);
   n = reacao_nota(id);
   if (n <= 0) return;
-  snprintf(tx, sizeof tx, "%d,%d", n / 2, (n % 2) * 5);
+  snprintf(tx, sizeof tx, "%d.%d", n / 2, (n % 2) * 5);
+  plrui_decimal(tx);
   l = txt_linha(TXT_CAPTION, tx, 255, 255, 255, 255);
   w = 12 + 24 + 8 + (float)l.w + 12;
   x = th.x + th.w - w - 18;

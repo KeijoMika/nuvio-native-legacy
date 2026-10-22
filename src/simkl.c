@@ -1031,14 +1031,14 @@ static void *fioNota(void *u) {
   SmkNota *a = u; char corpo[200], *r; int st = 0;
   snprintf(corpo, sizeof corpo, "{\"%s\":[{\"rating\":%d,\"ids\":{\"imdb\":\"%s\"}}]}",
            !strcmp(a->tipo, "series") ? "shows" : "movies", a->nota, a->id);
-  r = pedir(a->pedido, 'P', "/sync/ratings", NULL, corpo, &st);
+  r = pedir(a->pedido, 'P', a->nota ? "/sync/ratings" : "/sync/ratings/remove", NULL, corpo, &st);
   printf("[simkl] nota %d %s (%s) -> HTTP %d\n", a->nota, a->id, a->tipo, st);
   fflush(stdout); free(r); memset(a, 0, sizeof *a); free(a);
   return NULL;
 }
 int simkl_avaliar(const char *imdb, const char *tipo, int nota) {
   pthread_t t;
-  if (!imdbValido(imdb) || nota < 1 || nota > 10) return 0;
+  if (!imdbValido(imdb) || strchr(imdb, ':') || nota < 0 || nota > 10) return 0;
   SmkNota *a = calloc(1, sizeof *a); if (!a) return 0;
   a->pedido = pedidoCapturar();
   if (!a->pedido.aut[0]) { free(a); return 0; }

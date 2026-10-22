@@ -64,6 +64,9 @@ void reacao_responder(const char *imdb, int reacao);
 
 // Nota em meia estrela, 1 a 10 (0 = sem nota). `imdb` do titulo ou "tt:S:E".
 int  reacao_nota(const char *imdb);
+unsigned reacao_tags(const char *id);
+int reacao_episodio_abrir(const CatItem *ci, int temporada, int episodio);
+void reacao_player_episodio(int temporada, int episodio);
 void reacao_nota_definir(const char *imdb, int nota);
 int  reacao_nota_para_reacao(int nota);   // >=7 gostei, 4-6 mais ou menos, 1-3 nao
 

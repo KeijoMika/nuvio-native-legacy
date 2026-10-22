@@ -4853,6 +4853,7 @@ void player_atualizar(float dt, Uint32 agora) {
         listaConhecida) {
       const CatEp *px = eSerie ? player_proximo_episodio() : NULL;
       double cr = credEfetivo();
+      reacao_player_episodio(eSerie ? epT : 0, eSerie ? epE : 0);
       reacao_player_atualizar(dt, agora, ci, eSerie, posSeg, duracaoSeg, cr,
                               px != NULL, px && px->temporada != epT);
     } else reacao_player_atualizar(dt, agora, NULL, 0, 0, 0, 0, 0, 0);
