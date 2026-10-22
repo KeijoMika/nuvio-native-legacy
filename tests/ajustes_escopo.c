@@ -224,6 +224,26 @@ static void edicao(void) {
   assert(valor[AJ_VIDRO] == 1 && valor[AJ_HERO] == 1 && valor[AJ_RELOGIO] == 0);   // o ativo voltou inteiro
 }
 
+static void pollOptoutIsolation(void) {
+  const char *nomes[] = { "Admin", "Ana", "Other" };
+  perfis_teste_definir(nomes, NULL, 3, 1);
+  for (int initial = 0; initial <= 1; initial++) {
+    char *pending;
+    valor[AJ_ENQUETES] = initial;
+    assert(dados_gravar("enquete-optout.txt", "3 1\n"));
+    assert(ajustes_edicao_iniciar(2));
+    valor[AJ_ENQUETES] = initial;
+    int changed = definirValorDireto(AJ_ENQUETES, !initial);
+    ajustes_edicao_encerrar();
+    pending = dados_ler("enquete-optout.txt");
+    assert(pending && !strcmp(pending, "3 1\n"));
+    free(pending);
+    assert(!changed && valor[AJ_ENQUETES] == initial);
+    assert(perfis_ativo() == 1 && ajOpcaoDisponivel(AJ_ENQUETES));
+  }
+  dados_apagar("enquete-optout.txt");
+}
+
 static void admin(void) {
   char h[65], *arq;
   admin_sha256_hex((const unsigned char *)"abc", 3, h);
@@ -326,6 +346,7 @@ int main(void) {
   migracao();
   copia();
   edicao();
+  pollOptoutIsolation();
   admin();
   infantil();
   gate();
