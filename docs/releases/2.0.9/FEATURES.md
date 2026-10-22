@@ -1,0 +1,63 @@
+# Nuvio Legacy 2.0.9
+
+Changes since `v2.0.8`, from local commit and branch snapshots. Integration does not confirm installation on a TV. English follows the owner’s current language override.
+
+## Highlights
+
+- **A richer pause panel**: After four seconds paused, see the episode synopsis, enabled ratings and rotating Trakt comments, with optional cast and local visibility settings. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #627, @I0-oX, `288115d6e`, `ef1b66a97`.
+
+- **TorBox Airlock from the TV**: Keep or remove a source item from permanent Airlock storage directly in its files list, with refusal feedback and account-aware state. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #633, @I0-oX, `bcc63e3b1`, `7715cabc7`, `a01e8a134`, `ce6a7d1cd`.
+
+## New
+
+- **Player format display choices**: Choose pills, text, marks, badges or no format row, place it under the title or in the corner, and choose whether to show the audio codec alongside its language. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #669, @I0-oX, `e76811f15`.
+
+## Fixes
+
+- **Primary Samsung subtitles**: Selected primary subtitle cues render during native fallback instead of remaining invisible. Platforms: Samsung .tpk. Refs: #671, #665, `19533c9ad`.
+
+- **Manual source selection everywhere**: Every playback request waits for your source choice when manual selection is enabled, and exact source picks are preserved. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #667, `3b0699466`, `e6544a115`.
+
+- **Complete collection showcases**: Reach every collection catalog while scrolling, within the bounded cache. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #661, `2720a44b5`.
+
+- **Stable Cover Flow loading**: Keep the visible catalog presentation stable as additional pages arrive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #662, `a0ae67373`.
+
+- **Hold to scroll the TV guide**: Held arrow keys continue through channels without unexpectedly opening the category sidebar. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #668, `133cccd0b`.
+
+- **Live TV add-on playback**: Live catalogs and typed detail playback work again, and expanded channel aliases are matched before stream-prefix filtering. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #646, `63dbdadb2`, `3f503f285`.
+
+- **Correct next-episode artwork**: Next Up artwork matches the episode actually offered. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `7954f6e5b`.
+
+- **Custom add-on video identities**: Keep custom video IDs and route stream requests using the add-on manifest. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `465bfa48c`.
+
+- **Collection filters and card styles**: Preserve web-snapshot tab filters, enforce media types and Top 10 limits, and respect round cards in collections and showcases. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `54ce9fcf9`, `4fd572bce`, `71cd70dcd`.
+
+- **Profile animations and clean Light backgrounds**: GIF avatars restart whenever focused, and Light backgrounds avoid coarse film grain. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #660, #657, `58a94f01d`, `696409f3a`.
+
+- **Localized post-play hints**: Post-play hints stay inside their translated islands. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d9275be11`.
+
+- **Consistent 12-hour time**: End times, Seekr local times and friend-activity timestamps follow your clock-format setting. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `bedce6987`.
+
+- **More reliable scraper searches**: Avoid search starvation and report incomplete searches accurately. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `be73af022`.
+
+## Performance
+
+- **Bounded source-sheet work**: Limit source-sheet frame work to visible rows to keep navigation responsive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d28ff9e77`.
+
+## Community
+
+- **Pause-panel contribution**: Enjoy the expanded pause experience contributed by @I0-oX. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #627, `288115d6e`.
+
+- **Airlock contribution**: Manage TorBox permanent storage with the contribution from @I0-oX. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #633, `bcc63e3b1`.
+
+- **Player-format contribution**: Customize player format and audio-language presentation with the contribution from @I0-oX. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #669, `e76811f15`.
+
+## Internal
+
+- **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
+
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`.
+
+## Pending (not yet integrated)
+
+- **Safer proxy playback and buffer fallback**: Pending fixes protect request headers after HTTPS downgrades, restore native buffering after proxy fallback, prevent concurrent clients from restarting the active stream and unblock near-forward native seeks when the origin stalls. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `agente/205-ur673`, `d365dd646`; latest fix needs review.

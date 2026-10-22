@@ -4765,24 +4765,6 @@ static void *montar(void *u) {
       if (cortados)
         printf("[desc] %d catalogo(s) so respondem com busca e nao viram fileira\n", cortados);
       nDecl = w2; }
-    // CANAL E DO GUIA, NAO DA HOME. Ligar um addon de TV ao vivo no guia fazia
-    // o catalogo "channel" virar candidato (e, por ser addon novo, ganhar a
-    // vaga garantida) e aparecer na home sem a pessoa pedir. So fica quem ela
-    // ja escolheu na TV (fil_escolhida); o guia nao depende disto, ele le o
-    // manifesto do addon.
-    { int r2, w2 = 0, canais = 0;
-      for (r2 = 0; r2 < nDecl; r2++) {
-        if (ehCanal(decls[r2].tipo) && fil_escolhida(decls[r2].chave) < 0) {
-          // Keep installed TV catalogs visible in management, outside Home.
-          foraCotaGuardar(&decls[r2]);
-          canais++;
-          continue;
-        }
-        if (w2 != r2) decls[w2] = decls[r2];
-        w2++;
-      }
-      if (canais) printf("[desc] %d catalogo(s) de canal ficam no guia, nao na home\n", canais);
-      nDecl = w2; }
     printf("[desc] %d catalogos declarados pelos addons\n", nDecl);
     // FANTASMAS. Addon removido da conta deixava os catalogos dele na lista de
     // fileiras — e na home — ate o proximo login (@rawldon). Aqui TODOS os
@@ -8361,14 +8343,16 @@ static void *buscarEps(void *u) {
   if (!pedido) snprintf(epAlvoId, sizeof epAlvoId, "%s", orig->imdb);
   snprintf(meuId, sizeof meuId, "%s", orig->imdb);
   // Copia sob a trava antes de sair para a rede; nenhum ponteiro de quadro.
-  // CANAL NAO PASSA AQUI. O Cinemeta so conhece filme/serie por id do IMDb
-  // ("tt..."); id de canal e "cs:channel:<hash>". "ehFilme = tipo != series"
-  // tratava canal como filme, pedia /meta/movie/<id> com um id que o
-  // Cinemeta nunca teve, E o corte no primeiro ':' (abaixo, ao montar
-  // `serie`) reduzia TODO canal a "cs" — a mesma chave de cache para todos,
-  // entao o primeiro canal aberto "vazava" elenco/genero/nota para os
-  // seguintes. Medido: nenhum canal tem tipo "movie" nem "series" (#37).
-  if (ehCanal(orig->tipo)) { epConcluir(); return NULL; }
+  // Live channels use only their publishing addon, with the exact ID/type.
+  // Never resolve them through Cinemeta or the movie/series metadata pipeline.
+  if (ehCanal(orig->tipo)) {
+    int addon = addonDaOrigem(orig->origem);
+    char *meta = addon >= 0 ? metaDoAddonT(addon, orig->tipo, orig->imdb, 8) : NULL;
+    if (meta && metaValida(meta) && !epPedidoSaiu())
+      metaPublicarPrimario(orig, meta, alvoItem);
+    free(meta);
+    epConcluir(); return NULL;
+  }
   // PERSONAL SERVER ITEM: the server is the only source of its page. No
   // Cinemeta, TMDB or addon /meta gets an opaque server id.
   if (jfid_e(orig->imdb)) {
@@ -9045,6 +9029,19 @@ static char *colecaoBaixar(const char *url, int *status) {
   return corpo;
 }
 
+static int colecaoTeto(const char *id) {
+  return strstr(id, "top100") ? 100 : strstr(id, "top250") ? 250 :
+         strstr(id, "top10") ? 10 : VT_MAX;
+}
+
+static int colecaoTipo(const ColSource *fonte, const CatItem *item) {
+  const char *tipo = fonte->prov[0] ?
+    (!strcasecmp(fonte->midia, "TV") ? "series" : "movie") : fonte->type;
+  if (!strcmp(tipo, item->tipo)) return 1;
+  if (!strcmp(tipo, "tv")) tipo = "series";
+  return (strcmp(tipo, "movie") && strcmp(tipo, "series")) || !strcmp(tipo, item->tipo);
+}
+
 int desc_colecao_inicial(const ColSource *fonte, const char *base,
                          NvPerfilSessao sessao, CatItem *itens, int limite,
                          DescColecaoResultado *resultado) {
@@ -9069,8 +9066,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
   }
   ids = calloc(VT_MAX, sizeof *ids);
   if (!ids) { r.erro = 1; *resultado = r; return nv_perfil_sessao_atual(sessao); }
-  teto = !prov && strstr(f.catId, "top100") ? 100 :
-         !prov && strstr(f.catId, "top250") ? 250 : VT_MAX;
+  teto = colecaoTeto(f.catId);
   if (!nv_perfil_sessao_travar(sessao)) { free(ids); return 0; }
   ocultar = ajustes_ocultar_filmes_vistos();
   nv_perfil_sessao_destravar();
@@ -9148,7 +9144,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       }
       ok = prov == 1 ? deMetaTmdb(p, fimItem, !strcasecmp(f.midia, "TV") ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
-      if (!ok) { nv_perfil_sessao_destravar(); continue; }
+      if (!ok || !colecaoTipo(&f, &item)) { nv_perfil_sessao_destravar(); continue; }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
       visto = desc_filme_visto(&item);
@@ -9237,7 +9233,7 @@ static void *fioVerTudo(void *u) {
             js_texto(p,f,"job",job,sizeof job);
             if (strcasecmp(job,"director")) continue;
           }
-          if (deMetaTmdb(p,f,padrao,&lote[nl])) {
+          if (deMetaTmdb(p,f,padrao,&lote[nl]) && colecaoTipo(&fonte, &lote[nl])) {
             if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
           }
         }
@@ -9270,7 +9266,7 @@ static void *fioVerTudo(void *u) {
           const char *p=*corpo=='['?js_raiz_array(corpo):NULL;
           for(;p&&nl<48;p=js_prox(js_fim(p))) {
             const char *f=js_fim(p);raw++;
-            if (deMetaTrakt(p,f,fonte.midia,&lote[nl])) {
+            if (deMetaTrakt(p,f,fonte.midia,&lote[nl]) && colecaoTipo(&fonte, &lote[nl])) {
               if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
             }
           }
@@ -9289,7 +9285,7 @@ static void *fioVerTudo(void *u) {
     if(generation!=vtGeracao || !descSessaoAtual()){pthread_mutex_unlock(&vtTrava);free(lote);continue;}
     int seguir = 0;
     { int added=ocultos;   // pagina so de futuros nao encerra a paginacao
-      for(int i=0;i<nl&&vtN<VT_MAX;i++){
+      for(int i=0;i<nl&&vtN<colecaoTeto(fonte.catId);i++){
         int dup=0;
         for(int j=0;j<vtN;j++)
           if(lote[i].imdb[0]&&!strcmp(vtItens[j].imdb,lote[i].imdb)
@@ -9297,7 +9293,7 @@ static void *fioVerTudo(void *u) {
         if(!dup){vtItens[vtN++]=lote[i];added++;}
       }
       vtErro=!ok;
-      if(ok){if(semMais||!added||vtN>=VT_MAX)vtFim=1;else vtPagina=skip+1;}
+      if(ok){if(semMais||!added||vtN>=colecaoTeto(fonte.catId))vtFim=1;else vtPagina=skip+1;}
       seguir = vtPaginaSoDeVistos(antes, added, paginas);
       if (!seguir) vtFioVivo=0; }
     pthread_mutex_unlock(&vtTrava);
@@ -9316,17 +9312,19 @@ static void *fioVerTudo(void *u) {
   else if(skip)snprintf(extra,sizeof extra,"skip=%d",skip);
   w=catalogoUrl(url,sizeof url,base,type,id,extra);
   corpo=(!addons_base_desligada(base)&&descPedidoCoube(base,w,sizeof url))?colecaoBaixar(url,&status):NULL; }
-  cap=strstr(id,"top100")?100:strstr(id,"top250")?250:VT_MAX;
+  cap=colecaoTeto(id);
   pthread_mutex_lock(&vtTrava);
   if(generation!=vtGeracao || !descSessaoAtual()){pthread_mutex_unlock(&vtTrava);free(corpo);continue;}
   pthread_mutex_unlock(&vtTrava);
   const char *first=corpo?js_array(corpo,NULL,"metas"):NULL;
   int valid=corpo&&strstr(corpo,"\"metas\"");
   int added=0;
+  snprintf(fonte.type, sizeof fonte.type, "%s", type);
+  fonte.prov[0] = 0;
   for(const char *p=first;p;p=js_prox(js_fim(p))) {
     const char *f=js_fim(p);raw++;
     CatItem it;
-    if (deMeta(p, f, type, &it)) {
+    if (deMeta(p, f, type, &it) && colecaoTipo(&fonte, &it)) {
       // Escondido ainda conta como "pagina com novidade": senao uma pagina so de
       // futuros encerraria a paginacao do catalogo.
       if (descOcultaNaoLancado(&it)) { added++; continue; }

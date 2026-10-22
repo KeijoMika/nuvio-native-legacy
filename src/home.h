@@ -139,13 +139,13 @@ int  home_pediu_guia(char *id, int tam);
 
 // VITRINE DAS COLECOES (vertudo.c): destaque e cartaz da Home para um CatItem
 // que nao esta no catalogo global. Ver home.c.
-void home_vitrine_medida(float *w, float *h, float *passo, float *rotH);
+void home_vitrine_medida(float *w, float *h, float *passo, float *rotH, int redonda);
 int  home_vitrine_arte_pronta(const CatItem *ci);
 int  home_vitrine_arte(const CatItem *ci, float alfa);
 int  home_vitrine_layout(void);
 float home_vitrine_topo(float filH);
 float home_vitrine_texto(const CatItem *ci, float topo, float teto, float alfa);
-void home_vitrine_cartao(const CatItem *ci, GfxRect base, GfxRect card, float alfa);
+void home_vitrine_cartao(const CatItem *ci, GfxRect base, GfxRect card, float alfa, int redonda, float foco);
 #endif
 const char *home_rastro_foco(void);
 // CARROSSEL DA DINAMICA: titulos (indices do catalogo) da fileira em foco e a
