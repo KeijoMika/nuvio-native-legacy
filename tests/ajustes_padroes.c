@@ -447,12 +447,24 @@ int main(void) {
   assert(gpun_fosco_vetado());
   assert(definirValorDireto(AJ_VIDRO_FOSCO, 2));
   assert(!gpun_fosco_vetado());
-  // Formato do player: Original de fabrica; local (o web nao tem).
-  assert(AJ_PLR_FORMATO > AJ_LOG_REDE && AJ_N > AJ_PLR_FORMATO);
-  assert(valor[AJ_PLR_FORMATO] == PLR_FMT_ORIGINAL && ajustes_plr_formato() == PLR_FMT_ORIGINAL);
+  // Formato do player: de fabrica, o que o OSD sempre foi (marcas no canto de cima); local (o web nao tem).
+  assert(AJ_PLR_FORMATO > AJ_LOG_REDE && AJ_PLR_FORMATO_POS == AJ_PLR_FORMATO + 1 && AJ_N > AJ_PLR_FORMATO_POS);
+  assert(valor[AJ_PLR_FORMATO_POS] == PLR_POS_CANTO && ajustes_plr_formato_pos() == PLR_POS_CANTO);
+  assert(!strcmp(CHAVE[AJ_PLR_FORMATO_POS], "plrFormatoPosLocal") && somenteDesteAparelho(AJ_PLR_FORMATO_POS));
+  valor[AJ_PLR_FORMATO_POS] = 99; assert(ajustes_plr_formato_pos() == PLR_POS_CANTO);   // fora da lista: o canto
+  valor[AJ_PLR_FORMATO] = PLR_FMT_OFF; assert(inativa(AJ_PLR_FORMATO_POS));
+  valor[AJ_PLR_FORMATO] = PLR_FMT_MARCAS; assert(!inativa(AJ_PLR_FORMATO_POS));
+  valor[AJ_PLR_FORMATO_POS] = PLR_POS_CANTO;
+  assert(valor[AJ_PLR_FORMATO] == PLR_FMT_MARCAS && ajustes_plr_formato() == PLR_FMT_MARCAS);
   assert(!strcmp(CHAVE[AJ_PLR_FORMATO], "plrFormatoLocal") && somenteDesteAparelho(AJ_PLR_FORMATO));
-  valor[AJ_PLR_FORMATO] = 99; assert(ajustes_plr_formato() == PLR_FMT_ORIGINAL);   // valor fora da lista: o original
-  valor[AJ_PLR_FORMATO] = PLR_FMT_ORIGINAL;
+  valor[AJ_PLR_FORMATO] = 99; assert(ajustes_plr_formato() == PLR_FMT_MARCAS);   // valor fora da lista: as marcas
+  valor[AJ_PLR_FORMATO] = PLR_FMT_MARCAS;
+  // O codec do audio aparece de fabrica; a linha apaga com a fileira desligada.
+  assert(AJ_PLR_CODEC == AJ_PLR_FORMATO_POS + 1 && AJ_N > AJ_PLR_CODEC);
+  assert(valor[AJ_PLR_CODEC] == 0 && valorPadrao[AJ_PLR_CODEC] == 0 && ajustes_plr_codec());
+  assert(!strcmp(CHAVE[AJ_PLR_CODEC], "plrCodecLocal") && somenteDesteAparelho(AJ_PLR_CODEC));
+  valor[AJ_PLR_FORMATO] = PLR_FMT_OFF; assert(inativa(AJ_PLR_CODEC));
+  valor[AJ_PLR_FORMATO] = PLR_FMT_MARCAS; assert(!inativa(AJ_PLR_CODEC));
   unlink(path);
   puts("ajustes_padroes: ok");
   return 0;
