@@ -153,7 +153,7 @@ static GfxRect heroAcaoRect(float *x, float *cy, float w, float h) {
 #define COL_CARD_PAD  36.0f
 // MUSICAS: um painel de vidro so (capa, trilha, QR para o celular, Guardar).
 #define MUS_W         1140.0f
-#define MUS_H         300.0f
+#define MUS_H         340.0f
 #define MUS_CAPA      228.0f
 #define MUS_QR        190.0f
 // Cartazes em escada no lado direito do card: o da frente e o primeiro da
@@ -6643,7 +6643,7 @@ static void desenhaMusicas(float x, float y, float f, float a) {
     snprintf(linha, sizeof linha, "%s", al.artista);
     { TxtLinha lm = txt_linha_corta(TXT_G22M, linha, 205, 210, 220, 255, tw);
       txt_desenhar_alpha(lm, tx, yt, a * 0.9f); yt += lm.h + 8.0f; }
-    for (int k = 0; k < al.n && k < 3; k++) {
+    for (int k = 0; k < al.n && k < 2; k++) {
       snprintf(linha, sizeof linha, "%d. %s", al.faixa[k].n ? al.faixa[k].n : k + 1, al.faixa[k].titulo);
       TxtLinha lt = txt_linha_corta(TXT_G22M, linha, 235, 238, 245, 255, tw);
       txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h + 4.0f;

@@ -95,6 +95,11 @@
 #define extras_ficha_paises       fx_ficha_paises
 #define extras_ficha_classificacao fx_ficha_classificacao
 
+// Musicas: soundtrack fixture, no network (NV_MUSICA_ONLY).
+#define mus_estado fx_mus_estado
+#define mus_pedir  fx_mus_pedir
+#define mus_url_celular fx_mus_url_celular
+
 #include "../src/detail.c"
 
 #include "dados.h"
@@ -126,6 +131,27 @@ static const Fix SERIE_T2[] = {
 #define IMDB_SERIE "tt0903747"
 #define IMDB_FILME "tt0133093"
 #define IMDB_VAZIO "tt0000009"
+
+MusEstado fx_mus_estado(const char *imdb, int temp, MusAlbum *out) {
+  (void)imdb; (void)temp;
+  if (out) {
+    memset(out, 0, sizeof *out);
+    snprintf(out->titulo, sizeof out->titulo, "Dune: Part Two (Original Motion Picture Soundtrack)");
+    snprintf(out->artista, sizeof out->artista, "Hans Zimmer");
+    snprintf(out->capa, sizeof out->capa, "deploy/app/art/poster/07.jpg");
+    out->n = 3;
+    out->faixa[0].n = 1; snprintf(out->faixa[0].titulo, sizeof out->faixa[0].titulo, "Dream of Arrakis"); out->faixa[0].dur = 65;
+    out->faixa[1].n = 2; snprintf(out->faixa[1].titulo, sizeof out->faixa[1].titulo, "Ripples in the Sand"); out->faixa[1].dur = 190;
+    out->faixa[2].n = 3; snprintf(out->faixa[2].titulo, sizeof out->faixa[2].titulo, "A Time of Quiet"); out->faixa[2].dur = 312;
+    for (int i = 0; i < 3; i++) snprintf(out->faixa[i].artista, sizeof out->faixa[i].artista, "Hans Zimmer");
+  }
+  return MUS_PRONTO;
+}
+void fx_mus_url_celular(char *dst, unsigned tam, const char *imdb, const char *titulo, int ano, int temp) {
+  (void)imdb; (void)titulo; (void)ano; (void)temp;
+  snprintf(dst, tam, "https://rec.test/m/#id=tt0000001");
+}
+void fx_mus_pedir(const char *imdb, const char *t, int ano, int temp) { (void)imdb; (void)t; (void)ano; (void)temp; }
 
 // --- DUBLE DE extras ---------------------------------------------------------
 void fx_pedir(const char *imdb, int serie, long tmdbId) {
@@ -600,6 +626,23 @@ int main(int argc, char **argv) {
       (void)k;
     }
     puts("PASS: Notas order (movie first, series after episodes)");
+    SDL_GL_DeleteContext(gl); SDL_DestroyWindow(janela); SDL_Quit(); return 0;
+  }
+
+  if (getenv("NV_MUSICA_ONLY")) {
+    SDL_Event ev = {0}; ev.type = SDL_KEYDOWN; ev.key.keysym.sym = SDLK_DOWN;
+    abrir(1, SEC_MUSICAS, 0);
+    assert(secaoN(SEC_MUSICAS) == 1);
+    for (int q = 0; q < 90; q++) { SDL_Delay(16); quadros(1); }
+    snprintf(nome, sizeof nome, "%s-musicas-movie.png", saida);
+    gravar(nome);
+    ev.key.keysym.sym = SDLK_RETURN; detail_evento(&ev);
+    ev.type = SDL_KEYUP; detail_evento(&ev);
+    for (int q = 0; q < 45; q++) { SDL_Delay(16); quadros(1); }
+    assert(mus_guardado(itens[1].imdb, 0));
+    snprintf(nome, sizeof nome, "%s-musicas-guardada.png", saida);
+    gravar(nome);
+    puts("PASS: Musicas section shows soundtrack and Guardar toggles");
     SDL_GL_DeleteContext(gl); SDL_DestroyWindow(janela); SDL_Quit(); return 0;
   }
 
