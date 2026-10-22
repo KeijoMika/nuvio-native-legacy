@@ -106,8 +106,10 @@ void pausao_atualizar(float dt, Uint32 agora, int podeSubir, int idx,
   snprintf(epSinopse, sizeof epSinopse, "%s", sinopseEp ? sinopseEp : "");
   epTemp = temporada; epEp = episodio;
   // As notas tambem sao pedidas na espera (resumo por IMDb, cache e fio proprios).
-  if (podeSubir && ajustes_pausa_overlay() && ajustes_pausa_notas() && imdb && !strncmp(imdb, "tt", 2) && !(temporada > 0 && episodio > 0))
-    extras_resumo_pedir(imdb, temporada > 0, 0);
+  if (podeSubir && ajustes_pausa_overlay() && ajustes_pausa_notas() && imdb && !strncmp(imdb, "tt", 2) && episodio <= 0) {
+    const CatItem *c = cat_item(pausao_indice());
+    if (c) extras_resumo_pedir(imdb, !strcmp(c->tipo, "series"), c->sinopse[0] == 0);
+  }
   // Os comentarios sao pedidos enquanto o painel ainda espera os 4 s: quando
   // ele sobe ja estao la. Idempotente por chave (pausacom.h).
   // Sem imdb o pedido limpa a lista: comentario de outro titulo nunca fica.
@@ -272,13 +274,14 @@ static void pausao_desenharCorpo_(Uint32 agora, const PausaoCena *cena) {
   }
   if (c->meta[0]) { hMeta = 25.0f; alt += 12.0f + hMeta; }
   { int f, cru[EX_NFONTES];
-    unsigned char todas[EX_NFONTES];
+    unsigned char querer[EX_NFONTES];
     float disp = PAUSAO_LARG;
     memset(cru, 0, sizeof cru);
-    memset(todas, 1, sizeof todas);
+    for (f = 0; f < EX_NFONTES; f++)
+      querer[f] = epEp > 0 ? ajustes_nota_episodio(f) : ajustes_nota_titulo(f);
     if (!ajustes_pausa_notas()) {
       /* desligado nas Opcoes: sem fileira, sem pedido */
-    } else if (epTemp > 0 && epEp > 0) {
+    } else if (epEp > 0) {
       // EPISODIO: so o que existe POR EPISODIO (IMDb e TMDB, no catalogo). A nota
       // da serie nao e a do episodio, e uma fonte sem nota nao aparece.
       int k;
@@ -294,13 +297,14 @@ static void pausao_desenharCorpo_(Uint32 agora, const PausaoCena *cena) {
       ExResumo r;
       if (idItem[0] && extras_resumo_obter(idItem, &r))
         for (f = 0; f < EX_NFONTES; f++) cru[f] = r.cru[f];
-      if (!cru[EX_IMDB] && c->imdb[0]) cru[EX_IMDB] = imdbnota_obter(c->imdb, c->nota, !strcmp(c->tipo, "series"));
+      if (!cru[EX_IMDB] && ajustes_mdblist_fonte(EX_IMDB) && c->imdb[0])
+        cru[EX_IMDB] = imdbnota_obter(c->imdb, c->nota, !strcmp(c->tipo, "series"));
     }
     notasui_modo_icone(1);
     // O plano encaixa com o vao de 24; com o de 40 pode passar: aperta o espaco
     // ate caber (cai uma nota), em vez de juntar as que ficam.
     do {
-      notasui_planejar(&notas, cru, disp, 0.0f, todas);
+      notasui_planejar(&notas, cru, disp, 0.0f, querer);
       disp -= 16.0f;
     } while (notas.n > 0 && notasui_plano_largura(&notas, PAUSAO_NOTAS_VAO) > PAUSAO_LARG);
     notasui_modo_icone(0);

@@ -12,6 +12,7 @@
 // Pedido que falhou (sem rede, HTTP ruim ou sem credencial) so sai de novo quando a pessoa pede a
 // mesma chave 30 s depois; no maximo 3 redes por chave. Resposta valida sem comentario nao e falha.
 #include "pausacom.h"
+#include "comentordem.h"
 #include "trakt.h"
 #include "rede.h"
 #include "js.h"
@@ -43,21 +44,14 @@ static unsigned long geracao;
 static pthread_t fio;
 static char isoPref[4];   // idioma da interface; "" = sem preferencia
 
-// 1 = o comentario conta como "no idioma da interface": sem `language` conta
-// (melhor que rebaixar o que talvez seja legivel), como em comentordem.h.
-static int mesmoIdioma(const char *lingua, const char *iso) {
-  if (!lingua[0] || !iso[0]) return 1;
-  return lingua[0] == iso[0] && lingua[1] == iso[1];
-}
-
 // ESTAVEL: os do idioma da interface primeiro; dentro de cada grupo segue a
 // ordem de curtidas que o Trakt deu.
 static void ordenarIdioma(PcComentario *v, int n, const char *iso) {
   PcComentario tmp[PC_MAX];
   int i, m = 0;
   if (n < 2 || n > PC_MAX) return;
-  for (i = 0; i < n; i++) if (mesmoIdioma(v[i].lingua, iso)) tmp[m++] = v[i];
-  for (i = 0; i < n; i++) if (!mesmoIdioma(v[i].lingua, iso)) tmp[m++] = v[i];
+  for (i = 0; i < n; i++) if (coment_mesmo_idioma(v[i].lingua, iso)) tmp[m++] = v[i];
+  for (i = 0; i < n; i++) if (!coment_mesmo_idioma(v[i].lingua, iso)) tmp[m++] = v[i];
   memcpy(v, tmp, sizeof(PcComentario) * (size_t)n);
 }
 static int aguarda;              // o ultimo pedido da chave atual falhou (rede ou credencial)

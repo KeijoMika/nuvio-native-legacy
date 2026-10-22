@@ -577,6 +577,12 @@ static void teste_curtidas_idioma(void) {
     for (i = 0; ok && i < 3; i++) ok = pausacom_obter(i, &o[i]);
     CHECA(ok && !strcmp(o[0].autor, "pt1") && !strcmp(o[1].autor, "sem") && !strcmp(o[2].autor, "en1"),
           "idioma: ordem com interface pt errada (%s %s %s)", o[0].autor, o[1].autor, o[2].autor); }
+  { PcComentario ordered[3] = {0};
+    strcpy(ordered[0].lingua, "en");
+    strcpy(ordered[1].lingua, "pt");
+    ordenarIdioma(ordered, 3, "");
+    CHECA(!ordered[0].lingua[0] && !strcmp(ordered[1].lingua, "en") &&
+          !strcmp(ordered[2].lingua, "pt"), "unknown UI language: shared ordering rule"); }
   pausacom_definir_idioma("");
   pausacom_limpar();
 }

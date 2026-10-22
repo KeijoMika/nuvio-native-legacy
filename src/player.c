@@ -4923,7 +4923,8 @@ void player_atualizar(float dt, Uint32 agora) {
   // nesta funcao) e cobriria a ficha. Pausar no fim de um episodio e comum
   // justamente porque a contagem esta correndo — sem esta linha o painel
   // subiria invisivel, atras dela.
-  pausao_atualizar(dt, agora,
+  {
+    int podeSubir =
                    // `!scrubbing`: durante o avanco o video fica pausado por
                    // conta do player, e nao porque o dono parou para olhar. Sem
                    // esta condicao o painel subia sozinho no meio de um avanco
@@ -4936,8 +4937,11 @@ void player_atualizar(float dt, Uint32 agora) {
                    // "comeca pausado" do Dolby Vision em MKV (video_iniciando).
                    !video_iniciando() && !dvtela_visivel() &&
                    !episodios_aberto() && !stream_folha_aberta() &&
-                   !faixas_aberta() && !player_janela_proximo(0) && !posplay_visivel(),
-                   idxAtual(), item() ? item()->imdb : "", epT, epE, linhaEp, sinopseEpisodioAtual());
+                   !faixas_aberta() && !player_janela_proximo(0) && !posplay_visivel();
+    pausao_atualizar(dt, agora, podeSubir,
+                   idxAtual(), item() ? item()->imdb : "", epT, epE, linhaEp,
+                   podeSubir && ajustes_pausa_overlay() ? sinopseEpisodioAtual() : "");
+  }
   // Com o painel de pe os controles SAEM de cena. Este ponto ja foi das duas
   // formas: com os controles visiveis o dono achou pior e pediu de volta o
   // comportamento original, com o painel ocupando o rodape sozinho, so que
