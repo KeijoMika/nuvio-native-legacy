@@ -3526,6 +3526,18 @@ double video_pos(void)      { return posSeg; }
 double video_duracao(void)  { return durSeg; }
 double video_buffer_fim(void) {
   DtsBufferInfo b={0};double end=bufferSeg;
+  if(dtsSessao) {
+    DtsPlaybackStatus st={0};dts_playback_status(dtsSessao,&st);
+    if(!st.failed && st.prepared) {
+      if(st.buffered_until>end)end=st.buffered_until;
+      if(st.buffer.total>0 && st.buffer.contiguous_bytes>0 && durSeg>0) {
+        double estimate=posSeg+(double)st.buffer.contiguous_bytes*durSeg/(double)st.buffer.total;
+        if(estimate>end)end=estimate;
+      }
+      if(durSeg>0 && end>durSeg)end=durSeg;
+    }
+    return end;
+  }
   if(!dtsSessao && moviebuffer_info(&b)>0 && b.total>0 && b.ready_bytes>0 && durSeg>0) {
     // Estimate only the standard buffered rail from measured payload and
     // average file bitrate. No labels, counters or extra player overlay.
