@@ -7,6 +7,7 @@
 static int perfil = 1;
 static char *arq[4]; static char nomeArq[4][48];
 int perfis_ativo(void) { return perfil; }
+void sync_proteger_ajustes_locais(void) {}
 char *rede_baixar(const char *u, int s) { (void)u; (void)s; return NULL; }
 char *dados_ler(const char *n) {
   int i; for (i = 0; i < 4; i++) if (arq[i] && !strcmp(nomeArq[i], n)) return strdup(arq[i]);

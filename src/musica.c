@@ -3,6 +3,7 @@
 #include "js.h"
 #include "dados.h"
 #include "perfis.h"
+#include "sync.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -254,7 +255,7 @@ int mus_alternar_guardado(const char *imdb, int temp, const char *album, const c
   }
   if (ligado) k += (size_t)snprintf(novo + k, cap - k, "%s\t%s\t%s\n", chave, a, r);
   novo[k] = 0;
-  dados_gravar(arquivo(), novo);
+  if (dados_gravar(arquivo(), novo)) sync_proteger_ajustes_locais();
   free(novo);
   free(b);
   return ligado;

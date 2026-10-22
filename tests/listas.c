@@ -9,6 +9,7 @@
 // SEM REDE. Tudo o que envolve HTTP entra por arquivo de tests/fixtures: o que
 // esta sob teste e a LEITURA das respostas e o efeito delas, nao o curl.
 #include "listas.h"
+#include "musica.h"
 #include "colecoes.h"
 #include "dados.h"
 #include "perfis.h"
@@ -265,6 +266,16 @@ int main(void) {
   testeTraktMinhas();
   testeTraktBusca();
   testeSimkl();
+  perfis_definir_ativo(1);
+  CONFERE(mus_alternar_guardado("tt1160419", 0, "Dune OST", "Hans Zimmer"), "save soundtrack");
+  lst_pedir(LST_NUVIO);
+  LstLista music = {0};
+  for (int i = 0; i < lst_n(); i++)
+    if (!strcmp(lst_lista(i)->colId, "musicas")) music = *lst_lista(i);
+  CONFERE(music.itens == 1, "saved music list visible in Library");
+  lst_abrir(&music, "MOVIE");
+  CatItem saved;
+  CONFERE(lst_itens_n() == 1 && lst_item(0, &saved) && !strcmp(saved.imdb, "tt1160419"), "saved music retrievable");
   testeFixarSobrevive();
   testeIsolamentoPerfil();
   testeAdicionarNaHome();
