@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Native-URI cache: real HTTP, all budgets, seek/concurrent clients/fallback."""
-import concurrent.futures,http.server,pathlib,re,ssl,subprocess,sys,threading,time,urllib.request,urllib.error
+import concurrent.futures,http.server,pathlib,re,select,ssl,subprocess,sys,threading,time,urllib.request,urllib.error
 requests=[]
 leaks=[]
 TOTAL=512*1024*1024
@@ -90,6 +90,21 @@ def request(url,start,end=None,method='GET'):
     r=f'bytes={start}-'+('' if end is None else str(end))
     with urllib.request.urlopen(urllib.request.Request(url,headers={'Range':r},method=method),timeout=15) as f:
         return f.status,dict(f.headers),f.read()
+if len(sys.argv)>4 and sys.argv[4]=='startup':
+    source=origin+'/stall'
+    p=subprocess.Popen([sys.argv[1],source,'64'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+    begun=time.monotonic()
+    output=b''
+    try:
+        while b'URL OFF\n' not in output:
+            assert time.monotonic()-begun<2, 'startup blocked UI for over two seconds'
+            if select.select([p.stdout],[],[],.05)[0]:output+=p.stdout.read1(4096)
+        p.stdin.write(b'q\n');p.stdin.flush();p.communicate(timeout=2)
+        assert p.returncode==0
+    finally:
+        if p.poll() is None:p.kill();p.communicate()
+    print('PASS stalled startup: bounded fallback and cancellation',flush=True)
+    sys.exit(0)
 for mib in [64,128,256]:
     p,url=daemon('/movie.mkv',mib)
     try:
