@@ -436,7 +436,7 @@ static void *fx_worker(void *opaque) {
     if(e->source_stream)__atomic_store_n(&e->source_cancel,0,__ATOMIC_RELAXED);
     pthread_mutex_unlock(&e->range_lock);
     uint64_t t0=fx_now_ms();
-    int r=rede_fluxo64(target,strip?(e->source_stream?e->source_public_headers:""):e->headers,at,fx_sink,e,&total,&status,
+    int r=rede_fluxo64(target,strip?(e->source_stream && e->final_cross!=2?e->source_public_headers:""):e->headers,at,fx_sink,e,&total,&status,
       e->source_stream?&e->source_cancel:&e->cancelled,fin,&cross,FX_STALL_MS,&got);
     uint64_t ms=fx_now_ms()-t0;
     pthread_mutex_lock(&e->range_lock);
@@ -709,30 +709,12 @@ void dts_engine_buffer_info(DtsEngine *e,DtsBufferInfo *b) {
   }
   pthread_mutex_unlock(&e->range_lock);
 }
-/* Preserve only the same public headers allowed by rede.c on a cross-origin
- * redirect. Cached CDN addresses must not lose Referer/Origin/User-Agent, nor
- * receive the add-on's Authorization/Cookie headers. */
-static char *source_public_headers(const char *raw) {
-  size_t used=0; char *out=malloc(strlen(raw)+2);
-  if(!out)return NULL;
-  for(const char *p=raw;*p;) {
-    size_t n=strcspn(p,"\n"),k=n;
-    if(k && p[k-1]=='\r')k--;
-    if((k>=8 && !strncasecmp(p,"Referer:",8)) ||
-       (k>=7 && !strncasecmp(p,"Origin:",7)) ||
-       (k>=11 && !strncasecmp(p,"User-Agent:",11))) {
-      memcpy(out+used,p,k);used+=k;out[used++]='\n';
-    }
-    p+=n;if(*p=='\n')p++;
-  }
-  out[used]=0;return out;
-}
 static int buffer_mib(int v) { return v == 128 || v == 256 ? v : 64; }
 DtsEngine *dts_engine_source_create(const char *url,const char *headers,int mib) {
   DtsEngine *e=dts_engine_create();
   if (!e) return NULL;
   e->url=strdup(url); e->headers=strdup(headers?headers:"");
-  e->source_public_headers=source_public_headers(headers?headers:"");
+  e->source_public_headers=rede_range_headers(headers,1);
   e->source_stream=1;
   e->fx_cap=(int64_t)buffer_mib(mib)*1024*1024; e->fx_req=-1;
   if(!e->url || !e->headers || !e->source_public_headers) { dts_engine_destroy(e); return NULL; }

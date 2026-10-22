@@ -11,6 +11,7 @@ int moviebuffer_info(DtsBufferInfo *i) { if(i) memset(i,0,sizeof *i);return 0; }
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -20,16 +21,16 @@ int moviebuffer_info(DtsBufferInfo *i) { if(i) memset(i,0,sizeof *i);return 0; }
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
-#define MB_CLIENTS 4
+#define MB_CLIENTS 1
 typedef struct MovieBuffer MovieBuffer;
 typedef struct { MovieBuffer *s; int slot; } Client;
 struct MovieBuffer {
   DtsEngine *input;
-  pthread_mutex_t read_lock, clients_lock;
+  pthread_mutex_t clients_lock;
   pthread_t threads[MB_CLIENTS];
   Client clients[MB_CLIENTS];
   int fd, sockets[MB_CLIENTS], threads_n, stop, fallback;
-  char source[8192], path[96], mime[40]; /* mime guarded by read_lock */
+  char source[8192], path[96], mime[40];
 };
 static MovieBuffer *current;
 static int stopped(MovieBuffer *s) { return __atomic_load_n(&s->stop,__ATOMIC_RELAXED); }
@@ -37,7 +38,7 @@ static int send_all(MovieBuffer *s,int fd,const void *data,size_t n) {
   const char *p=data;
   while(n && !stopped(s)) {
     ssize_t sent=send(fd,p,n,MSG_NOSIGNAL);
-    if(sent<0 && (errno==EINTR || errno==EAGAIN || errno==EWOULDBLOCK)) continue;
+    if(sent<0 && errno==EINTR) continue;
     if(sent<=0) return 0;
     p+=sent;n-=(size_t)sent;
   }
@@ -58,24 +59,10 @@ static int number(const char **p,int64_t *v) {
   if(*p==a) return 0;
   *v=(int64_t)n;return 1;
 }
-static void serve(MovieBuffer *s,int fd) {
-  char request[16384]={0},method[8],path[128],header[1024];
-  size_t used=0;
-  while(used+1<sizeof request && !stopped(s)) {
-    ssize_t n=recv(fd,request+used,sizeof request-used-1,0);
-    if(n<0 && errno==EINTR) continue;
-    if(n<=0) return;
-    used+=(size_t)n;request[used]=0;
-    if(strstr(request,"\r\n\r\n")) break;
-  }
-  if(!strstr(request,"\r\n\r\n") || sscanf(request,"%7s %127s",method,path)!=2) { respond(s,fd,400,"Bad Request");return; }
-  if(strcmp(path,s->path)) { respond(s,fd,404,"Not Found");return; }
-  int head=!strcmp(method,"HEAD");
-  if(!head && strcmp(method,"GET")) { respond(s,fd,405,"Method Not Allowed");return; }
-  char mime[40];
-  pthread_mutex_lock(&s->read_lock);
+/* Confirm support before video.c chooses the native buffer preset. */
+static int probe_source(MovieBuffer *s) {
   int64_t total=dts_engine_source_total(s->input);
-  if(total<0 && !__atomic_load_n(&s->fallback,__ATOMIC_RELAXED)) {
+  {
     unsigned char probe[257]={0};int got=0;
     while(got<256) {
       int part=dts_engine_source_read(s->input,got,probe+got,256-got);
@@ -96,8 +83,25 @@ static void serve(MovieBuffer *s,int fd) {
     }
     printf("[movie-buffer] probe: bytes=%d total=%"PRId64" type=%s\n",got,total,s->mime);fflush(stdout);
   }
+  return total>0 && !s->fallback;
+}
+static void serve(MovieBuffer *s,int fd) {
+  char request[16384]={0},method[8],path[128],header[1024];
+  size_t used=0;
+  while(used+1<sizeof request && !stopped(s)) {
+    ssize_t n=recv(fd,request+used,sizeof request-used-1,0);
+    if(n<0 && errno==EINTR) continue;
+    if(n<=0) return;
+    used+=(size_t)n;request[used]=0;
+    if(strstr(request,"\r\n\r\n")) break;
+  }
+  if(!strstr(request,"\r\n\r\n") || sscanf(request,"%7s %127s",method,path)!=2) { respond(s,fd,400,"Bad Request");return; }
+  if(strcmp(path,s->path)) { respond(s,fd,404,"Not Found");return; }
+  int head=!strcmp(method,"HEAD");
+  if(!head && strcmp(method,"GET")) { respond(s,fd,405,"Method Not Allowed");return; }
+  char mime[40];
+  int64_t total=dts_engine_source_total(s->input);
   snprintf(mime,sizeof mime,"%s",s->mime);
-  pthread_mutex_unlock(&s->read_lock);
   if(stopped(s)) return;
   if(total<=0 || __atomic_load_n(&s->fallback,__ATOMIC_RELAXED)) {
     /* No authenticated, finite HTTP range stream: let webOS handle the source.
@@ -134,9 +138,7 @@ static void serve(MovieBuffer *s,int fd) {
   unsigned char data[65536];
   while(start<=end && !stopped(s)) {
     int want=end-start+1>(int64_t)sizeof data?(int)sizeof data:(int)(end-start+1);
-    pthread_mutex_lock(&s->read_lock);
     int got=dts_engine_source_read(s->input,start,data,want);
-    pthread_mutex_unlock(&s->read_lock);
     if(got<=0) {
       if(!stopped(s)) { printf("[movie-buffer] read failed at byte=%"PRId64" result=%d\n",start,got);fflush(stdout); }
       return;
@@ -148,8 +150,15 @@ static void serve(MovieBuffer *s,int fd) {
 static void *worker(void *opaque) {
   Client *c=opaque;MovieBuffer *s=c->s;
   while(!stopped(s)) {
+    struct pollfd listener={s->fd,POLLIN,0};
+    if(poll(&listener,1,100)<=0)continue;
+    if(stopped(s))break;
     int fd=accept(s->fd,NULL,NULL);
-    if(fd<0) { if(errno==EINTR)continue;break; }
+    if(fd<0) {
+      if(stopped(s))break;
+      if(errno!=EINTR) { struct timespec delay={0,50000000};nanosleep(&delay,NULL); }
+      continue;
+    }
     struct timeval timeout={3,0};
     setsockopt(fd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof timeout);
     setsockopt(fd,SOL_SOCKET,SO_SNDTIMEO,&timeout,sizeof timeout);
@@ -157,7 +166,8 @@ static void *worker(void *opaque) {
     s->sockets[c->slot]=fd;
     if(stopped(s))shutdown(fd,SHUT_RDWR);
     pthread_mutex_unlock(&s->clients_lock);
-    serve(s,fd);
+    /* One worker serializes complete ranges on the single engine lane. */
+    if(!stopped(s))serve(s,fd);
     pthread_mutex_lock(&s->clients_lock);s->sockets[c->slot]=-1;close(fd);pthread_mutex_unlock(&s->clients_lock);
   }
   return NULL;
@@ -171,7 +181,7 @@ void moviebuffer_stop(void) {
   pthread_mutex_unlock(&s->clients_lock);
   for(int i=0;i<s->threads_n;i++)pthread_join(s->threads[i],NULL);
   close(s->fd);dts_engine_destroy(s->input);
-  pthread_mutex_destroy(&s->read_lock);pthread_mutex_destroy(&s->clients_lock);free(s);
+  pthread_mutex_destroy(&s->clients_lock);free(s);
 }
 int moviebuffer_info(DtsBufferInfo *info) {
   if(info) memset(info,0,sizeof *info);
@@ -187,7 +197,7 @@ int moviebuffer_url(const char *source,const char *headers,int mib,char *out,siz
   if((path_n>=5&&!strncasecmp(source+path_n-5,".m3u8",5)) || (path_n>=4&&!strncasecmp(source+path_n-4,".mpd",4)) || strstr(source,"127.0.0.1"))return 0;
   MovieBuffer *s=calloc(1,sizeof *s);if(!s)return 0;
   s->fd=-1;for(int i=0;i<MB_CLIENTS;i++)s->sockets[i]=-1;
-  pthread_mutex_init(&s->read_lock,NULL);pthread_mutex_init(&s->clients_lock,NULL);
+  pthread_mutex_init(&s->clients_lock,NULL);
   s->input=dts_engine_source_create(source,headers,mib);
   s->fd=socket(AF_INET,SOCK_STREAM,0);current=s;
   if(!s->input||s->fd<0) { moviebuffer_stop();return 0; }
@@ -203,6 +213,7 @@ int moviebuffer_url(const char *source,const char *headers,int mib,char *out,siz
   if(path_n>=4&&!strncasecmp(source+path_n-4,".mkv",4))ext="mkv";
   else if(path_n>=4&&!strncasecmp(source+path_n-4,".mp4",4))ext="mp4";
   snprintf(s->mime,sizeof s->mime,"%s",!strcmp(ext,"mkv")?"video/x-matroska":!strcmp(ext,"mp4")?"video/mp4":"application/octet-stream");
+  if(!probe_source(s)) {moviebuffer_stop();return 0;}
   snprintf(s->source,sizeof s->source,"%s",source);snprintf(s->path,sizeof s->path,"/%s/movie%s%s",token,*ext?".":"",ext);
   int count=snprintf(out,n,"http://127.0.0.1:%u%s",ntohs(addr.sin_port),s->path);
   if(count<0||(size_t)count>=n) {moviebuffer_stop();return 0;}

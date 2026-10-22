@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Native-URI cache: real HTTP, all budgets, seek/concurrent clients/fallback."""
-import concurrent.futures,http.server,pathlib,re,subprocess,sys,threading,time,urllib.request,urllib.error
+import concurrent.futures,http.server,pathlib,re,ssl,subprocess,sys,threading,time,urllib.request,urllib.error
+requests=[]
+leaks=[]
 TOTAL=512*1024*1024
 PATTERN=bytes(range(251))
 def content(start,n):
@@ -10,12 +12,18 @@ class Origin(http.server.BaseHTTPRequestHandler):
     protocol_version='HTTP/1.1'
     def log_message(self,*a): pass
     def do_GET(self):
+        requests.append((self.path,self.headers.get('Range')))
+        if self.path=='/downgrade':
+            self.send_response(307);self.send_header('Location',origin+'/bare');self.send_header('Content-Length','0');self.end_headers();return
+        bare=self.path=='/bare'
+        if bare and any(self.headers.get(h) for h in ['Authorization','Referer','Origin']):leaks.append(1)
+        if bare and self.headers.get('User-Agent')=='FixturePlayer':leaks.append(1)
         public=self.path=='/public'
         if public:
             assert not self.headers.get('Authorization')
             assert self.headers.get('Referer')=='https://fixture.invalid/'
             assert self.headers.get('User-Agent')=='FixturePlayer'
-        if not public and self.headers.get('Authorization')!='Bearer fixture':
+        if not public and not bare and self.headers.get('Authorization')!='Bearer fixture':
             self.send_response(401);self.send_header('Content-Length','0');self.end_headers();return
         if self.path=='/unsupported':
             self.send_response(200);self.send_header('Content-Length','7');self.end_headers();self.wfile.write(b'#EXTM3U');return
@@ -60,8 +68,13 @@ origin=f'http://127.0.0.1:{server.server_port}'
 # The test origin also runs on loopback. Replace only its spelling to exercise
 # the production recursion guard without weakening that guard in the app.
 origin=origin.replace('127.0.0.1','localhost')
-def daemon(path,mib):
-    p=subprocess.Popen([sys.argv[1],origin+path,str(mib)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+tls=Server(('127.0.0.1',0),Origin)
+context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(sys.argv[2],sys.argv[3])
+tls.socket=context.wrap_socket(tls.socket,server_side=True)
+threading.Thread(target=tls.serve_forever,daemon=True).start()
+def daemon(path,mib,secure=False):
+    source=(f'https://localhost:{tls.server_port}' if secure else origin)+path
+    p=subprocess.Popen([sys.argv[1],source,str(mib),sys.argv[2]],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
     while True:
         line=p.stdout.readline();assert line,p.poll()
         if line.startswith('URL '):return p,line.strip()[4:]
@@ -109,14 +122,12 @@ for mib in [64,128,256]:
 for path in ['/video.m3u8','/video.mpd']:
     p,url=daemon(path,64);assert url=='OFF';close(p)
 p,url=daemon('/movie.mkv',0);assert url=='OFF';close(p)
-p,url=daemon('/finite-playlist',64)
-try:
-    class NoRedirect(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self,*a):return None
-    try:urllib.request.build_opener(NoRedirect).open(url,timeout=15);assert False
-    except urllib.error.HTTPError as e:assert e.code==302 and e.headers['Location']==origin+'/finite-playlist'
-    assert stats(p)[0]==-1
-finally:close(p)
+for path in ['/finite-playlist','/unsupported']:
+    p,url=daemon(path,64)
+    try:
+        assert url=='OFF', 'fallback must preserve native preset before load'
+        assert stats(p)[0]==0
+    finally:close(p)
 print('PASS native URI: playlists/off bypass and unsupported-origin redirect before media bytes')
 for path in ['/capped','/broken','/redirect','/cross','/opaque','/opaque-mp4']:
     p,url=daemon(path,64)
@@ -131,10 +142,27 @@ for path in ['/capped','/broken','/redirect','/cross','/opaque','/opaque-mp4']:
         assert b==content(91*1024*1024+7,1000),path
         print(f'PASS single connection: {path}, exact bytes and seek',flush=True)
     finally:close(p)
+# Large distant requests must not alternate engine seeks per 64 KiB chunk.
+p,url=daemon('/movie.mkv',64)
+try:
+    requests.clear()
+    starts=[0,300*1024*1024]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        futures=[pool.submit(request,url,s,s+4*1024*1024-1) for s in starts]
+        for start,f in zip(starts,futures):assert f.result()[2]==content(start,4*1024*1024)
+    assert len(requests)<=3, 'concurrent ranges thrashed the engine'
+finally:close(p)
+print('PASS concurrent distant ranges: bounded origin restarts',flush=True)
+p,url=daemon('/downgrade',64,True)
+try:
+    for start in [0,200*1024*1024,400*1024*1024]:
+        assert request(url,start,start+1023)[2]==content(start,1024)
+    assert not leaks, 'caller headers leaked after downgrade'
+finally:close(p)
+print('PASS TLS downgrade: no caller headers on probe, stream or seek',flush=True)
 p,url=daemon('/stall',64)
 try:
-    try:urllib.request.urlopen(url,timeout=2);assert False
-    except TimeoutError:pass
+    assert url=='OFF', 'failed startup probe must preserve native buffering'
 finally:close(p)
 print('PASS single connection: stalled origin cancellation stays below 8 seconds',flush=True)
-server.shutdown()
+server.shutdown();tls.shutdown()

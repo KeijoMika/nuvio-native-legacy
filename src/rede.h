@@ -118,6 +118,9 @@ RedeErro rede_job_estado(RedeJob *job);
  * are accepted; total is -1 when unknown. Caller frees the returned buffer.
  * Raw headers use one Name: value per line. Credentials are stripped when a
  * redirect changes origin. Cancelling also interrupts an idle transfer. */
+/* cross: 0 = same origin, 1 = public headers only, 2 = no caller headers
+ * after an HTTPS downgrade (including subsequent HTTPS hops). */
+char *rede_range_headers(const char *raw, int public_only); /* caller frees */
 char *rede_baixar_trecho64_final(const char *url, const char *headers,
                               int64_t start, int64_t end, long *size,
                               int64_t *total, int *status,

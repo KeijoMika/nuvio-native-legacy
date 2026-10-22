@@ -3529,7 +3529,7 @@ double video_buffer_fim(void) {
   if(!dtsSessao && moviebuffer_info(&b)>0 && b.total>0 && b.ready_bytes>0 && durSeg>0) {
     // Estimate only the standard buffered rail from measured payload and
     // average file bitrate. No labels, counters or extra player overlay.
-    double estimate=posSeg+(double)b.ready_bytes*durSeg/(double)b.total;
+    double estimate=bufferSeg+(double)b.ready_bytes*durSeg/(double)b.total;
     if(estimate>end)end=estimate>durSeg?durSeg:estimate;
   }
   return end;

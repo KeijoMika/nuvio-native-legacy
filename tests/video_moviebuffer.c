@@ -6,7 +6,7 @@ int main(void) {
   dtsSessao=NULL;posSeg=10;durSeg=100;bufferSeg=20;
   movie_snapshot=(DtsBufferInfo){.ready_bytes=200,.capacity_bytes=256,.total=1000};
   movie_active=1;
-  assert(fabs(video_buffer_fim()-30)<.001);
+  assert(fabs(video_buffer_fim()-40)<.001);
   movie_snapshot.ready_bytes=950;
   assert(fabs(video_buffer_fim()-100)<.001);
   movie_snapshot.ready_bytes=0;

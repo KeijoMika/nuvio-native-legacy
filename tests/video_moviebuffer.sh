@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-work=$(mktemp -d)
+work=$(mktemp -d "$PWD/.video-moviebuffer-test.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 read -r -a sdl_flags <<< "$(pkg-config --cflags --libs sdl2)"
 if [ "$(uname)" = Darwin ]; then gc=-Wl,-dead_strip; else gc=-Wl,--gc-sections; fi
