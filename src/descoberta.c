@@ -9029,6 +9029,19 @@ static char *colecaoBaixar(const char *url, int *status) {
   return corpo;
 }
 
+static int colecaoTeto(const char *id) {
+  return strstr(id, "top100") ? 100 : strstr(id, "top250") ? 250 :
+         strstr(id, "top10") ? 10 : VT_MAX;
+}
+
+static int colecaoTipo(const ColSource *fonte, const CatItem *item) {
+  const char *tipo = fonte->prov[0] ?
+    (!strcasecmp(fonte->midia, "TV") ? "series" : "movie") : fonte->type;
+  if (!strcmp(tipo, item->tipo)) return 1;
+  if (!strcmp(tipo, "tv")) tipo = "series";
+  return (strcmp(tipo, "movie") && strcmp(tipo, "series")) || !strcmp(tipo, item->tipo);
+}
+
 int desc_colecao_inicial(const ColSource *fonte, const char *base,
                          NvPerfilSessao sessao, CatItem *itens, int limite,
                          DescColecaoResultado *resultado) {
@@ -9053,8 +9066,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
   }
   ids = calloc(VT_MAX, sizeof *ids);
   if (!ids) { r.erro = 1; *resultado = r; return nv_perfil_sessao_atual(sessao); }
-  teto = !prov && strstr(f.catId, "top100") ? 100 :
-         !prov && strstr(f.catId, "top250") ? 250 : VT_MAX;
+  teto = colecaoTeto(f.catId);
   if (!nv_perfil_sessao_travar(sessao)) { free(ids); return 0; }
   ocultar = ajustes_ocultar_filmes_vistos();
   nv_perfil_sessao_destravar();
@@ -9132,7 +9144,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       }
       ok = prov == 1 ? deMetaTmdb(p, fimItem, !strcasecmp(f.midia, "TV") ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
-      if (!ok) { nv_perfil_sessao_destravar(); continue; }
+      if (!ok || !colecaoTipo(&f, &item)) { nv_perfil_sessao_destravar(); continue; }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
       visto = desc_filme_visto(&item);
@@ -9221,7 +9233,7 @@ static void *fioVerTudo(void *u) {
             js_texto(p,f,"job",job,sizeof job);
             if (strcasecmp(job,"director")) continue;
           }
-          if (deMetaTmdb(p,f,padrao,&lote[nl])) {
+          if (deMetaTmdb(p,f,padrao,&lote[nl]) && colecaoTipo(&fonte, &lote[nl])) {
             if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
           }
         }
@@ -9254,7 +9266,7 @@ static void *fioVerTudo(void *u) {
           const char *p=*corpo=='['?js_raiz_array(corpo):NULL;
           for(;p&&nl<48;p=js_prox(js_fim(p))) {
             const char *f=js_fim(p);raw++;
-            if (deMetaTrakt(p,f,fonte.midia,&lote[nl])) {
+            if (deMetaTrakt(p,f,fonte.midia,&lote[nl]) && colecaoTipo(&fonte, &lote[nl])) {
               if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
             }
           }
@@ -9273,7 +9285,7 @@ static void *fioVerTudo(void *u) {
     if(generation!=vtGeracao || !descSessaoAtual()){pthread_mutex_unlock(&vtTrava);free(lote);continue;}
     int seguir = 0;
     { int added=ocultos;   // pagina so de futuros nao encerra a paginacao
-      for(int i=0;i<nl&&vtN<VT_MAX;i++){
+      for(int i=0;i<nl&&vtN<colecaoTeto(fonte.catId);i++){
         int dup=0;
         for(int j=0;j<vtN;j++)
           if(lote[i].imdb[0]&&!strcmp(vtItens[j].imdb,lote[i].imdb)
@@ -9281,7 +9293,7 @@ static void *fioVerTudo(void *u) {
         if(!dup){vtItens[vtN++]=lote[i];added++;}
       }
       vtErro=!ok;
-      if(ok){if(semMais||!added||vtN>=VT_MAX)vtFim=1;else vtPagina=skip+1;}
+      if(ok){if(semMais||!added||vtN>=colecaoTeto(fonte.catId))vtFim=1;else vtPagina=skip+1;}
       seguir = vtPaginaSoDeVistos(antes, added, paginas);
       if (!seguir) vtFioVivo=0; }
     pthread_mutex_unlock(&vtTrava);
@@ -9300,17 +9312,19 @@ static void *fioVerTudo(void *u) {
   else if(skip)snprintf(extra,sizeof extra,"skip=%d",skip);
   w=catalogoUrl(url,sizeof url,base,type,id,extra);
   corpo=(!addons_base_desligada(base)&&descPedidoCoube(base,w,sizeof url))?colecaoBaixar(url,&status):NULL; }
-  cap=strstr(id,"top100")?100:strstr(id,"top250")?250:VT_MAX;
+  cap=colecaoTeto(id);
   pthread_mutex_lock(&vtTrava);
   if(generation!=vtGeracao || !descSessaoAtual()){pthread_mutex_unlock(&vtTrava);free(corpo);continue;}
   pthread_mutex_unlock(&vtTrava);
   const char *first=corpo?js_array(corpo,NULL,"metas"):NULL;
   int valid=corpo&&strstr(corpo,"\"metas\"");
   int added=0;
+  snprintf(fonte.type, sizeof fonte.type, "%s", type);
+  fonte.prov[0] = 0;
   for(const char *p=first;p;p=js_prox(js_fim(p))) {
     const char *f=js_fim(p);raw++;
     CatItem it;
-    if (deMeta(p, f, type, &it)) {
+    if (deMeta(p, f, type, &it) && colecaoTipo(&fonte, &it)) {
       // Escondido ainda conta como "pagina com novidade": senao uma pagina so de
       // futuros encerraria a paginacao do catalogo.
       if (descOcultaNaoLancado(&it)) { added++; continue; }
