@@ -244,6 +244,43 @@ static void pollOptoutIsolation(void) {
   dados_apagar("enquete-optout.txt");
 }
 
+static void failureBackendIsolation(void) {
+  const char *files[] = { "fontefalha.txt", "fontefalha-test-p1.txt" };
+  const char *markers[] = { "ajustes-locais.txt", "ajustes-locais-p1.txt", "ajustes-locais-p2.txt" };
+  const char *pending[] = { "0\n", "0\n", "1\n" };
+  const char *names[] = { "Admin", "Ana" };
+  perfis_teste_definir(names, NULL, 2, 1);
+  snprintf(faAddonEditar, sizeof faAddonEditar, "test-addon");
+  for (int file = 0; file < 2; file++) {
+    assert(fontefalha_arquivo(files[file]));
+    assert(fontefalha_definir_provedores(1));
+    char *before = dados_ler(files[file]);
+    assert(before);
+    for (int op = 0; op < AJ_N; op++) if (ajFalhaBackend(op)) {
+      int initial = ajFalhaValor(op);
+      for (int i = 0; i < 3; i++) assert(dados_gravar(markers[i], pending[i]));
+      assert(ajustes_edicao_iniciar(2));
+      int available = ajOpcaoDisponivel(op);
+      int changed = definirValorDireto(op, initial ? 0 : 1);
+      ajustes_edicao_encerrar();
+      char *after = dados_ler(files[file]);
+      assert(after && !strcmp(after, before));
+      free(after);
+      for (int i = 0; i < 3; i++) {
+        after = dados_ler(markers[i]);
+        assert(after && !strcmp(after, pending[i]));
+        free(after);
+      }
+      assert(!available && !changed && ajFalhaValor(op) == initial);
+      assert(perfis_ativo() == 1 && !ajustes_edicao_perfil());
+      assert(ajOpcaoDisponivel(op));
+    }
+    free(before);
+  }
+  faAddonEditar[0] = 0;
+  assert(fontefalha_arquivo("fontefalha.txt"));
+}
+
 static void admin(void) {
   char h[65], *arq;
   admin_sha256_hex((const unsigned char *)"abc", 3, h);
@@ -347,6 +384,7 @@ int main(void) {
   copia();
   edicao();
   pollOptoutIsolation();
+  failureBackendIsolation();
   admin();
   infantil();
   gate();
