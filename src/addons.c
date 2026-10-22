@@ -1493,8 +1493,8 @@ static void *legFioPuxa(void *u) {
     i = B->proximo < B->nLotes ? B->proximo++ : -1;
     pthread_mutex_unlock(&B->m);
     if (i < 0) return NULL;
-    // Addon que nao declara legenda nao e consultado.
-    if (!B->origens || !B->origens[i].ativo || !B->origens[i].legenda) continue;
+    // Only a known manifest can authorize a subtitles request.
+    if (!B->origens || !B->origens[i].ativo || !B->origens[i].sondado || !B->origens[i].legenda) continue;
     pthread_mutex_lock(&B->m);
     B->consultados++;
     pthread_mutex_unlock(&B->m);
@@ -2414,7 +2414,7 @@ static int semSegunda(const AddonPedido *a) {
   return a->mudoSeg >= 2 || addonstats_segunda_s(a->estatistica, ADD_PRAZO_VOD_S) == 0;
 }
 static int aceitaStream(const AddonPedido *p, const char *tipo, const char *id) {
-  if (!p->ativo || !p->fonte) return 0;
+  if (!p->ativo || !p->sondado || !p->fonte) return 0;
   if (p->streamTipos[0]) {
     char marca[40];
     snprintf(marca, sizeof marca, "|%s|", tipo);
@@ -2915,7 +2915,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
     if (!(base && *base) && (!folhaFeita || ultimaFolha != versaoLista)) {
       ultimaFolha = versaoLista; folhaFeita = 1;
       for (i = 0; i < c.nOrigens; i++) {
-        if (c.origens[i].ativo && c.origens[i].fonte) continue;
+        if (c.origens[i].ativo && c.origens[i].sondado && c.origens[i].fonte) continue;
         printf("[addons] fora da busca de fontes: %s (%s)\n", c.origens[i].nome,
                !c.origens[i].ativo ? "desligado" :
                c.origens[i].sondado ? "o manifesto nao declara stream"
