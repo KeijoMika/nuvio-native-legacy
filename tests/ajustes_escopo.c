@@ -39,6 +39,9 @@ static void escopos(void) {
   assert(ajustes_escopo(AJ_RESOLUCAO) == 1 && ajustes_escopo(AJ_TEX_MB) == 1 && ajustes_escopo(AJ_IDIOMA) == 1);
   assert(ajustes_escopo(AJ_LIVETV_RES) == 1 && ajustes_escopo(AJ_FONTE_UI) == 1 && ajustes_escopo(AJ_GPU_EFEITOS) == 1);
   assert(ajustes_escopo(AJ_TEMA) == 2 && ajustes_escopo(AJ_HERO) == 2);
+  assert(ajustes_escopo(AJ_AUDIO_OFFSET) == 1 && ajustes_escopo(AJ_DV7) == 1 && ajustes_escopo(AJ_P2P_DESTINO) == 1);
+  assert(!strcmp(ajSelo(AJ_VIDRO), "Este perfil"));
+  assert(!strcmp(ajSelo(AJ_IDIOMA), "Esta TV"));
 }
 
 static void blobIgnoraLocal(void) {
@@ -205,6 +208,63 @@ static void admin(void) {
   assert(!admin_pin_definido());
 }
 
+static void gate(void) {
+  static const char *const nomes[] = { "Admin", "Guest", "Kid" };
+  static const int pins[] = { 1, 0, 0 };
+  PfLinha linhas[PF_MAX];
+  perfis_teste_definir(nomes, NULL, 3, 1);
+  perfil_infantil_esquecer();
+  admin_pin_esquecer();
+  pfEntrada();
+  focoIndice = 1; uxTopo = AJ2_T_PERFIL;
+  assert(uxEvento(SDLK_RETURN) && pfTela == PF_MENU && ajModalAberto());
+  pfExigirAdmin(PA_EDITAR, 2);
+  assert(pfFase == 3 && !edPerfil);
+  assert(pfDigitado("4821") == 1 && pfFase == 4);
+  pfDigitado("4822");
+  assert(!admin_pin_definido() && !edPerfil);
+  pfExigirAdmin(PA_EDITAR, 2);
+  assert(pfDigitado("4821") == 1);
+  pfDigitado("4821");
+  assert(admin_pin_definido() && edPerfil == 2);
+  pfSaida();
+  pfEntrada();
+  pfExigirAdmin(PA_EDITAR, 2);
+  assert(pfFase == 2 && !edPerfil);
+  pfDigitado("0000");
+  assert(!edPerfil && !pfAdminOk);
+  pfExigirAdmin(PA_EDITAR, 2);
+  pfDigitado("4821");
+  assert(edPerfil == 2);
+  pfSaida();
+  // Account PIN takes precedence over the TV PIN. Cancel never authorizes.
+  perfis_teste_definir(nomes, pins, 3, 1);
+  pfEntrada(); pfExigirAdmin(PA_EDITAR, 2);
+  assert(pfFase == 1 && !edPerfil);
+  pfPinCancelado(); assert(!pfPend && !edPerfil);
+  // A late verification result cannot authorize a new visit.
+  admPerfil = 1; atomic_store(&admEstado, 2); pfSaida(); pfRecolher();
+  assert(!pfAdminOk && !edPerfil);
+  perfis_teste_definir(nomes, NULL, 3, 3);
+  assert(perfil_infantil_definir(3, 1) && perfil_ajustes_travar(3, 1));
+  pfEntrada(); pfVigiar();
+  assert(pfTela == PF_BLOQUEIO);
+  pfExigirAdmin(PA_EDITAR, 2); assert(!pfPend && !edPerfil);
+  pfMudarInfantil(0); assert(perfil_infantil_ativo() && !pfPend);
+  pfEvento(SDLK_ESCAPE); assert(sair); sair = 0;
+  pfExigirAdmin(PA_DESBLOQ, 0); pfDigitado("0000");
+  assert(pfTravado());
+  pfExigirAdmin(PA_DESBLOQ, 0); pfDigitado("4821");
+  assert(!pfTravado());
+  pfSaida(); pfEntrada(); assert(pfTravado());
+  pfAbrir();
+  int n = pfLinhas(linhas);
+  for (int i = 0; i < n; i++)
+    assert(linhas[i].id != PL_EDITAR_OUTRO && linhas[i].id != PL_COPIAR && linhas[i].id != PL_INFANTIL);
+  pfSaida(); perfil_infantil_esquecer();
+  perfis_teste_definir(nomes, NULL, 3, 1);
+}
+
 static void infantil(void) {
   perfil_infantil_esquecer();
   assert(!perfil_ajustes_travados(2));
@@ -235,6 +295,7 @@ int main(void) {
   edicao();
   admin();
   infantil();
+  gate();
   puts("ajustes_escopo: tudo ok");
   return 0;
 }

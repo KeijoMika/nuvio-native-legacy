@@ -2312,6 +2312,7 @@ static void pfAbrirPin(const char *titulo, const char *dica);
 #endif
 static void pfFaixaEdicao(void);
 static void pfRotuloChip(char *dst, size_t n);
+static int pfMudarInfantil(int ligado);
 static void reaplicarEfeitosPerfil(void);
 static void aplicarIdioma(int op);
 static int somenteDesteAparelho(int op);
@@ -9444,58 +9445,6 @@ static void notaLigarPar(int op) {
   if (mdb) valor[AJ_MDB_LIGADO] = 0;
 }
 static int ajOrigemDireto = AJLOG_AJUSTES;   // quem chamou: a tela, ou a Central via ajustes_rapido_passo
-// PERFIL INFANTIL: mudar a marca de um perfil COM PIN pede o PIN (verificado no
-// servidor, perfis_verificar_pin, que BLOQUEIA: roda num fio). Sem PIN, aplica
-// na hora. O PIN digitado vai para o fio, e e apagado la; nao ha log dele.
-static void uxNotificar(const char *s);
-static pthread_t kidFio;
-static atomic_int kidEstado;           // 0 livre, 1 verificando, 2 aceito, 3 recusado, 4 sem rede
-static int kidIdx, kidAlvo;
-static char kidPin[24];
-static int kidFioVivo;
-static void *kidTrabalho(void *u) {
-  int v = perfis_verificar_pin(kidIdx, kidPin);
-  (void)u;
-  memset(kidPin, 0, sizeof kidPin);
-  atomic_store(&kidEstado, v > 0 ? 2 : (v == 0 ? 3 : 4));
-  return NULL;
-}
-static void kidPedirPin(void) {
-  teclado_abrir_com("PIN do perfil", "Digite o PIN para mudar a marca de perfil infantil.", 8, "0123456789", NULL);
-  teclado_tipo(TECLADO_TIPO_SENHA);
-  teclado_mascarar(1);
-  stCampo = AJ_PERFIL_INFANTIL;
-}
-static int kidMudar(int ligado) {
-  const ContaPerfil *p = perfis_item_ativo();
-  if (ligado == perfil_infantil_ativo()) return 1;
-  if (atomic_load(&kidEstado) == 1) return 1;   // ja verificando
-  if (p && p->temPin) { kidIdx = p->indice; kidAlvo = ligado; kidPedirPin(); return 1; }
-  if (!perfil_infantil_definir(perfis_ativo(), ligado)) return 0;
-  uxNotificar(ligado ? "Perfil infantil ligado neste perfil." : "Perfil infantil desligado neste perfil.");
-  return 1;
-}
-static void kidDigitado(const char *pin) {
-  snprintf(kidPin, sizeof kidPin, "%s", pin);
-  if (kidFioVivo) { pthread_join(kidFio, NULL); kidFioVivo = 0; }
-  atomic_store(&kidEstado, 1);
-  if (pthread_create(&kidFio, NULL, kidTrabalho, NULL) != 0) {
-    memset(kidPin, 0, sizeof kidPin);
-    atomic_store(&kidEstado, 4);
-  } else kidFioVivo = 1;
-}
-static void kidRecolher(void) {
-  int e = atomic_load(&kidEstado);
-  if (e < 2) return;
-  if (kidFioVivo) { pthread_join(kidFio, NULL); kidFioVivo = 0; }
-  atomic_store(&kidEstado, 0);
-  if (e == 2) {
-    if (perfil_infantil_definir(kidIdx, kidAlvo))
-      uxNotificar(kidAlvo ? "Perfil infantil ligado neste perfil." : "Perfil infantil desligado neste perfil.");
-  } else if (e == 3) uxNotificar("PIN incorreto");
-  else uxNotificar("Sem conexão para conferir o PIN.");
-}
-
 static int definirValorDireto(int op, int novo) {
   int antes, memoriaAntes = memoriaEscolhida, bibliotecaAntes = bibliotecaFonteEscolhida;
   if (op < 0 || op >= AJ_N || !ajOpcaoDisponivel(op) ||
@@ -9537,7 +9486,7 @@ static int definirValorDireto(int op, int novo) {
   int posicaoAntes = valor[AJ_LEG2_POSICAO];
   if (op == AJ_LEG2_POS) valor[AJ_LEG2_POSICAO] = 0;
   if (op == AJ_VIDRO_FOSCO && novo == 2) gpun_fosco_reiniciar();
-  if (op == AJ_PERFIL_INFANTIL) return kidMudar(novo == 0);
+  if (op == AJ_PERFIL_INFANTIL) return pfMudarInfantil(novo == 0);
   antes = valor[op];
   if (novo == antes && !(op == AJ_LEG2_POS && posicaoAntes != 0) &&
       (op != AJ_TEX_MB || memoriaEscolhida) && (op != AJ_SALVOS_DEST || bibliotecaFonteEscolhida)) return 1;
@@ -9962,7 +9911,6 @@ void ajustes_atualizar(float dt, Uint32 agora) {
   valor[AJ_PERFIL_PESQ] = recomenda_pesquisavel() ? 0 : 1;   // V_LIGA: 0 = Ligado
   valor[AJ_FONTE_REGEX_MODELO] = fonteregra_modelo_atual();   // espelho do padrao (#202)
   valor[AJ_PERFIL_INFANTIL] = perfil_infantil_ativo() ? 0 : 1;
-  kidRecolher();
   pfVigiar();
   p2pTesteRecolher();
   pstTesteRecolher();
@@ -10000,7 +9948,6 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       else if (stCampo == AJ_XTREAM_SERVIDOR) { xtream_definir_servidor(teclado_texto()); if (teclado_texto()[0]) registro_aviso_legal(); }
       else if (stCampo == AJ_XTREAM_USUARIO)  xtream_definir_usuario(teclado_texto());
       else if (stCampo == AJ_XTREAM_SENHA)    xtream_definir_senha(teclado_texto());
-      else if (stCampo == AJ_PERFIL_INFANTIL) { kidDigitado(teclado_texto()); teclado_esquecer(); }
       else if (stCampo == PF_CAMPO) { if (pfDigitado(teclado_texto())) r = TECLADO_NADA; }
       else if (stCampo == AJ_FANART_CHAVE)    fanartDefinir(teclado_texto());
       else if (stCampo == AJ_SEEKR_CHAVE)     { seekrDefinir(teclado_texto()); atomic_store_explicit(&skTeste, 0, memory_order_release); }

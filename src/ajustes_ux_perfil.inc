@@ -116,6 +116,12 @@ static void pfExigirAdmin(int acao, int alvo) {
   uxNotificar("Peça ao administrador (perfil principal) para criar o PIN de administrador.");
 }
 
+static int pfMudarInfantil(int ligado) {
+  if (ligado == perfil_infantil_ativo()) return 1;
+  pfExigirAdmin(PA_INFANTIL, perfis_ativo());
+  return 1;
+}
+
 static void *admTrabalho(void *u) {
   int v = perfis_verificar_pin(admIdx, admPin);
   (void)u;

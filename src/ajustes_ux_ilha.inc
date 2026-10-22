@@ -1340,7 +1340,7 @@ static void aj2InspetorDiferencas(void) {
 // --- A TELA ---------------------------------------------------------------------
 static int ajModalAberto(void) {
   return (uxEditor && (uxRestaurar || uxAvisoRisco || uxEditor == 2)) || riscoFolha || frAberta || hcAberta || ajVinculoAtivo() ||
-         teclado_aberto() || registro_envio_aberto() || apoioAberto;
+         pfTela || teclado_aberto() || registro_envio_aberto() || apoioAberto;
 }
 #ifdef NV_TOUCH_UI
 // Inline pointer editing (Confirm/Cancel footer, Mobile hit targets) is Mobile only.
