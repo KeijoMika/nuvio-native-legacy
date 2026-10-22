@@ -36,6 +36,7 @@
 #include "salvos.h"
 #include "dados.h"
 #include "home.h"
+#include "fileiras.h"
 #include "perfisessao.h"
 #include <pthread.h>
 #ifdef NV_TOUCH_UI
@@ -1945,9 +1946,15 @@ static void vitEvento(int k) {
 // o da Home Moderna; a fileira em foco sobe para ele e a seguinte espia embaixo.
 #define VIT_TITULO_H 46.0f
 #define VIT_CAB_FOLGA 24.0f   // entre o pe do cabecalho e o bloco do destaque
+static int vitRedonda(void) {
+  char chave[FIL_CHAVE];
+  if (!collection) return 0;
+  col_chave_pasta(collection, chave, sizeof chave);
+  return fil_tipo(chave) == FIL_TIPO_REDONDA;
+}
 static float vitPasso(void) {
   float w, h, p, rot;
-  home_vitrine_medida(&w, &h, &p, &rot);
+  home_vitrine_medida(&w, &h, &p, &rot, vitRedonda());
   return VIT_TITULO_H + h + rot + 40.0f;
 }
 // Topo da primeira fileira: o do layout da Home (home_vitrine_topo).
@@ -1959,7 +1966,7 @@ static float vitToqueMaxY(void) {
 }
 static float vitToqueMaxX(int r) {
   float w, h, passo, rot;
-  home_vitrine_medida(&w, &h, &passo, &rot);
+  home_vitrine_medida(&w, &h, &passo, &rot, vitRedonda());
   return fmaxf(0.0f, (vitColunas(r) - 1) * passo + w - (NV_TELA_W - vtInicio() - 48.0f));
 }
 #endif
@@ -1985,7 +1992,7 @@ static void vitAtualizar(float dt, Uint32 agora) {
       vitHeroEntra += dt / 0.25f;
       if (vitHeroEntra >= 1.0f) { vitHeroEntra = 1.0f; vitHeroAnt = -1; }
     } }
-  home_vitrine_medida(&w, &h, &passo, &rot);
+  home_vitrine_medida(&w, &h, &passo, &rot, vitRedonda());
   alvo = (float)vitFR * vitPasso();
 #ifdef NV_TOUCH_UI
   if (!vtTelefone()) {
@@ -2072,7 +2079,7 @@ static int toqueVitrineRolar(const PonteiroRolagem *e) {
 static void toqueVitrineRetomarFoco(void) {
   if (!vitToqueDono()) return;
   float w, h, passo, rot;
-  home_vitrine_medida(&w, &h, &passo, &rot);
+  home_vitrine_medida(&w, &h, &passo, &rot, vitRedonda());
   if (vitToqueY.livre) {
     float melhor = 1e9f, centro = (NV_SHELF_TOP - 8.0f + NV_TELA_H) * .5f;
     for (int r = 0; r < vitN; r++) if (vitLin[r].n > 0) {
@@ -3424,7 +3431,8 @@ static void vitDesenhar(float a, float x0) {
   float w, h, passo, rot, pas = vitPasso(), topo = vitTopo();
   CatItem *hero = vitChave(vitHeroAtual), *ant = vitChave(vitHeroAnt);
   int arte = 0;
-  home_vitrine_medida(&w, &h, &passo, &rot);
+  const int redonda = vitRedonda();
+  home_vitrine_medida(&w, &h, &passo, &rot, redonda);
 #ifdef NV_TOUCH_UI
   if (vtTelefone()) {
     vitPonteiroPronto = 0;
@@ -3477,9 +3485,10 @@ static void vitDesenhar(float a, float x0) {
         if (cx + w < 0.0f) continue;
         if (cx > NV_TELA_W) break;
         if (sel) {
-          if (ajustes_borda_foco())
-            foco_anel(base, ajustes_raio_poster_px() / (w < h ? w : h), 1.0f, a);
-          else card = foco_zoom(base, 1.0f);
+          if (ajustes_borda_foco()) {
+            if (!redonda || c == l->n)
+              foco_anel(base, ajustes_raio_poster_px() / (w < h ? w : h), 1.0f, a);
+          } else card = foco_zoom(base, 1.0f);
         }
         if (c == l->n) {
           float raio = ajustes_raio_poster_px() / h;
@@ -3490,7 +3499,7 @@ static void vitDesenhar(float a, float x0) {
           float by = card.y + (card.h - seta.h - 14.0f - rotulo.h) * .5f;
           txt_desenhar_alpha(seta, card.x + (card.w - seta.w) * .5f, by, ac);
           txt_desenhar_alpha(rotulo, card.x + (card.w - rotulo.w) * .5f, by + seta.h + 14.0f, ac);
-        } else home_vitrine_cartao(vitItem(r, c), base, card, ac);
+        } else home_vitrine_cartao(vitItem(r, c), base, card, ac, redonda, sel ? 1.0f : 0.0f);
 #ifdef NV_TOUCH_UI
         if (vtTelefone()) {
           float left = fmaxf(base.x, x0), right = fminf(base.x + base.w, NV_TELA_W);
