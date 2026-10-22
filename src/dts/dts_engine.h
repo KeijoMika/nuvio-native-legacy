@@ -31,7 +31,8 @@ void dts_engine_set_ahead_mib(int mib);
 typedef struct { int64_t ready_bytes, capacity_bytes, position, total; } DtsBufferInfo;
 void dts_engine_buffer_info(DtsEngine *, DtsBufferInfo *);
 DtsEngine *dts_engine_source_create(const char *url, const char *headers, int mib);
-int dts_engine_source_read(DtsEngine *, int64_t offset, unsigned char *data, int n);
+/* pending_fd: replacement listener, or -1 for a non-preemptible read. */
+int dts_engine_source_read(DtsEngine *, int64_t offset, unsigned char *data, int n, int pending_fd);
 int64_t dts_engine_source_total(DtsEngine *);
 DtsEngine *dts_engine_create(void);
 int dts_engine_available(void);

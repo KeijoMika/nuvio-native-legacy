@@ -72,7 +72,7 @@ static int probe_source(MovieBuffer *s) {
   {
     unsigned char probe[257]={0};int got=0;
     while(got<256) {
-      int part=dts_engine_source_read(s->input,got,probe+got,256-got);
+      int part=dts_engine_source_read(s->input,got,probe+got,256-got,-1);
       if(part<=0)break;
       got+=part;
     }
@@ -157,7 +157,7 @@ static void serve(MovieBuffer *s,int fd) {
   unsigned char data[65536];
   while(start<=end && !stopped(s)) {
     int want=end-start+1>(int64_t)sizeof data?(int)sizeof data:(int)(end-start+1);
-    int got=dts_engine_source_read(s->input,start,data,want);
+    int got=dts_engine_source_read(s->input,start,data,want,s->preemptible?s->fd:-1);
     if(got<=0) {
       if(!stopped(s)) { printf("[movie-buffer] read failed at byte=%"PRId64" result=%d\n",start,got);fflush(stdout); }
       return;

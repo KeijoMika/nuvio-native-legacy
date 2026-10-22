@@ -3,6 +3,8 @@
 import concurrent.futures,http.server,pathlib,re,select,ssl,subprocess,sys,threading,time,urllib.request,urllib.error
 requests=[]
 leaks=[]
+origin_stalled=threading.Event()
+release_stall=threading.Event()
 TOTAL=512*1024*1024
 PATTERN=bytes(range(251))
 def content(start,n):
@@ -57,6 +59,8 @@ class Origin(http.server.BaseHTTPRequestHandler):
                 if magic and at<len(magic):body[:len(magic)-at]=magic[at:]
                 if self.path=='/opaque' and at==0:body=body[1:]
                 self.wfile.write(body)
+                if self.path=='/stall-after-start' and not bounded and start==0:
+                    self.wfile.flush();origin_stalled.set();release_stall.wait(20);return
                 if self.path=='/broken' and not bounded:
                     self.wfile.flush();self.close_connection=True;return
         except (BrokenPipeError,ConnectionResetError):pass
@@ -122,6 +126,24 @@ if mode in ('all','preempt'):
         close(p)
     print('PASS replacement range preempts open movie GET',flush=True)
     if mode=='preempt':sys.exit(0)
+if mode in ('all','stalled-preempt'):
+    origin_stalled.clear();release_stall.clear()
+    p,url=daemon('/stall-after-start',64)
+    old=None
+    try:
+        assert origin_stalled.wait(2), 'origin did not stall after startup'
+        old=urllib.request.urlopen(urllib.request.Request(url,headers={'Range':'bytes=0-'}),timeout=2)
+        assert old.read(65536)==content(0,65536)
+        # Old response exhausts cached bytes; replacement must wake its reader.
+        begun=time.monotonic()
+        status,h,b=request(url,TOTAL-1024,TOTAL-1)
+        assert status==206 and b==content(TOTAL-1024,1024)
+        assert time.monotonic()-begun<2, 'replacement range starved behind stalled origin read'
+    finally:
+        if old:old.close()
+        close(p);release_stall.set()
+    print('PASS replacement range interrupts stalled origin read',flush=True)
+    if mode=='stalled-preempt':sys.exit(0)
 for mib in [64,128,256]:
     p,url=daemon('/movie.mkv',mib)
     try:

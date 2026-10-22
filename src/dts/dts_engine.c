@@ -31,7 +31,7 @@ void dts_engine_rings(DtsEngineRings *out, int reset_peak) {
 struct DtsEngine { DtsMediaInfo info; };
 void dts_engine_buffer_info(DtsEngine *e,DtsBufferInfo *b) { (void)e; if(b) memset(b,0,sizeof *b); }
 DtsEngine *dts_engine_source_create(const char *u,const char *h,int m) { (void)u;(void)h;(void)m;return NULL; }
-int dts_engine_source_read(DtsEngine *e,int64_t o,unsigned char *d,int n) { (void)e;(void)o;(void)d;(void)n;return -1; }
+int dts_engine_source_read(DtsEngine *e,int64_t o,unsigned char *d,int n,int fd) { (void)e;(void)o;(void)d;(void)n;(void)fd;return -1; }
 int64_t dts_engine_source_total(DtsEngine *e) { (void)e;return -1; }
 DtsEngine *dts_engine_create(void) { return calloc(1, sizeof(DtsEngine)); }
 int dts_engine_available(void) { return 0; }
@@ -57,6 +57,7 @@ void dts_engine_interrupt(DtsEngine *e,int on) { (void)e; (void)on; }
 #include "../rede.h"
 #include <limits.h>
 #include <errno.h>
+#include <poll.h>
 #include <pthread.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -482,7 +483,7 @@ static void *fx_worker(void *opaque) {
   pthread_mutex_unlock(&e->range_lock);
   return NULL;
 }
-static int read_fluxo(void *opaque,uint8_t *dst,int n) {
+static int read_fluxo_pending(void *opaque,uint8_t *dst,int n,int pending_fd) {
   DtsEngine *e=opaque;
   uint64_t wait_started=0;
   pthread_mutex_lock(&e->range_lock);
@@ -494,7 +495,9 @@ static int read_fluxo(void *opaque,uint8_t *dst,int n) {
     e->fx_thread_ok=1;
   }
   for(;;) {
-    if(cancelled(e) || __atomic_load_n(&e->interrupt,__ATOMIC_RELAXED)) { pthread_mutex_unlock(&e->range_lock); return AVERROR_EXIT; }
+    struct pollfd pending={pending_fd,POLLIN,0};
+    if(cancelled(e) || __atomic_load_n(&e->interrupt,__ATOMIC_RELAXED) ||
+       (pending_fd>=0 && poll(&pending,1,0)>0)) { pthread_mutex_unlock(&e->range_lock); return AVERROR_EXIT; }
     if(e->total>=0 && e->pos>=e->total) { pthread_mutex_unlock(&e->range_lock); return AVERROR_EOF; }
     if(e->fx_req<0 && e->pos>=e->fx_lo && e->pos<e->fx_hi) {
       int64_t k=e->fx_hi-e->pos; if(k>n) k=n;
@@ -514,9 +517,17 @@ static int read_fluxo(void *opaque,uint8_t *dst,int n) {
       pthread_cond_broadcast(&e->range_wake);
     }
     if(!wait_started) wait_started=clock_ns(CLOCK_MONOTONIC);
-    struct timespec ts; clock_gettime(CLOCK_REALTIME,&ts); ts.tv_sec+=1;
+    struct timespec ts; clock_gettime(CLOCK_REALTIME,&ts);
+    if(pending_fd<0) ts.tv_sec+=1;
+    else {
+      ts.tv_nsec+=100000000;
+      if(ts.tv_nsec>=1000000000) { ts.tv_sec++;ts.tv_nsec-=1000000000; }
+    }
     pthread_cond_timedwait(&e->range_wake,&e->range_lock,&ts);
   }
+}
+static int read_fluxo(void *opaque,uint8_t *dst,int n) {
+  return read_fluxo_pending(opaque,dst,n,-1);
 }
 static int64_t seek_fluxo(void *opaque,int64_t offset,int whence) {
   DtsEngine *e=opaque;
@@ -720,7 +731,7 @@ DtsEngine *dts_engine_source_create(const char *url,const char *headers,int mib)
   if(!e->url || !e->headers || !e->source_public_headers) { dts_engine_destroy(e); return NULL; }
   return e;
 }
-int dts_engine_source_read(DtsEngine *e,int64_t offset,unsigned char *data,int n) {
+int dts_engine_source_read(DtsEngine *e,int64_t offset,unsigned char *data,int n,int pending_fd) {
   if (!e || offset<0 || !data || n<1) return -1;
   /* One bounded probe discovers the finite file size before the loopback
    * response is sent. It finishes before the single streaming lane starts.
@@ -737,7 +748,7 @@ int dts_engine_source_read(DtsEngine *e,int64_t offset,unsigned char *data,int n
     pthread_mutex_unlock(&e->range_lock);
   }
   if(seek_fluxo(e,offset,SEEK_SET)<0) return -1;
-  return read_fluxo(e,data,n);
+  return read_fluxo_pending(e,data,n,pending_fd);
 }
 int64_t dts_engine_source_total(DtsEngine *e) {
   if(!e)return -1;
