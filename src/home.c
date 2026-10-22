@@ -2333,10 +2333,14 @@ static void posCapturar(void) {
     // confiavel que o indice: a publicacao incremental pode ja ter trocado o
     // bloco do catalogo quando este snapshot for capturado.
     { int a, idx = fileiraItemIndice(&fileiras[r], p->coluna);
-      const CatItem *it = cat_item(idx);
+      const CatItem *it = p->coluna < fileiras[r].n ? cat_item(idx) : NULL;
       p->itemId[0] = p->itemTipo[0] = 0;
       for (a = 0; a < antigoN; a++)
-        if (!strcmp(antigo[a].chave, p->chave) && antigo[a].itemId[0]) {
+        // Keep the saved identity across publications, but refresh it after
+        // navigation. See More is a synthetic tile with no catalogue ID.
+        if (p->coluna < fileiras[r].n &&
+            !strcmp(antigo[a].chave, p->chave) && antigo[a].itemId[0] &&
+            antigo[a].coluna == p->coluna) {
           if (r != foco.fileira || !strcmp(antigoFoco, p->chave)) {
             snprintf(p->itemId, sizeof p->itemId, "%s", antigo[a].itemId);
             snprintf(p->itemTipo, sizeof p->itemTipo, "%s", antigo[a].itemTipo);
