@@ -277,7 +277,7 @@ static int autoParcialPronto(void) {
                    lembrada < 0 && addons_pendente_nome(fp->provedor) && stream_addon_no_escopo(fp->provedor);
   }
   // Escolher a mao: a folha abre com o que ja chegou e continua enchendo.
-  if (ajustes_fonte_manual() && lembrada < 0) {
+  if (ajustes_fonte_manual()) {
     if (!prefPendente) autoMotivo = "escolha manual: a folha abre com o que chegou";
     return !prefPendente;
   }
@@ -2768,7 +2768,7 @@ static void abrirParte(int fonte, const PartesLista *l, int k) {
 static int tocarParteGuardada(void) {
   PartesPonto p;
   char alvo[64];
-  if (!partes_disponivel() || player_id_canal()[0] || !player_aberto()) return 0;
+  if (ajustes_fonte_manual() || !partes_disponivel() || player_id_canal()[0] || !player_aberto()) return 0;
   alvoPlayer(alvo, sizeof alvo);
   if (!alvo[0] || !partes_ponto_pegar(alvo, sessao_usuario(), perfis_ativo(), &p)) return 0;
   // "Do inicio" (ou o ponto do catalogo ja zerado): o filme comeca na parte 1
@@ -5962,15 +5962,8 @@ void app_atualizar(float dt, Uint32 agora) {
       // uma folha entre um zap e outro e o oposto do que se quer de TV ao
       // vivo, e la a escolha ja e feita pela playlist que responde.
       //
-      // ISSUE #62: COM "ESCOLHER A FONTE AO REPRODUZIR" LIGADO, "RETOMAR"
-      // ABRIA A FOLHA DE NOVO. A pessoa ja tinha escolhido a fonte deste
-      // titulo na folha — e a escolha esta guardada (fontepref) e presente na
-      // lista de agora. Perguntar de novo e o que o relator chamou de "o bug
-      // antigo": o ajuste quer que a PESSOA escolha, e ela escolheu. So
-      // pergunta quando nao ha escolha lembrada que sirva para esta lista;
-      // trocar de fonte continua a um hold de distancia (menu do episodio,
-      // hold no botao primario).
-      if (ajustes_fonte_manual() && stream_n() > 0 && lembrada < 0) {
+      // #667: a remembered source sets the sheet's focus, never consent to play.
+      if (ajustes_fonte_manual() && stream_n() > 0) {
         aguardandoFonte = 0;
         folhaParaTocar = 1;
         nomeParaFolha(); stream_folha_abrir();
