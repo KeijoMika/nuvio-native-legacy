@@ -151,6 +151,14 @@ static void nota(void) {
         "4,5 estrelas vira Gostei");
   reacao_nota_definir("tt0111161", 1);
   CHECA(reacao_nota("tt0111161") == 1 && reacao_estado("tt0111161") == REACAO_NAO, "meia estrela vira Nao gostei");
+  { CatItem f = item("tt0111161", "movie", "Rated movie");
+    SDL_Event e;
+    CHECA(reacao_detalhe_abrir(&f), "rated title can reopen rating editor");
+    e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
+    e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
+    CHECA(reacao_nota("tt0111161") == 2, "title editor starts on stars and moves half a star");
+    reacao_nota_definir("tt0111161", 1);
+  }
   reacao_nota_definir("tt0111161", 11);
   CHECA(reacao_nota("tt0111161") == 1, "nota fora de 1 a 10 ignorada");
   reacao_nota_definir("tt0903747:1:2", 7);

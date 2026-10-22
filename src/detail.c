@@ -3248,8 +3248,7 @@ static void detail_evento_(const SDL_Event *e) {
     return;
   }
   if (nivel == 0) {
-    // CIMA na linha de botoes nao fazia nada; com uma reacao pendente ele abre
-    // a pergunta (reacao.h). Sem pendencia, continua sem fazer nada.
+    // Up opens the existing rating card; rated titles can edit their stars.
     // CIMA na ilha de amigos volta ao botao em que estava; BAIXO entra nas secoes;
     // ESQUERDA pede o menu lateral como o primeiro botao.
     if (focoAmigos) {
@@ -5558,6 +5557,26 @@ static void desenhaAssistidoEpisodio(GfxRect th, float a) {
                      selo.y + (h - texto.h) * .5f, a);
 }
 
+// A NOTA DO USUARIO NO EPISODIO (reacao.h): estrela + "4,5", embaixo do selo
+// "Assistido", no mesmo canto da miniatura.
+static void desenhaMinhaNotaEpisodio(GfxRect th, const char *imdb, int temp, int epi, float a) {
+  char id[40], tx[16];
+  int n;
+  TxtLinha l;
+  float w, x, y;
+  snprintf(id, sizeof id, "%s:%d:%d", imdb, temp, epi);
+  n = reacao_nota(id);
+  if (n <= 0) return;
+  snprintf(tx, sizeof tx, "%d,%d", n / 2, (n % 2) * 5);
+  l = txt_linha(TXT_CAPTION, tx, 255, 255, 255, 255);
+  w = 12 + 24 + 8 + (float)l.w + 12;
+  x = th.x + th.w - w - 18;
+  y = th.y + NV_DETP_EP_VISTO_Y + NV_DETP_EP_VISTO_H + 8;
+  gfx_cor((GfxRect){x, y, w, 36}, .5f, .055f, .068f, .09f, .96f * a);
+  gfx_icone((GfxRect){x + 12, y + 6, 24, 24}, "pl_star-f", .961f, .773f, .259f, a);
+  txt_desenhar_alpha(l, x + 44, y + (36 - (float)l.h) * .5f, a);
+}
+
 static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agora);
 static void desenhaEpisodio(GfxRect r, int c, float f, float a, Uint32 agora) {
   float ft=anim_clamp(f,0,1);
@@ -5642,6 +5661,7 @@ static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agor
     if (!mergedVeil) gfx_cor(th, raioTh, 0, 0, 0, .12f * a);
     desenhaAssistidoEpisodio(th, a);
   }
+  desenhaMinhaNotaEpisodio(th, serie->imdb, ep->temporada, ep->episodio, a);
 
   // NADA DE RESERVA INVENTADA. Aqui as quatro linhas caiam numa tabela de
   // demonstracao (nome, duracao, data e sinopse de "Shrinking"), entao um

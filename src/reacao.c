@@ -605,7 +605,8 @@ static void estrelasDesenhar(float x, float y, float a) {
   for (i = 0; i < 5; i++) {
     float sx = x + (float)i * (t + g);
     GfxRect r = { sx, y, t, t };
-    float cr = c.estrelas ? 0.961f : 0.953f, cg = c.estrelas ? 0.773f : 0.949f, cb = c.estrelas ? 0.259f : 0.937f;
+    float cr = .953f, cg = .949f, cb = .937f;
+    if (c.estrelas) ajustes_acento(&cr, &cg, &cb);
     gfx_icone(r, "pl_star", 0.953f, 0.949f, 0.937f, al * 0.35f);
     if (v >= 2 * i + 2) gfx_icone(r, "pl_star-f", cr, cg, cb, al);
     else if (v == 2 * i + 1) {
@@ -616,7 +617,7 @@ static void estrelasDesenhar(float x, float y, float a) {
   }
   if (c.estrelas) snprintf(dica, sizeof dica, "%d,%d / 5", v / 2, v % 2 ? 5 : 0);
   else snprintf(dica, sizeof dica, "%s", i18n("↑ nota em estrelas"));
-  l = txt_linha(TXT_ILHA_GENERO, dica, 243, 242, 239, 160);
+  l = txt_linha(TXT_CAPTION, dica, 243, 242, 239, 220);
   txt_desenhar_alpha(l, x + 5.0f * (t + g) + 12.0f, y + (t - (float)l.h) * 0.5f, a * (c.estrelas ? 1.0f : 0.6f));
 }
 
@@ -708,12 +709,17 @@ int reacao_detalhe_pendente(const CatItem *ci) {
 }
 
 int reacao_detalhe_abrir(const CatItem *ci) {
-  if (!reacao_detalhe_pendente(ci)) return 0;
+  if (!ci || strncmp(ci->imdb, "tt", 2)) return 0;
   abrir(ci->imdb, ci->tipo, ci->titulo, ci->poster, 1, SDL_GetTicks());
   { Reacao *r = achar(ci->imdb);
     // A ORIGEM GUARDADA na pendencia vale mais que a busca de agora: a
     // recomendacao pode ter saido da lista do servidor depois da pergunta.
     if (r && r->rec && !c.rec) { c.rec = r->rec; snprintf(c.nome, sizeof c.nome, "%s", r->nome); } }
+  if (!reacao_detalhe_pendente(ci)) {
+    c.estrelas = 1;
+    c.nota = reacao_nota(ci->imdb);
+    if (!c.nota) c.nota = 8;
+  }
   c.anim = 0.0f;
   return 1;
 }
@@ -734,8 +740,24 @@ void reacao_detalhe_dica(const CatItem *ci, float a) {
     return;
   }
   if (c.modoDetalhe && !c.aberto && !c.modoPainel) c.anim = 0.0f;
-  if (a < 0.01f || !reacao_detalhe_pendente(ci)) return;
-  snprintf(perg, sizeof perg, i18n("O que achou de %s?"), ci->titulo);
+  if (a < 0.01f) return;
+  // Keep the saved half-star value visible on the title page.
+  if (ci && ci->imdb[0] && reacao_nota(ci->imdb) > 0) {
+    int n = reacao_nota(ci->imdb);
+    char tx[16];
+    snprintf(tx, sizeof tx, "%d.%d", n / 2, (n % 2) * 5);
+    l = txt_linha(TXT_CAPTION, tx, 200, 204, 212, 255);
+    w = 24.0f + 10.0f + (float)l.w;
+    x = NV_TELA_W - RX_MARGEM - w;
+    y = NV_TELA_H - 48.0f - (float)l.h;
+    gfx_cor((GfxRect){ x - 18.0f, y - 10.0f, w + 36.0f, (float)l.h + 20.0f }, 0.5f,
+            .04f, .042f, .05f, .62f * a);
+    gfx_icone((GfxRect){ x, y + ((float)l.h - 24.0f) * 0.5f, 24.0f, 24.0f }, "pl_star-f", 0.961f, 0.773f, 0.259f, a * 0.95f);
+    txt_desenhar_alpha(l, x + 34.0f, y, a * 0.9f);
+    return;
+  }
+  if (!ci || strncmp(ci->imdb, "tt", 2)) return;
+  snprintf(perg, sizeof perg, "%s", i18n("↑ nota em estrelas"));
   // DISCRETA: texto pequeno e cinza, sem caixa de foco — ela nao e um botao,
   // e um lembrete de que CIMA abre a pergunta.
   s = txt_linha(TXT_CAPTION, "↑", 200, 204, 212, 255);

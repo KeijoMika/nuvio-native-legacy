@@ -39,6 +39,7 @@ static void captura(const char *nome, SDL_Window *win) {
 
 // Um "quadro de filme" de mentira: degrade escuro, para o cartao ter o que cobrir.
 static void cena(void) {
+  SDL_Delay(8);   // os icones carregam em outra thread
   int i;
   glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
   assert(gfx_iniciar());
   assert(txt_iniciar("deploy/app", 1));
   tex_iniciar(64);
-  gfx_icones_dir("deploy/app/art");
+  { char abs[1024]; assert(realpath("deploy/app/art", abs)); gfx_icones_dir(abs); }
 
   // 1. Veio de recomendacao.
   reacao_player_atualizar(0.0f, agora, NULL, 0, 0, 0, 0, 0, 0);
@@ -88,7 +89,7 @@ int main(int argc, char **argv) {
   for (i = 0; i < 60; i++) {
     agora += 16;
     reacao_player_atualizar(1.0f / 60.0f, agora, NULL, 0, 0, 0, 0, 0, 0);
-    tex_novo_quadro(); txt_novo_quadro();
+    tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
     cena();
     reacao_desenhar(agora, 1080.0f - 48.0f);
     if (i == 59) { snprintf(nome, sizeof nome, "%s/reacao-rec.bmp", pasta); captura(nome, w); }
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
   for (i = 0; i < 240; i++) {
     agora += 16;
     reacao_player_atualizar(1.0f / 60.0f, agora, NULL, 0, 0, 0, 0, 0, 0);
-    tex_novo_quadro(); txt_novo_quadro();
+    tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
     cena();
     reacao_desenhar(agora, 1080.0f - 48.0f);
     if (i == 239) { snprintf(nome, sizeof nome, "%s/reacao-simples.bmp", pasta); captura(nome, w); }
@@ -123,10 +124,38 @@ int main(int argc, char **argv) {
     { SDL_Event e = tecla(SDLK_ESCAPE); reacao_evento(&e, 0); }
     reacao_fechar();
     for (i = 0; i < 30; i++) {
-      tex_novo_quadro(); txt_novo_quadro();
+      tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
       cena();
       reacao_detalhe_dica(&ci, 1.0f);
       if (i == 29) { snprintf(nome, sizeof nome, "%s/reacao-detalhe.bmp", pasta); captura(nome, w); }
+      else SDL_GL_SwapWindow(w);
+    } }
+  // 4. Fileira de estrelas em foco (UP), 3,5 estrelas.
+  reacao_fechar();
+  reacao_teste_abrir("tt0068646", "O Poderoso Chefão", "movie", 0, "", 0);
+  reacao_player_atualizar(0.0f, agora, NULL, 0, 0, 0, 0, 0, 0);
+  { SDL_Event e = tecla(SDLK_UP); reacao_evento(&e, 0);
+    for (i = 0; i < 3; i++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 0); } }
+  for (i = 0; i < 240; i++) {
+    agora += 16;
+    reacao_player_atualizar(1.0f / 60.0f, agora, NULL, 0, 0, 0, 0, 0, 0);
+    tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
+    cena();
+    reacao_desenhar(agora, 1080.0f - 48.0f);
+    if (i == 239) { snprintf(nome, sizeof nome, "%s/reacao-estrelas.bmp", pasta); captura(nome, w); }
+    else SDL_GL_SwapWindow(w);
+  }
+  { SDL_Event e = tecla(SDLK_RETURN); reacao_evento(&e, 0); }
+  // 5. Pagina do titulo ja avaliada: "estrela 3,5".
+  { CatItem ci;
+    memset(&ci, 0, sizeof ci);
+    snprintf(ci.imdb, sizeof ci.imdb, "tt0068646");
+    snprintf(ci.titulo, sizeof ci.titulo, "O Poderoso Chefão");
+    for (i = 0; i < 30; i++) {
+      tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
+      cena();
+      reacao_detalhe_dica(&ci, 1.0f);
+      if (i == 29) { snprintf(nome, sizeof nome, "%s/reacao-detalhe-nota.bmp", pasta); captura(nome, w); }
       else SDL_GL_SwapWindow(w);
     } }
   tex_encerrar(); txt_encerrar(); gfx_encerrar();
