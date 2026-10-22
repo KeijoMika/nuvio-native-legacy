@@ -46,6 +46,12 @@ static Entrada *reservar(const char *chave) {
   return e;
 }
 
+int mus_pagina(int atual, int faixas, int direcao) {
+  int ultima = faixas > 0 ? (faixas - 1) / 2 : 0;
+  int nova = atual + direcao;
+  return nova < 0 ? 0 : (nova > ultima ? ultima : nova);
+}
+
 int mus_interpretar(const char *json, MusAlbum *out) {
   const char *a, *fim, *p;
   memset(out, 0, sizeof *out);

@@ -22,6 +22,11 @@ static int falhas;
 
 int main(void) {
   MusAlbum a;
+  int page = 0;
+  for (int i = 0; i < 8; i++) page = mus_pagina(page, 18, 1);
+  CK(page == 8 && mus_pagina(page, 18, 1) == 8);
+  CK(mus_pagina(page, 18, -1) == 7 && mus_pagina(0, 18, -1) == 0);
+  CK(mus_pagina(29, 60, 1) == 29);
   char url[300];
   const char *ok = "{\"album\":{\"titulo\":\"Dune (Original Motion Picture Soundtrack)\",\"artista\":\"Hans Zimmer\","
     "\"capa\":\"https://x/600x600bb.jpg\",\"apple\":\"https://music.apple.com/a\"},"

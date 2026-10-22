@@ -10,6 +10,8 @@
 
 typedef struct { char imdb[16], titulo[128], artista[96]; int temp; } MusSalva;
 int mus_listar(MusSalva *out, int max);
+// Two tracks per TV page; clamp at both ends.
+int mus_pagina(int atual, int faixas, int direcao);
 
 typedef enum { MUS_NADA = 0, MUS_CARREGANDO, MUS_PRONTO, MUS_VAZIO, MUS_ERRO } MusEstado;
 

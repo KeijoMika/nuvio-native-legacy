@@ -1306,6 +1306,7 @@ static MusEstado musEstadoAtual(MusAlbum *out) {
   return mus_estado(ci->imdb, musTemp(), out);
 }
 static void musGuardar(void);   // definida junto do desenho
+static int musPagina;
 static void musPedir(void) {
   const CatItem *ci = cat_item(idx);
   if (!ci || !ci->imdb[0] || (ehSerie() && musTemp() <= 0)) return;
@@ -3365,6 +3366,12 @@ static void detail_evento_(const SDL_Event *e) {
   if (foco.fileira == SEC_NOTAS) {
     if (k == SDLK_RIGHT) return;
     if (k == SDLK_LEFT) { pediuMenu = 1; return; }
+  }
+  if (foco.fileira == SEC_MUSICAS && (k == SDLK_LEFT || k == SDLK_RIGHT)) {
+    static MusAlbum al;
+    if (musEstadoAtual(&al) == MUS_PRONTO)
+      musPagina = mus_pagina(musPagina, al.n, k == SDLK_RIGHT ? 1 : -1);
+    return;
   }
   if (k == SDLK_RIGHT) {
     if (!focus_mover(&foco, 1, 0) && !ehSerie() && parDir(foco.fileira) >= 0 &&
@@ -6596,7 +6603,7 @@ static GLuint musQr;
 static void musSinc(const CatItem *ci) {
   char k[48];
   snprintf(k, sizeof k, "%s/%d", ci->imdb, musTemp());
-  if (strcmp(k, musChave)) { strcpy(musChave, k); musGuard = mus_guardado(ci->imdb, musTemp()); }
+  if (strcmp(k, musChave)) { strcpy(musChave, k); musGuard = mus_guardado(ci->imdb, musTemp()); musPagina = 0; }
 }
 static void musGuardar(void) {
   MusAlbum al;
@@ -6643,11 +6650,20 @@ static void desenhaMusicas(float x, float y, float f, float a) {
     snprintf(linha, sizeof linha, "%s", al.artista);
     { TxtLinha lm = txt_linha_corta(TXT_G22M, linha, 205, 210, 220, 255, tw);
       txt_desenhar_alpha(lm, tx, yt, a * 0.9f); yt += lm.h + 8.0f; }
-    for (int k = 0; k < al.n && k < 2; k++) {
+    musPagina = mus_pagina(musPagina, al.n, 0);
+    for (int k = musPagina * 2; k < al.n && k < musPagina * 2 + 2; k++) {
       snprintf(linha, sizeof linha, "%d. %s", al.faixa[k].n ? al.faixa[k].n : k + 1, al.faixa[k].titulo);
       TxtLinha lt = txt_linha_corta(TXT_G22M, linha, 235, 238, 245, 255, tw);
+      txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h;
+      snprintf(linha, sizeof linha, "%s · %d:%02d", al.faixa[k].artista,
+               al.faixa[k].dur / 60, al.faixa[k].dur % 60);
+      lt = txt_linha_corta(TXT_G18, linha, 205, 210, 220, 255, tw);
       txt_desenhar_alpha(lt, tx, yt, a * 0.85f); yt += lt.h + 4.0f;
     }
+    snprintf(linha, sizeof linha, "‹ %d / %d ›", musPagina + 1, (al.n + 1) / 2);
+    TxtLinha lp = txt_linha(TXT_G22M, linha, 205, 210, 220, 255);
+    txt_desenhar_alpha(lp, tx + tw - lp.w, y + MUS_H - COL_CARD_PAD - 40.0f, a);
+
   }
 
   // PILULA "Guardar" / "Guardada": mesmo sinal de foco da pilula da colecao.
