@@ -224,6 +224,30 @@ static void edicao(void) {
   assert(valor[AJ_VIDRO] == 1 && valor[AJ_HERO] == 1 && valor[AJ_RELOGIO] == 0);   // o ativo voltou inteiro
 }
 
+static void identityControlsIsolation(void) {
+  const char *names[] = { "Admin", "Ana" };
+  const int controls[] = { AJ_PERFIL_PESQ, AJ_PERFIL_EDITAR, AJ_PERFIL_INFANTIL };
+  perfis_teste_definir(names, NULL, 2, 1);
+  for (int initial = 0; initial <= 1; initial++) {
+    assert(perfil_infantil_definir(1, initial));
+    assert(ajustes_edicao_iniciar(2));
+    uxCancelar();
+    for (int i = 0; i < 3; i++) {
+      int op = controls[i];
+      assert(!ajOpcaoDisponivel(op));
+      uxAbrirEditor(op);
+      assert(!uxEditor);
+      if (op != AJ_PERFIL_EDITAR)
+        assert(!definirValorDireto(op, initial));
+    }
+    assert(!pessoas_aberto() && pfPend == PA_NADA);
+    ajustes_edicao_encerrar();
+    assert(perfis_ativo() == 1 && perfil_infantil(1) == initial);
+    for (int i = 0; i < 3; i++) assert(ajOpcaoDisponivel(controls[i]));
+  }
+  perfil_infantil_esquecer();
+}
+
 static void pollOptoutIsolation(void) {
   const char *nomes[] = { "Admin", "Ana", "Other" };
   perfis_teste_definir(nomes, NULL, 3, 1);
@@ -475,6 +499,7 @@ int main(void) {
   migracao();
   copia();
   edicao();
+  identityControlsIsolation();
   pollOptoutIsolation();
   failureBackendIsolation();
   failureDialogIsolation();
