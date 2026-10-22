@@ -285,6 +285,7 @@ int partes_ler_item(const char *item, const char *fim, int usenet, PartesLista *
   partes_lista_limpar(l);
   l->atual = -1;
   l->usenet = usenet;
+  { const char *a = raiz(item, fim, "airlocked"); l->airlock = a && !strncmp(a, "true", 4); }
   l->item = (int)numRaiz(item, fim, "id", -1);
   if (l->item <= 0) return 0;
   { char h[64] = "";
@@ -1483,6 +1484,79 @@ void partes_link_cancelar(void) {
   linkEstado = -2;
   linkUrl[0] = 0;
   pthread_mutex_unlock(&trava);
+}
+
+// ---------------------------------------------------------------- Airlock
+//
+// Liga/desliga o Airlock do item da lista (debrid_tb_airlock), em fio proprio:
+// a rede nao pode parar o desenho. Um pedido por vez; o pedido novo durante um
+// em curso e ignorado (o toque repetido no OK nao empilha PUTs).
+typedef struct { int usenet, item, ligar; unsigned geracao, conta; } PedidoAirlock;
+static unsigned geracaoAirlock, airConta;
+static int airEstado = -2;             // ver partes_airlock_estado
+static int airLigado;
+static char airDetalhe[160];
+
+// A copia na memoria e o corpo guardado da lista passam a dizer o que o
+// TorBox acabou de aceitar; sem isto o proximo segurar mostraria o estado velho.
+static void airlockNaMemoria(int usenet, int item, int ligar) {
+  pthread_mutex_lock(&trava);
+  for (int i = 0; i < PARTES_MEMO; i++)
+    if (memo[i].chave[0] && memo[i].l.item == item && memo[i].l.usenet == usenet) memo[i].l.airlock = ligar;
+  pthread_mutex_unlock(&trava);
+  listaEsquecer();
+}
+
+static void *fioAirlock(void *u) {
+  PedidoAirlock *pd = u;
+  char det[160] = "";
+  int ok = pd->conta == debrid_tb_geracao() && debrid_tb_airlock(pd->usenet, pd->item, pd->ligar, det, sizeof det);
+  if (ok && pd->conta == debrid_tb_geracao()) airlockNaMemoria(pd->usenet, pd->item, pd->ligar);
+  pthread_mutex_lock(&trava);
+  if (pd->geracao == geracaoAirlock && pd->conta == debrid_tb_geracao()) {
+    airEstado = ok ? 1 : -1;
+    airLigado = pd->ligar;
+    snprintf(airDetalhe, sizeof airDetalhe, "%s", det);
+  }
+  pthread_mutex_unlock(&trava);
+  free(pd);
+  return NULL;
+}
+
+void partes_airlock_pedir(int usenet, int item, int ligar) {
+  PedidoAirlock *pd;
+  pthread_t t;
+  pthread_mutex_lock(&trava);
+  if (airEstado == 0 && airConta == debrid_tb_geracao()) { pthread_mutex_unlock(&trava); return; }
+  pd = calloc(1, sizeof *pd);
+  geracaoAirlock++;
+  airEstado = pd ? 0 : -1;
+  airConta = debrid_tb_geracao();
+  airDetalhe[0] = 0;
+  if (pd) { pd->usenet = usenet; pd->item = item; pd->ligar = ligar; pd->geracao = geracaoAirlock; pd->conta = airConta; }
+  pthread_mutex_unlock(&trava);
+  if (!pd) return;
+  if (pthread_create(&t, NULL, fioAirlock, pd) != 0) {
+    free(pd);
+    pthread_mutex_lock(&trava);
+    airEstado = -1;
+    pthread_mutex_unlock(&trava);
+    return;
+  }
+  pthread_detach(t);
+}
+
+int partes_airlock_estado(int *ligado, char *detalhe, unsigned n) {
+  int e;
+  pthread_mutex_lock(&trava);
+  e = airConta == debrid_tb_geracao() ? airEstado : -2;
+  if (e == 1 || e == -1) {
+    if (ligado) *ligado = airLigado;
+    if (detalhe && n) snprintf(detalhe, n, "%s", airDetalhe);
+    airEstado = -2; airDetalhe[0] = 0;
+  }
+  pthread_mutex_unlock(&trava);
+  return e;
 }
 
 // ---------------------------------------------------------------- sessao

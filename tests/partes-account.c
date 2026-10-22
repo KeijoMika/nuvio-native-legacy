@@ -33,6 +33,7 @@ int debrid_tb_link(int u, int id, int a, char *url, unsigned n) {
   (void)u; (void)id; (void)a; (void)url; (void)n; return 0;
 }
 int debrid_tb_adicionar(const char *h) { (void)h; return 0; }
+int debrid_tb_airlock(int u, int id, int l, char *det, unsigned n) { (void)u; (void)id; (void)l; (void)det; (void)n; return 0; }
 int dados_gravar(const char *n, const char *c) { (void)n; (void)c; return 0; }
 char *dados_ler(const char *n) { (void)n; return NULL; }
 char *rede_baixar_trecho64_final(const char *u, const char *h, int64_t a, int64_t b,
