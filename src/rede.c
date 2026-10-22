@@ -3268,12 +3268,14 @@ static int dtsRangeProgress(void *user, long long dt, long long dn,
   }
   return 0;
 }
-static void *dtsRangeHeaders(const char *raw, int public_only) {
+char *rede_range_headers(const char *raw, int public_only) {
   char *copy, *line, *ctx = NULL;
-  void *list = NULL;
-  if (!raw || !*raw || !slist_append) return NULL;
+  size_t used = 0;
+  if (!raw) raw = "";
+  char *out = malloc(strlen(raw) + 2);
+  if (!out) return NULL;
   copy = strdup(raw);
-  if (!copy) return NULL;
+  if (!copy) { free(out); return NULL; }
   for (line = strtok_r(copy, "\n", &ctx); line; line = strtok_r(NULL, "\n", &ctx)) {
     char *colon = strchr(line, ':');
     size_t n = strlen(line), key;
@@ -3285,8 +3287,18 @@ static void *dtsRangeHeaders(const char *raw, int public_only) {
     if (public_only && !((key == 7 && !strncasecmp(line, "referer", key)) ||
                         (key == 10 && !strncasecmp(line, "user-agent", key)) ||
                         (key == 6 && !strncasecmp(line, "origin", key)))) continue;
-    list = slist_append(list, line);
+    memcpy(out + used, line, n); used += n; out[used++] = '\n';
   }
+  out[used] = 0;
+  free(copy);
+  return out;
+}
+static void *dtsRangeHeaders(const char *raw, int public_only) {
+  void *list = NULL;
+  char *copy = rede_range_headers(raw, public_only), *ctx = NULL;
+  if (!copy) return NULL;
+  if (slist_append) for (char *line = strtok_r(copy, "\n", &ctx); line; line = strtok_r(NULL, "\n", &ctx))
+    list = slist_append(list, line);
   free(copy);
   return list;
 }
@@ -3381,7 +3393,7 @@ char *rede_baixar_trecho64_vigiado(const char *url, const char *headers,
       if (size) *size = (long)r.body.n;
       if (total) *total = r.total;
       if (final && hop > 0) snprintf(final, 8192, "%s", current);
-      if (cross) *cross = public_only;
+      if (cross) *cross = downgraded ? 2 : public_only;
       return baldeFinal(&r.body);
     }
     /* Numeric only: identify failed interval, response validation and discarded
@@ -3528,7 +3540,7 @@ int rede_fluxo64(const char *url, const char *headers, int64_t start,
     }
     if (f.accepted) {
       if (final && hop > 0) snprintf(final, 8192, "%s", current);
-      if (cross) *cross = public_only;
+      if (cross) *cross = downgraded ? 2 : public_only;
     }
     if (f.stopped) return 1;                 /* the sink asked to stop */
     if (!result && f.accepted) return 0;     /* body ended (EOF or a capped range) */
