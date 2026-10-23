@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `92aaee057` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-23T00:57:16-03:00. 552 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `92aaee057` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-23T01:30:00-03:00. 552 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -522,43 +522,43 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem3: merged; No mapped revie
 | [#514](https://github.com/iqui27/nuvio-native-legacy/issues/514) | Ability to rate a movie or an episode | ? | ? | aberta | 2.1 | 2.1 | - | sem comentários | Deferred to 2.1: rating a movie or episode after watching; see backlog-21.txt. |
 | [#542](https://github.com/iqui27/nuvio-native-legacy/issues/542) | Torbox cloud library | ? | feature | aberta | - | futuro | - | sem comentários | triar; sem job |
 | [#606](https://github.com/iqui27/nuvio-native-legacy/issues/606) | Subtitle filenames from addons | ? | ? | integrada | 2.0.8 | futuro | agente/205-i606 | sem comentários | Verify merged result; build/install and check device. |
-| [#605](https://github.com/iqui27/nuvio-native-legacy/issues/605) | Strip hdr10+ metadata | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#617](https://github.com/iqui27/nuvio-native-legacy/issues/617) | Read watched state and resume positions from Jellyfin server | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#605](https://github.com/iqui27/nuvio-native-legacy/issues/605) | Strip hdr10+ metadata | ? | ? | aberta | - | futuro | - | sem comentários | precisa job (alvo: futuro): retirar metadados dinamicos HDR10+ na escolha/reproducao |
+| [#617](https://github.com/iqui27/nuvio-native-legacy/issues/617) | Read watched state and resume positions from Jellyfin server | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: lido/assistido e posicao de resume do Jellyfin; relacionado a feat/servidores |
 | [#621](https://github.com/iqui27/nuvio-native-legacy/issues/621) | Distorted gif avatars | ? | bug | integrada | 2.0.8 | futuro | agente/205-205-gifavatar, agente/205-205-gifavatar | sem comentários | Verify merged result; build/install and check device. |
 | [#625](https://github.com/iqui27/nuvio-native-legacy/issues/625) | Live tv doesn’t work | ? | bug | integrada | 2.0.8 | futuro | agente/205-205-livets, agente/205-205-livets | sem comentários | Verify merged result; build/install and check device. |
 | [#626](https://github.com/iqui27/nuvio-native-legacy/issues/626) | [Feature Request] Android TV/Google TV: "Tunneled playback"  | Android | feature | integrada | 2.0.8 | futuro | agente/205-205-tunnel, 19e638ea1 | sem comentários | Verify merged result; build/install and check device. |
 | [#634](https://github.com/iqui27/nuvio-native-legacy/issues/634) | LG WebOS3 | ? | bug | integrada | 2.0.8 | futuro | agente/205-205-posterpt, agente/205-205-posterpt | sem comentários | Verify merged result; build/install and check device. |
-| [#636](https://github.com/iqui27/nuvio-native-legacy/issues/636) | a few questions and issues | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#636](https://github.com/iqui27/nuvio-native-legacy/issues/636) | a few questions and issues | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: ler, quebrar em itens e responder |
 | [#637](https://github.com/iqui27/nuvio-native-legacy/issues/637) | Bold setting does not work for Arabic subtitles | ? | bug | integrada | 2.0.8 | futuro | agente/205-205-arabbold, agente/205-naskhbold, agente/205-205-arabbold | sem comentários | Verify merged result; build/install and check device. |
 | [#639](https://github.com/iqui27/nuvio-native-legacy/issues/639) | [BUG] Library randomly removes, restores, and adds movies/TV | ? | ? | integrada | 2.0.8 | futuro | agente/205-205-bib639, agente/205-205-bib639 | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
-| [#641](https://github.com/iqui27/nuvio-native-legacy/issues/641) | Missing Refresh Rate AFR Option in Android | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#642](https://github.com/iqui27/nuvio-native-legacy/issues/642) | System Keyboard Crashes App LG WebOS 26 | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#645](https://github.com/iqui27/nuvio-native-legacy/issues/645) | Files with Dolby vision and HDR will  chose to play the HDR  | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#643](https://github.com/iqui27/nuvio-native-legacy/issues/643) | Friends: show Simkl watched history, newest first | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#641](https://github.com/iqui27/nuvio-native-legacy/issues/641) | Missing Refresh Rate AFR Option in Android | ? | bug | aberta | - | futuro | - | sem comentários | precisa job: chave de taxa de atualizacao (AFR) no caminho de video Android; nenhuma branc |
+| [#642](https://github.com/iqui27/nuvio-native-legacy/issues/642) | System Keyboard Crashes App LG WebOS 26 | ? | bug | aberta | - | futuro | - | sem comentários | precisa job: reproduzir e guardar a chamada de IME no webOS 26; nenhuma branch |
+| [#645](https://github.com/iqui27/nuvio-native-legacy/issues/645) | Files with Dolby vision and HDR will  chose to play the HDR  | ? | ? | aberta | - | futuro | 142ae407f? | sem comentários | precisa job: portar agente/2031-dvp5-hdr10 (regra perfil 5 em MP4 nunca passa HDR10 nao-MP |
+| [#643](https://github.com/iqui27/nuvio-native-legacy/issues/643) | Friends: show Simkl watched history, newest first | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: historico do Simkl no feed de amigos, mais novo primeiro; nenhuma branch |
 | [#677](https://github.com/iqui27/nuvio-native-legacy/issues/677) | Selection Jumps Back to the First Item When Navigating Rows | ? | bug | integrada | 2.0.9 | futuro | agente/205-677-foco, agente/205-677-foco | sem comentários | Verify merged result; build/install and check device. |
 | [#676](https://github.com/iqui27/nuvio-native-legacy/issues/676) | Slow Loading of Menu Artwork, Posters, and HUD | ? | bug | integrada | 2.0.9 | futuro | agente/205-676-arte, agente/205-676-arte | sem comentários | Verify merged result; build/install and check device. |
-| [#675](https://github.com/iqui27/nuvio-native-legacy/issues/675) | Playback end behaviour | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#674](https://github.com/iqui27/nuvio-native-legacy/issues/674) | Title page - focus and what plays next | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#672](https://github.com/iqui27/nuvio-native-legacy/issues/672) | Library row - show all | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#675](https://github.com/iqui27/nuvio-native-legacy/issues/675) | Playback end behaviour | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: definir o comportamento de fim de reproducao em posplay (src/posplay.c; teste |
+| [#674](https://github.com/iqui27/nuvio-native-legacy/issues/674) | Title page - focus and what plays next | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: foco e proximo episodio na pagina do titulo; nenhuma branch cobre |
+| [#672](https://github.com/iqui27/nuvio-native-legacy/issues/672) | Library row - show all | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: "Ver tudo" nas fileiras da Biblioteca (home ja tem em src/home.c:126); job pe |
 | [#671](https://github.com/iqui27/nuvio-native-legacy/issues/671) | [Samsung Tizen 10 / v2.0.7 .tpk] Most subtitles show nothing | ? | ? | integrada | - | futuro | agente/205-205-legtizen10, agente/205-205-legtizen10 | sem comentários | Verify merged result; build/install and check device. |
 | [#668](https://github.com/iqui27/nuvio-native-legacy/issues/668) | Holding 'down' and 'up' in the TV guide brings up the Catego | ? | bug | integrada | - | futuro | agente/205-205-guiasegurar, agente/205-205-guiasegurar | sem comentários | Verify merged result; build/install and check device. |
 | [#667](https://github.com/iqui27/nuvio-native-legacy/issues/667) | Turning on 'pick the source yourself' still auto selects the | ? | bug | integrada | - | futuro | agente/205-205-fontemanual, agente/205-205-fontemanual | sem comentários | Verify merged result; build/install and check device. |
 | [#666](https://github.com/iqui27/nuvio-native-legacy/issues/666) | Collections are not sorted | ? | ? | integrada | - | futuro | agente/205-205-colecaoabas, agente/205-205-colecaotop10, agente/205-205-colecaoabas | sem comentários | Verify merged result; build/install and check device. |
 | [#665](https://github.com/iqui27/nuvio-native-legacy/issues/665) | Embedded Subtitles sometimes don’t work. If selected as seco | ? | bug | integrada | - | futuro | agente/205-205-legtizen10, agente/205-205-legtizen10 | sem comentários | Verify merged result; build/install and check device. |
-| [#664](https://github.com/iqui27/nuvio-native-legacy/issues/664) | Question | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#663](https://github.com/iqui27/nuvio-native-legacy/issues/663) | Thanks 🙏 | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#664](https://github.com/iqui27/nuvio-native-legacy/issues/664) | Question | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: ler e responder (modelo de rascunho de agente/205-respostas) |
+| [#663](https://github.com/iqui27/nuvio-native-legacy/issues/663) | Thanks 🙏 | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: so responder, sem job de codigo |
 | [#662](https://github.com/iqui27/nuvio-native-legacy/issues/662) | Cover Flow Mode Causes Screen Flickering While Loading Large | ? | bug | integrada | - | futuro | agente/205-205-coverflowpisca, agente/205-205-coverflowpisca | sem comentários | Verify merged result; build/install and check device. |
 | [#661](https://github.com/iqui27/nuvio-native-legacy/issues/661) | Showcase Mode Does Not Display All Catalogs in a Collection | ? | bug | integrada | - | futuro | agente/205-205-vitrinetodos, agente/205-205-vitrinetodos | sem comentários | Verify merged result; build/install and check device. |
 | [#660](https://github.com/iqui27/nuvio-native-legacy/issues/660) | Animated GIFs in Profile Picker Sometimes Fail to Animate or | ? | bug | integrada | - | futuro | agente/205-205-gifperfis, agente/205-205-gifperfis | sem comentários | Verify merged result; build/install and check device. |
-| [#659](https://github.com/iqui27/nuvio-native-legacy/issues/659) | Feature Request: Per-Catalog Stage Background Appearance | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#658](https://github.com/iqui27/nuvio-native-legacy/issues/658) | Cursor disappears while scrolling in Showcase mode | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#659](https://github.com/iqui27/nuvio-native-legacy/issues/659) | Feature Request: Per-Catalog Stage Background Appearance | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: Stage/Imersiva por catalogo (base bc101d7be); feature nova |
+| [#658](https://github.com/iqui27/nuvio-native-legacy/issues/658) | Cursor disappears while scrolling in Showcase mode | ? | bug | aberta | - | futuro | - | sem comentários | precisa job: cursor some ao rolar no modo Vitrine/Showcase; nenhum conserto na 2.1 |
 | [#657](https://github.com/iqui27/nuvio-native-legacy/issues/657) | Image noise bug | ? | bug | integrada | - | futuro | agente/205-205-ruidoperfil, agente/205-205-ruidoperfil | sem comentários | Verify merged result; build/install and check device. |
-| [#656](https://github.com/iqui27/nuvio-native-legacy/issues/656) | Select Genre Filter in Catalogs | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#653](https://github.com/iqui27/nuvio-native-legacy/issues/653) | Settings: trailer sound help stays in Portuguese | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#650](https://github.com/iqui27/nuvio-native-legacy/issues/650) | Trailer Audio | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#656](https://github.com/iqui27/nuvio-native-legacy/issues/656) | Select Genre Filter in Catalogs | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: filtro de genero por catalogo; nenhuma branch cobre |
+| [#653](https://github.com/iqui27/nuvio-native-legacy/issues/653) | Settings: trailer sound help stays in Portuguese | ? | ? | aberta | - | futuro | strings | sem comentários | precisa job: i18n nas strings de ajuda do som do trailer |
+| [#650](https://github.com/iqui27/nuvio-native-legacy/issues/650) | Trailer Audio | ? | bug | aberta | - | futuro | ajustes_trailer_som()/AJ_HERO_TRAILER_SOM | sem comentários | precisa job: confirmar plataforma do relator (Samsung .wgt sem som por desenho) e responde |
 | [#649](https://github.com/iqui27/nuvio-native-legacy/issues/649) | Lighter fork without p2p engine | ? | ? | integrada | - | futuro | agente/205-205-apklite, agente/205-205-buscaarte, agente/205-205-escada3 | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
-| [#648](https://github.com/iqui27/nuvio-native-legacy/issues/648) | [Bug]: HTTP Addons Stream Timeout / No Response on Samsung T | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
-| [#647](https://github.com/iqui27/nuvio-native-legacy/issues/647) | Nuvio Legacy's LegaSync (Sync This TV Settings) and other fe | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#648](https://github.com/iqui27/nuvio-native-legacy/issues/648) | [Bug]: HTTP Addons Stream Timeout / No Response on Samsung T | ? | bug | aberta | - | futuro | - | sem comentários | precisa job: diagnosticar probe/timeout de addons HTTP no Tizen 6.5; nada no mapa nem nos  |
+| [#647](https://github.com/iqui27/nuvio-native-legacy/issues/647) | Nuvio Legacy's LegaSync (Sync This TV Settings) and other fe | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: sync de ajustes (LegaSync / Sync This TV); nenhuma branch |
 | [#646](https://github.com/iqui27/nuvio-native-legacy/issues/646) | Live TV doesn't work using M3U links and Sports Catalogs can | ? | bug | integrada | 2.0.9 | futuro | agente/205-live-auto-tpk, agente/205-live-auto-tpk | sem comentários | Verify merged result; build/install and check device. |
 | [#678](https://github.com/iqui27/nuvio-native-legacy/issues/678) | Some rows isn't synced from Nuvio account | ? | bug | integrada | 2.0.9 | futuro | agente/205-678-aiforyou, agente/205-678-aiforyou | sem comentários | Verify merged result; build/install and check device. |
 | [#679](https://github.com/iqui27/nuvio-native-legacy/issues/679) | Função dos perfis secundários usar todos as configurações de | ? | ? | integrada | 2.1 | futuro | agente/205-205-ajperfil21 | sem comentários | Deferred to 2.1; retain tracking. |
@@ -1310,7 +1310,9 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-i606: merged; j-rev1322-i606.log:
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-i606: merged; j-rev1322-i606.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-i606: merged; j-rev1322-i606.log: OK. 
 - **#605**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job (alvo: futuro): retirar metadados dinamicos HDR10+ na escolha/reproducao
 - **#617**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: lido/assistido e posicao de resume do Jellyfin; relacionado a feat/servidores-locais (parado para 2.2)
 - **#621**: Imported from local issues snapshot.
 Snapshot 2026-10-20T22:47:33-03:00: agente/205-205-gifavatar: merged; j-revg-gifavatar-2145.log: OK.
 Snapshot 2026-10-20T23:47:26-03:00: agente/205-205-gifavatar: merged; j-revg-gifavatar-2145.log: OK.
@@ -1415,6 +1417,7 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-posterpt: merged; j-revg-post
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-posterpt: merged; j-revg-posterpt.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-posterpt: merged; j-revg-posterpt.log: OK. 
 - **#636**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: ler, quebrar em itens e responder
 - **#637**: Imported from local issues snapshot.
 Snapshot 2026-10-20T20:47:26-03:00: agente/205-205-arabbold: review-OK; j-revg-arabbold-2038.log: OK.
 Snapshot 2026-10-20T20:47:26-03:00: agente/205-naskhbold: merged; No mapped review verdict.
@@ -1490,9 +1493,13 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-bib639: merged; j-revg-bib639
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-bib639: merged; j-revg-bib639.log: BLOQUEIA.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-bib639: merged; j-revg-bib639.log: BLOQUEIA. 
 - **#641**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: chave de taxa de atualizacao (AFR) no caminho de video Android; nenhuma branch
 - **#642**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: reproduzir e guardar a chamada de IME no webOS 26; nenhuma branch
 - **#645**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: coberto pelo port de agente/2031-dvp5-hdr10 (PERDIDO); 2.1 nao tem a guarda.
 - **#643**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: historico do Simkl no feed de amigos, mais novo primeiro; nenhuma branch
 - **#677**: Imported from local issues snapshot.
 Snapshot 2026-10-22T18:56:41-03:00: agente/205-677-foco: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T19:28:46-03:00: agente/205-677-foco: merged; j-rev3-677-foco.log: OK.
@@ -1512,8 +1519,11 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-676-arte: merged; j-rev3-676-arte
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-676-arte: merged; j-rev3-676-arte.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-676-arte: merged; j-rev3-676-arte.log: OK. 
 - **#675**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: definir o comportamento de fim de reproducao em posplay (src/posplay.c; testes/posplay_recuo.sh existem)
 - **#674**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: foco e proximo episodio na pagina do titulo; nenhuma branch cobre
 - **#672**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: "Ver tudo" nas fileiras da Biblioteca (home ja tem em src/home.c:126); job pequeno de UI
 - **#671**: Imported from local issues snapshot.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-legtizen10: merged; j-revg-legtizen10.log: OK.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-legtizen10: merged; j-revg-legtizen10.log: OK.
@@ -1580,7 +1590,9 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-legtizen10: merged; j-revg-le
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-legtizen10: merged; j-revg-legtizen10.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-legtizen10: merged; j-revg-legtizen10.log: OK. 
 - **#664**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: ler e responder (modelo de rascunho de agente/205-respostas)
 - **#663**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: so responder, sem job de codigo
 - **#662**: Imported from local issues snapshot.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-coverflowpisca: merged; j-revg-coverflowpisca.log: OK.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-coverflowpisca: merged; j-revg-coverflowpisca.log: OK.
@@ -1615,7 +1627,9 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-gifperfis: merged; j-revg-gif
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-gifperfis: merged; j-revg-gifperfis.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-gifperfis: merged; j-revg-gifperfis.log: OK. 
 - **#659**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: Stage/Imersiva por catalogo (base bc101d7be); feature nova
 - **#658**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: cursor some ao rolar no modo Vitrine/Showcase; nenhum conserto na 2.1
 - **#657**: Imported from local issues snapshot.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-ruidoperfil: merged; j-revg-ruidoperfil.log: OK.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-ruidoperfil: merged; j-revg-ruidoperfil.log: OK.
@@ -1628,8 +1642,11 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-ruidoperfil: merged; j-revg-r
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-ruidoperfil: merged; j-revg-ruidoperfil.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-ruidoperfil: merged; j-revg-ruidoperfil.log: OK. 
 - **#656**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: filtro de genero por catalogo; nenhuma branch cobre
 - **#653**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: confirmado na 2.1; texto PT fixo, sem i18n().
 - **#650**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: conserto ja existe na 2.1; so falta confirmar a plataforma e responder.
 - **#649**: Imported from local issues snapshot.
 Snapshot 2026-10-22T17:16:08-03:00: agente/205-205-apklite: merged; j-revg3-apklite.log: OK.
 Snapshot 2026-10-22T17:16:08-03:00: agente/205-205-buscaarte: merged; j-revg-buscaarte.log: BLOQUEIA.
@@ -1709,7 +1726,9 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-notas208b: merged; j-revg-not
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-testes208: merged; j-revg3-testes208.log: BLOQUEIA. 
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-webosmem: merged; j-revg2-webosmem.log: OK. 
 - **#648**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: diagnosticar probe/timeout de addons HTTP no Tizen 6.5; nada no mapa nem nos logs da 2.1
 - **#647**: Imported from local issues snapshot.
+[triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: sync de ajustes (LegaSync / Sync This TV); nenhuma branch
 - **#646**: Imported from local issues snapshot.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-live-auto-tpk: merged; No mapped review verdict.
 Snapshot 2026-10-22T18:56:41-03:00: agente/205-live-auto-tpk: review-OK; j-rev2-livetpk.log: OK.
@@ -14482,6 +14501,7 @@ Quem validou o quê, em que ref, com que resultado e onde está a prova; mais re
 
 | Data | Quem | O que | Issues | Ref | Resultado | Evidência |
 |---|---|---|---|---|---|---|
+| 2026-10-23 01:30 | triagem-perdidos (map keeper, git log/diff integracao/2.1...branch) | Reclassificacao de 25 branches (8 JA_ENTROU, 8 PERDIDO, 3 OBSOLETO, 6 DOC) e das 19 issues abertas sem conserto no mapa: marcado como feito o que tem commit em integracao/2.1, obsoleto o superado, doc o que e so documento; o resto fica aberto com "precisa job" | #645, #650, #653 | integracao/2.1 (142ae407f, 3d6cb830a, 79f234560, 6c39c62ba, e6da2772a, c4e40c05f, 68a24febb, 2fccfee60, ce49f2e3a) | inconclusivo | /Volumes/ExternalSSD/tmp/rev/triagem-perdidos.md (leitura de arvore/grep em integracao/2.1; nenhum build executado) |
 | 2026-10-17 12:00 | map keeper (git) | Teste de regressao apos a janela de merges de vidro | - | 0940ae7bf | falhou | tests/vidro_qualidade.sh: FALHA "Alta ignores the governor (frost)"; j-vidroqual investigando (RUNNING 12:15) |
 | 2026-10-17 11:56 | dono (merge) / map keeper | Merge dos trabalhos revisados: homelerdo e naskhbold | - | d7522dd17, 0940ae7bf | pendente | reviews 11:40/11:41 OK foram ANTES do merge |
 | 2026-10-17 11:41 | job-pi (magpie) / review | Revisao do Naskh Bold na UI e nas legendas simples | - | 458828591 (agente/205-naskhbold) | passou | rev-naskhbold.log VEREDITO OK, P2 sem PNG de prova |
@@ -30277,10 +30297,10 @@ Snapshot 2026-10-21T05:48:06-03:00: agente/205-pisca4: merged; No mapped review 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/202-biblioteca; agente/205-triagem-velhas
-- Próximo passo: Verify merged result; build/install and check device.
+- Próximo passo: precisa job: portar agente/202-biblioteca (procedencia por titulo, "Listas" agrupada por fonte, prateleiras por fonte sobre uma fila Trakt ritmada, so 2xx enche prateleira/capa); 2.1 reconstruiu a biblioteca diferente (68a24febb, 2fccfee60, ce49f2e3a) e nenhum marcador da branch existe la.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/202-biblioteca: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/202-biblioteca: done-awaiting-review; No mapped review verdict.
@@ -30444,15 +30464,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-22T23:56:47-03:00: agente/202-biblioteca: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/202-biblioteca: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (M-L, conflito alto): biblioteca_hub.inc/biblioteca_lista.inc/biblioteca_vis.inc/listas_rede.c ausentes em 2.1.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-p323, branch agente/205-p323. Port the #323 fix from agente/203-323 (and the streams.c part of agente/203-318-play). src/streams.c ~1824: Conferencia c lives on the stack, c.rodada = fa_rodada_atual(), a
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: integrada
 - Release: 2.0.9
-- Conserto: agente/203-318-play; agente/203-323; agente/205-p323
-- Próximo passo: Verify merged result; build/install and check device.
+- Conserto: 142ae407f (queda nativa Android < 12, em 2.1)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/203-318-play: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/203-323: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-p323: merged; No mapped review verdict.
@@ -30698,15 +30719,16 @@ Snapshot 2026-10-22T23:56:47-03:00: agente/203-323: done-awaiting-review; No map
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-p323: merged; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/203-318-play: done-awaiting-review; No mapped review verdict. 
 Snapshot 2026-10-23T00:57:16-03:00: agente/203-323: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-p323: merged; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-p323: merged; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: JA_ENTROU: relator de queda nativa Android < 12 em 2.1 (142ae407f); #323 refeito melhor com ConfDona (src/streams.c:1673).
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: integrada
 - Release: 2.0.9
-- Conserto: agente/203-perfilsel; agente/205-triagem-velhas
-- Próximo passo: Verify merged result; build/install and check device.
+- Conserto: 3d6cb830a (continuar sob cada avatar, D2, em 2.1)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/203-perfilsel: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/203-perfilsel: done-awaiting-review; No mapped review verdict.
@@ -30870,15 +30892,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-22T23:56:47-03:00: agente/203-perfilsel: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/203-perfilsel: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+[triagem-perdidos 2026-10-23 01:30]: JA_ENTROU: D2 em 2.1 (3d6cb830a, src/perfilsel.c:65-72).
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas, branch agente/205-triagem-velhas (docs only). Fix the review findings below in the triage doc, keep it docs-only.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/2031-dvp5-hdr10; agente/205-triagem-velhas
-- Próximo passo: Verify merged result; build/install and check device.
+- Próximo passo: precisa job: portar agente/2031-dvp5-hdr10 (perfil 5 em MP4 nunca passa HDR10 nao-MP4 na mesma banda + teste); cobre #645
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/2031-dvp5-hdr10: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/2031-dvp5-hdr10: done-awaiting-review; No mapped review verdict.
@@ -31042,15 +31065,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-22T23:56:47-03:00: agente/2031-dvp5-hdr10: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/2031-dvp5-hdr10: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (S, conflito baixo): ~20 linhas + teste; 2.1 mp4PrimeiroNasFontes sem guarda.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: doc-mantida
 - Release: 2.0.9
-- Conserto: agente/204-arabe370; agente/205-triagem-velhas
-- Próximo passo: Verify merged result; build/install and check device.
+- Conserto: docs/issues/rascunhos/resposta-370.md
+- Próximo passo: Guardar como doc; nada a portar.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/204-arabe370: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/204-arabe370: done-awaiting-review; No mapped review verdict.
@@ -31214,15 +31238,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-22T23:56:47-03:00: agente/204-arabe370: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/204-arabe370: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+[triagem-perdidos 2026-10-23 01:30]: DOC: rascunho docs/issues/rascunhos/resposta-370.md nao esta na 2.1; fica como documento.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: fechada-obsoleta
 - Release: 2.0.9
-- Conserto: agente/204-pr381; agente/205-triagem-velhas
-- Próximo passo: Verify merged result; build/install and check device.
+- Conserto: c4e40c05f (PR #381 adaptado a integracao)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/204-pr381: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/204-pr381: done-awaiting-review; No mapped review verdict.
@@ -31386,15 +31411,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-22T23:56:47-03:00: agente/204-pr381: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/204-pr381: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+[triagem-perdidos 2026-10-23 01:30]: OBSOLETO: commit de rascunho; creditos-auto ja em 2.1 (src/creditosauto.h), adaptado por c4e40c05f.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: integrada
 - Release: 2.0.9
-- Conserto: agente/204-webos-versao; agente/205-triagem-velhas
-- Próximo passo: Verify merged result; build/install and check device.
+- Conserto: 79f234560, 6c39c62ba, e6da2772a (versao real da TV em 2.1)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/204-webos-versao: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T13:48:33-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/204-webos-versao: done-awaiting-review; No mapped review verdict.
@@ -31558,7 +31584,8 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-22T23:56:47-03:00: agente/204-webos-versao: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-23T00:57:16-03:00: agente/204-webos-versao: done-awaiting-review; No mapped review verdict. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+[triagem-perdidos 2026-10-23 01:30]: JA_ENTROU: nyx > starfish > acb em 2.1 (src/webosver.c:9), melhor que a branch; branch so tem testes.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-abastopo, branch agente/205-abastopo (from integracao/2.0.5).
 
@@ -42093,10 +42120,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-relacionados: merged; j-revg-rela
 ### Worktree: /Volumes/ExternalSSD/nv-205-respostas (branch agente/205-respostas). Nuvio Legacy (repo iqui27/nuvio-native-legacy). Never post to GitHub, never push: DRAFTS ONLY. Issues are ALREADY downloaded: /Volumes/ExternalSSD/tmp/rev/issues
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: doc-mantida
 - Release: 2.0.9
-- Conserto: agente/205-respostas
-- Próximo passo: Review latest fix.
+- Conserto: docs/issues/respostas-205.md
+- Próximo passo: Guardar como doc; nada a portar.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T17:50:20-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
@@ -42178,7 +42205,8 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-respostas: done-awaiting-review; 
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-respostas: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: DOC: 384 linhas de respostas rascunho para issues abertas da 2.0.5; nao esta na 2.1.
 
 ### # Independent review (final, before merge)
 
@@ -47003,10 +47031,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/21-trakt-ideias: done-awaiting-review
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: fechada-obsoleta
 - Release: 2.0.9
 - Conserto: agente/ajustesvisual; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/ajustesvisual: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/ajustesvisual: done-awaiting-review; No mapped review verdict.
@@ -47169,15 +47197,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/ajustesvisual: done-awaiting-review; 
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/ajustesvisual: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/ajustesvisual: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/ajustesvisual: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: OBSOLETO: direcoes visuais A/B sem aprovacao do dono; 2.1 docs/ROADMAP.md:70 segue "sem direcao aprovada".
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: doc-mantida
 - Release: 2.0.9
-- Conserto: agente/biblioteca-ilimitada-plano; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Conserto: docs/plans/biblioteca-ilimitada.md
+- Próximo passo: Guardar como doc; nada a portar.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict.
@@ -47340,15 +47369,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/biblioteca-ilimitada-plano: done-awai
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: DOC: plano docs/plans/biblioteca-ilimitada.md; comportamento "sem teto" ja tinha saido.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: doc-mantida
 - Release: 2.0.9
-- Conserto: agente/codex-contexto; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Conserto: docs/glass-ui-contexto.md
+- Próximo passo: Guardar como doc; nada a portar.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict.
@@ -47511,7 +47541,8 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/codex-contexto: done-awaiting-review;
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: DOC: docs/glass-ui-contexto.md consolidado nao esta na 2.1.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -47687,10 +47718,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/guiaunicode: merged; No mapped review
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: integrada
 - Release: 2.0.9
-- Conserto: agente/icones; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Conserto: NuvioActivity.kt:1109/1130 trocarIcone + src/iconeapp.c (2.1)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/icones: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/icones: done-awaiting-review; No mapped review verdict.
@@ -47853,15 +47884,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/icones: done-awaiting-review; No mapp
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/icones: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/icones: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/icones: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: JA_ENTROU: alias por icone e troca na saida do app em 2.1.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: integrada
 - Release: 2.0.9
-- Conserto: agente/p2p; agente/205-triagem-velhas
-- Próximo passo: Latest fix postdates review; review newest tip after queued/running work finishes.
+- Conserto: src/p2p.c, src/p2pmotor.c, tools/p2p-motor/build-mac.sh (2.1)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review.
@@ -48024,15 +48056,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/p2p: needs review; j-rev3-205-p2p486.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review.
+[triagem-perdidos 2026-10-23 01:30]: JA_ENTROU: motor P2P embutido em 2.1; NUVIO_P2P_MOTOR no arm.sh.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: fechada-obsoleta
 - Release: 2.0.9
-- Conserto: agente/pr259-merge; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Conserto: 9c5062588, 087d3a015, d5e0185cc (pipeline src/dts/)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict.
@@ -48195,15 +48228,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/pr259-merge: done-awaiting-review; No
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: OBSOLETO: fallback DTS local do PR 259 superado pelo pipeline src/dts/ (dts_engine.c, dts_playback.c).
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/rastreio; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Próximo passo: precisa job: portar agente/rastreio (tools/rastreio/: grafo issue->commit->funcao->teste, guarda.sh, lista de falhas conhecidas, lock do mapa.py); ferramenta de processo, fora de tools/ nao ha conflito
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict.
@@ -48366,15 +48400,16 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/rastreio: done-awaiting-review; No ma
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (M, conflito baixo): tools/rastreio ausente em 2.1.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: doc-mantida
 - Release: 2.0.9
-- Conserto: agente/refatoracao-plano; agente/205-triagem-velhas
-- Próximo passo: Review latest fix.
+- Conserto: docs/plans/refatoracao-geral.md
+- Próximo passo: Guardar como doc; nada a portar.
 - Notas: Snapshot 2026-10-17T13:48:33-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-17T14:53:44-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-17T14:53:44-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict.
@@ -48537,7 +48572,8 @@ Snapshot 2026-10-22T22:57:28-03:00: agente/refatoracao-plano: done-awaiting-revi
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-22T23:56:47-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK. 
-Snapshot 2026-10-23T00:57:16-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: DOC: plano docs/plans/refatoracao-geral.md nao esta na 2.1.
 
 ### Review only, do not edit. Worktree /Volumes/ExternalSSD/nv-205-pr526-v3, branch pr/526-v3 = external PR #526 head plus our fix commits. Diff vs master: /Volumes/ExternalSSD/tmp/rev/prs/526-v3.diff. Previous blocking review: /Volumes/Externa
 
@@ -55853,10 +55889,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-diaglimitada: merged; j-revg-
 ### Worktree: /Volumes/ExternalSSD/nv-205-205-legaddonsync (branch agente/205-205-legaddonsync). Nuvio Legacy, C.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: integrada
 - Release: 2.0.9
-- Conserto: agente/205-205-legaddonsync
-- Próximo passo: Review latest fix.
+- Conserto: tests/addons_legendas.c:114-121 + fixtures/subsync (2.1)
+- Próximo passo: Nada a fazer.
 - Notas: Snapshot 2026-10-20T14:47:29-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-20T15:47:32-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-20T18:47:33-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
@@ -55885,7 +55921,8 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-205-legaddonsync: done-awaiting-r
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-legaddonsync: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: JA_ENTROU: teste de manifesto publico do Subtitle Sync em 2.1, com fixture mais rica.
 
 ### Worktree: /Volumes/ExternalSSD/nv-205-205-posterserv (branch agente/205-205-posterserv). Nuvio Legacy, C.
 
@@ -57594,10 +57631,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-ajtour: done-awaiting-review;
 ### Worktree: /Volumes/ExternalSSD/nv-205-205-ajtour, branch agente/205-205-ajtour (from integracao/2.0.5). Nuvio Legacy, C app, TV UI (SDL/GL, 1920x1080 virtual screen).
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/205-205-ajustesux
-- Próximo passo: Review latest fix.
+- Próximo passo: precisa job: portar item a item agente/205-205-ajustesux ("Resolver um problema" em coluna unica, pilulas so-icone no Layout, explicacao inline de cada opcao bloqueada, limpar previews-ilustram-so, rotulos curtos); 2.1 reescreveu as mesmas telas (e37ca493e)
 - Notas: Snapshot 2026-10-22T17:16:08-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
@@ -57608,7 +57645,8 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-205-ajustesux: done-awaiting-revi
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-ajustesux: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (M, conflito alto): ambos os lados mexeram em ajustes_ux_v2.inc/ajustes_ux_cenas_home.inc; conferir item a item.
 
 ### RESUME: the previous run of this exact job was killed mid-work (host restart). First inspect `git log --oneline -15` and `git status` / `git diff`: keep valid uncommitted work, finish and commit it, then continue the task below from where i
 
@@ -57974,10 +58012,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-ruidoperfil: merged; j-revg-r
 ### # Task: Saved panel — Remove button on the focused item card + accent focus border only with glass outline
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/205-205-salvosremover
-- Próximo passo: Review latest fix.
+- Próximo passo: precisa job: portar agente/205-205-salvosremover (card do painel Salvos sempre oferece "Remover"; anel de foco accent so com "Contorno do vidro" ligado)
 - Notas: Snapshot 2026-10-22T17:16:08-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
@@ -57988,15 +58026,16 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-205-salvosremover: done-awaiting-
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-salvosremover: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (S, conflito baixo): 2.1 tituloSalvo (src/ctxmenu.c:100) sem a regra doPainel && !doSocial; src/gfx.c:4406 desenha gfx_anel sempre.
 
 ### # Independent review (final, before merge)
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/205-205-traktlogin
-- Próximo passo: Latest fix postdates review; review newest tip after queued/running work finishes.
+- Próximo passo: precisa job: portar agente/205-205-traktlogin (backoff 429 limitado pela validade do codigo + retry/log do login por dispositivo)
 - Notas: Snapshot 2026-10-22T17:16:08-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
@@ -58007,7 +58046,8 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-205-traktlogin: needs review; j-r
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-205-traktlogin: needs review; j-revg-traktlogin.log: BLOQUEIA. Newer fix log requires review.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (S, conflito baixo): 2.1 esperar429 (src/traktauth.c:113) sem limite de validade e sem log [trakt].
 
 ### Worktree: /Volumes/ExternalSSD/nv-205-205-triagem37 (branch agente/205-205-triagem37, = integracao/2.0.5). READ-ONLY audit. Do not edit code.
 
@@ -58126,10 +58166,10 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/205-21-sync206: done-awaiting-review;
 ### Worktree: /Volumes/ExternalSSD/nv-205-heroglassfoco, branch agente/205-heroglassfoco. Commit c0e0d2d08 makes the focused home hero "View title" button use glass when ajustes_vidro() is on.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/205-heroglassfoco
-- Próximo passo: Review latest fix.
+- Próximo passo: precisa job: portar agente/205-heroglassfoco (botao focado usa a pilula de vidro quando o vidro esta ligado)
 - Notas: Snapshot 2026-10-22T17:16:08-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
@@ -58140,15 +58180,16 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-heroglassfoco: done-awaiting-revi
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (S, trivial): 3 linhas + shot; 2.1 src/botoes.c:71 ainda chama vidroFoco.
 
 ### Worktree: /Volumes/ExternalSSD/nv-205-herotamanho, branch agente/205-herotamanho.
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: perdida
 - Release: 2.0.9
 - Conserto: agente/205-herotamanho
-- Próximo passo: Review latest fix.
+- Próximo passo: precisa job: portar agente/205-herotamanho (ajuste local "Tamanho do destaque" Normal/Grande/Muito grande + logo maior com layout reservado)
 - Notas: Snapshot 2026-10-22T17:16:08-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
@@ -58159,7 +58200,8 @@ Snapshot 2026-10-22T20:58:39-03:00: agente/205-herotamanho: done-awaiting-review
 Snapshot 2026-10-22T21:56:53-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T22:57:28-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T23:56:47-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
-Snapshot 2026-10-23T00:57:16-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T00:57:16-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict.
+[triagem-perdidos 2026-10-23 01:30]: PERDIDO (M, conflito baixo): sem AJ_HERO_TAMANHO/heroSizeLocal em 2.1; 45 arquivos, ~90% i18n de uma linha.
 
 ### Review only, do not edit. Worktree: /Volumes/ExternalSSD/nv-205-pr669, branch agente/205-pr669 (integracao/2.0.5 + community PR #669 merged, player format position / clock-island pills / audio codec toggle).
 
@@ -58617,3 +58659,30 @@ Snapshot 2026-10-23T00:57:16-03:00: agente/21-trilhas-shots: running; No mapped 
 - Próximo passo: Merge reviewed branch.
 - Notas: 
 Snapshot 2026-10-23T00:57:16-03:00: agente/205-musica-png: review-OK; j-rev2-musica-png.log: OK. 
+
+### Worktree de triagem (branch agente/203-323) — triagem-perdidos
+
+- Plataforma: See task prompt
+- Status: perdida
+- Release: 2.1
+- Conserto: nenhum encontrado
+- Próximo passo: precisa job: portar agente/203-323 (conserto do SIGSEGV do #323)
+- Notas: [triagem-perdidos 2026-10-23 01:30]: PERDIDO: mesmo conserto do #323, superado pelo ConfDona + soltarConf de 2.1 (src/streams.c:1673).
+
+### Worktree de triagem (branch agente/204-samsung-dts) — triagem-perdidos
+
+- Plataforma: See task prompt
+- Status: doc-mantida
+- Release: 2.1
+- Conserto: docs/plans/samsung-dts.md
+- Próximo passo: Guardar como doc; nada a portar.
+- Notas: [triagem-perdidos 2026-10-23 01:30]: DOC: plano docs/plans/samsung-dts.md nao esta na 2.1; partes cobertas por docs/features/dts/README.md e src/dts/.
+
+### Worktree de triagem (branch agente/plugins) — triagem-perdidos
+
+- Plataforma: See task prompt
+- Status: perdida
+- Release: 2.1
+- Conserto: nenhum encontrado
+- Próximo passo: precisa job: portar agente/plugins (origem dos plugins + scraper QuickJS)
+- Notas: [triagem-perdidos 2026-10-23 01:30]: PERDIDO: 2.1 tem src/plugins.c/pluginjs.c mais NOVOS (orcamento global, pool de fetch, limites de geracao); nao sobrescrever.
