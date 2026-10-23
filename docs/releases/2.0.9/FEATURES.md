@@ -35,6 +35,10 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Fixes
 
+- **Keyboard crash recovery**: If the webOS system keyboard crashes or fails to appear on webOS 26, input falls back to the app keyboard so you can continue searching and editing fields. Platforms: webOS. Refs: #642, `831cfca4a`, `749f6a0e5`, `481f890b0`.
+
+- **Next episode focus and playback exit**: Series focus follows the next episode, and playback exits at the end when the post-play prompt has already been dismissed. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #674, #675, `9e3cf67d8`.
+
 - **Add-on source status translated**: The "Searching add-on sources…" and "not responding" lines in the sources sheet now follow the interface language instead of always showing Portuguese. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `f49598336`.
 
 - **Broader anime source matching**: Translate anime IDs through all ARM endpoints and query each declared namespace in parallel while preserving explicit specials, source ID spaces and safe AIOStreams deduplication. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `dd70f889e`, `1511b615c`, `08673b9ea`, `af48dee49`, `680ab96e7`, `fbd7c059b`.
@@ -127,7 +131,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Internal
 
-- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
@@ -146,4 +150,4 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 ## Pending (not integrated yet)
 
 
-_Nothing pending in this snapshot._
+- **Bounded source parsing**: Large source responses avoid repeated scans across unrelated stream objects, reducing source-list parsing delays. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-streamparse-quad`, `e8883d07d`; done, awaiting review and integration.
