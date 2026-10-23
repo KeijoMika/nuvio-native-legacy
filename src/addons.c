@@ -117,7 +117,7 @@ static void copiarPedido(int i, AddonPedido *p) {
   memcpy(p->streamTipos, addon[i].streamTipos, sizeof p->streamTipos);
   chaveEstatistica(p->base, 0, p->estatistica);
   snprintf(p->tipoCanal, sizeof p->tipoCanal, "%s", addon[i].tipoCatalogo);
-  p->nStreamPref = addon[i].sondado ? addon[i].nStreamPref : 0;
+  p->nStreamPref = addon[i].nStreamPref;
   memcpy(p->streamPref, addon[i].streamPref, sizeof p->streamPref);
 }
 static AddonPedido *capturarPedidos(uint64_t sessao, int *n, unsigned *versao) {
