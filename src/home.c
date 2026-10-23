@@ -7749,7 +7749,30 @@ static float desenhaTituloFil(int r, float y, const char *rot, int cr, int cg, i
   return x0 + tl->w;
 }
 
+// Register cached horizontal slices before draw can admit new requests.
+static void homeResidencia(void) {
+  tex_residencia_inicio(foco.fileira);
+  for (int r = 0; r < nFileiras; r++) {
+    TipoFileira tipo = fileiras[r].tipo;
+    if (tipo == FILEIRA_SOCIAL || tipo == FILEIRA_CATALOGOS || fileiraEhCanal(&fileiras[r])) continue;
+    float lw = larguraFil(r);
+    int deitado = editorial(tipo) || tipo == FILEIRA_LARGA || tipo == FILEIRA_HEROI ||
+      (tipo != FILEIRA_TOP10_NUM && tipo != FILEIRA_TOP10 && tipo != FILEIRA_CONTINUE &&
+       tipo != FILEIRA_POSTER_GRANDE && tipo != FILEIRA_HEROI_DIVIDIDO && ajustes_posteres_deitados());
+    for (int c = 0; c < fileiras[r].n; c++) {
+      float x = homeFileiraX(r, c);
+      if (x < -lw * 1.5f || x > NV_TELA_W + lw) continue;
+      int idx = fileiraItemIndice(&fileiras[r], c);
+      tex_residencia_marcar(arte_por_identidade(idx,
+        (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) ? 3 : deitado), r);
+      // Expanded cards may have a second cached landscape variant.
+      if (!deitado) tex_residencia_marcar(arte_por_identidade(idx, 1), r);
+    }
+  }
+}
+
 static void home_desenhar_(Uint32 agora) {
+  homeResidencia();
   // Nao conservar ponteiros para o catalogo de outro quadro/perfil quando
   // nenhuma tela de titulo publica um item (pasta, social ou estado vazio).
   temItemFoco = 0;
@@ -8448,7 +8471,8 @@ static void home_desenhar_(Uint32 agora) {
       fy += NV_LEGACY_ROW_HEAD_H + alturaTotalFil(r) + fileiraGap();
     }
     int dir = adiante.direcao < 0 ? -1 : 1, pediu = 0;
-    for (int passo = 1; primeira >= 0 && passo <= 3 && !pediu; passo++) {
+    for (int passo = 1; primeira >= 0 &&
+         passo <= tex_residencia_fileiras() && !pediu; passo++) {
       int r = (dir > 0 ? ultima : primeira) + passo * dir;
       if (r < 0 || r >= nFileiras) break;
       TipoFileira tipo = fileiras[r].tipo;
