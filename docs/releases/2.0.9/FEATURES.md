@@ -11,7 +11,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **TorBox Airlock from the TV**: Keep or remove a source item from permanent Airlock storage directly in its files list, with refusal feedback and account-aware state. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #633, @I0-oX, `bcc63e3b1`, `7715cabc7`, `a01e8a134`, `ce6a7d1cd`.
 
-- **Soundtracks on title pages**: Browse film and season soundtrack tracks, save albums to your profile Library, and open listening links on your phone using a QR code. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `ff262d549`, `e5cd72149`, `cef09beab`, `b74db6de6`, `c3dd1b806`, `4ef90be21`, `33e728d1b`.
+- **Soundtracks on title pages**: Browse film and season soundtrack tracks, save albums to your profile Library, and open listening links on your phone using a QR code. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-musica-visual`, `agente/205-musica-png`, `ff262d549`, `e5cd72149`, `cef09beab`, `b74db6de6`, `c3dd1b806`, `4ef90be21`, `33e728d1b`, `3c65dda20`, `4c54f0b8a`, `204cd9980`, `9c2122094`, `239e08b51`, merge `af159f336`, merge `92aaee057`.
 
 ## New
 
@@ -87,7 +87,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Performance
 
-- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, merge `90e5b321a`. Android poster texture cache budgets are restored while retaining memory safeguards.
+- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, `483ff3348`, `a81e27c2c`, merge `90e5b321a`. Android poster texture cache budgets are restored, and SDL_image/libwebp/GIF decode fallbacks keep their decode bounds while remaining active.
 
 - **Bounded source-sheet work**: Limit source-sheet frame work to visible rows to keep navigation responsive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d28ff9e77`.
 
@@ -111,11 +111,11 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `e06c70bc8`, `8a9dd2dc0`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
 
-- **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`.
+- **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys, and record the Portuguese mockup and native preview proof with device validation limits. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`, `4654bdb0f`, `8fb90ad5f`.
 
-## Pending (not yet integrated)
+## Pending (ainda não integrado)
 
 
-- **Richer soundtrack catalog data**: Add Apple catalog artwork and track preview metadata with fallback lookup; the redesigned app UI and preview playback still await implementation and approval. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-musica-visual`, `3c65dda20`.
+_Nothing pending in this snapshot._
