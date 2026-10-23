@@ -8,12 +8,15 @@
 #include "dados.h"
 #include "gfx.h"
 #include "idioma.h"
+#include "ilhaacao.h"
+#include "ilha.h"
 #include "layout.h"
 #include "perfis.h"
 #include "player.h"
 #include "posplay.h"
 #include "text.h"
 #include "trakt.h"
+#include "simkl.h"
 #include "plrui.h"
 #include "recomenda.h"
 #include "recresp.h"
@@ -57,6 +60,94 @@ int reacao_regra_perguntar(int ehSerie, int temProximo, int proxOutraTemporada,
 
 int reacao_nota_trakt(int r) {
   return r == REACAO_GOSTEI ? 8 : r == REACAO_MAIS_MENOS ? 5 : r == REACAO_NAO ? 2 : 0;
+}
+
+extern const char *cat_tipo_por_imdb(const char *imdb);
+static char *campo(char **p);
+// --- nota (meia estrela, 1 a 10 = a escala do Trakt e do Simkl) ---------------------
+//
+// notas[-p<N>].txt, por perfil: imdb TAB nota TAB epoch. A chave e o imdb puro
+// do titulo ou "tt:S:E" do episodio. Os tres botoes dos creditos sao o atalho:
+// 8, 5 e 2 (4, 2,5 e 1 estrela).
+typedef struct { char id[40]; int nota; long long quando; unsigned tags; } Nota;
+static Nota notas[RX_MAX];
+static int  nNotas, notasPerfil = -999;
+
+static const char *arquivoNotas(void) {
+  static char nome[40];
+  int p = perfis_ativo();
+  if (p <= 0) snprintf(nome, sizeof nome, "notas.txt");
+  else snprintf(nome, sizeof nome, "notas-p%d.txt", p);
+  return nome;
+}
+
+static void carregarNotas(void) {
+  char *b, *p;
+  if (notasPerfil == perfis_ativo()) return;
+  notasPerfil = perfis_ativo();
+  nNotas = 0;
+  b = dados_ler(arquivoNotas());
+  if (!b) return;
+  for (p = b; *p && nNotas < RX_MAX;) {
+    char *fim = strchr(p, '\n'), *q = p;
+    if (fim) *fim = 0;
+    if (!strncmp(q, "tt", 2)) {
+      Nota n;
+      memset(&n, 0, sizeof n);
+      snprintf(n.id, sizeof n.id, "%s", campo(&q));
+      n.nota = atoi(campo(&q));
+      n.quando = atoll(campo(&q));
+      n.tags = (unsigned)strtoul(q, NULL, 10) & 4095u;
+      if (n.nota >= 1 && n.nota <= 10) notas[nNotas++] = n;
+    }
+    if (!fim) break;
+    p = fim + 1;
+  }
+  free(b);
+}
+
+static Nota *achaNota(const char *id) {
+  int i;
+  carregarNotas();
+  for (i = 0; i < nNotas; i++) if (!strcmp(notas[i].id, id)) return &notas[i];
+  return NULL;
+}
+
+int reacao_nota(const char *imdb) {
+  char id[40];
+  Nota *n;
+  if (!imdb || !imdb[0]) return 0;
+  if (!strchr(imdb, ':')) atividade_id_puro(id, sizeof id, imdb);
+  else snprintf(id, sizeof id, "%s", imdb);
+  n = achaNota(id);
+  return n ? n->nota : 0;
+}
+
+static void salvarNota(const char *id, int nota) {
+  static char buf[RX_MAX * 64 + 32];
+  size_t k = 0;
+  int i;
+  Nota *n = achaNota(id);
+  if (!n) {
+    if (nNotas >= RX_MAX) { memmove(notas, notas + 1, sizeof notas[0] * (size_t)(RX_MAX - 1)); nNotas--; }
+    n = &notas[nNotas++];
+    memset(n, 0, sizeof *n);
+    snprintf(n->id, sizeof n->id, "%s", id);
+  }
+  n->nota = nota;
+  n->quando = (long long)time(NULL);
+  for (i = 0; i < nNotas && k < sizeof buf; i++)
+    k += (size_t)snprintf(buf + k, sizeof buf - k, "%s\t%d\t%lld\t%u\n", notas[i].id, notas[i].nota, notas[i].quando, notas[i].tags);
+  dados_gravar(arquivoNotas(), buf);
+}
+
+int reacao_nota_para_reacao(int nota) {
+  return nota >= 7 ? REACAO_GOSTEI : nota >= 4 ? REACAO_MAIS_MENOS : nota >= 1 ? REACAO_NAO : REACAO_NENHUMA;
+}
+
+unsigned reacao_tags(const char *id) {
+  Nota *n = id ? achaNota(id) : NULL;
+  return n ? n->tags : 0;
 }
 
 // --- arquivo, por perfil ------------------------------------------------------------
@@ -191,10 +282,15 @@ static void marcarPendente(const char *imdb, const char *midia, const char *titu
 static struct {
   int    aberto;
   int    modoDetalhe;            // aberto pela pagina: sem contagem
-  char   imdb[24], midia[8], titulo[160], poster[NV_ARTE_URL_MAX], nome[64];
+  char   imdb[24], alvo[40], midia[8], titulo[160], poster[NV_ARTE_URL_MAX], nome[64];
+  uint64_t sessao;
+  unsigned tags;
+  int tagFoco;
   long long rec;
   int    envia;                  // "vai ver sua resposta" so com envio de verdade
   int    foco;
+  int    estrelas;               // foco na fileira de estrelas (CIMA); BAIXO volta as pilulas
+  int    nota;                   // 1 a 10 em meia estrela; 0 = ainda sem escolha
   // 0 = gostei/nao gostei; 1 = "mandar uma mensagem?" (so com rec de origem).
   int    passo;
   int    escrevendo;             // o teclado de tela esta aberto por este cartao
@@ -202,7 +298,7 @@ static struct {
   // contagem, centrado em `cx` (o painel) em vez do canto do player.
   int    modoPainel;
   float  cx;
-  float  anim, focoA[3];
+  float  anim, focoA[3], tagA[13], estrelaA, notaA;
   Uint32 desde;                  // ultima tecla (ou abertura), para os 8 s
 } c;
 static char  oferecido[24];      // titulo ja perguntado nesta sessao do player
@@ -210,6 +306,8 @@ static char  oferecido[24];      // titulo ja perguntado nesta sessao do player
 // 8 s e a tecla que a reinicia usam o mesmo relogio que a confere.
 static Uint32 ultimoAgora;
 static double durVista, durEstavel;
+static int playerT, playerE;
+void reacao_player_episodio(int t, int e) { playerT = t; playerE = e; }
 #ifdef NV_TOUCH_UI
 static TelefoneCartao reacaoTelefone;
 static int reacaoTelefoneGeracao;
@@ -226,6 +324,9 @@ static void abrir(const char *imdb, const char *midia, const char *titulo,
   c.aberto = 1;
   c.modoDetalhe = detalhe;
   atividade_id_puro(c.imdb, sizeof c.imdb, imdb);
+  snprintf(c.alvo, sizeof c.alvo, "%s", imdb);
+  c.sessao = perfis_sessao_geracao();
+  { Nota *n = achaNota(c.alvo); c.tags = n ? n->tags : 0; }
   snprintf(c.midia, sizeof c.midia, "%s", midia && !strcmp(midia, "series") ? "series" : "movie");
   snprintf(c.titulo, sizeof c.titulo, "%s", titulo ? titulo : "");
   snprintf(c.poster, sizeof c.poster, "%s", poster ? poster : "");
@@ -259,11 +360,62 @@ void reacao_fechar(void) {
   c.aberto = 0;
   oferecido[0] = 0;
   durVista = durEstavel = 0.0;
+  playerT = playerE = 0;
 }
 
-void reacao_responder(const char *imdb, int v) {
+static const char *const TAGS[] = {
+  "Visual", "Trilha", "Atuações", "Roteiro", "Final", "Ritmo lento",
+  "Chorei", "Ri muito", "Assustador", "Quero rever", "Superestimado", "Subestimado"
+};
+static struct { char id[40], tipo[8]; int nota, estado; unsigned tags; uint64_t sessao; } anterior;
+
+static void desfazerNota(const void *ctx) {
+  (void)ctx;
+  if (!perfis_sessao_atual(anterior.sessao)) return;
+  salvarNota(anterior.id, anterior.nota);
+  Nota *n = achaNota(anterior.id);
+  if (n) n->tags = anterior.tags;
+  salvarNota(anterior.id, anterior.nota);
+  if (!strchr(anterior.id, ':')) {
+    Reacao *r = linhaDe(anterior.id); r->estado = anterior.estado; gravar();
+    if (simkl_ativo()) simkl_avaliar(anterior.id, anterior.tipo, anterior.nota);
+  }
+  if (trakt_ativo()) trakt_avaliar(anterior.id, anterior.tipo, anterior.nota);
+}
+
+static void confirmarNota(int nota) {
+  snprintf(anterior.id, sizeof anterior.id, "%s", c.alvo);
+  snprintf(anterior.tipo, sizeof anterior.tipo, "%s", c.midia);
+  anterior.nota = reacao_nota(c.alvo); anterior.tags = reacao_tags(c.alvo);
+  anterior.estado = reacao_estado(c.imdb); anterior.sessao = c.sessao;
+  reacao_nota_definir(c.alvo, nota);
+  // Preserve the direct reply to a recommendation, even for an episode score.
+  if (strchr(c.alvo, ':') && c.rec > 0) recresp_responder(c.rec, reacao_nota_para_reacao(nota), NULL);
+  IlhaAcao acao = {0};
+  acao.icone = "aj_star"; acao.frase = i18n("Sua nota"); acao.titulo = c.titulo;
+  acao.tipo = ILHA_INFO; acao.desfazer = desfazerNota;
+  ilhaacao_feita(&acao);
+}
+
+static void responder(const char *imdb, int v, int nota);
+void reacao_responder(const char *imdb, int v) { responder(imdb, v, reacao_nota_trakt(v)); }
+
+// Nota de 1 a 10 (meia estrela); grava, manda ao Trakt/Simkl e vale como a
+// reacao do titulo. Episode scores also go to Trakt.
+void reacao_nota_definir(const char *imdb, int nota) {
+  char corpo[300];
+  if (nota < 1 || !trakt_nota_corpo(corpo, sizeof corpo, imdb, "movie", nota)) return;
+  if (strchr(imdb, ':')) {
+    salvarNota(imdb, nota);
+    if (trakt_ativo()) trakt_avaliar(imdb, "series", nota);
+    // Simkl ratings support titles; never overwrite a show's score with an episode.
+    return;
+  }
+  responder(imdb, reacao_nota_para_reacao(nota), nota);
+}
+
+static void responder(const char *imdb, int v, int nota) {
   Reacao *r;
-  int nota;
   if (v < -1 || v > 1) return;
   r = linhaDe(imdb);
   r->estado = v;
@@ -276,16 +428,18 @@ void reacao_responder(const char *imdb, int v) {
     snprintf(r->titulo, sizeof r->titulo, "%s", c.titulo);
     semTab(r->nome); semTab(r->titulo);
   }
+  if (!r->midia[0]) snprintf(r->midia, sizeof r->midia, "%s", cat_tipo_por_imdb(r->imdb));
   gravar();
   // A RESPOSTA A QUEM MANDOU: a rec vai para "Assistidas" com a reacao.
   if (r->rec > 0) recresp_responder(r->rec, v, NULL);
   atividade_reacao(r->imdb, r->midia, r->titulo,
                    c.imdb[0] && !strcmp(c.imdb, r->imdb) ? c.poster : "", v, r->rec);
-  nota = reacao_nota_trakt(v);
+  salvarNota(r->imdb, nota);
   // SO COM O TRAKT LIGADO. Sem ele a resposta fica nesta TV (e no servico,
   // se a pessoa permitiu) e o Trakt nao fica sabendo — e e o certo.
   if (nota && trakt_ativo()) trakt_avaliar(r->imdb, r->midia, nota);
-  printf("[reacao] %s -> %d%s\n", r->imdb, v, nota && trakt_ativo() ? " (nota no Trakt)" : "");
+  if (nota && simkl_ativo()) simkl_avaliar(r->imdb, r->midia, nota);
+  printf("[reacao] %s -> %d nota %d%s\n", r->imdb, v, nota, trakt_ativo() ? " (Trakt)" : "");
   fflush(stdout);
 }
 
@@ -302,6 +456,7 @@ void reacao_player_atualizar(float dt, Uint32 agora, const CatItem *ci, int ehSe
                            c.foco == i ? NV_MOLA_FOCO : NV_MOLA_DESFOCO);
   // A CONTAGEM: 8 s desde a abertura ou da ultima tecla. So no player.
   if (c.escrevendo) { teclado_atualizar(dt, agora); c.desde = agora; }
+  if (c.aberto && !perfis_sessao_atual(c.sessao)) c.aberto = 0;
   if (c.aberto && !c.modoDetalhe && agora - c.desde >= REACAO_TIMEOUT_MS) c.aberto = 0;
   // DURACAO ESTAVEL, a mesma guarda do posplay: a duracao provisoria do
   // primeiro instante nao pode fazer a "metade do filme" chegar aos 15 s.
@@ -320,11 +475,19 @@ void reacao_player_atualizar(float dt, Uint32 agora, const CatItem *ci, int ehSe
   { long long rec = recomenda_ativo() ? atividade_origem(id, NULL, 0) : 0;
     int peloAmigo = rec > 0 && !recresp_respondida(rec);
     int st = reacao_estado(id);
-    if (st >= -1 && st <= 1 && !peloAmigo) return;
+    if (ehSerie && playerE > 0) {
+      char alvo[40]; snprintf(alvo, sizeof alvo, "%s:%d:%d", id, playerT, playerE);
+      if (reacao_nota(alvo) && !peloAmigo) return;
+      temProximo = proxOutraTemporada = 0;
+    } else if (st >= -1 && st <= 1 && !peloAmigo) return;
     if (peloAmigo) temProximo = proxOutraTemporada = 0; }
   if (!reacao_regra_perguntar(ehSerie, temProximo, proxOutraTemporada, pos, dur, cred)) return;
   snprintf(oferecido, sizeof oferecido, "%s", id);
   abrir(id, ehSerie ? "series" : "movie", ci->titulo, ci->poster, 0, agora);
+  if (ehSerie && playerE > 0) {
+    snprintf(c.alvo, sizeof c.alvo, "%s:%d:%d", id, playerT, playerE);
+    Nota *n = achaNota(c.alvo); c.tags = n ? n->tags : 0;
+  }
   // PENDENTE DESDE JA: se a pessoa sair do player com o cartao no ar, a
   // pergunta continua de pe na pagina do titulo.
   marcarPendente(id, c.midia, c.titulo, c.rec, c.nome);
@@ -369,6 +532,7 @@ int reacao_evento(const SDL_Event *e, int controlesVisiveis) {
     tecladoResultado();
     return 1;
   }
+  if (c.aberto && !perfis_sessao_atual(c.sessao)) { c.aberto = 0; return 0; }
   if (!c.aberto || e->type != SDL_KEYDOWN) return 0;
   if (controlesVisiveis && !c.modoDetalhe) return 0;
   k = e->key.keysym.sym;
@@ -378,18 +542,55 @@ int reacao_evento(const SDL_Event *e, int controlesVisiveis) {
     c.aberto = 0;               // pula; a pendencia fica
     return 1;
   }
+  if (c.passo == 2) {
+    c.desde = ultimoAgora;
+    if (k == SDLK_LEFT && c.tagFoco > 0) c.tagFoco--;
+    if (k == SDLK_RIGHT && c.tagFoco < 12) c.tagFoco++;
+    if (k == SDLK_UP) c.tagFoco = c.tagFoco >= 3 ? c.tagFoco - 3 : 0;
+    if (k == SDLK_DOWN) c.tagFoco = c.tagFoco < 10 ? c.tagFoco + 3 : 12;
+    if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
+      if (c.tagFoco == 12) c.aberto = 0;
+      else {
+        unsigned bit = 1u << c.tagFoco, count = 0;
+        for (unsigned b = c.tags; b; b >>= 1) count += b & 1u;
+        if ((c.tags & bit) || count < 3) c.tags ^= bit;
+        Nota *n = achaNota(c.alvo);
+        if (n) { n->tags = c.tags; salvarNota(c.alvo, n->nota); }
+      }
+    }
+    return 1;
+  }
+  // A FILEIRA DE ESTRELAS (so no passo 1 da pergunta): CIMA entra, BAIXO volta.
+  if (c.passo == 0 && k == SDLK_UP && !c.estrelas) {
+    c.estrelas = 1; c.desde = ultimoAgora;
+    if (!c.nota) c.nota = reacao_nota(c.alvo) ? reacao_nota(c.alvo) : reacao_nota_trakt(VALOR[c.foco]);
+    return 1;
+  }
+  if (c.estrelas) {
+    c.desde = ultimoAgora;
+    if (k == SDLK_DOWN) { c.estrelas = 0; return 1; }
+    if (k == SDLK_LEFT)  { if (c.nota > 1) c.nota--; return 1; }
+    if (k == SDLK_RIGHT) { if (c.nota < 10) c.nota++; return 1; }
+    if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
+      confirmarNota(c.nota);
+      if (respondeAmigo() && c.nome[0]) { c.passo = 1; c.foco = 0; c.estrelas = 0; return 1; }
+      c.passo = 2; c.estrelas = 0; c.tagFoco = 12;
+      return 1;
+    }
+    return c.modoDetalhe;
+  }
   if (k == SDLK_LEFT)  { if (c.foco > 0) c.foco--; c.desde = ultimoAgora; return 1; }
   if (k == SDLK_RIGHT) { if (c.foco < 2) c.foco++; c.desde = ultimoAgora; return 1; }
   if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
     if (c.passo == 1) { escolherMensagem(); c.desde = ultimoAgora; return 1; }
-    reacao_responder(c.imdb, VALOR[c.foco]);
+    confirmarNota(reacao_nota_trakt(VALOR[c.foco]));
     // COM AMIGO NA ORIGEM o cartao continua: "mandar uma mensagem?". A
     // reacao ja foi (recresp_responder dentro de reacao_responder).
     if (respondeAmigo() && c.nome[0]) {
       c.passo = 1; c.foco = 0; c.desde = ultimoAgora;
       return 1;
     }
-    c.aberto = 0;
+    c.passo = 2; c.tagFoco = 12;
     return 1;
   }
   // Na pagina o cartao e modal: o resto das teclas nao vaza para baixo dele.
@@ -477,6 +678,63 @@ static void reacaoTelefoneDesenhar(const char *perg, const char *orig, const cha
 }
 #endif
 
+// A FILEIRA DE ESTRELAS (meia estrela, 1 a 10): cinco estrelas de 44 px; a
+// cheia e a meia pela mesma forma recortada. Foco = acento do tema; sem foco, o
+// valor que ja existe (c.nota) em branco suave.
+#define ESTRELA_LINHA 76.0f
+static void estrelasDesenhar(float x, float y, float a) {
+  const float t = 40.0f, g = 12.0f;
+  int v = c.nota ? c.nota : reacao_nota(c.alvo), i;
+  c.estrelaA = anim_mola(c.estrelaA, c.estrelas ? 1 : 0, 1.f / 60, NV_MOLA_FOCO);
+  c.notaA = anim_mola(c.notaA, v, 1.f / 60, NV_MOLA_FOCO);
+  float al = a * (.65f + .35f * c.estrelaA);
+  float ar, ag, ab;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor((GfxRect){x - 12, y - 8, 428, 56}, .5f, 1, 1, 1, .10f * a * c.estrelaA);
+  char dica[96];
+  TxtLinha l;
+  for (i = 0; i < 5; i++) {
+    float sx = x + (float)i * (t + g);
+    GfxRect r = { sx, y, t, t };
+    float fill = anim_clamp((c.notaA - 2 * i) * .5f, 0, 1);
+    gfx_icone(r, "pl_star", .953f, .949f, .937f, al * .35f);
+    if (fill > .001f) {
+      gfx_recorte(sx, y, t * fill, t);
+      gfx_icone(r, "pl_star-f", ar, ag, ab, al);
+      gfx_sem_recorte();
+    }
+  }
+  if (c.estrelas) { snprintf(dica, sizeof dica, "%d.%d / 5", v / 2, v % 2 ? 5 : 0); plrui_decimal(dica); }
+  else snprintf(dica, sizeof dica, "%s", i18n("↑ nota em estrelas"));
+  l = txt_linha(TXT_CAPTION, dica, 243, 242, 239, 220);
+  txt_desenhar_alpha(l, x + 5.0f * (t + g) + 12.0f, y + (t - (float)l.h) * 0.5f, a * (c.estrelas ? 1.0f : 0.6f));
+}
+
+static float notaBotao(float x, float y, const char *rotulo, const char *icone, float foco, float a, float largura) {
+  float w = largura > 0 ? largura : (float)txt_largura(TXT_ILHA_ITEM, i18n(rotulo)) + 56 + (icone ? 34 : 0);
+  float f = anim_clamp(foco, 0, 1), ar, ag, ab;
+  GfxRect r = {x, y - 2 * f, w, 56};
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor(r, .5f, .141f, .149f, .173f, a);
+  // Selection remains visible after focus moves away; glass belongs to the island.
+  if (icone && !strcmp(icone, "aj_check")) gfx_cor(r, .5f, ar, ag, ab, .22f * a);
+  if (f > .005f) gfx_cor(r, .5f, ar, ag, ab, f * a);
+  int cor = f > .5f ? plrui_tinta() : 239;
+  if (icone) gfx_icone((GfxRect){x + 20, r.y + 16, 24, 24}, icone, cor / 255.f, cor / 255.f, cor / 255.f, a);
+  float dx = icone ? 54 : 24;
+  TxtLinha l = txt_linha_corta(TXT_ILHA_ITEM, rotulo, cor, cor, cor, 255, w - dx - 18);
+  txt_desenhar_alpha(l, x + dx, r.y + (56 - l.h) * .5f, a);
+  return w;
+}
+
+static void painelNota(GfxRect r, float a) {
+  plrui_material(r, 32, 0, a);
+  // A quiet scrim keeps bright artwork from washing out the floating island.
+  gfx_cor(r, 32 / r.h, .071f, .075f, .086f, (ajustes_vidro() ? .48f : 1.f) * a);
+  gfx_luz_canto(r, 32 / r.h, 80, 0, r.w * .8f, .8f, .85f, .9f,
+                (ajustes_vidro() ? .055f : .04f) * a);
+}
+
 static void reacao_desenharCorpo_(Uint32 agora, float baseY);
 // Camada ampliada (escala.h): o corpo desenha na tela virtual.
 void reacao_desenhar(Uint32 agora, float baseY) {
@@ -487,11 +745,26 @@ void reacao_desenhar(Uint32 agora, float baseY) {
   if (c.aberto && c.escrevendo && teclado_aberto()) teclado_desenhar(agora);
 }
 static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
-  float a = c.anim, w = 760.0f, h, x, y, lead, hp, pw = 0.0f;
+  float a = c.anim, w = 800.0f, h, x, y, lead, hp, pw = 0.0f;
   char perg[256], orig[160], ver[160];
   static const char *const ICONE[3] = { "pl_thumbs-up", NULL, "pl_thumbs-down" };
   int i;
-  if (a < 0.01f || !c.imdb[0]) return;
+  if (a < 0.01f || !c.imdb[0] || !perfis_sessao_atual(c.sessao)) return;
+  if (c.passo == 2) {
+    w = 920; h = 520; x = NV_TELA_W - RX_MARGEM - w; y = baseY - h + (1 - a) * 24;
+    painelNota((GfxRect){x, y, w, h}, a);
+    plrui_kicker("Sua nota", x + 40, y + 28, 174, 179, 186, a);
+    TxtLinha l = txt_linha(TXT_ILHA_PERGUNTA, "Tags · até 3", 243, 242, 239, 255);
+    txt_desenhar_alpha(l, x + 40, y + 52, a);
+    for (i = 0; i < 13; i++) {
+      float bx = x + 40 + (i % 3) * 284, by = y + 120 + (i / 3) * 72;
+      c.tagA[i] = anim_mola(c.tagA[i], c.tagFoco == i ? 1 : 0, 1.f / 60, NV_MOLA_FOCO);
+      const char *rotulo = i == 12 ? "Concluir" : TAGS[i];
+      notaBotao(bx, by, rotulo, i < 12 && (c.tags & (1u << i)) ? "aj_check" : NULL,
+                   c.tagA[i], a, 272);
+    }
+    return;
+  }
   const char *const *rot = c.passo == 1 ? ROTULO_MSG : ROTULO;
   static const char *const ICONE_MSG[3] = { NULL, NULL, NULL };
   const char *const *ico = c.passo == 1 ? ICONE_MSG : ICONE;
@@ -504,11 +777,11 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
 #ifdef NV_TOUCH_UI
   if (telefoneui_ativo()) { reacaoTelefoneDesenhar(perg, orig, ver, rot, agora, baseY, a); return; }
 #endif
-  for (i = 0; i < 3; i++) pw += plrui_botao_largura(rot[i], ico[i]) + (i ? 12.0f : 0.0f);
+  for (i = 0; i < 3; i++) pw += (float)txt_largura(TXT_ILHA_ITEM, i18n(rot[i])) + 56 + (ico[i] ? 34 : 0) + (i ? 12 : 0);
   if (pw + 72.0f > w) w = pw + 72.0f;
   lead = (float)txt_linha(TXT_ILHA_PERGUNTA, "Ág", 245, 246, 248, 255).h + 6.0f;
   hp = txt_bloco_corta(TXT_ILHA_PERGUNTA, perg, 0, 0, 0, -4000.0f, -4000.0f, w - 72.0f, lead, 0.0f, 2);
-  h = 34.0f + (orig[0] ? 30.0f + 8.0f : 0.0f) + hp + 26.0f + 60.0f + 24.0f + 22.0f + 30.0f;
+  h = 66.0f + (orig[0] ? 30.0f + 12.0f : 0.0f) + hp + 28.0f + 56.0f + 28.0f + 22.0f + 30.0f + (c.passo == 0 ? ESTRELA_LINHA : 0.0f);
   x = NV_TELA_W - RX_MARGEM - w;
   y = baseY - h + (1.0f - a) * 24.0f;
   if (c.modoPainel) {
@@ -523,28 +796,30 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
   // vazam): camada, os alvos de tras deixam de valer. No player ele nao e
   // camada — com os controles no ar as teclas sao do player.
   if (c.aberto && (c.modoDetalhe || c.modoPainel)) ponteiro_camada();
-  plrui_material((GfxRect){ x, y, w, h }, 36.0f, 0, a);
-  { float ty = y + 34.0f, tx = x + 36.0f;
+  painelNota((GfxRect){ x, y, w, h }, a);
+  plrui_kicker("Sua nota", x + 36, y + 28, 174, 179, 186, a);
+  { float ty = y + 66.0f, tx = x + 36.0f;
     if (orig[0]) {
-      TxtLinha lo = txt_linha_corta(TXT_G18M, orig, 243, 242, 239, 158, w - 72.0f - 42.0f);
+      TxtLinha lo = txt_linha_corta(TXT_CAPTION, orig, 243, 242, 239, 158, w - 72.0f - 42.0f);
       rec_avatar_estilo((GfxRect){ tx, ty, 30.0f, 30.0f }, "", c.nome, c.nome, a, TXT_MINI);
       txt_desenhar_alpha(lo, tx + 30.0f + 12.0f, ty + (30.0f - (float)lo.h) * 0.5f, a);
-      ty += 30.0f + 8.0f;
+      ty += 30.0f + 12.0f;
     }
     txt_bloco_corta(TXT_ILHA_PERGUNTA, perg, 243, 242, 239, tx, ty, w - 72.0f, lead, a, 2);
-    ty += hp + 26.0f;
+    ty += hp + 28.0f;
     { float bx = tx;
       // So assentado (a mola da entrada parada) e sem o teclado por cima.
       int reg = c.aberto && !c.escrevendo && a > 0.99f && a < 1.01f;
       for (i = 0; i < 3; i++) {
-        float bw = plrui_botao(bx, ty, rot[i], ico[i], c.focoA[i], a);
+        float bw = notaBotao(bx, ty, rot[i], ico[i], c.estrelas ? 0 : c.focoA[i], a, 0);
         if (reg) ponteiro_alvo(bx, ty, bw, 60.0f, ponteiroResposta, NULL, i, 0);
         bx += bw + 12.0f;
       } }
-    ty += 60.0f + 24.0f;
+    ty += 56.0f + 28.0f;
+    if (c.passo == 0) { estrelasDesenhar(tx, ty, a); ty += ESTRELA_LINHA; }
     { float yc = ty + 11.0f, tw = 0.0f;
       if (ver[0]) {
-        TxtLinha lv = txt_linha_corta(TXT_ILHA_GENERO, ver, 243, 242, 239, 128, w * 0.5f);
+        TxtLinha lv = txt_linha_corta(TXT_CAPTION, ver, 243, 242, 239, 128, w * 0.5f);
         txt_desenhar_alpha(lv, tx, yc - (float)lv.h * 0.5f, a);
         tw = (float)lv.w + 18.0f;
       }
@@ -564,21 +839,36 @@ int reacao_detalhe_pendente(const CatItem *ci) {
 }
 
 int reacao_detalhe_abrir(const CatItem *ci) {
-  if (!reacao_detalhe_pendente(ci)) return 0;
+  if (!ci || strncmp(ci->imdb, "tt", 2)) return 0;
   abrir(ci->imdb, ci->tipo, ci->titulo, ci->poster, 1, SDL_GetTicks());
   { Reacao *r = achar(ci->imdb);
     // A ORIGEM GUARDADA na pendencia vale mais que a busca de agora: a
     // recomendacao pode ter saido da lista do servidor depois da pergunta.
     if (r && r->rec && !c.rec) { c.rec = r->rec; snprintf(c.nome, sizeof c.nome, "%s", r->nome); } }
+  if (!reacao_detalhe_pendente(ci)) {
+    c.estrelas = 1;
+    c.nota = reacao_nota(ci->imdb);
+    if (!c.nota) c.nota = 8;
+  }
   c.anim = 0.0f;
+  return 1;
+}
+
+int reacao_episodio_abrir(const CatItem *ci, int t, int e) {
+  if (!ci || strncmp(ci->imdb, "tt", 2) || t < 0 || e <= 0) return 0;
+  char id[40]; snprintf(id, sizeof id, "%s:%d:%d", ci->imdb, t, e);
+  abrir(id, "series", ci->titulo, ci->poster, 1, SDL_GetTicks());
+  c.estrelas = 1; c.nota = reacao_nota(id);
+  if (!c.nota) c.nota = 8;
   return 1;
 }
 
 void reacao_detalhe_dica(const CatItem *ci, float a) {
   char perg[256];
-  TxtLinha l, s;
+  TxtLinha l;
   float x, y, w;
   // O cartao aberto (pela pagina) desenha por cima de tudo, com a mola dele.
+  if (c.aberto && !perfis_sessao_atual(c.sessao)) c.aberto = 0;
   if (c.aberto && c.modoDetalhe && !c.modoPainel) {
     if (c.escrevendo) { teclado_atualizar(1.0f / 60.0f, SDL_GetTicks()); tecladoResultado(); }
     c.anim = anim_mola(c.anim, 1.0f, 1.0f / 60.0f, NV_MOLA_TELA);
@@ -590,19 +880,37 @@ void reacao_detalhe_dica(const CatItem *ci, float a) {
     return;
   }
   if (c.modoDetalhe && !c.aberto && !c.modoPainel) c.anim = 0.0f;
-  if (a < 0.01f || !reacao_detalhe_pendente(ci)) return;
-  snprintf(perg, sizeof perg, i18n("O que achou de %s?"), ci->titulo);
+  if (a < 0.01f) return;
+  // Keep the saved half-star value visible on the title page.
+  if (ci && ci->imdb[0] && reacao_nota(ci->imdb) > 0) {
+    int n = reacao_nota(ci->imdb);
+    char tx[160];
+    snprintf(tx, sizeof tx, "%s · %d.%d", i18n("Sua nota"), n / 2, (n % 2) * 5);
+    plrui_decimal(tx);
+    l = txt_linha(TXT_G18M, tx, 243, 242, 239, 255);
+    w = 24.0f + 10.0f + (float)l.w;
+    x = NV_TELA_W - RX_MARGEM - w;
+    y = NV_TELA_H - 48.0f - (float)l.h;
+    gfx_cor((GfxRect){ x - 18.0f, y - 10.0f, w + 36.0f, (float)l.h + 20.0f }, 0.5f,
+            .094f, .098f, .11f, .96f * a);
+    float ar, ag, ab;
+    ajustes_acento(&ar, &ag, &ab);
+    gfx_icone((GfxRect){ x, y + ((float)l.h - 24.0f) * 0.5f, 24.0f, 24.0f }, "pl_star-f", ar, ag, ab, a * .95f);
+    txt_desenhar_alpha(l, x + 34.0f, y, a * 0.9f);
+    return;
+  }
+  if (!ci || strncmp(ci->imdb, "tt", 2)) return;
+  snprintf(perg, sizeof perg, "%s", i18n("↑ nota em estrelas"));
   // DISCRETA: texto pequeno e cinza, sem caixa de foco — ela nao e um botao,
   // e um lembrete de que CIMA abre a pergunta.
-  s = txt_linha(TXT_CAPTION, "↑", 200, 204, 212, 255);
-  l = txt_linha_corta(TXT_CAPTION, perg, 176, 180, 190, 255, 620.0f);
-  w = (float)s.w + 12.0f + (float)l.w;
+  l = txt_linha_corta(TXT_G18M, perg, 176, 180, 190, 255, 620.0f);
+  w = 24.0f + 12.0f + (float)l.w;
   x = NV_TELA_W - RX_MARGEM - w;
   y = NV_TELA_H - 48.0f - (float)l.h;
   gfx_cor((GfxRect){ x - 18.0f, y - 10.0f, w + 36.0f, (float)l.h + 20.0f }, 0.5f,
-          .04f, .042f, .05f, .62f * a);
-  txt_desenhar_alpha(s, x, y, a * 0.9f);
-  txt_desenhar_alpha(l, x + (float)s.w + 12.0f, y, a * 0.85f);
+          .094f, .098f, .11f, .96f * a);
+  gfx_icone((GfxRect){x, y + (l.h - 24) * .5f, 24, 24}, "aj_arrow-up", .78f, .80f, .83f, a);
+  txt_desenhar_alpha(l, x + 36.0f, y, a * .85f);
 }
 
 void reacao_teste_abrir(const char *imdb, const char *titulo, const char *midia,
