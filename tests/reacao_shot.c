@@ -14,6 +14,7 @@
 #include "text.h"
 #include "tex_cache.h"
 #include "shot_arte.h"
+#include "corviva.h"
 
 static GLuint shotFbo;
 #include <SDL2/SDL.h>
@@ -50,7 +51,7 @@ static void cena(void) {
   glClearColor(0.05f, 0.05f, 0.06f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   assert(shot_arte_carregar());
-  shot_arte_desenhar(.35f);
+  shot_arte_desenhar(getenv("NV_ILHA_SHOTS") ? 0 : .35f);
 }
 
 static SDL_Event tecla(SDL_Keycode k) {
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
   int i;
   assert(dir && *dir);
   dados_iniciar(dir);
-  dados_gravar("ajustes.txt", "idioma 0\nvidroLocal 1\n");
+  dados_gravar("ajustes.txt", "idioma 0\nvidroLocal 1\nescalaTextoLocal 2\nescalaTextoVersaoLocal 1\n");
   ajustes_iniciar();
   ajustes_dir(dir);
   ajustes_definir_vidro(0);
@@ -97,6 +98,63 @@ int main(int argc, char **argv) {
   assert(txt_iniciar("deploy/app", 1));
   tex_iniciar(64);
   { char abs[1024]; assert(realpath("deploy/app/art", abs)); gfx_icones_dir(abs); }
+
+  if (getenv("NV_ILHA_SHOTS")) {
+    ajustes_definir_vidro(1);
+    CatItem ci = {0};
+    snprintf(ci.imdb, sizeof ci.imdb, "tt0970866");
+    snprintf(ci.tipo, sizeof ci.tipo, "movie");
+    snprintf(ci.titulo, sizeof ci.titulo, "Entrando numa Fria Maior Ainda");
+    snprintf(ci.poster, sizeof ci.poster, "%s", getenv("NV_ILHA_THUMB"));
+    // Load the real thumb first, then use the approved artwork palette.
+    CorvivaPaleta p = {0}; p.ok = 1; p.acento[0] = .728f; p.acento[1] = .657f; p.acento[2] = .610f;
+    const char *states[] = {"a-repouso", "b-reacao", "c-estrelas", "d-salvo", "e-episodio", "f-varredura-01", "f-varredura-02", "f-varredura-03"};
+    for (int state = 0; state < 8; state++) {
+      reacao_fechar();
+      if (state == 4) {
+        snprintf(ci.imdb, sizeof ci.imdb, "tt0903747");
+        snprintf(ci.tipo, sizeof ci.tipo, "series");
+        reacao_nota_definir("tt0903747:1:1", 9);
+        assert(reacao_episodio_abrir(&ci, 1, 1));
+        SDL_Event ev = tecla(SDLK_RETURN); reacao_evento(&ev, 1);
+        for (int j = 0; j < 15; j++) { ev = tecla(SDLK_LEFT); reacao_evento(&ev, 1); }
+        ev = tecla(SDLK_RETURN); reacao_evento(&ev, 1);
+        ev = tecla(SDLK_RIGHT); reacao_evento(&ev, 1);
+      } else {
+        snprintf(ci.imdb, sizeof ci.imdb, "tt097086%d", state);
+        snprintf(ci.tipo, sizeof ci.tipo, "movie");
+        assert(reacao_detalhe_abrir(&ci));
+        if (state == 1) { SDL_Event ev = tecla(SDLK_LEFT); reacao_evento(&ev, 1); }
+        if (state >= 2) {
+          SDL_Event ev = tecla(SDLK_UP); reacao_evento(&ev, 1);
+          ev = tecla(SDLK_RIGHT); reacao_evento(&ev, 1);
+          if (state == 3) { ev = tecla(SDLK_RETURN); reacao_evento(&ev, 1); }
+        }
+      }
+      for (i = 0; i < 80; i++) {
+        tex_novo_quadro(); tex_bombear(8); txt_novo_quadro(); cena();
+        corviva_anotar(ci.poster, &p);
+        reacao_detalhe_dica(&ci, 1);
+      }
+      if (state >= 5) {
+        // Restart an actual star-entry sweep and seek the production clock.
+        SDL_Event ev = tecla(SDLK_ESCAPE); reacao_evento(&ev, 1);
+        assert(reacao_detalhe_abrir(&ci));
+        Uint32 clock = SDL_GetTicks();
+        reacao_player_atualizar(1, clock, NULL, 0, 0, 0, 0, 0, 0);
+        ev = tecla(SDLK_UP); reacao_evento(&ev, 1);
+        ev = tecla(SDLK_RIGHT); reacao_evento(&ev, 1);
+        const int elapsed[] = {100, 300, 450};
+        reacao_player_atualizar(1, clock + elapsed[state - 5], NULL, 0, 0, 0, 0, 0, 0);
+        tex_novo_quadro(); txt_novo_quadro(); cena();
+        reacao_desenhar(clock + elapsed[state - 5], 1032);
+      }
+      snprintf(nome, sizeof nome, "%s/app-%s.png", pasta, states[state]); captura(nome, w);
+    }
+    tex_encerrar(); txt_encerrar(); gfx_encerrar();
+    SDL_GL_DeleteContext(gl); SDL_DestroyWindow(w); SDL_Quit();
+    return 0;
+  }
 
   // 1. Veio de recomendacao.
   reacao_player_atualizar(0.0f, agora, NULL, 0, 0, 0, 0, 0, 0);

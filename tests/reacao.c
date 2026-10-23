@@ -197,21 +197,21 @@ static void nota(void) {
     e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
     CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_nota("tt0903747") == 8, "episode UI preserves series score");
-    for (int i = 0; i < 12; i++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 1); }
+    for (int i = 0; i < 15; i++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 1); }
     for (int i = 0; i < 4; i++) {
       e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
       e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
     }
-    CHECA(reacao_tags("tt0903747:1:2") == 7, "quick tags cap at three");
+    CHECA(reacao_tags("tt0903747:1:2") == (7u << 12), "quick tags cap at three without reusing legacy IDs");
     e = tecla(SDLK_LEFT); reacao_evento(&e, 1);
     e = tecla(SDLK_LEFT); reacao_evento(&e, 1);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
-    CHECA(reacao_tags("tt0903747:1:2") == 3, "selected tag toggles off");
+    CHECA(reacao_tags("tt0903747:1:2") == (3u << 12), "selected tag toggles off");
     e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
     perfis_definir_ativo(2);
     CHECA(reacao_nota("tt0903747:1:2") == 0 && !reacao_tags("tt0903747:1:2"), "profile isolates ratings and tags");
     perfis_definir_ativo(1);
-    CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_tags("tt0903747:1:2") == 3, "ratings and tags reload from disk");
+    CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_tags("tt0903747:1:2") == (3u << 12), "ratings and tags reload from disk");
     reacao_episodio_abrir(&s, 1, 2);
     perfis_definir_ativo(2);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);

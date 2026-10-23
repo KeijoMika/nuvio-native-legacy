@@ -115,6 +115,7 @@ void ajustes_encerrar(void);
 // e um ajuste de acessibilidade, nao um gosto, e uma tela que o ignora nao
 // serve para quem o ligou.
 int ajustes_animacoes_reduzidas(void);
+int ajustes_animacoes_reduzidas_usuario(void);
 // Protecao de OLED (esmaecer.h): indice de V_ESMAECER (padrao 2 = 5 min) e de
 // V_BRILHO_PLAYER (padrao 1 = 80%).
 int ajustes_esmaecer(void);
