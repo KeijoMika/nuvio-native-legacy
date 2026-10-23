@@ -2327,7 +2327,9 @@ static int escolhaDoNext(const char *base, char *prov, unsigned tam) {
 static void abrirProximoEpisodio(int t, int e, int apontar) {
   uint64_t sessaoEntrada = nv_perfil_sessao_ler();
   int titulo = player_indice();
-  char atual[64], alvo[64];
+  char atual[64], alvo[64], imdb[64];
+  const CatItem *ci = cat_item(titulo);
+  snprintf(imdb, sizeof imdb, "%s", ci ? ci->imdb : "");
   alvoPlayer(atual, sizeof atual);
   if (!cat_id_stream(titulo, t, e, alvo, sizeof alvo) || !alvo[0]) {
     player_episodio_pedido_liberar(); return;
@@ -2380,7 +2382,7 @@ static void abrirProximoEpisodio(int t, int e, int apontar) {
     proximopreparo_liberar_resultado(&preparada); proximopreparo_cancelar();
     return;
   }
-  player_abrir(titulo, NULL);
+  player_abrir(cat_indice_vivo(titulo, imdb), NULL);
   player_definir_episodio(t, e);
   // Abrir/fechar nao seguram a trava de identidade. Conferir outra vez antes
   // de publicar a lista e seu orcamento como uma unica transferencia curta.
@@ -2699,7 +2701,7 @@ static void parteTocar(const char *url, double pos) {
 static void abrirParte(int fonte, const PartesLista *l, int k) {
   const Stream *s = stream_item(fonte);
   Stream escolhida;
-  char alvo[64];
+  char alvo[64], imdb[64];
   int titulo, t = 0, e = 0, serie;
   PartesPonto pt;
   if (!s || !l || k < 0 || k >= l->n) return;
@@ -2707,9 +2709,10 @@ static void abrirParte(int fonte, const PartesLista *l, int k) {
   aguardandoFonte = 0;
   limparFonteVOD();
   titulo = player_aberto() ? player_indice() : detail_indice();
-  { const CatItem *ci = cat_item(titulo); serie = ci && !strcmp(ci->tipo, "series"); }
-  // Fecha ANTES de zerar: a saida grava o ponto do arquivo que tocava.
-  if (player_aberto()) { player_episodio_atual(&t, &e); player_encerrar(); }
+  { const CatItem *ci = cat_item(titulo); serie = ci && !strcmp(ci->tipo, "series");
+    snprintf(imdb, sizeof imdb, "%s", ci ? ci->imdb : ""); }
+  // Save the old file's resume point without completing a manual source switch.
+  if (player_aberto()) { player_episodio_atual(&t, &e); player_encerrar_fonte(); }
   else detail_ep_foco(&t, &e);
   parteZerar();
   consumirFolhaTocar(&t, &e);
@@ -2721,7 +2724,7 @@ static void abrirParte(int fonte, const PartesLista *l, int k) {
     } else if (k != l->atual || a->tipo != PARTE_EP) t = e = -1;
   }
   diagnostico_cancelar_vazao();
-  player_abrir(titulo, NULL);
+  player_abrir(cat_indice_vivo(titulo, imdb), NULL);
   player_definir_episodio(t, e);
   stream_definir_atual(fonte);
   voltaFonte = escolhida;
@@ -6468,7 +6471,10 @@ void app_atualizar(float dt, Uint32 agora) {
       aguardandoFonte=0;
       limparFonteVOD();
       int titulo=player_aberto()?player_indice():detail_indice(), t=0,e=0;
-      if (player_aberto()) { player_episodio_atual(&t,&e); player_encerrar(); }
+      char imdb[64];
+      const CatItem *ci = cat_item(titulo);
+      snprintf(imdb, sizeof imdb, "%s", ci ? ci->imdb : "");
+      if (player_aberto()) { player_episodio_atual(&t,&e); player_encerrar_fonte(); }
       else detail_ep_foco(&t,&e);
       // O EPISODIO TRAVADO NO PEDIDO DA FOLHA ganha do foco (#513): com a
       // folha aberta o foco da pagina ja nao diz qual card pediu fontes —
@@ -6477,7 +6483,7 @@ void app_atualizar(float dt, Uint32 agora) {
       // Consumida aqui uma unica vez; o titulo continua o da pagina aberta.
       consumirFolhaTocar(&t, &e);
       diagnostico_cancelar_vazao();
-      player_abrir(titulo,NULL);
+      player_abrir(cat_indice_vivo(titulo, imdb),NULL);
       player_definir_episodio(t,e);
       stream_definir_atual(fonte);
       // Qualquer escolha nova invalida a resposta de um torrent anterior; o
@@ -6612,8 +6618,11 @@ void app_atualizar(float dt, Uint32 agora) {
   { int t,e;
     if (aguardandoFonte != 2 && episodios_escolheu(&t,&e) && player_aberto()) {
       int titulo=player_indice();
+      char imdb[64];
+      const CatItem *ci = cat_item(titulo);
+      snprintf(imdb, sizeof imdb, "%s", ci ? ci->imdb : "");
       diagnostico_cancelar_vazao();
-      player_encerrar(); player_abrir(titulo,NULL);
+      player_encerrar(); player_abrir(cat_indice_vivo(titulo, imdb),NULL);
       player_definir_episodio(t,e);
       buscaNextAlvo[0] = 0;   // episodio escolhido na lista: a memoria do titulo, nao o Next
       marco("buscando fontes"); buscarParaPlayer();

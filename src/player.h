@@ -208,6 +208,8 @@ void player_atualizar(float dt, Uint32 agora);
 void player_desenhar(Uint32 agora);
 int  player_quer_sair(void);  // 1 assim que o Back foi apertado
 void player_encerrar(void);
+// Manual source replacement saves resume position without marking watched.
+void player_encerrar_fonte(void);
 // VOD na ilha: pausa antecipada durante a saida, conserva somente com ack,
 // depois retoma o mesmo IMDb/episodio sem reabrir fonte ou buscar posicao.
 void player_preparar_retencao(void);

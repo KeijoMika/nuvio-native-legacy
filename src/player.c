@@ -2501,7 +2501,7 @@ static void lembrarFonte(void) {
   fontevolta_guardar(alvo, sessao_usuario(), perfis_ativo(), s, stream_idade_ms(), SDL_GetTicks());
 }
 
-static void fecharSessao(int manter) {
+static void fecharSessao(int manter, int trocaFonte) {
   imgsub_gl_limpar();
   atualizarIdentidade();
   int jaRetido = retido;
@@ -2615,6 +2615,8 @@ static void fecharSessao(int manter) {
              partes_numero(sl, k), partes_principais(sl), (double)posSeg, vp, vd, assistiu ? " (finished)" : "");
       fflush(stdout);
     } }
+  // Replacing a source preserves resume position, never completes the title.
+  if (trocaFonte) assistiu = chegou = 0;
   // O ARQUIVO DO TORBOX ABERTO PELA LISTA (partes.h), filme ou episodio: o
   // ponto dele para o Retomar voltar no mesmo arquivo; concluido, sai.
   { PartesPonto pt; char alvoA[64];
@@ -2680,10 +2682,10 @@ static void fecharSessao(int manter) {
       int simklScr;
       idTrakt(ci, id, sizeof id);
       // Trakt also completes by percentage, so an invalid duration cannot be sent.
-      if (!duracaoContradita) trakt_marcar(id, pos, durG, assistidoSeg, assistiu);
+      if (!trocaFonte && !duracaoContradita) trakt_marcar(id, pos, durG, assistidoSeg, assistiu);
       // Simkl (#459): mesmo scrobble, independente de o Trakt estar ligado.
       // Sem vinculo, id fora do IMDb ou guarda recusando: SCR_NADA.
-      simklScr = simkl_scrobble(SCR_EV_SAIU, id, pos, durG, assistidoSeg, assistiu);
+      simklScr = trocaFonte ? SCR_NADA : simkl_scrobble(SCR_EV_SAIU, id, pos, durG, assistidoSeg, assistiu);
       // "ASSISTIU" para os amigos, so quando CONCLUIU e so se ela ligou a
       // atividade (ou os "vistos recentemente" do perfil). Largar aos 8% nao
       // assistiu nada — e nao chega a lugar nenhum.
@@ -2795,7 +2797,11 @@ static void fecharSessao(int manter) {
 }
 
 void player_encerrar(void) {
-  if (retido) player_descartar_retido(); else fecharSessao(0);
+  if (retido) player_descartar_retido(); else fecharSessao(0, 0);
+}
+
+void player_encerrar_fonte(void) {
+  if (retido) player_descartar_retido(); else fecharSessao(0, 1);
 }
 
 // So o voo (RETIDO SO PARA O VOO, acima): Android, saida para a ilha, com
@@ -2894,7 +2900,7 @@ int player_suspender(void) {
   retidoDesde = SDL_GetTicks();
   retomarMkv = mkvass_ocupado();
   retidoVoo = reterSoVoo();
-  fecharSessao(1);
+  fecharSessao(1, 0);
   if (retidoVoo)
     printf("[player] sessao pausada so ate o voo pousar (teto %u ms), depois solta\n", PLR_RETIDO_VOO_MS);
   else
@@ -2909,7 +2915,7 @@ void player_descartar_retido(void) {
   if (!retido) return;
   // Um backend ja substituido nao pertence mais a esta sessao.
   if (strcmp(retidoUrl, video_url_atual())) comVideo = 0;
-  fecharSessao(0); // progresso ja gravado na suspensao, nao faz outro scrobble
+  fecharSessao(0, 0); // progresso ja gravado na suspensao, nao faz outro scrobble
   retidoUrl[0] = retidoConta[0] = 0;
   retomarMkv = 0; retidoVoo = 0;
 }
