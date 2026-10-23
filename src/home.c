@@ -3124,7 +3124,8 @@ static void sincronizarFileiras(void) {
         (ajustes_cw_ordem() == CWO_SEPARAR || cw_retido()[0])) {
       Fileira *cw = &fileiras[destino];
       int c, nm = 0, tirou = 0, teto = cw->n;
-      for (c = 0; c < cf->n && nm < teto && nm < MAX_CARDS; c++) {
+      // Future cards follow the main row; scan them even when it is full.
+      for (c = 0; c < cf->n; c++) {
         int idx = cf->ini + c;
         const CatItem *it = cat_item(idx);
         if (it && cw_retido_exclui(it->imdb)) { tirou = 1; continue; }
@@ -3132,7 +3133,7 @@ static void sincronizarFileiras(void) {
           if (nProxHome < MAX_CARDS) proxHome[nProxHome++] = idx;
           continue;
         }
-        cw->itens[nm++] = idx;
+        if (nm < teto && nm < MAX_CARDS) cw->itens[nm++] = idx;
       }
       if (nProxHome || tirou) { cw->usaItens = 1; cw->n = nm; }
     }
