@@ -2823,8 +2823,9 @@ static int cinemetaInstalado(void) {
   return 0;
 }
 
+int ajustes_animacoes_reduzidas_usuario(void) { return valor[AJ_ANIM] == 1; }
 int ajustes_animacoes_reduzidas(void) {
-  return valor[AJ_ANIM] == 1 || (valor[AJ_ANIM] == 2 && gpun_efeito_ativo(3));
+  return ajustes_animacoes_reduzidas_usuario() || (valor[AJ_ANIM] == 2 && gpun_efeito_ativo(3));
 }
 int ajustes_interface_mobile(void) {
 #ifdef NV_TOUCH_UI

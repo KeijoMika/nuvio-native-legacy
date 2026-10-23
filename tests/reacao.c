@@ -167,6 +167,22 @@ static void nota(void) {
     CHECA(reacao_nota("tt0111161") == 1, "undo restores previous rating");
     e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
   }
+  { CatItem f = item("tt0777777", "movie", "Island rating");
+    SDL_Event e;
+    reacao_teste_abrir(f.imdb, f.titulo, f.tipo, 0, "", 0);
+    // Up reaches the star row; one Right is exactly half a star.
+    e = tecla(SDLK_UP); reacao_evento(&e, 0);
+    e = tecla(SDLK_RIGHT); reacao_evento(&e, 0);
+    e = tecla(SDLK_RETURN); reacao_evento(&e, 0);
+    CHECA(reacao_nota(f.imdb) == 9, "island Up/Right saves 4.5 stars");
+    e = tecla(SDLK_LEFT); reacao_evento(&e, 0);
+    e = tecla(SDLK_RETURN); reacao_evento(&e, 0);
+    CHECA(reacao_nota(f.imdb) == 0 && reacao_estado(f.imdb) == REACAO_NENHUMA,
+          "saved island undo restores unrated title");
+    reacao_fechar();
+    perfis_definir_ativo(2); perfis_definir_ativo(1);
+    CHECA(reacao_nota(f.imdb) == 0, "undo removal survives profile reload");
+  }
   reacao_nota_definir("tt0111161", 11);
   CHECA(reacao_nota("tt0111161") == 1, "nota fora de 1 a 10 ignorada");
   reacao_nota_definir("tt0903747:1:2", 7);
@@ -181,21 +197,40 @@ static void nota(void) {
     e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
     CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_nota("tt0903747") == 8, "episode UI preserves series score");
-    for (int i = 0; i < 12; i++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 1); }
+    for (int i = 0; i < 15; i++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 1); }
     for (int i = 0; i < 4; i++) {
       e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
       e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
     }
-    CHECA(reacao_tags("tt0903747:1:2") == 7, "quick tags cap at three");
+    CHECA(reacao_tags("tt0903747:1:2") == (7u << 12), "quick tags cap at three without reusing legacy IDs");
     e = tecla(SDLK_LEFT); reacao_evento(&e, 1);
     e = tecla(SDLK_LEFT); reacao_evento(&e, 1);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
-    CHECA(reacao_tags("tt0903747:1:2") == 3, "selected tag toggles off");
+    CHECA(reacao_tags("tt0903747:1:2") == (3u << 12), "selected tag toggles off");
+    e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
+    // Grade 3x2 por pagina: Right, Down, OK fica sempre num chip visivel
+    // (o modelo de 5 colunas pulava para a pagina escondida).
+    reacao_episodio_abrir(&s, 1, 2);
+    { SDL_Event ev = tecla(SDLK_RETURN); reacao_evento(&ev, 1); }
+    { int j;
+      for (j = 0; j < 15; j++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 1); }
+      e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 1, "ep foco no segundo chip");
+      e = tecla(SDLK_DOWN); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 4, "ep baixo fica na mesma pagina");
+      e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
+      CHECA(reacao_tags("tt0903747:1:2") == (3u << 12) + 2u, "chip visivel alternado");
+      e = tecla(SDLK_DOWN); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 7, "ep terceira linha sobe de pagina");
+      e = tecla(SDLK_DOWN); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 10, "ep pagina 3 pelo baixo");
+      e = tecla(SDLK_UP); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 7, "ep volta uma linha"); }
     e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
     perfis_definir_ativo(2);
     CHECA(reacao_nota("tt0903747:1:2") == 0 && !reacao_tags("tt0903747:1:2"), "profile isolates ratings and tags");
     perfis_definir_ativo(1);
-    CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_tags("tt0903747:1:2") == 3, "ratings and tags reload from disk");
+    CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_tags("tt0903747:1:2") == (3u << 12) + 2u, "ratings and tags reload from disk");
     reacao_episodio_abrir(&s, 1, 2);
     perfis_definir_ativo(2);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
