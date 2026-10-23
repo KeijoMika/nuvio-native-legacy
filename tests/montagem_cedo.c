@@ -32,7 +32,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#ifndef MONTAGEM_PERFIS_REAIS
+#if !defined(MONTAGEM_PERFIS_REAIS) && !defined(NV_TEST_SESSAO_PROPRIA)
 // These six discovery cases have one fixed account/profile per process.
 // The CW owner fixture instead links real perfis.c, including invalidation.
 #include "stub_perfisessao.h"
@@ -45,8 +45,12 @@ int ajustes_busca_cinemeta(void) { return 1; }
 int ajustes_busca_nuvio(void) { return 0; }   // #311: Primeiro (padrao)
 int ajustes_ocultar_nao_lancados(void) { return 0; }   // #369: descoberta.c le o ajuste
 int ajustes_ocultar_filmes_vistos(void) { return 0; }    // #366: descoberta.c le o ajuste
+int ajustes_fonte_biblioteca(void) { return 0; }
 #include "../src/descoberta.c"
+// Session, addon and social functions belong to this fixture or real modules.
+#define NV_TEST_SERVIDORES_APENAS
 #include "jellyfin_stub.inc"
+#undef NV_TEST_SERVIDORES_APENAS
 #include "nvtmp.h"
 Uint32 SDL_GetTicks(void) { return 0; }
 
@@ -70,6 +74,14 @@ const char *sessao_usuario(void)  { return __atomic_load_n(&fixtureDono, __ATOMI
 int         perfis_ativo(void)    { return 1; }
 #endif
 const char *dados_dir(void)       { return dirDados; }
+char *dados_caminho(char *dst, unsigned size, const char *name) {
+  snprintf(dst, size, "%s/%s", dirDados, name); return dst;
+}
+int ajustes_nota_episodio(int source) { (void)source; return 1; }
+void addons_catalogo_chave(const char *id, const char *base, const char *type,
+                           const char *catalog, char *dst, unsigned size) {
+  (void)base; snprintf(dst, size, "%s_%s_%s", id, type, catalog);
+}
 static void caminhoDado(char *dst, size_t tam, const char *nome) {
   snprintf(dst, tam, "%s/%s", dirDados, nome);
 }
@@ -119,8 +131,9 @@ static const char *baseAtual(void)     { return versaoAtual() > 1 ? BASE_NOVA : 
 int   addons_n(void)                   { return 1; }
 const char *addons_base(int i)         { (void)i; return baseAtual(); }
 int   addons_ativo(int i)              { (void)i; return 1; }
-int   addons_fornece(int i, int oque)     { (void)i; (void)oque; return 0; }
-int   addons_sondado(int i)              { (void)i; return 0; }
+static int fixtureMeta;
+int   addons_fornece(int i, int oque)     { (void)i; return fixtureMeta && oque == ADD_META; }
+int   addons_sondado(int i)              { (void)i; return fixtureMeta; }
 const char *addons_id_manifesto(int i) { (void)i; return AID; }
 const char *addons_nome(int i)         { (void)i; return "Addon"; }
 unsigned addons_versao(void)           { return versaoAtual(); }
@@ -178,7 +191,9 @@ static int imdbNaTela(const char *imdb, int (*campo)(const CatItem *)) {
 }
 static int ehNaLista(const CatItem *c) { return c->naLista; }
 
+static char *(*fixtureRede)(const char *url);
 char *rede_baixar(const char *url, int t) {
+  if (fixtureRede) return fixtureRede(url);
   assert(!fixtureAddonListDepth); // snapshots must release before transport
   char buf[600];
   const char *p;
@@ -223,6 +238,11 @@ char *rede_baixar(const char *url, int t) {
   return strdup(buf);
 }
 char *rede_baixar_com(const char *u, int t, const char *const *c) { (void)c; return rede_baixar(u, t); }
+char *rede_baixar_st(const char *u, int t, const char *const *c, int *status) {
+  char *body = rede_baixar_com(u, t, c);
+  if (status) *status = body ? 200 : 0;
+  return body;
+}
 
 // ------------------------------------------------------------------ o Trakt
 static char listaWl[4][32];
@@ -294,7 +314,9 @@ unsigned fil_perfil_geracao(void)          { return 0; }
 FilPassada fil_passada_ler(void)          { FilPassada p = {0, 0}; return p; }
 int   fil_passada_valida(const FilPassada *p) { (void)p; return 1; }
 void  fil_registrar_de(const FilPassada *p, const char *c, const char *t, const char *a, const char *k, int n) { (void)p; (void)c; (void)t; (void)a; (void)k; (void)n; }
+#ifndef NV_TEST_FIL_REGISTRAR_PROPRIO
 void  fil_registrar_se_couber_de(const FilPassada *p, const char *c, const char *t, const char *a, const char *k) { (void)p; (void)c; (void)t; (void)a; (void)k; }
+#endif
 int   fil_podar_catalogos(const char *const *ids, const char *const *bases, int n,
                           int perfilDaLista) {
   (void)ids; (void)bases; (void)n; (void)perfilDaLista; return 0; }

@@ -96,7 +96,7 @@
   // ter escolhido e pior do que ler em ingles sem ter escolhido — por isso o
   // ultimo degrau e o ingles. Quem prefere outro troca em Ajustes -> Interface,
   // e a escolha fica gravada (e desliga o automatico).
-  0, 0, 0,          /* idioma, animacoes, resolucao (0 = 1080p) */
+  0, 2, 0,          /* language, animations Automatic, resolution Automatic */
   AJ_TEMA_DINAMICA, /* tema (cor de destaque): Da arte desde a 2.0 (dono, 05/10/2026: era Imersiva) */
   0,                /* cor da logo (so com tema dinamico): ligada */
   // O COMENTARIO ANTIGO AQUI ESTAVA ERRADO, e o erro so nao machucou por sorte.
@@ -152,7 +152,7 @@
   0,                /* itens por fileira: 12, como sempre foi (ver V_ITENS_FIL) */
   TXT_FAMILIA_INTER,/* fonte da interface: independente da legenda */
   0,                /* efeitos visuais do .tpk: automatico (adaptativo, ate o nivel 1) */
-  1,                /* interface de vidro: DESLIGADA (V_LIGA: 1 = Desligado) */
+  2,                /* glass interface: Automatic */
   1,                /* servidor P2P: DESLIGADO (V_LIGA: 1 = Desligado) */
   0, 0,             /* endereco, testar: acoes */
   0,                /* posteres personalizados: DESLIGADO (indice 0) */
@@ -166,7 +166,7 @@
   0, 1, 1, 1, 1, 1,/* trakt, tmdb, letterboxd, mal, ebert, nota do mdblist */
   1,                /* perfil pesquisavel: DESLIGADO (V_LIGA: 1 = Desligado). Padrao de todo mundo. */
   0,                /* meu perfil publico: acao */
-  0,                /* contorno do vidro: LIGADO (V_LIGA: 0 = Ligado), o visual de antes */
+  0,                /* glass contour: On (aesthetic, never automatic) */
   1,                /* som do trailer no destaque: DESLIGADO (V_LIGA: 1 = Desligado) */
   22,               /* espera do trailer no destaque: 2,2 s (em decimos de segundo) */
   90,               /* percentual assistido: 90%, o numero fixo de antes */
@@ -200,13 +200,13 @@
   0, 0, 0,          /* pacote de selos (espelho de selospacote_ativo), adicionar e remover: o embutido */
   UI_SIZE_AUTO,     /* Untouched interface size follows the physical panel. */
   2,                /* fundo: Frost desde a 2.0 (FUNDO_FROST; dono, 05/10/2026) */
-  2,                /* opacidade do vidro: 78%, a de sempre */
-  0,                /* vidro fosco: desligado */
+  0,                /* glass opacity: 60%, owner default */
+  2,                /* frosted glass: Automatic */
 
   0, /* app icon: Original */
 
   0, /* Discord action; appended to preserve option indices */
-  0, /* Settings size: 80%, independent of global UI zoom */
+  2, /* Settings size: 100%, independent of global UI zoom */
   1, /* hide corner logo during trailer: Desligado (V_LIGA: 1 = Desligado) */
   0, /* second subtitle language: Da conta (F04) */
   1, /* subtitle sync by audio: Desligado (V_LIGA: 1 = Desligado) (F06) */
@@ -309,3 +309,43 @@
   0, /* trailer audio: Automatic */
   0, /* anime player (#205): Same as Player */
   0, /* opening screen style (#205): Center (A3) */
+  0, /* poster menu: Full, device-local */
+  0, /* row title style (#205): Classic */
+  0, /* glass quality: Automatica */
+  0, /* Dynamic layout background (#205): Gray */
+  12, /* Dynamic layout background colour (#205): Ocean */
+  0, /* text and component scale: 85% */
+  0, 0, /* prefer binge group (the hand pick for the whole show + the auto memory) Ligado, across sessions Ligado */
+  0, 5, /* reuse last link: Ligado (owner, 16/10), 24 h */
+  1, /* title page row spacing: Normal */
+  1, /* accent focus: Off (gray plate) */
+  0, /* title line rating order: Default */
+  0, /* art tone: Vivid, identical to existing art colors */
+  0, /* Modern Stage background: Black */
+  0, 0, 0, 0, /* URL lists and guides (Guia de TV, M9): choice (none) and three actions */
+  0, /* episode card rating: follow the title line */
+  0, /* suggest Live TV categories: On, names only */
+  0, /* #578: audio presentation offset, unchanged by default */
+  0, /* Xtream limited connections: Auto; account storage owns the value. */
+  2, /* interface scaling: Automatic */
+  0, 0, 0, 0, 0, /* guide source, refresh and M3U actions */
+
+  0, 0, 0, 0, 0, 0, 0, /* native Live TV account registry views/actions */
+  0, 0, 0, /* saved accounts by provider type */
+  0, 0, 0, 0, /* account actions, confirmation, Save and Cancel */
+  0, 0, /* guide category/account order and account reorder action */
+  0, 0, /* EPG memory policy and hidden-category editor */
+  1, /* #507: Library row on Home: Off */
+  0, /* upscaling algorithm: Automatic (default) */
+  2, /* upscaling RCAS sharpness, 0..4 */
+  0, /* experimental HDR menus: Off */
+  0, /* clear cache action */
+  0, /* tunneled playback: Off */
+  1, /* experimental P7 conversion: Off until explicitly enabled */
+  1, /* log page on the local network (logrede.h): Desligado */
+  2, /* player format style: Marks (V_PLR_FORMATO 2), the look the OSD always had */
+  0, /* Trakt comments on the pause panel: On (V_LIGA 0) */
+  0, /* ratings on the pause panel: On (V_LIGA 0) */
+  1, /* cast on the pause panel: Off (V_LIGA 1) */
+  1, /* player format position: Original, the top corner (V_PLR_FORMATO_POS 1) */
+  0, /* show the audio codec in the format row: On (V_LIGA 0) */

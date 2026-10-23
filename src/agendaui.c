@@ -262,7 +262,7 @@ static float agFim(void) { return NV_TELA_W - (agColunaUnica() ? 48.0f / agEscal
 // O passo das linhas de texto corrido dos paineis (manchete, noticia) e o teto
 // do cache de quebra (AG_SIN_MAX, tambem o tamanho do buffer de agQuebra).
 #define AG_SIN_LD       30.0f
-#define AG_SIN_MAX         3
+#define AG_SIN_MAX         6
 // O cartaz e o que faz reconhecer a serie antes de ler o nome, e a 3 m ele tem
 // de ter tamanho para isso. 102x153, 2:3 como todo cartaz do app.
 //
@@ -331,10 +331,8 @@ void agendaui_despertador(GfxRect r, int ligado, float cr, float cg, float cb,
 // Preenche ate `max - 1` linhas inteiras e devolve quantas sairam; o que sobrou
 // fica em *resto e vai por txt_linha_corta, que e quem sabe fechar com "…".
 //
-// A COR ENTRA NA MEDIDA de proposito. A largura nao depende dela, mas o cache
-// de txt_linha e indexado por (estilo, texto, cor): medir numa cor que nao vai
-// ser desenhada rasteriza uma segunda copia de cada prefixo de linha. Quem mede
-// passa a MESMA cor de quem desenha.
+// Wrapping is independent of text color. Cache by font and language as well
+// as text/width so focus changes reuse it and font changes invalidate it.
 // A QUEBRA E LEMBRADA. agQuebra mede palavra por palavra com txt_linha, e a
 // linha em foco a chama duas vezes por quadro (medir e desenhar) para a
 // sinopse ou a citacao — na C9 isso era ~11 ms de CPU por quadro em
@@ -343,7 +341,7 @@ void agendaui_despertador(GfxRect r, int ligado, float cr, float cg, float cb,
 // linha, e o texto/largura/estilo so mudam quando ele anda.
 #define AGQ_CACHE 8
 typedef struct {
-  unsigned hash; float larg; int estilo, max, r, g, b, n;
+  unsigned hash; float larg; int estilo, max, familia, idioma, n;
   char linhas[AG_SIN_MAX][512];
   size_t restoOff;   // deslocamento de `resto` dentro de `s`
   int vivo;
@@ -368,7 +366,8 @@ static int agQuebra(TxtEstilo estilo, const char *s, float larg, int max,
   for (i = 0; i < AGQ_CACHE; i++) {
     AgQuebra *c = &agqCache[i];
     if (c->vivo && c->hash == h && c->larg == larg && c->estilo == (int)estilo &&
-        c->max == max && c->r == r && c->g == g && c->b == b) {
+        c->max == max && c->familia == (int)txt_fonte_interface() &&
+        c->idioma == ajustes_idioma()) {
       int k;
       for (k = 0; k < c->n; k++) memcpy(linhas[k], c->linhas[k], strlen(c->linhas[k]) + 1);
       *resto = s + c->restoOff;
@@ -379,7 +378,7 @@ static int agQuebra(TxtEstilo estilo, const char *s, float larg, int max,
   { AgQuebra *c = &agqCache[agqProx]; int k;
     agqProx = (agqProx + 1) % AGQ_CACHE;
     c->vivo = 1; c->hash = h; c->larg = larg; c->estilo = (int)estilo; c->max = max;
-    c->r = r; c->g = g; c->b = b; c->n = n;
+    c->familia = txt_fonte_interface(); c->idioma = ajustes_idioma(); c->n = n;
     for (k = 0; k < n; k++) memcpy(c->linhas[k], linhas[k], strlen(linhas[k]) + 1);
     // `resto` pode ser o literal "" (nada sobrou): guardar o fim de `s`.
     c->restoOff = (**resto) ? (size_t)(*resto - s) : strlen(s); }
@@ -1685,7 +1684,7 @@ static float segC1(float xDir, float yc, int desenhar) {
   total = pad * 2.0f + w[0] + gap + w[1];
   if (!desenhar) return total;
   { GfxRect tr = { xDir - total, yc - h * 0.5f - pad, total, h + pad * 2.0f };
-    if (ajustes_vidro()) gfx_cor(tr, 0.5f, 1, 1, 1, 0.07f);
+    if (ajustes_vidro()) gfx_vidro_folha(tr, 0.5f, 1.0f);
     else gfx_cor(tr, 0.5f, .141f, .149f, .173f, 1.0f);
     x = tr.x + pad; }
   for (k = 0; k < 2; k++) {
@@ -1992,8 +1991,9 @@ static void painelFlutuante(GfxRect r, float ar, float ag, float ab, float a) {
 // um degrau mais clara, como o menu e o Social — sem pilula no realce.
 static void pilulaFoco(GfxRect lr, float ar, float ag, float ab, float a) {
   (void)ar; (void)ag; (void)ab;
-  if (ajustes_vidro()) gfx_cor(lr, 0.5f > 22.0f / lr.h ? 22.0f / lr.h : 0.5f, 1, 1, 1, .12f * a);
-  else gfx_cor(lr, 0.5f > 22.0f / lr.h ? 22.0f / lr.h : 0.5f, .17f, .176f, .204f, a);
+  float rf = 0.5f > 22.0f / lr.h ? 22.0f / lr.h : 0.5f;
+  if (ajustes_vidro()) { if (!gfx_foco_placa(lr, rf, 1.0f, a)) gfx_cor(lr, rf, 1, 1, 1, .12f * a); }
+  else gfx_cor(lr, rf, .17f, .176f, .204f, a);
 }
 // Tinta do texto sobre a linha em foco: clara, a superficie nao e realce.
 static GfxRect agModalR(float w, float h, float a) {

@@ -644,7 +644,7 @@ int legendasui_evento(const SDL_Event *e) {
 // --- drawing the panel ---------------------------------------------------------------
 #define LU_PAD_X   18.0f
 #define LU_PAD_Y   22.0f
-#define LU_TIT_H   64.0f
+#define LU_TIT_H   42.0f   // heading only: the title already sits in the header by the clock
 #define LU_LN_H    88.0f
 #define LU_LN_VAO   4.0f
 #define LU_PE_H    47.0f
@@ -767,14 +767,14 @@ static void corteLimpo(char *out, size_t sz, const char *src) {
 // titles of one language get " (k)". Returns 1 when the title is a name.
 int legendasui_titulo(const LegUiCand *cs, int n, int i, char *out, size_t sz) {
   const LegUiCand *c = &cs[i];
-  const char *nome = c->embutida ? (c->nome[0] ? c->nome : strstr(c->rotulo, LU_SEP)) : c->arquivo;
+  const char *nome = c->embutida ? (c->nome[0] ? c->nome : strstr(c->rotulo, LU_SEP)) : (c->arquivo[0] ? c->arquivo : c->rotulo);
   int j, dup = 0, pos = 0, nomeado;
   char outro[96];
   if (c->embutida && !c->nome[0] && nome) nome += strlen(LU_SEP);
   nomeado = nome && !nomeInutil(c, nome);
   corteLimpo(out, sz, nomeado ? nome : c->idioma[0] ? nomeIdioma(c->idioma) : c->rotulo);
   for (j = 0; j < n; j++) {
-    const char *on = cs[j].embutida ? (cs[j].nome[0] ? cs[j].nome : strstr(cs[j].rotulo, LU_SEP)) : cs[j].arquivo;
+    const char *on = cs[j].embutida ? (cs[j].nome[0] ? cs[j].nome : strstr(cs[j].rotulo, LU_SEP)) : (cs[j].arquivo[0] ? cs[j].arquivo : cs[j].rotulo);
     if (j == i || cs[j].embutida != c->embutida || cs[j].tipo != c->tipo || !ling_casa(cs[j].idioma, c->idioma) || !ling_casa(c->idioma, cs[j].idioma)) continue;
     if (cs[j].embutida && !cs[j].nome[0] && on) on += strlen(LU_SEP);
     corteLimpo(outro, sizeof outro, on && !nomeInutil(&cs[j], on) ? on : nomeIdioma(cs[j].idioma));
@@ -848,6 +848,7 @@ static void textoLinha(const LuiLinha *l, char *nome, size_t tn, char *sub, size
       *ativo = ativoNoSlot(l->slot, c) && (l->slot == 0 || legenda2_estado() == LEG2_ATIVA);
       { int nomeado = legendasui_titulo(cand, nCand, l->cand, nome, tn);
         if (nomeado) juntar(sub, ts, nomeIdioma(c->idioma));   // language is secondary
+        if (!c->embutida && strcmp(c->rotulo, c->arquivo) && !nomeInutil(c, c->rotulo)) juntar(sub, ts, c->rotulo);
         if (!mais && !ver) {
           juntar(sub, ts, c->embutida ? i18n("Embutida") : c->origem);
           juntar(sub, ts, legendasui_tipo_rotulo(c));
@@ -984,11 +985,6 @@ static void desenharLinha(const LuiLinha *l, int idx, int sel, float x, float y,
     if (sub[0]) txt_desenhar_alpha(ls, tx, ty + (float)ln.h + 5.0f, aL); }
 }
 
-static const char *tituloSessao(void) {
-  const CatItem *c = cat_item(player_indice());
-  return c && c->titulo[0] ? c->titulo : "";
-}
-
 static void ponteiroMenu(int i, int b) { (void)b; if (menu) menuFoco = i; }
 static void ponteiroMenuEscolher(int i, int b) { (void)b; if (menu) { menuFoco = i; menuEscolher(); } }
 static void ponteiroMenuAbrir(int i, int b) { (void)b; if (ponteiroAqui(i)) { focar(i); abrirMenu(); } }
@@ -1047,9 +1043,8 @@ void legendasui_corpo(GfxRect c, float a) {
   int vis = luVis(), fim, i;
   montarLinhas();
   pont = !menu && a > 0.99f && ponteiro_ativo();
-  plrui_kicker(tituloSessao(), x0 + 10.0f, y, 115, 115, 113, a);
   { TxtLinha t = txt_linha(TXT_ILHA_PERGUNTA, ver ? nomeIdioma(verIdioma) : mais ? "Todas as legendas" : "Recomendadas", 243, 242, 239, 255);
-    float ty = y + 22.0f;
+    float ty = y;
     const char *rot[2] = { "Faixas", "Estilo" };
     int cont[2] = { nCand, -1 };
     float sw = plrui_seg(rot, cont, 2, 0, 0, -1.0f, 0, a);

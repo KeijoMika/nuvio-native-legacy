@@ -109,11 +109,11 @@ static void padroesEValores(void) {
   for (op = 0; op < AJ_N; op++) {
     assert(!uxDiferente(op));
     if (OPCOES[op].tipo == OP_ACAO || OPCOES[op].tipo == OP_LEITURA ||
-        (CHAVE[op][0] == '-' && !ajFalhaBackend(op) && !ajLegendaPrincipal(op)) || op == AJ_PERFIL_PESQ)
+        (CHAVE[op][0] == '-' && op != AJ_XTREAM_CONEXOES && !ajFalhaBackend(op) && !ajLegendaPrincipal(op)) || op == AJ_PERFIL_PESQ)
       assert(!uxTemPadrao(op));
     else {
       assert(uxTemPadrao(op));
-      assert(uxValorPadrao(op) == valorPadrao[op]);
+      assert(uxValorPadrao(op) == (op == AJ_SALVOS_DEST ? ajustes_fonte_resolver(valorPadrao[op], trakt_ativo(), simkl_ativo()) : valorPadrao[op]));
     }
   }
   assert(!uxTemPadrao(-1) && !uxTemPadrao(AJ_N));
@@ -535,7 +535,7 @@ int main(void) {
   assert(AJ_DISCORD == AJ_ICONE_APP + 1 && AJ_TAMANHO_AJUSTES == AJ_DISCORD + 1 && AJ_LOGO_TRAILER == AJ_TAMANHO_AJUSTES + 1 && AJ_LEG_LINGUA2 == AJ_LOGO_TRAILER + 1 && AJ_LEG_SYNC_AUDIO == AJ_LEG_LINGUA2 + 1 && AJ_CACHE_SEEK == AJ_LEG_SYNC_AUDIO + 1 && AJ_TRAILER_ZOOM_TPK == AJ_CACHE_SEEK + 1 && AJ_PLUGINS == AJ_TRAILER_ZOOM_TPK + 1 && AJ_JF_LIGADO == AJ_PLUGINS + 1 && AJ_JF_SAIR == AJ_PLUGINS + 4 && AJ_AVANCADAS == AJ_JF_SAIR + 1 && AJ_LEG2_POS == AJ_AVANCADAS + 1 && AJ_EM_SERVIDOR == AJ_LEG2_BORDA + 1 && AJ_PX_SAIR == AJ_EM_SERVIDOR + 5 && AJ_FONTE_PRIORIDADE == AJ_PX_SAIR + 1 && AJ_FONTE_HDR == AJ_ABERTURA - 2 && AJ_LOGO_APP == AJ_FONTE_HDR + 1 && AJ_ENQUETES == AJ_ABERTURA + 1 && AJ_ENQUETES == AJ_FONTE_ESCOPO - 14);
   assert(!strcmp(CHAVE[AJ_LOGO_APP], "logoAppLocal") && !strcmp(CHAVE[AJ_ABERTURA], "aberturaAppLocal") && OPCOES[AJ_LOGO_APP].n == 2 && OPCOES[AJ_ABERTURA].n == 3 && valorPadrao[AJ_LOGO_APP] == 0 && valorPadrao[AJ_ABERTURA] == 0 && somenteDesteAparelho(AJ_LOGO_APP) && somenteDesteAparelho(AJ_ABERTURA));
   { int u; for (u = AJ_LOGO_APP; u <= AJ_ABERTURA; u++) { int vz = 0, k; for (k = 0; k < AJ_N_TELA; k++) if (TELA[k].tipo == IT_OPC && TELA[k].op == u) vz++; assert(vz == 1); } }
-  assert(!strcmp(CHAVE[AJ_FONTE_PRIORIDADE], "fontePrioridadeLocal") && !strcmp(CHAVE[AJ_FONTE_HDR], "fonteHdrLocal") && OPCOES[AJ_FONTE_PRIORIDADE].n == 3 && OPCOES[AJ_FONTE_HDR].n == 3 && valorPadrao[AJ_FONTE_PRIORIDADE] == 0 && valorPadrao[AJ_FONTE_HDR] == 0 && somenteDesteAparelho(AJ_FONTE_HDR));
+  assert(!strcmp(CHAVE[AJ_FONTE_PRIORIDADE], "fontePrioridadeLocal") && !strcmp(CHAVE[AJ_FONTE_HDR], "fonteHdrLocal") && OPCOES[AJ_FONTE_PRIORIDADE].n == 4 && OPCOES[AJ_FONTE_HDR].n == 3 && valorPadrao[AJ_FONTE_PRIORIDADE] == 0 && valorPadrao[AJ_FONTE_HDR] == 0 && somenteDesteAparelho(AJ_FONTE_HDR));
   // N3: "Receber enquetes" is the LAST option: local, On by default, in "Notificações".
   assert(AJ_ENQUETES == AJ_ABERTURA + 1 && AJ_ENQUETES == AJ_FONTE_ESCOPO - 14);
   assert(!strcmp(CHAVE[AJ_ENQUETES], "enquetesLocal") && OPCOES[AJ_ENQUETES].n == 2 && valorPadrao[AJ_ENQUETES] == 0);
@@ -721,6 +721,32 @@ int main(void) {
   assert(!strcmp(CHAVE[AJ_MIC_BUSCA], "micBuscaLocal") && valorPadrao[AJ_MIC_BUSCA] == 0);
   assert(!strcmp(OPCOES[AJ_MIC_BUSCA].valores[0], "Automático") && OPCOES[AJ_MIC_BUSCA].n == 3);
   assert(somenteDesteAparelho(AJ_MIC_BUSCA) && !dePerfil(AJ_MIC_BUSCA));
+  // Memoria da fonte (15-16/10/2026): quatro linhas no fim, locais. Preferir o
+  // grupo e entre sessoes ligados (o comportamento de antes); reusar o ultimo
+  // link ligado de fabrica (dono), 24 h. Uma vez cada na tela.
+  assert(AJ_FONTE_GRUPO == AJ_ESCALA_TEXTO + 1 && AJ_LINK_PRAZO == AJ_FONTE_GRUPO + 3 &&
+         AJ_DET_ESPACO == AJ_LINK_PRAZO + 1 && AJ_FOCO_ACENTO == AJ_DET_ESPACO + 1 &&
+         AJ_NT_ORDEM == AJ_FOCO_ACENTO + 1 && AJ_ARTE_TOM == AJ_NT_ORDEM + 1 &&
+         AJ_NT_EP == AJ_URL_REM + 1 && AJ_LIVETV_SUGERIR == AJ_NT_EP + 1 && AJ_AUDIO_OFFSET == AJ_LIVETV_SUGERIR + 1 &&
+         AJ_BIB_HOME == AJ_GUIA_CATEGORIAS + 1 && AJ_AMPLIACAO_ALGO == AJ_BIB_HOME + 1 &&
+         AJ_AMPLIACAO_NITIDEZ == AJ_AMPLIACAO_ALGO + 1 && AJ_HDR_INTERFACE == AJ_AMPLIACAO_NITIDEZ + 1 &&
+         AJ_LIMPAR_CACHE == AJ_HDR_INTERFACE + 1 && AJ_TUNNELING == AJ_LIMPAR_CACHE + 1 &&
+         AJ_N > AJ_TUNNELING && !strcmp(CHAVE[AJ_URL_REM], "-urlRem"));
+  { static const char *CH[4] = { "fonteGrupoLocal", "fonteGrupoSessoesLocal", "linkReusarLocal", "linkPrazoLocal" };
+    static const int PAD[4] = { 0, 0, 0, 5 }, NV[4] = { 2, 2, 2, 9 };
+    for (int o = 0; o < 4; o++) {
+      int op = AJ_FONTE_GRUPO + o, vz = 0;
+      assert(!strcmp(CHAVE[op], CH[o]) && valorPadrao[op] == PAD[o] && OPCOES[op].n == NV[o]);
+      assert(somenteDesteAparelho(op) && !dePerfil(op));
+      for (int k = 0; k < AJ_N_TELA; k++) if (TELA[k].tipo == IT_OPC && TELA[k].op == op) vz++;
+      assert(vz == 1);
+    }
+    assert(ajustes_fonte_grupo() && ajustes_fonte_grupo_sessoes());
+    assert(ajustes_link_reusar() && ajustes_link_prazo_s() == 24u * 3600u);
+    assert(!inativa(AJ_LINK_PRAZO) && !inativa(AJ_FONTE_GRUPO_SESSOES));
+    assert(indiceResultado(AJ_LINK_REUSAR, ajustes_buscar("reuse last link", resultados, AJ_N)) >= 0);
+    assert(indiceResultado(AJ_FONTE_GRUPO, ajustes_buscar("binge group", resultados, AJ_N)) >= 0);
+    assert(indiceResultado(AJ_FONTE_GRUPO, ajustes_buscar("remember picked source", resultados, AJ_N)) >= 0); }
   assert(!strcmp(CHAVE[AJ_FONTE_ORDEM_ADDON], "fonteOrdemLocal"));
   assert(OPCOES[AJ_FONTE_ORDEM_ADDON].n == 2 && valorPadrao[AJ_FONTE_ORDEM_ADDON] == 0);
   assert(somenteDesteAparelho(AJ_FONTE_ORDEM_ADDON) && !dePerfil(AJ_FONTE_ORDEM_ADDON));
@@ -742,6 +768,9 @@ int main(void) {
   assert(somenteDesteAparelho(AJ_DTS_AC3) && !dePerfil(AJ_DTS_AC3));
   { int vz = 0, k; for (k = 0; k < AJ_N_TELA; k++) if (TELA[k].tipo == IT_OPC && TELA[k].op == AJ_DTS_AC3) vz++; assert(vz == 1); }
   assert(indiceResultado(AJ_DTS_AC3, ajustes_buscar("dolby digital", resultados, AJ_N)) >= 0);
+  assert(AJ_ARTE_TOM == AJ_NT_ORDEM + 1 && AJ_PALCO_FUNDO == AJ_ARTE_TOM + 1 && !strcmp(CHAVE[AJ_PALCO_FUNDO], "palcoFundoLocal"));
+  assert(valorPadrao[AJ_PALCO_FUNDO] == PALCO_CORTINA && OPCOES[AJ_PALCO_FUNDO].n == 7);
+  assert(AJ_URL_LISTA == AJ_PALCO_FUNDO + 1 && AJ_NT_EP == AJ_URL_REM + 1 && !strcmp(CHAVE[AJ_URL_REM], "-urlRem"));
   { int vz = 0, k; for (k = 0; k < AJ_N_TELA; k++) if (TELA[k].tipo == IT_OPC && TELA[k].op == AJ_APOIAR) vz++; assert(vz == 1); }
   // #287: forced subtitle when the audio is in your language. Local, last, default ON, once on screen.
   assert(AJ_LEG_FORCADA == AJ_FONTE_ESCOPO - 2 && AJ_LEG_FORCADA == AJ_APOIAR + 1 && !strcmp(CHAVE[AJ_LEG_FORCADA], "legendaForcadaLocal"));

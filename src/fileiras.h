@@ -127,6 +127,11 @@ typedef enum {
   // 16/10 (dono): "Hero dividido" — o painel do foco a esquerda, a fila a
   // direita. No fim pelo mesmo motivo.
   FIL_TIPO_HEROI_DIVIDIDO, // FILEIRA_HEROI_DIVIDIDO — painel deitado com a ficha + cartazes
+  // dono: "esse estilo de fileira pode ter 3 tamanhos tb". O Pôster grande de
+  // sempre (FIL_TIPO_POSTER_GRANDE, 16) fica sendo o MEDIO; os outros dois entram
+  // no fim, como os 4:3 maiores, para o numero gravado nao mudar.
+  FIL_TIPO_POSTER_GRANDE_P, // FILEIRA_POSTER_GRANDE x0,8  — menor, uma linha de sinopse
+  FIL_TIPO_POSTER_GRANDE_G, // FILEIRA_POSTER_GRANDE x1,25 — maior, tres linhas de sinopse
   FIL_TIPO_N
 } FilTipo;
 
@@ -141,7 +146,7 @@ const char *fil_tipo_rotulo(int t);
 const char *fil_tam_rotulo(int t);
 float       fil_tam_escala(int t);
 // Fator de TAMANHO que a propria forma carrega: 1 em todas, menos nos dois
-// Destaques 4:3 maiores. Multiplica o fator de Tamanho da fileira (fil_escala).
+// Destaques 4:3 maiores (1,25 / 1,5) e no Pôster grande menor / maior (0,8 / 1,25). Multiplica o fator de Tamanho da fileira (fil_escala).
 float       fil_tipo_fator(int t);
 
 // DE ONDE A FILEIRA VEIO. Sem isto a tela de Ajustes lista quinze nomes soltos
@@ -503,6 +508,8 @@ int  fil_unir(const char *const *chaves, int n, int *saida, int max);
 // Esquece a escolha e o registro. Chamar no logout junto do resto: a home e da
 // conta de quem saiu.
 void fil_esquecer(void);
+// Reload the active profile after its cloud preferences were restored.
+void fil_recarregar(void);
 
 // LIMPEZA UNICA DO #197 (ver a definicao): desfaz, so no arquivo com o padrao
 // exato do defeito, a rajada do limite e os catalogos fora da cota que entraram

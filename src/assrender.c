@@ -371,6 +371,7 @@ static void ass_carregar_pasta_locked(void) {
   if (assPastaExtra[0]) assrender_ler_pasta_fontes(assPastaExtra, ass_fonte_da_pasta, NULL, NULL);
   if (!assVistoNaskh && assNaskhFalhou) ass_subset_naskh_locked();
 #endif
+  plainass_arabic_bold = assNaskhBold;
   fprintf(stderr, "[libass] pasta %s: %d fonte(s); %d arquivo(s) que nao sao fonte ignorado(s)\n",
           assPastaFontes, lidas, ignorados);
 }
@@ -568,21 +569,6 @@ static int ass_frame_copiar(ASS_Image *im, AssCpuFrame *out) {
   return 1;
 }
 
-/* #335: negrito sintetico do libass (FT_Outline_Embolden) sobre o Noto Naskh,
- * que so tem Regular, funde as letras ligadas e borra os pontos. Trilha com
- * texto arabe fica em peso Regular. Detecta por bytes UTF-8: U+0600-06FF
- * (D8-DB), U+0740-07BF (DD), U+FB50-FDFF e U+FE70-FEFF (EF AD-B7 / B9-BB). */
-static int assArabe;
-static void ass_trilha_arabe_sem_negrito(ASS_Track *t) {
-  int i, arabe = 0;
-  for (i = 0; i < t->n_events && !arabe; i++) arabe = bidi_tem_arabe(t->events[i].Text);
-  assArabe = arabe && !assNaskhBold;   /* com a face Bold real, Bold=1 e \b1 a usam */
-  if (!arabe || assNaskhBold) return;
-  for (i = 0; i < t->n_styles; i++) t->styles[i].Bold = 0;
-  ass_diag("libass: trilha com arabe: negrito sintetico desligado");
-}
-
-
 static void ass_trilha_tailandes(ASS_Track *t) {
   int i;
   if (!assVistoThai) return;
@@ -629,7 +615,7 @@ static void ass_plain_style_locked(const PlainAssStyle *p) {
       if ((p->overrides & PLAIN_ASS_OUTLINE) && s->BorderStyle == 1)
         s->BackColour = ((uint32_t)p->outlineRgb << 8) | (s->BackColour & 255u);
       if (p->overrides & PLAIN_ASS_POS) s->MarginV = p->marginV * assTrack->PlayResY / 1080;
-      if (p->overrides & PLAIN_ASS_BOLD) s->Bold = p->bold && !assArabe;
+      if (p->overrides & PLAIN_ASS_BOLD) s->Bold = p->bold;
     }
     /* Flush cached event layout after an explicit style change or reset. */
     ass_set_selective_style_override_enabled(assRenderer, ASS_OVERRIDE_BIT_MARGINS);
@@ -650,7 +636,7 @@ static void ass_plain_style_locked(const PlainAssStyle *p) {
   // Without that box, BackColour is the shadow, at its original opacity.
   s->BackColour = p->background ? (unsigned)(255 - (p->background * 255 * 16 / 100))
                    : (p->border == 2 ? (uint32_t)p->outlineRgb << 8 : 0u) | 46u;
-  s->Bold = (p->bold && !assArabe) ? 1 : 0;
+  s->Bold = p->bold ? 1 : 0;
   s->BorderStyle = p->background ? 4 : 1;
   s->Outline = p->border == 1 ? 2 : 0;
   s->Shadow = p->border == 2 ? 4 : 0;
@@ -907,7 +893,6 @@ static int ass_carregar(const char *corpo, size_t tamanho, unsigned geracao, int
   ass_authored_styles_free();
   if (assTrack) ass_free_track(assTrack);
   assTrack = track;
-  ass_trilha_arabe_sem_negrito(track);
   ass_trilha_tailandes(track);
   plainTimingValid = 0;
   /* Authored ASS retains its own margins after a converted plain track. */
@@ -978,7 +963,7 @@ static void ass_garantir_naskh(void) {
     if (access(caminho, R_OK) == 0) { pronto = 1; return; }
   }
   if (!dados_dir() || !dados_dir()[0]) return;
-  snprintf(pasta, sizeof pasta, "%s/fontes", dados_dir());
+  if (!dados_caminho(pasta, sizeof pasta, "fontes")) goto falhou;
   snprintf(caminho, sizeof caminho, "%s/NotoNaskhArabic-Regular.ttf", pasta);
   if (access(caminho, R_OK) != 0) {
     if (NV_VERSAO[0] < '0' || NV_VERSAO[0] > '9') { pronto = 1; return; }
@@ -1136,6 +1121,20 @@ void assrender_limpar_fontes(void) {
   assTemUltimoPedido = 0; assUltimoRenderUs = 0; assBytesQuadro = 0;
   assTexResetar = 1;
   pthread_mutex_unlock(&assFilaTrava);
+}
+
+// #415: no aviso de memoria, esvazia os caches do libass — o loop
+// "Glyph not found -> selecting one more font" encheu ~190 MB na G4 sem
+// que gpu-cache ou texturas mostrassem. ass_set_cache_limits NAO serve:
+// 0 vira o default e o corte so acontece preguiçosamente no proximo
+// ass_render_frame. O que despeja na hora e o ass_reconfigure dentro de
+// ass_set_fonts (bitmap/composite/outline/font/metrics + fontselect
+// refeito, o que tambem encerra o loop de fallback). Custa uma releitura
+// da pasta de fontes; aceitavel porque so roda no aviso.
+void assrender_aliviar(void) {
+  pthread_mutex_lock(&assTrava);
+  if (assRenderer) ass_aplicar_fontes_locked();
+  pthread_mutex_unlock(&assTrava);
 }
 
 int assrender_adicionar_fonte(const char *nome, const void *dados, size_t tamanho) {
@@ -1437,6 +1436,7 @@ int assrender_carregar(const char *corpo, size_t tamanho, unsigned geracao) { (v
 int assrender_atualizar(const char *corpo, size_t tamanho, unsigned geracao) { (void)corpo; (void)tamanho; (void)geracao; return 0; }
 void assrender_limpar(void) { assGeracao++; }
 void assrender_limpar_fontes(void) {}
+void assrender_aliviar(void) {}
 int assrender_adicionar_fonte(const char *nome, const void *dados, size_t tamanho) {
   (void)nome; (void)dados; (void)tamanho; return 0;
 }

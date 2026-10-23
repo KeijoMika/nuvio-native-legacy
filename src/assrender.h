@@ -29,6 +29,8 @@ void assrender_limpar_fontes(void);
  * rebuild. The callback must not acquire other app locks or perform network IO. */
 int assrender_fonte_local_transacao(const char *caminho, int (*confirmar)(void *), void *u);
 int assrender_fonte_local_ativa(const char *caminho);
+/* Esvazia o cache de glifos/bitmaps do libass (aviso de memoria, #415). */
+void assrender_aliviar(void);
 
 /* Fontes extraidas de attachments Matroska. O nome e apenas informativo para
  * libass; os bytes sao copiados antes do retorno. */

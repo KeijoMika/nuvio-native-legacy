@@ -7,10 +7,19 @@
 #include "catalogo.h"
 #include "js.h"
 #include "idioma.h"
+#include "ajustes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+
+extern void salvos_remover_remoto(const char *) NV_PERFIL_OPCIONAL;
+// Mach-O: weak_import indefinido nao resolve num link estatico (ver
+// perfisessao.h). Duble fraco para os fixtures que nao linkam salvos.c; a
+// definicao forte de salvos.c o sobrepoe no app.
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((weak)) void salvos_remover_remoto(const char *id) { (void)id; }
+#endif
 
 // Nao esta em catalogo.h — ctxmenu.c e trakt.c ja a declaram assim. Repetir a
 // declaracao em vez de mexer no cabecalho mantem a mudanca dentro dos arquivos
@@ -255,6 +264,20 @@ int contalib_ler_biblioteca(const char *json) {
   }
   free(seq);
 
+  // A complete replacement removes only titles previously supplied by this
+  // account snapshot. Local-only saves and unrelated provider bits survive.
+  if (ajustes_fonte_traz_conta(ajustes_fonte_biblioteca()))
+    for (i = 0; i < nItens; i++) {
+      for (j = 0; j < k; j++) if (!strcmp(itens[i].id, novo[j].id)) break;
+      if (j == k) {
+        // Um '+' de lista PENDENTE nesta TV vence a remocao do espelho local
+        // ate subir: sem isto o snapshot apagava um salvo feito aqui.
+        if (contapend_lista_pendente && contapend_lista_pendente(itens[i].id)) continue;
+        int idx = cat_indice_por_imdb(itens[i].id);
+        if (idx >= 0) cat_definir_na_lista(idx, 0);
+        if (salvos_remover_remoto) salvos_remover_remoto(itens[i].id);
+      }
+    }
   free(itens);
   itens = novo;
   nItens = k;
@@ -329,6 +352,7 @@ static void montarItem(CatItem *d, const ContaLibItem *s) {
   snprintf(d->meta, sizeof d->meta, "%s", s->meta);
   d->nota = s->nota;
   d->naLista = 1;
+  d->listaFontes = 1u << AJ_SALVOS_LOCAL;
   if (s->poster[0]) snprintf(d->poster, sizeof d->poster, "%s", s->poster);
   if (s->backdrop[0]) snprintf(d->backdrop, sizeof d->backdrop, "%s", s->backdrop);
   snprintf(d->backdropCatalogo, sizeof d->backdropCatalogo, "%s", d->backdrop);
@@ -360,6 +384,7 @@ int contalib_aplicar_catalogo(void) {
   int i, marcados = 0, nFaltam = 0, ultimo = -1;
 
   if (nItens < 1) return 0;
+  if (!ajustes_fonte_traz_conta(ajustes_fonte_biblioteca())) return 0;
   // Catalogo vazio nao aceita acrescimo (cat_acrescentar_lote recusa com n<1) e
   // nao tem onde marcar. Sair aqui, sem tocar na marca, faz a reconciliacao
   // tentar de novo assim que o catalogo existir.
@@ -417,7 +442,7 @@ void contalib_reconciliar(void) {
   // os acrescentados ficam no fim do vetor.
   if (marcaIdx < 0 || marcaIdx >= cat_n()) return;
   c = cat_item(marcaIdx);
-  if (c && !strcmp(c->imdb, marcaId) && c->naLista) return;
+  if (c && !strcmp(c->imdb, marcaId) && (c->listaFontes & (1u << AJ_SALVOS_LOCAL))) return;
   contalib_aplicar_catalogo();
 }
 

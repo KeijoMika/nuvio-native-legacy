@@ -1,6 +1,7 @@
 // Ciclo real do job manual: baixar -> resolver -> primeiro quadro -> limpar.
 #define SDL_MAIN_HANDLED
 #include "../src/app.c"
+#include "stub_m3u.h"
 #include "fontesmortas.h"
 #include <assert.h>
 
@@ -51,6 +52,9 @@ int rede_url_final_tipo(const char *u, int s, const char *const *c, char *d,
                         unsigned t, int *st, char *m, unsigned mt, long *b) {
   (void)u; (void)s; (void)c; (void)d; (void)t; (void)st; (void)m; (void)mt; (void)b;
   return 0;
+}
+char *rede_colocar_st(const char *u, int s, const char *const *c, const char *corpo, int *st) {
+  (void)u; (void)s; (void)c; (void)corpo; *st = 0; return NULL;
 }
 void stream_falha_identidade(const Stream *s, char *dst, unsigned tam) {
   (void)s; if (tam) dst[0] = 0;

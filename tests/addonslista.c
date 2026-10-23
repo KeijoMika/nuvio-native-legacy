@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "addons.h"
+#include "plugins.h"
 #include "fontecache.h"
 #include "stub_perfisessao.h"
 
@@ -25,6 +26,7 @@ void ondever_pedir(const char *id, int series, long tmdb) {
 }
 
 int dados_gravar_leve(const char *nome, const char *conteudo) { (void)nome; (void)conteudo; return 1; }
+void sync_sujar_addons(const char *url) { (void)url; }
 
 // ---------------------------------------------------------------- duble
 //
@@ -47,6 +49,14 @@ static char pedidosCanal[200];
 // series + catalogo "live") e /stream/ so responde por "live".
 static const char *respCanalLive;
 static char pedidosLive[64];
+// #588: custom catalog/item types must reach the stream endpoint unchanged.
+static char pedidosSport[256];
+static const char *tipoSport = "sport";
+static int sportVazio;
+static unsigned sportDelayMs;
+static int sportTimeouts[16], sportRequests;
+static _Thread_local Uint32 sportTicks;
+
 // lento.test (#182): as primeiras `falhasLento` requisicoes NAO respondem (o
 // timeout do AIOStreams frio); as seguintes respondem com uma fonte.
 static int pedidosDesligado, pedidosLigado;
@@ -55,6 +65,13 @@ static int falhasLento, chamadasLento, prazoLento[2], prazoCanal;
 // instalado sem capacidades (nasce "fonte"), o manifesto diz so "subtitles" e
 // /stream/ responde 404.
 static int pedidosLegendaStream, pedidosLegendaManifesto, idxLegenda = -1;
+char *rede_baixar(const char *url, int seconds);
+char *rede_baixar_st(const char *url, int seconds, const char *const *headers, int *status) {
+  (void)headers;
+  char *body = rede_baixar(url, seconds);
+  if (status) *status = body ? 200 : 0;
+  return body;
+}
 const char *rede_ultimo_erro(void) { return ""; }
 char *rede_baixar(const char *url, int s) {
   const char *r;
@@ -80,6 +97,23 @@ char *rede_baixar(const char *url, int s) {
     if (chamadasLento < 2) prazoLento[chamadasLento] = s;
     if (++chamadasLento <= falhasLento) return NULL;
     return strdup("{\"streams\":[{\"url\":\"https://x/l.mp4\"}]}");
+  }
+  if (strstr(url, "sport.test")) {
+    const char *p = strstr(url, "/stream/");
+    if (!p) return NULL;
+    p += strlen("/stream/");
+    const char *fim = strchr(p, '/');
+    if (!fim) return NULL;
+    if (sportDelayMs) {
+      if (sportRequests < 16) sportTimeouts[sportRequests] = s;
+      sportRequests++;
+      sportTicks += sportDelayMs < (unsigned)s * 1000u ? sportDelayMs : (unsigned)s * 1000u;
+    }
+    snprintf(pedidosSport + strlen(pedidosSport), sizeof pedidosSport - strlen(pedidosSport),
+             "%.*s,", (int)(fim - p), p);
+    if ((size_t)(fim - p) == strlen(tipoSport) && !strncmp(p, tipoSport, strlen(tipoSport)))
+      return strdup("{\"streams\":[{\"url\":\"https://x/sport.m3u8\"}]}");
+    return sportVazio ? strdup("{\"streams\":[]}") : NULL;
   }
   if (strstr(url, "live.test")) {
     int live = strstr(url, "/stream/live/") != NULL;
@@ -113,6 +147,11 @@ int servidores_fontes_pedir(const char *alvo) { (void)alvo; return 0; }
 int servidores_fontes_colher(const char *alvo, Stream **l, int *n) {
   (void)alvo; if (l) *l = NULL; if (n) *n = 0; return JF_FONTES_FALHOU; }
 uint64_t badges_detectar(const char *m) { (void)m; return 0; }
+static int liveRequest, filterVodRequest;
+void stream_folha_canal(int sim) { liveRequest = sim; }
+void stream_filtro_tipo(const char *tipo) {
+  filterVodRequest = tipo && (!strcasecmp(tipo, "movie") || !strcasecmp(tipo, "series"));
+}
 void stream_definir_lista(const Stream *l, int n) { (void)l; (void)n; }
 void stream_preparar_dica_p2p(const Stream *l, int n) { (void)l; (void)n; }
 void stream_definir_lista_idade(const Stream *l, int n, Uint32 idade) {
@@ -123,7 +162,7 @@ int stream_n(void) { return 0; }
 int stream_lista_do_alvo(const char *id) { (void)id; return 0; }
 // addons.c recarimba o id normalizado ("tt:1:1") do pedido.
 void stream_definir_alvo(const char *id) { (void)id; }
-Uint32 SDL_GetTicks(void) { return 1000; }
+Uint32 SDL_GetTicks(void) { return 1000 + sportTicks; }
 const char *sessao_usuario(void) { return ""; }
 int perfis_ativo(void) { return 1; }
 // A integracao da poda com addons.c e exercitada em watchstate_poda.sh.
@@ -185,7 +224,39 @@ static void conferirTexto(const char *o_que, const char *obtido, const char *esp
 
 static int sempreCancelado(void *u) { (void)u; return 1; }
 
+static int pluginsEnabled, pluginSources;
+static PlugResumo pluginSummary;
+void plugins_resumo(const char *id, const char *tipo, PlugResumo *saida) {
+  (void)id; (void)tipo;
+  *saida = pluginsEnabled ? pluginSummary : (PlugResumo){0};
+}
+static int pluginsActive(void) { return pluginsEnabled; }
+static int pluginProvider(const char *id, const char *tipo, int (*cancelado)(void *),
+                          void *ctx, OrigemAviso aviso, void *avisoU, void *saida) {
+  (void)id; (void)tipo; (void)cancelado; (void)ctx; (void)aviso; (void)avisoU;
+  Stream **streams = saida;
+  *streams = pluginSources ? calloc(1, sizeof **streams) : NULL;
+  return pluginSources;
+}
+
 int main(void) {
+  const char *liveTypes[] = {"tv", "channel", "channels", "live", "iptv", "LiVe", "sport", "sports"};
+  for (unsigned i = 0; i < sizeof liveTypes / sizeof *liveTypes; i++) {
+    addons_buscar("fixture:live", liveTypes[i]);
+    conferir("live context before player/sheet opens", liveRequest, 1);
+    conferir("live request outside VOD filters", filterVodRequest, 0);
+    addons_buscar("tt123", "movie");
+    conferir("VOD request restores filtering", liveRequest, 0);
+    conferir("movie request uses VOD filters", filterVodRequest, 1);
+  }
+  const char *customTypes[] = {"custom-live-resource", "events", "hockey", "24-hour-channel"};
+  for (unsigned i = 0; i < sizeof customTypes / sizeof *customTypes; i++) {
+    addons_buscar("fixture:custom", customTypes[i]);
+    conferir("arbitrary live resource outside VOD filters", filterVodRequest, 0);
+  }
+  addons_buscar("tt123:1:1", "series");
+  conferir("episode request restores VOD filters", filterVodRequest, 1);
+  nDebridNovaBusca = 0;
   char dir[NVT_MAX]; nvt_set(dir, sizeof dir, "/nuvio-addonslista-XXXXXX");
   char caminho[600];
   FILE *f;
@@ -242,10 +313,10 @@ int main(void) {
   // 4) so um consultado, e ele nao responde
   addons_alternar(1);                       // "Fonte e catalogo" desligado
   conferirTexto("um mudo", buscarMotivo("tt0000004"), "Formato antigo não respondeu");
-  // 5) so um, e responde vazio
+  // Malformed resource responses are failures, not empty stream arrays.
   resp[1] = "{\"err\":\"Invalid debrid key\"}";
-  conferirTexto("um vazio", buscarMotivo("tt0000005"),
-                "Formato antigo respondeu: não tem este título");
+  conferirTexto("invalid resource", buscarMotivo("tt0000005"),
+                "Formato antigo não respondeu");
   // 6) D5: os de fonte desligados
   addons_alternar(2);
   conferirTexto("desligados", buscarMotivo("tt0000006"),
@@ -265,8 +336,7 @@ int main(void) {
   while (addons_estado() == ADD_BUSCANDO) usleep(1000);
   conferir("tv vazio -> channel traz a fonte", addons_estado(), ADD_PRONTO);
   conferirTexto("ordem sem manifesto", pedidosCanal, "tv,channel,");
-  // 8) Com o manifesto do FrostView (catalogo "channel"), "channel" vai
-  //    primeiro e sozinho: uma viagem por canal, nao duas.
+  // 8) The requested type stays first; the manifest type follows it.
   addons_manifesto_lido(3,
     "{\"id\":\"com.frostview\",\"name\":\"Canal TV\","
     "\"resources\":[\"catalog\",\"meta\",\"stream\"],\"types\":[\"channel\"],"
@@ -277,7 +347,7 @@ int main(void) {
   addons_definir_origem(NULL);
   while (addons_estado() == ADD_BUSCANDO) usleep(1000);
   conferir("channel declarado traz a fonte", addons_estado(), ADD_PRONTO);
-  conferirTexto("ordem com manifesto", pedidosCanal, "channel,");
+  conferirTexto("ordem com manifesto", pedidosCanal, "tv,channel,");
   // 9) Os dois nomes vazios: a causa fala de CANAL, e nao de titulo.
   respCanalChannel = "{\"streams\":[]}";
   addons_definir_origem("https://canal.test");
@@ -328,6 +398,67 @@ int main(void) {
   while (addons_estado() == ADD_BUSCANDO) usleep(1000);
   conferir("tv sem fonte -> declarado live traz", addons_estado(), ADD_PRONTO);
   conferirTexto("ordem tv->live", pedidosLive, "tv,live,");
+
+  // #588: fake manifest and transport; no network, real stream lookup worker.
+  conferir("sport addon added", addons_adicionar("Live Sport", "https://sport.test/manifest.json"), 1);
+  addons_manifesto_lido(addons_n() - 1,
+    "{\"id\":\"org.sport\",\"resources\":[\"stream\",\"catalog\"],"
+    "\"catalogs\":[{\"id\":\"events\",\"type\":\"sport\"}]}");
+  {
+    const char *requested[] = { "tv", "sport", "event", "event", "movie" };
+    const char *served[] = { "sport", "sport", "event", "iptv", "sport" };
+    const char *expected[] = { "tv,sport,", "sport,", "event,",
+                              "event,sport,channel,tv,channels,live,iptv,", "movie,movie," };
+    for (int k = 0; k < 5; k++) {
+      Stream *sources = NULL;
+      tipoSport = served[k]; sportVazio = k == 3; pedidosSport[0] = 0;
+      int count = addons_consultar("sport:event-1", requested[k], "https://sport.test", 1,
+                                  NULL, NULL, &sources);
+      conferir("sport source received", count, k == 4 ? 0 : 1);
+      conferir("sport source allocated", sources != NULL, k != 4);
+      conferirTexto("exact item, catalog, then legacy types", pedidosSport, expected[k]);
+      free(sources);
+    }
+  }
+
+  // Slow live fallbacks share one deadline per addon and retry round.
+  // Virtual transport time keeps timeout regression coverage deterministic.
+  {
+    Stream *sources = NULL;
+    tipoSport = "unavailable";
+    sportVazio = 1; sportDelayMs = 4500; sportRequests = 0; pedidosSport[0] = 0;
+    conferir("slow custom fallback has no sources",
+      addons_consultar("sport:deadline", "event", "https://sport.test", 1, NULL, NULL, &sources), 0);
+    conferirTexto("deadline preserves item/catalog order", pedidosSport, "event,sport,channel,");
+    conferir("fallbacks stop at shared deadline", sportRequests, 3);
+    conferir("initial live timeout", sportTimeouts[0], 12);
+    conferir("catalog gets remaining whole seconds", sportTimeouts[1], 7);
+    conferir("legacy gets remaining whole seconds", sportTimeouts[2], 3);
+    free(sources);
+
+    sportDelayMs = 12000; sportRequests = 0; pedidosSport[0] = 0;
+    conferir("timed-out tv lookup has no sources",
+      addons_consultar("sport:deadline-tv", "tv", "https://sport.test", 1, NULL, NULL, &sources), 0);
+    conferirTexto("no fallback after deadline", pedidosSport, "tv,");
+    conferir("tv timeout is not multiplied", sportRequests, 1);
+    free(sources);
+
+    sportDelayMs = 11500; sportRequests = 0; pedidosSport[0] = 0;
+    conferir("subsecond budget has no sources",
+      addons_consultar("sport:deadline-fraction", "event", "https://sport.test", 1, NULL, NULL, &sources), 0);
+    conferir("subsecond remainder cannot start a one-second request", sportRequests, 1);
+    free(sources);
+
+    sportVazio = 0; sportDelayMs = 30000; sportRequests = 0; pedidosSport[0] = 0;
+    conferir("unresponsive custom lookup has no sources",
+      addons_consultar("sport:deadline-retry", "event", "https://sport.test", 1, NULL, NULL, &sources), 0);
+    conferirTexto("each retry round starts with item type", pedidosSport, "event,event,");
+    conferir("one timeout per retry round", sportRequests, 2);
+    conferir("first round keeps 12-second budget", sportTimeouts[0], 12);
+    conferir("second round keeps independent 20-second budget", sportTimeouts[1], 20);
+    free(sources);
+    sportDelayMs = 0;
+  }
 
   // ---- #182: addon lento aparece sozinho, sem recarregar a mao
   conferir("addon lento entrou", addons_adicionar("Lento", "https://lento.test/manifest.json"), 1);
@@ -509,6 +640,30 @@ int main(void) {
     conferir("130 da conta limitados a 128", addons_n(), 128);
     conferirTexto("ultimo dos 128 presente", addons_nome(127), "Conta 127");
   }
+
+  // Local JS scrapers are source providers even without Stremio add-ons.
+  f = fopen(caminho, "w");
+  if (!f) return 1;
+  fclose(f);
+  addons_carregar(dir);
+  conferir("zero Stremio add-ons", addons_n(), 0);
+  addons_definir_origem_extra(pluginProvider, pluginsActive);
+  conferirTexto("no providers", buscarMotivo("tt2050000"), "Nenhum add-on de fontes instalado");
+  pluginsEnabled = 1;
+  conferirTexto("plugins returned nothing", buscarMotivo("tt2050001"), "(sem causa)");
+  pluginSummary = (PlugResumo){ .enfileirados = 3, .terminados = 2 };
+  conferirTexto("plugin counts precede generic fallback", buscarMotivo("tt2050001"),
+                "Plugins não encontraram fontes (2 de 3 scrapers verificados)");
+  pluginSummary = (PlugResumo){0};
+  pluginSources = 1;
+  conferirTexto("plugin sources failed to open", buscarMotivo("tt2050002"), "(sem causa)");
+  conferir("plugin list has sources", addons_estado(), ADD_PRONTO);
+  addons_adicionar("Disabled source", "https://desligado.test/manifest.json");
+  addons_alternar(0);
+  pluginSources = 0;
+  conferirTexto("plugins with disabled Stremio sources", buscarMotivo("tt2050003"), "(sem causa)");
+  pluginsEnabled = 0;
+  conferirTexto("all providers disabled", buscarMotivo("tt2050004"), "Os add-ons de fontes estão desligados");
 
   remove(caminho);
   rmdir(dir);
