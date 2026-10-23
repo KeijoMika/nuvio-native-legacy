@@ -4,7 +4,10 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "../src/entrada_texto.h"
+
+void texto_sistema_teste_reset(void);
 
 static int falhas;
 #define OK(c, m) do { if (c) printf("ok - %s\n", m); else { printf("FALHOU - %s\n", m); falhas++; } } while (0)
@@ -83,6 +86,31 @@ int main(void) {
   texto_sistema_ponte_fim(1);
   quadro();
   OK(!strcmp(valor, "de fora") && nFim == 2 && !texto_sistema_aberto(), "ponte (host/JS) entrega valor e fim");
+
+  // #642: o IME do sistema derruba o processo (webOS 26). Com NUVIO_TEXTO_CRASH=1
+  // o StartTextInput de teste faz raise(SIGSEGV): o modulo tem de sobreviver,
+  // avisar ERRO e ficar indisponivel -> a grade do app assume.
+  {
+    int nErro = 0;
+    texto_sistema_teste_reset();
+    setenv("NUVIO_TEXTO_CRASH", "1", 1);
+    texto_sistema_abrir("x", 0);
+    unsetenv("NUVIO_TEXTO_CRASH");
+    OK(!texto_sistema_aberto(), "crash no IME nao derruba o app nem deixa aberto");
+    { SDL_Event e; while (SDL_PollEvent(&e))
+        if (e.type == texto_sistema_evento() && e.user.code == TS_EV_ERRO) nErro++; }
+    OK(nErro == 1, "crash no IME vira TS_EV_ERRO (uma vez)");
+    OK(texto_sistema_disponivel() == 0, "depois do crash o sistema fica indisponivel");
+    texto_sistema_abrir("y", 0);
+    OK(!texto_sistema_aberto(), "abrir de novo nem tenta o IME quebrado");
+    // sem o teclado aberto, a sessao segue viva com o teclado do app
+    texto_sistema_teste_reset();
+    texto_sistema_abrir("z", 0);
+    OK(texto_sistema_aberto(), "sessao nova (reset) volta a oferecer o sistema");
+    texto_sistema_fechar();
+    quadro();
+  }
+
   SDL_Quit();
   return falhas ? 1 : 0;
 }

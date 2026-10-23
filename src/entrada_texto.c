@@ -55,9 +55,73 @@
 #include "entrada_texto.h"
 #include "arteurl.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#endif
+#if defined(NV_WEBOS) || defined(NV_TEXTO_SDL_TESTE)
+#include <signal.h>
+#include <setjmp.h>
+#endif
+
+// #642 (webOS 26): a chamada de IME do SDL de fabrica pode derrubar o app
+// inteiro (teclado do sistema abre = crash). A protecao abaixo apanha o sinal
+// dentro da chamada e desliga o teclado do sistema nesta sessao: a grade do
+// app assume (texto_sistema_disponivel -> 0) e o IME nao e chamado de novo.
+// O mesmo vale para o teclado que nunca aparece (180 quadros sem OSK).
+#if defined(NV_WEBOS) || defined(NV_TEXTO_SDL_TESTE)
+static sigjmp_buf saltaIme;
+static volatile sig_atomic_t imeArmado, imeQuebrou;
+static void sinalIme(int s) {
+  (void)s;
+  if (imeArmado) { imeArmado = 0; imeQuebrou = 1; siglongjmp(saltaIme, 1); }
+}
+static void notaQueda(void) {
+  printf("[texto] chamada de IME do sistema falhou (#642): o teclado do app assume\n");
+  fflush(stdout);
+}
+static int sdlImeVazio(void (*fn)(void)) {
+  struct sigaction novo, velho[5];
+  if (imeQuebrou) return -1;
+  memset(&novo, 0, sizeof novo);
+  novo.sa_handler = sinalIme;
+  sigemptyset(&novo.sa_mask);
+  novo.sa_flags = SA_NODEFER;
+  sigaction(SIGSEGV, &novo, &velho[0]);
+  sigaction(SIGBUS, &novo, &velho[1]);
+  sigaction(SIGABRT, &novo, &velho[2]);
+  sigaction(SIGILL, &novo, &velho[3]);
+  sigaction(SIGFPE, &novo, &velho[4]);
+  if (sigsetjmp(saltaIme, 1) == 0) {
+    imeArmado = 1;
+    fn();
+    imeArmado = 0;
+  } else notaQueda();
+  sigaction(SIGSEGV, &velho[0], NULL);
+  sigaction(SIGBUS, &velho[1], NULL);
+  sigaction(SIGABRT, &velho[2], NULL);
+  sigaction(SIGILL, &velho[3], NULL);
+  sigaction(SIGFPE, &velho[4], NULL);
+  return imeQuebrou ? -1 : 0;
+}
+static SDL_Window *imeWin;
+static int imeMostra;
+static void medeMostra(void) { imeMostra = imeWin ? (int)SDL_IsScreenKeyboardShown(imeWin) : 0; }
+static int sdlImeMostra(SDL_Window *w) {
+  imeWin = w; imeMostra = 0;
+  return sdlImeVazio(medeMostra) < 0 ? -1 : imeMostra;
+}
+static int imeQuebrado(void) { return imeQuebrou; }
+#ifdef NV_TEXTO_SDL_TESTE
+void texto_sistema_teste_reset(void) { imeQuebrou = 0; }
+static void crashTeste(void) { raise(SIGSEGV); }
+static int querCrash(void) { const char *e = getenv("NUVIO_TEXTO_CRASH"); return e && *e == '1'; }
+#endif
+#else
+static int sdlImeVazio(void (*fn)(void)) { fn(); return 0; }
+static int sdlImeMostra(SDL_Window *w) { return w ? (int)SDL_IsScreenKeyboardShown(w) : 0; }
+#define imeQuebrado() 0
 #endif
 
 #define TS_MAX NV_ARTE_URL_MAX
@@ -176,9 +240,9 @@ int texto_sistema_disponivel(void) {
   return (EM_ASM_INT({ return (typeof window !== "undefined" && window.nvTexto) ? 1 : 0; }) ? TS_TECLADO : 0)
        | (micPermitido() ? TS_VOZ : 0);
 #elif defined(NV_ANDROID) || defined(NV_TEXTO_SDL_TESTE)
-  return TS_TECLADO;
+  return imeQuebrado() ? 0 : TS_TECLADO;
 #elif defined(__linux__)
-  return SDL_HasScreenKeyboardSupport() ? TS_TECLADO : 0;
+  return !imeQuebrado() && SDL_HasScreenKeyboardSupport() ? TS_TECLADO : 0;
 #else
   return 0;
 #endif
@@ -235,7 +299,15 @@ void texto_sistema_abrir(const char *atual, int voz) {
 #elif defined(__EMSCRIPTEN__)
   EM_ASM({ try { window.nvTexto.abrir(UTF8ToString($0), $1); } catch (e) { console.warn("[texto] " + e); } }, valor, voz);
 #else
-  SDL_StartTextInput();
+  // #642: na webOS 26 esta chamada pode derrubar o processo; a falha vira
+  // TS_EV_ERRO e o teclado do app fica como unico daqui em diante.
+  if (sdlImeVazio(
+#ifdef NV_TEXTO_SDL_TESTE
+        querCrash() ? crashTeste : SDL_StartTextInput
+#else
+        SDL_StartTextInput
+#endif
+      ) < 0) terminar(-1, "ime-caiu");
 #endif
 }
 
@@ -247,7 +319,7 @@ void texto_sistema_fechar(void) {
 #elif defined(__EMSCRIPTEN__)
   EM_ASM({ try { window.nvTexto.fechar(); } catch (e) {} });
 #else
-  SDL_StopTextInput();
+  sdlImeVazio(SDL_StopTextInput);
 #endif
   terminar(0, "app");
 }
@@ -332,21 +404,29 @@ void texto_sistema_quadro(void) {
     avisar(TS_EV_TEXTO, 0);
   }
   if (fim >= 0) { terminar(fim == 2 ? -1 : fim, "system"); return; }
-#if !defined(NV_TPK) && !defined(__EMSCRIPTEN__) && defined(__linux__)
+#if !defined(NV_TPK) && !defined(__EMSCRIPTEN__) && (defined(__linux__) || defined(NV_TEXTO_SDL_TESTE))
   // LG/Android: fechou por fora (Voltar no teclado da TV)? So depois de o
   // teclado ter sido visto aberto, e com folga para ele subir.
   {
     SDL_Window *w = SDL_GetKeyboardFocus();
-    int mostra = w ? (int)SDL_IsScreenKeyboardShown(w) : 0;
+    int mostra = sdlImeMostra(w);
+    if (mostra < 0) { terminar(-1, "ime-caiu"); return; }
     if (mostra && !viuTeclado) {
       viuTeclado = 1;
       printf("[texto] teclado do sistema na tela (quadro %d)\n", quadrosAberto);
       fflush(stdout);
     }
-    if (viuTeclado && !mostra) { SDL_StopTextInput(); terminar(0, "osk-oculto"); }
+    if (viuTeclado && !mostra) { sdlImeVazio(SDL_StopTextInput); terminar(0, "osk-oculto"); }
     else if (!viuTeclado && quadrosAberto == 180) {
       printf("[texto] 180 quadros e SDL_IsScreenKeyboardShown ainda 0 (janela=%p)\n", (void *)w);
       fflush(stdout);
+#if defined(NV_WEBOS) || defined(NV_TEXTO_SDL_TESTE)
+      // #642: 3 s sem o teclado = IME morto nesta sessao (webOS 26). Falha
+      // declarada: o dono larga o sistema e a grade do app assume.
+      imeQuebrou = 1;
+      notaQueda();
+      terminar(-1, "ime-sem-osk");
+#endif
     }
   }
 #endif
