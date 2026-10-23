@@ -1084,17 +1084,9 @@ static int nivelHdr(const Stream *s) {
     toca = toca && (stream_e_mp4(s) || ajustes_dv_mkv());
 #endif
 #endif
-    // LG, MP4: o perfil 5 toca como DV de verdade (webOS aciona o DV nativo no
-    // MP4), entao conta como DV e nao fica abaixo do HDR10. Em MKV a LG cai em
-    // HDR10 (IPT-PQ, cor lavada) e ele segue rebaixado; com DV desligado em
-    // Ajustes ou tela sem DV tambem. Samsung e Android: nada muda.
-    if (perfil5(s)) {
-#if NV_STREAMS_LG
-      if (ajustes_dolby_vision() && telaDv != 0 && stream_e_mp4(s)) nivel = 4;
-      else
-#endif
-      if (nivel < 1) nivel = 1;
-    }
+    // Profile 5 has no HDR10 base; prefer HDR10 in the same band. Keeping it
+    // below HDR10 also prevents the MP4-first rule from promoting it.
+    if (perfil5(s)) { if (nivel < 1) nivel = 1; }
     else if (toca) nivel = 4;
     // Tela SEM Dolby Vision (telaDv == 0 explicito, ex. Samsung): so o perfil 8
     // com base HDR10 toca como HDR10. DV sem perfil nem base declarada pode ser
@@ -1396,7 +1388,7 @@ static int mp4PrimeiroNasFontes(const Stream *fontes, const char *alvo, const in
     const Stream *s = &fontes[idx ? idx[q] : ORD(q)];
     int g = grp ? grp[q] : 0, d = degrauRes(s), c = classeMp4(s), acima = 0;
     long mq = multasDeAlvo(s, alvo), teto = 0, novo;
-    int temNao = 0;
+    int temNao = 0, hdrNaoMp4 = 0;
     if (!c || (excl && excl[q]) || g < 0) continue;
     for (r = 0; r < total; r++) {
       const Stream *o = &fontes[idx ? idx[r] : ORD(r)];
@@ -1404,12 +1396,23 @@ static int mp4PrimeiroNasFontes(const Stream *fontes, const char *alvo, const in
       if (r == q || (excl && excl[r]) || (grp ? grp[r] : 0) != g || degrauRes(o) != d ||
           multasDeAlvo(o, alvo) != mq) continue;
       co = classeMp4(o);
-      if (!co) { if (!temNao || orig[r] > teto) teto = orig[r]; temNao = 1; continue; }
+      if (!co) {
+        if (!temNao || orig[r] > teto) teto = orig[r];
+        temNao = 1;
+        if (nivelHdr(o) >= 2) hdrNaoMp4 = 1;
+        continue;
+      }
       // Outro MP4 da mesma faixa: quantos ficam ABAIXO deste (classe, pontos,
       // e a ordem da lista no empate) decide o degrau dele acima da nao-MP4.
       if (co < c || (co == c && (orig[r] < orig[q] || (orig[r] == orig[q] && r > q)))) acima++;
     }
     if (!temNao) continue;
+    // Profile 5 has no HDR10 base; automatic promotion cannot put it ahead of
+    // an HDR10 non-MP4 in the same band (IPT-PQ washes out).
+    if (perfil5(s) && hdrNaoMp4) {
+      if (teto < orig[q]) { pts[q] = teto; subiram++; }
+      continue;
+    }
     novo = teto + 1 + acima;
     if (novo > orig[q]) { pts[q] = novo; subiram++; }
   }

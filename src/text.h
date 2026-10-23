@@ -201,6 +201,8 @@ typedef enum {
   TXT_SINOPSE_33, TXT_SINOPSE_34, TXT_SINOPSE_35, TXT_SINOPSE_39,
   TXT_SINOPSE_20, // 125% de 16px; append-only, preserva os estilos anteriores
   TXT_MUS_TIT, TXT_MUS_ART, TXT_MUS_TRACK, TXT_MUS_KICK, TXT_MUS_17, TXT_MUS_16,
+  TXT_HERO_META_G,  // hero info Grande, 24/500
+  TXT_HERO_META_GG, // hero info Muito grande, 27/500
   TXT_NFONTES
 } TxtEstilo;
 
