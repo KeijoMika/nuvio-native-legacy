@@ -17,13 +17,35 @@ const album = { collectionId: 10, collectionName: "Interstellar (Original Motion
 const preview = "https://audio-ssl.itunes.apple.com/Cornfield.m4a";
 const song = { collectionId: 10, kind: "song", trackName: "Cornfield Chase", artistName: "Hans Zimmer",
   trackNumber: 2, trackTimeMillis: 126000, previewUrl: preview, trackViewUrl: "https://music.apple.com/br/song/12" };
+const dzAlbum = { id: 10, title: album.collectionName, artist: { name: "Hans Zimmer" } };
+const dzTrack = { title: "Cornfield Chase", track_position: 1, duration: 126,
+  preview: "https://cdns-preview.dzcdn.net/preview.mp3", artist: { name: "Hans Zimmer" } };
 const fixture = (mode = "ok", calls = []) => async (target, options) => {
   const u = new URL(target); calls.push({ u, options });
   if (u.hostname === "v3-cinemeta.strem.io") return J({ meta: { name: "Interstellar", year: "2014" } });
+  if (u.hostname === "api.deezer.com") {
+    assert.ok(!options?.headers?.authorization, "Deezer needs no authorization");
+    if (mode === "dzfail") return new Response("bad gateway", { status: 502 });
+    if (u.pathname === "/search/album") return J({ data: mode === "dz" ? [dzAlbum] : [] });
+    assert.equal(u.pathname, "/album/10");
+    return J({ ...dzAlbum, release_date: album.releaseDate, cover_xl: "https://e-cdns.dzcdn.net/cover_xl.jpg",
+      link: "https://www.deezer.com/album/10", genres: { data: [{ name: "Soundtrack" }] },
+      tracks: { data: [dzTrack, { ...dzTrack, title: "No Preview", preview: "javascript:bad", track_position: 2 }] } });
+  }
+  if (u.hostname === "musicbrainz.org") {
+    assert.match(options?.headers?.["user-agent"] || "", /^NuvioLegacy\//, "MusicBrainz requires a User-Agent");
+    if (u.pathname === "/ws/2/release-group/") return J({ "release-groups": mode === "mb" || mode === "dzfail" ? [
+      { id: "rg1", title: album.collectionName, "secondary-types": ["Soundtrack"],
+        "first-release-date": album.releaseDate, score: 100 }] : [] });
+    assert.match(u.pathname, /^\/ws\/2\/release$/);
+    return J({ releases: [{ "artist-credit": [{ name: "Hans Zimmer" }], media: [{ tracks: [
+      { number: "1", title: "Dreaming of the Crash", length: 180000, "artist-credit": [{ name: "Hans Zimmer" }] }] }] }] });
+  }
+  if (u.hostname === "coverartarchive.org") return new Response("found", { status: 302 });
   assert.equal(u.hostname, "itunes.apple.com", "no secrets: only public iTunes catalog");
   assert.ok(!options?.headers?.authorization, "iTunes needs no authorization");
   if (mode === "offline") throw new Error("offline");
-  if (mode === "403" || mode === "429") return new Response("throttled", { status: Number(mode), headers: { "retry-after": "120" } });
+  if (mode === "403" || mode === "429" || mode === "dz" || mode === "mb" || mode === "dzfail") return new Response("throttled", { status: 403, headers: { "retry-after": "120" } });
   if (u.pathname === "/search") return J({ results: mode === "empty" || (mode === "us" && u.searchParams.get("country") !== "us") ? [] : [
     { ...album, collectionId: 9, artistName: "Tribute Orchestra" },
     { ...album, collectionId: 8, releaseDate: "1999-01-01" },
@@ -103,11 +125,47 @@ for (const status of ["403", "429"]) {
   assert.deepEqual(throttleEnv.MUS.ttl, [], "transient throttle never cached as seven-day miss");
   const recovered = await rotaMusica(U(), throttleEnv, fixture(), null, "fixture", clock + 120001);
   assert.ok((await recovered.json()).faixas);
-  throttleEnv.MUS.m.set("m5:tt0816693:0:br:itunes", JSON.stringify(data));
+  throttleEnv.MUS.m.set("m6:tt0816693:0:br:itunes", JSON.stringify(data));
   await rotaMusica(U("", "tt0816694"), throttleEnv, throttled, null, "fixture", clock + 120002);
   const cached = await rotaMusica(U("", "tt0816693"), throttleEnv, throttled, null, "fixture", clock + 120003);
   assert.deepEqual(await cached.json(), data, "cached response remains available during backoff");
 }
+// Fallback chain: iTunes 403 backoff, Deezer answers with preview mp3s.
+const dzEnv = { MUS: kv() }, dzCalls = [];
+const dzResp = await rotaMusica(U(), dzEnv, fixture("dz", dzCalls), null, "fixture", clock);
+const dzData = await dzResp.json();
+assert.equal(dzData.album.titulo, album.collectionName);
+assert.equal(dzData.album.capa, "https://e-cdns.dzcdn.net/cover_xl.jpg");
+assert.equal(dzData.faixas.length, 2);
+assert.match(dzData.faixas[0].previa, /preview\.mp3$/);
+assert.ok(!dzData.faixas[1].previa, "unsafe preview dropped");
+assert.deepEqual(dzEnv.MUS.ttl, [CACHE_ACHOU], "Deezer hit caches 30 days");
+assert.ok(dzCalls.some((c) => c.u.hostname === "api.deezer.com"));
+assert.equal(dzCalls.filter((c) => c.u.hostname === "musicbrainz.org").length, 0, "no MusicBrainz when Deezer answers");
+console.log("ok iTunes backoff -> Deezer fallback, previews, 30-day cache");
+
+// Deezer outage: MusicBrainz still answers, metadata only, rate-limited.
+const mbEnv = { MUS: kv() }, mbCalls = [];
+const mbData = await (await rotaMusica(U(), mbEnv, fixture("mb", mbCalls), null, "fixture", clock)).json();
+assert.equal(mbData.album.titulo, album.collectionName);
+assert.equal(mbData.album.capa, "https://coverartarchive.org/release-group/rg1/front-500");
+assert.equal(mbData.faixas[0].titulo, "Dreaming of the Crash");
+assert.equal(mbData.faixas[0].dur, 180);
+assert.ok(!mbData.faixas[0].previa && !mbData.faixas[0].appleUrl);
+assert.deepEqual(mbEnv.MUS.ttl, [CACHE_ACHOU]);
+
+// Deezer HTTP error + iTunes backoff + MusicBrainz answers: still tracks.
+const dzfEnv = { MUS: kv() };
+const dzfData = await (await rotaMusica(U(), dzfEnv, fixture("dzfail"), null, "fixture", clock)).json();
+assert.equal(dzfData.faixas[0].titulo, "Dreaming of the Crash");
+assert.deepEqual(dzfEnv.MUS.ttl, [CACHE_ACHOU]);
+
+// Every provider answered empty: confirmed miss still caches seven days.
+const allEmptyEnv = { MUS: kv() };
+assert.deepEqual(await (await rotaMusica(U(), allEmptyEnv, fixture("empty"))).json(), { vazio: true });
+assert.deepEqual(allEmptyEnv.MUS.ttl, [CACHE_VAZIO]);
+console.log("ok MusicBrainz last resort, provider outage chain, confirmed miss cache");
+
 const budgetEnv = { MUS: kv() }, budgetCalls = [], budgetSource = fixture("ok", budgetCalls);
 for (let i = 0; i < 11; i++) await rotaMusica(U("", `tt0816${String(i).padStart(3, "0")}`), budgetEnv, budgetSource, null, "fixture", clock);
 assert.equal(budgetCalls.filter((c) => c.u.hostname === "itunes.apple.com").length, 20, "20 upstream requests per minute per isolate");
