@@ -1,5 +1,7 @@
 # Nuvio Legacy 2.0.9
 
+Mudanças desde `v2.0.8`, a partir de snapshots locais de commits e branches. A integração não confirma instalação em TV. English first, Português no fim.
+
 Changes since `v2.0.8`, from local commit and branch snapshots. Integration does not confirm installation on a TV. English follows the owner’s current language override.
 
 
@@ -44,6 +46,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **More complete skip markers**: Fill missing intro and credits marker types from IntroDB so available skip actions remain accessible. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #615; agente/205-pr615, `2cb47b044`.
 
 - **Supported add-on source searches**: Resolve pending manifests before searching sources so requests use the add-on's supported resources. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-stream-antes-manifesto`, `ea677f958`, `179148c79`, merge `cd006c785`.
+
+- **Partial add-on tabs and sources while auto waits**: See per-add-on search state in the sources sheet and open Sources while the automatic choice still waits on slow add-ons; plugin tabs key by scraper id and refresh without sources, ending the duplicate tab per plugin that delivered sources. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `369b542dc`, `e1d363bed`, merges `4c6ca8198`, `f0794be5a`.
 
 - **Continuous Android live playback**: Reconnect live transport streams before extractor EOF and preserve playback timestamps across reconnects and split PES packets. Platforms: Android. Refs: owner request, `agente/205-live-eof-android`, `fa65837dd`, `d7542ec37`, `4bfa8c935`, merge `fbc54d787`.
 
@@ -133,3 +137,139 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 
 _Nothing pending in this snapshot._
+
+---
+
+# Nuvio Legacy 2.0.9 (Português)
+
+## Destaques
+
+- **Avaliações próprias de títulos e episódios**: Avalie títulos e episódios, mantenha notas por perfil, reabra o editor de estrelas e use tags rápidas com desfazer; envia notas suportadas para Trakt e Simkl. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-205-avaliar21`, `3f70510ea`, `892f61354`, `ecc7119c8`, `303d852c0`, `6d6ca3c2d`, `22c77e099`.
+
+- **Painel de pausa mais rico**: Depois de quatro segundos pausado, veja a sinopse do episódio, avaliações ativadas e comentários rotativos do Trakt, com elenco opcional e ajustes locais de visibilidade. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: PR #627, @I0-oX, `288115d6e`, `ef1b66a97`.
+
+- **TorBox Airlock pela TV**: Guarde ou remova um item de fonte no armazenamento permanente do Airlock direto na lista de arquivos, com aviso de recusa e estado por conta. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: PR #633, @I0-oX, `bcc63e3b1`, `7715cabc7`, `a01e8a134`, `ce6a7d1cd`.
+
+- **Trilhas sonoras nas páginas de título**: Navegue pelas faixas de filmes e temporadas, guarde álbuns na Biblioteca do perfil e abra links de escuta no celular por QR code. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-musica-visual`, `agente/205-musica-png`, `ff262d549`, `e5cd72149`, `cef09beab`, `b74db6de6`, `c3dd1b806`, `4ef90be21`, `33e728d1b`, `3c65dda20`, `4c54f0b8a`, `204cd9980`, `9c2122094`, `239e08b51`, merges `af159f336`, `92aaee057`.
+
+## Novidades
+
+- **Fontes árabes legíveis na interface**: Noto Sans Arabic com negrito real e alinhamento corrigido em parágrafos e rótulos dos Ajustes. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `d9a10596a`, `d11a8ef63`, `b5a2b3358`.
+
+- **Gradientes mais suaves na TV**: Escolha suavização de gradiente para reduzir bandas visíveis nas sobreposições de vídeo, com controles traduzidos. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `007b5009e`, `1770f7bf4`.
+
+- **Ajustes por perfil e controle parental**: Separe ajustes da TV e do perfil, proteja a administração com PIN, copie ou restaure ajustes de perfil e edite outro perfil com ações de conta protegidas. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono; agente/205-205-ajperfil21, `0b5aadb03`, `5b6521fcf`, `69abb0294`, `6b8bb2d9b`, `470a5780c`, `914279f7f`, `2801ffa08`, `3e7864bf7`, `e37ca493e`, `bcbf9b13e`, `14c3ea923`, `f40ae2c10`, `e8259e3f2`.
+
+- **Importe suas fontes**: Importe fontes de interface e de legenda separadamente, pré-visualize a fonte da interface e mantenha as escolhas na reprodução e no backup. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: PR #573; agente/205-pr573, `7f359731e`, `87dc223cc`, `857e3c215`, `8002ef61f`, `eb86643a5`, `0a9382efd`.
+
+- **Formato do player ao seu gosto**: Escolha pílulas, texto, marcas, selos ou nenhuma linha de formato, posicione sob o título ou no canto e mostre o codec de áudio junto do idioma. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: PR #669, @I0-oX, `e76811f15`.
+
+- **Estrelas convidadas do episódio**: Abra o painel de episódios do player para ver convidados do TMDB. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `26f616d6d`, `5f0913815`.
+
+- **Tamanho do hero**: Escolha o tamanho do hero da Home; o layout reservado escala junto. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-herotamanho`, `agente/205-porta-perdidos`, `4bada8211`.
+
+- **Chips rápidos de episódio e polimento de Salvos**: Pule episódios com chips em grade paginada 3x2, veja nota compacta nos cartões salvos e sweep fill, keycaps de controle nas dicas, textos de ilha localizados, ação Remover no cartão do painel e foco de acento com contorno de vidro. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`, `22c77e099`.
+
+## Correções
+
+- **Busca de fontes de anime mais ampla**: Traduz IDs de anime por todos os endpoints ARM e consulta cada namespace declarado em paralelo, preservando especiais explícitos, espaços de ID de fonte e deduplicação segura para AIOStreams. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `dd70f889e`, `1511b615c`, `08673b9ea`, `af48dee49`, `680ab96e7`, `fbd7c059b`.
+
+- **Templates de pôster compatíveis**: Aceita templates de pôster Nuvio que especificam identificadores alternativos. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `8f99c7b43`.
+
+- **Filtros de descoberta do Kaptain**: Mantém valores numéricos de filtro TMDB ao carregar catálogos Kaptain. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `4788e53fb`.
+
+- **Cartões próximos depois de Continuar assistindo**: Mantém cartões próximos divididos visíveis mesmo com a fileira Continuar cheia. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `b83185b9f`.
+
+- **Marcadores de pulo mais completos**: Preenche tipos de marcador de introdução e créditos faltantes pelo IntroDB para manter as ações de pulo acessíveis. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: PR #615; agente/205-pr615, `2cb47b044`.
+
+- **Buscas de fonte de add-on suportadas**: Resolve manifests pendentes antes de buscar fontes para que os pedidos usem recursos suportados pelo add-on. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-stream-antes-manifesto`, `ea677f958`, `179148c79`, merge `cd006c785`.
+
+- **Fontes parciais e aba de fontes durante a espera automática**: Mostra o estado de busca por add-on na folha de fontes e deixa abrir Fontes enquanto a escolha automática ainda espera add-ons lentos; abas de plugin ficam por id do scraper e atualizam sem fontes, acabando a aba duplicada por plugin que entregou fontes. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `369b542dc`, `e1d363bed`, merges `4c6ca8198`, `f0794be5a`.
+
+- **Reprodução ao vivo contínua no Android**: Reconecta fluxos de transporte ao vivo antes do EOF do extrator e preserva timestamps nas reconexões e pacotes PES divididos. Plataformas: Android. Refs: pedido do dono, `agente/205-live-eof-android`, `fa65837dd`, `d7542ec37`, `4bfa8c935`, merge `fbc54d787`.
+
+- **Recuperação de polling de conta**: Mantém a identidade bearer estável e recua pedidos não autorizados. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `2a336785b`, merge `2c94a7b37`.
+
+- **Pedidos Wikimedia identificáveis**: Envia o contato público do projeto ao pedir conteúdo Wikimedia. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `be1a41bf8`.
+
+- **Legendas primárias na Samsung**: Legendas primárias selecionadas renderizam durante o fallback nativo em vez de ficar invisíveis. Plataformas: Samsung .tpk. Refs: #671, #665, `19533c9ad`.
+
+- **Seleção manual de fonte em todo lugar**: Todo pedido de reprodução espera sua escolha de fonte quando a seleção manual está ligada, e a escolha exata é preservada. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #667, `3b0699466`, `e6544a115`.
+
+- **Vitrines de coleção completas**: Alcance cada catálogo da coleção ao rolar, dentro do cache limitado. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #661, `2720a44b5`.
+
+- **Cover Flow estável ao carregar**: Mantém a apresentação do catálogo visível estável conforme páginas chegam. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #662, `a0ae67373`.
+
+- **Segurar para rolar o guia de TV**: Setas seguradas continuam pelos canais sem abrir a barra de categorias. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #668, `133cccd0b`.
+
+- **Reprodução de add-on de TV ao vivo**: Catálogos ao vivo e reprodução de detalhe tipado voltam, e aliases de canal expandidos casam antes do filtro de prefixo. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #646, `63dbdadb2`, `3f503f285`.
+
+- **Arte correta do próximo episódio**: A arte do Próximo corresponde ao episódio oferecido. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `7954f6e5b`.
+
+- **Identidades de vídeo de add-on personalizadas**: Mantém IDs de vídeo customizados e roteia pedidos de stream pelo manifest do add-on. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `465bfa48c`.
+
+- **Filtros de coleção e estilos de cartão**: Preserva filtros de aba de snapshots web, impõe tipos de mídia e limites de Top 10, e respeita cartões redondos em coleções e vitrines. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `54ce9fcf9`, `4fd572bce`, `71cd70dcd`.
+
+- **Animações de perfil e fundos Light limpos**: Avatares GIF reiniciam a cada foco, e fundos Light evitam grão de filme grosseiro. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #660, #657, `58a94f01d`, `696409f3a`.
+
+- **Dicas pós-reprodução localizadas**: Dicas pós-play ficam dentro das ilhas traduzidas. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `d9275be11`.
+
+- **Hora consistente em 12 horas**: Horários de fim, Seekr e atividade de amigos seguem seu ajuste de formato de relógio. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `bedce6987`.
+
+- **Buscas de scraper mais confiáveis**: Evita fome de busca e relata buscas incompletas com precisão. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `be73af022`.
+
+- **Reprodução por proxy e fallback de buffer mais seguros**: Correções de reprodução protegem cabeçalhos após downgrade HTTPS, restauram buffering nativo após fallback de proxy, impedem clientes concorrentes de reiniciar o stream ativo e desbloqueiam seeks nativos próximos quando a origem trava. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `agente/205-ur673`, `d365dd646`.
+
+- **Recuperação de arte em TVs com pouca memória**: Pede arte menor e recupera de pressão de memória sem deixar imagens cinzas. Plataformas: webOS. Refs: #676, `agente/205-676-arte`, `e3427954b`.
+
+- **Foco de fileira da Home estável**: Mantém a identidade do item selecionada atualizada após navegação para atualizações posteriores preservarem o foco. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #677, `agente/205-677-foco`, `e94610c5b`.
+
+- **Catálogos de add-on personalizados**: Aplica defaults de manifest obrigatórios ao pedir catálogos como AI for you. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: #678, `agente/205-678-aiforyou`, `99d7014da`.
+
+- **Categorias de anime e foco de filtro na Biblioteca**: Coloca filmes de anime do Simkl em Filmes e mantém o foco no controle de tipo após trocar de categoria. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-lib-anime-foco`, `bf3da4bc2`, `6e9f8233c`.
+
+- **Streams ao vivo confirmados mais rápidos**: Limita sondas de inicialização ao vivo e abre streams de transporte confirmados direto. Plataformas: Samsung .tpk. Refs: pedido do dono, `440074537`.
+
+- **Mais fontes quando o manifest não é claro**: Trata recursos de manifest ilegíveis como capacidades presumidas e mantém consultas de stream otimistas, a menos que o add-on seja só TV ao vivo. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `bf129e9af`, `606a892e8`, `bf6757c3a`.
+
+- **Retry de login Trakt no dispositivo**: Limita o polling de login pela expiração do código e mostra estado de retry em vez de loop silencioso. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-205-traktlogin`, `71c849ae6`.
+
+- **Escolha de Dolby Vision mais segura**: Mantém MP4 Dolby Vision perfil 5 abaixo do HDR10 da mesma banda para arquivos incompatíveis perderem o empate. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `d4f1dca81`.
+
+## Desempenho
+
+- **Busca de trilha sonora mais confiável**: Quando o iTunes limita pedidos, cai para Deezer (com prévias de 30 s) e MusicBrainz em vez de vazio, e para de cachear miss cedo demais. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `2823b3c7f`.
+
+- **Uploads de arte responsivos na TCL**: Subamostra arte e limita memória do pipeline de textura, adia uploads em disputa ou bloqueados por orçamento e remove uploads de contexto compartilhado no Android para reduzir pressão de memória e travadas de navegação. Residência de fileira e orçamentos de arte compartilhados são impostos e restaurados no Android. Plataformas: Android. Refs: pedido do dono, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, `483ff3348`, `a81e27c2c`, `2c3854211`, `395189bf0`, `b6ba4c9ff`, merge `90e5b321a`.
+
+- **Trabalho limitado na folha de fontes**: Limita o trabalho por frame da folha de fontes às linhas visíveis para manter a navegação responsiva. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `d28ff9e77`.
+
+- **Read-ahead nativo HTTP protegido**: Reprodução nativa lê adiante em RAM com proteções de memória, faixas de substituição responsivas e tratamento de seek, e progresso contíguo de buffer no trilho padrão. Plataformas: webOS, Android, Samsung .tpk. Refs: PR #673, `e19571da2`, `7547e3715`, `396c2a70e`, `5462e5933`, `f35f5a25a`, `d365dd646`, `0eb86c3be`.
+
+## Comunidade
+
+- **Painel de pausa da comunidade**: Aproveite a experiência de pausa expandida contribuída por @I0-oX. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #627, `288115d6e`.
+
+- **Airlock da comunidade**: Gerencie o armazenamento permanente TorBox com a contribuição de @I0-oX. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #633, `bcc63e3b1`.
+
+- **Formato do player da comunidade**: Personalize formato do player e apresentação de idioma de áudio com a contribuição de @I0-oX. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #669, `e76811f15`.
+
+## Interno
+
+- **Snapshots de regressão de prefixo de stream**: Preserva fixtures de prefixo de integração para validação posterior. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
+
+- **Validação por screenshot de avaliação e árabe**: Exercita fluxos reais de avaliação de título e episódio, rejeita screenshots em branco e captura Home e Ajustes em árabe. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `55baaaad5`, `ca7571952`, `61987b4dc`.
+
+- **Evidência de regressão de fontes e uploads**: Cobre fontes importadas, renderização de legenda, fixtures de marcador e limites de upload gráfico sem mudar o comportamento do release. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `c2e7d0ef9`, `bca33e5b1`, `42cfd5215`, `be613c39e`, `00d81ca89`, `1faca80c1`, `2ca240e08`, `361fb458d`, `b92af68f9`, `abeb4ad04`, `8c25bc1e0`.
+
+- **Validação de review com escopo**: Registra validação de coleções e scraper sem expandir o escopo aprovado. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
+
+- **Rastreamento de release**: Mantém estados de issues, follow-ups de review e cobertura de release alinhados ao snapshot de integração local. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`, `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`, `65a3fa795`, `25189dea6`, `795af84b4`, `0e3b2c9b6`, `4fc14fb74`.
+
+- **Cobertura de regressão de trilha sonora**: Verifica tamanho do painel de trilha e paginação por teclas remotas, e registra o mockup em português e prova de prévia nativa com limites de validação em dispositivo. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`, `4654bdb0f`, `8fb90ad5f`.
+
+- **Helpers de rastreamento de regressão**: Rastreia regressões de issues a partir das ferramentas de desenvolvimento sem mudar o comportamento do release. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `234ed9374`.
+
+## Pendente (ainda não integrado)
+
+_Nada pendente neste snapshot._
