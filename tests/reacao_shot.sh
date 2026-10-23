@@ -14,6 +14,10 @@ trap 'rm -rf "$NUVIO_DADOS" ${TMPDIR:-/tmp}/nuvio-reacao-shot-bin ${TMPDIR:-/tmp
 sources=()
 for source in src/*.c src/dts/*.c; do
   [ "$source" = src/main.c ] && continue
+  case "$source" in
+    src/reacao.c|src/detail.c|src/notasui.c)
+      if [ -n "${NV_REACAO_BASELINE:-}" ]; then source="$NV_REACAO_BASELINE/${source#src/}"; fi;;
+  esac
   sources+=("$source")
 done
 cc "${sources[@]}" tests/reacao_shot.c -Isrc -o ${TMPDIR:-/tmp}/nuvio-reacao-shot-bin \

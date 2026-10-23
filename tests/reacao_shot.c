@@ -13,6 +13,9 @@
 #include "gfx.h"
 #include "text.h"
 #include "tex_cache.h"
+#include "shot_arte.h"
+
+static GLuint shotFbo;
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <assert.h>
@@ -37,15 +40,17 @@ static void captura(const char *nome, SDL_Window *win) {
   printf("captura: %s\n", nome);
 }
 
-// Um "quadro de filme" de mentira: degrade escuro, para o cartao ter o que cobrir.
+// Match the app frame lifecycle and use real art behind floating panels.
 static void cena(void) {
-  SDL_Delay(8);   // os icones carregam em outra thread
-  int i;
-  glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
+  SDL_Delay(8);
+  gfx_novo_quadro();
+  glBindFramebuffer(GL_FRAMEBUFFER, shotFbo);
+  glViewport(0, 0, 1920, 1080);
+  gfx_sem_recorte();
+  glClearColor(0.05f, 0.05f, 0.06f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  for (i = 0; i < 6; i++)
-    gfx_cor((GfxRect){ 0, (float)i * 180.0f, 1920, 180 }, 0.0f,
-            0.16f + 0.04f * (float)i, 0.12f + 0.02f * (float)i, 0.10f, 1.0f);
+  assert(shot_arte_carregar());
+  shot_arte_desenhar(.35f);
 }
 
 static SDL_Event tecla(SDL_Keycode k) {
@@ -65,7 +70,10 @@ int main(int argc, char **argv) {
   int i;
   assert(dir && *dir);
   dados_iniciar(dir);
+  dados_gravar("ajustes.txt", "idioma 0\nvidroLocal 1\n");
+  ajustes_iniciar();
   ajustes_dir(dir);
+  ajustes_definir_vidro(0);
   assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == 0);
   IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -77,6 +85,7 @@ int main(int argc, char **argv) {
   assert(gl);
   GLuint fbo, cor;
   glGenFramebuffers(1, &fbo); glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  shotFbo = fbo;
   glGenTextures(1, &cor); glBindTexture(GL_TEXTURE_2D, cor);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cor, 0);
@@ -115,27 +124,7 @@ int main(int argc, char **argv) {
     if (i == 239) { snprintf(nome, sizeof nome, "%s/reacao-simples.png", pasta); captura(nome, w); }
     else SDL_GL_SwapWindow(w);
   }
-  // 3. Pendente na pagina do titulo.
-  { CatItem ci;
-    memset(&ci, 0, sizeof ci);
-    snprintf(ci.imdb, sizeof ci.imdb, "tt0903747");
-    snprintf(ci.tipo, sizeof ci.tipo, "series");
-    snprintf(ci.titulo, sizeof ci.titulo, "Breaking Bad");
-    reacao_fechar();
-    // Fim de temporada com a duracao estavel: abre, e o VOLTAR deixa pendente.
-    for (i = 0; i < 100; i++) {
-      agora += 100;
-      reacao_player_atualizar(0.1f, agora, &ci, 1, 2300, 2400, 0, 0, 0);
-    }
-    { SDL_Event e = tecla(SDLK_ESCAPE); reacao_evento(&e, 0); }
-    reacao_fechar();
-    for (i = 0; i < 30; i++) {
-      tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
-      cena();
-      reacao_detalhe_dica(&ci, 1.0f);
-      if (i == 29) { snprintf(nome, sizeof nome, "%s/reacao-detalhe.png", pasta); captura(nome, w); }
-      else SDL_GL_SwapWindow(w);
-    } }
+  // Detail captures live in detail_eps_shot.c, inside the real page and scale scope.
   // 4. Fileira de estrelas em foco (UP), 2,5 estrelas.
   reacao_fechar();
   reacao_teste_abrir("tt0068646", "O Poderoso Chefão", "movie", 0, "", 0);
@@ -151,31 +140,24 @@ int main(int argc, char **argv) {
     if (i == 239) { snprintf(nome, sizeof nome, "%s/reacao-estrelas.png", pasta); captura(nome, w); }
     else SDL_GL_SwapWindow(w);
   }
-  { SDL_Event e = tecla(SDLK_RETURN); reacao_evento(&e, 0); }
+  { SDL_Event e = tecla(SDLK_RETURN); reacao_evento(&e, 0);
+    for (int n = 0; n < 4; n++) { e = tecla(SDLK_UP); reacao_evento(&e, 0); }
+    e = tecla(SDLK_RETURN); reacao_evento(&e, 0);
+    e = tecla(SDLK_RIGHT); reacao_evento(&e, 0);
+  }
   for (i = 0; i < 30; i++) {
     tex_novo_quadro(); tex_bombear(6); txt_novo_quadro(); cena();
     reacao_desenhar(agora, 1032);
     if (i == 29) { snprintf(nome, sizeof nome, "%s/reacao-tags.png", pasta); captura(nome, w); }
   }
   { SDL_Event e = tecla(SDLK_ESCAPE); reacao_evento(&e, 0); }
-  // 5. Saved title rating, then the same editor with glass enabled.
-  { CatItem ci;
-    memset(&ci, 0, sizeof ci);
-    snprintf(ci.imdb, sizeof ci.imdb, "tt0068646");
-    snprintf(ci.titulo, sizeof ci.titulo, "O Poderoso Chefão");
-    for (i = 0; i < 30; i++) {
-      tex_novo_quadro(); tex_bombear(6); txt_novo_quadro();
-      cena();
-      reacao_detalhe_dica(&ci, 1.0f);
-      if (i == 29) { snprintf(nome, sizeof nome, "%s/reacao-detalhe-nota.png", pasta); captura(nome, w); }
-      else SDL_GL_SwapWindow(w);
-    } }
+  // 5. The same editor with glass enabled.
   ajustes_definir_vidro(1);
   assert(ajustes_vidro());
   { CatItem ci = {0};
     snprintf(ci.imdb, sizeof ci.imdb, "tt0068646");
     snprintf(ci.tipo, sizeof ci.tipo, "movie");
-    snprintf(ci.titulo, sizeof ci.titulo, "The Godfather");
+    snprintf(ci.titulo, sizeof ci.titulo, "O Poderoso Chefão");
     assert(reacao_detalhe_abrir(&ci));
     for (i = 0; i < 60; i++) {
       tex_novo_quadro(); tex_bombear(6); txt_novo_quadro(); cena();
@@ -185,6 +167,7 @@ int main(int argc, char **argv) {
     SDL_Event e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
     e = tecla(SDLK_LEFT); reacao_evento(&e, 1);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
+    e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
     for (i = 0; i < 30; i++) {
       tex_novo_quadro(); tex_bombear(6); txt_novo_quadro(); cena();
       reacao_detalhe_dica(&ci, 1);
