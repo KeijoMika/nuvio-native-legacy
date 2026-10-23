@@ -221,6 +221,11 @@ static void montarBiblioteca(Fileira *f) {
   }
   f->usaItens = 1;
   f->tipo = FILEIRA_NORMAL;
+  // "Ver tudo" no fim (#672): itens alem do teto da fileira nao apareceriam.
+  // O card nao chama vertudo_abrir (que pede um catalogo de addon); abre a
+  // Biblioteca inteira — veja o ramo noVerTudo no KEYUP.
+  f->verTudo = f->n > 0;
+  f->catTipo[0] = 'x';   // catTipo vazio casaria com um tipo de canal
   snprintf(f->titulo, sizeof f->titulo, "%s", i18n("Biblioteca"));
   snprintf(f->chave, sizeof f->chave, "library");
 }
@@ -298,6 +303,9 @@ int home_pediu_guia(char *id, int tam) {
   if (id && tam > 0) { snprintf(id, (size_t)tam, "%s", guiaId); guiaId[0] = 0; }
   return 1;
 }
+// "Ver tudo" da fileira da Biblioteca (#672): pede a tela inteira.
+static int pedidoBiblioteca;
+int home_pediu_biblioteca(void) { int v = pedidoBiblioteca; pedidoBiblioteca = 0; return v; }
 
 // Classifica somente os nomes públicos do catálogo. Nunca inspeciona a URL
 // (que pode conter tokens) nem inventa premiações ou disponibilidade.
@@ -2637,8 +2645,11 @@ static void home_evento_(const SDL_Event *e) {
           vertudo_colecao(col_folder(fileiras[foco.fileira].folders[foco.coluna]));
         }
       } else if (noVerTudo) {
-        vertudo_abrir(fileiras[foco.fileira].base, fileiras[foco.fileira].catTipo,
-                      fileiras[foco.fileira].catId, fileiras[foco.fileira].titulo);
+        if (!strcmp(fileiras[foco.fileira].chave, "library"))
+          pedidoBiblioteca = 1;   // a Biblioteca e tela propria, nao catalogo
+        else
+          vertudo_abrir(fileiras[foco.fileira].base, fileiras[foco.fileira].catTipo,
+                        fileiras[foco.fileira].catId, fileiras[foco.fileira].titulo);
       } else if (dur >= NV_HOLD_MS) {
         abrirMenuCartaz();
       } else {
@@ -8703,7 +8714,7 @@ void home_abrir_sessao(void) {
   memset(&cartaoFoco, 0, sizeof cartaoFoco);
   itemFocoSessao = 0; itemFocoCatalogo = 0;
   sair = pedidoAbrir = pedidoTocar = pedidoMenu = pedidoRelogio = 0;
-  pedidoSocial = pedidoPessoaSocial = pedidoGuia = 0;
+  pedidoSocial = pedidoPessoaSocial = pedidoGuia = pedidoBiblioteca = 0;
   memset(&pessoaSocial, 0, sizeof pessoaSocial); guiaId[0] = 0;
   okDesde = 0; okPressionando = okLongDisparado = okConsumirSoltura = 0;
   okHold = 0.0f;
