@@ -1014,6 +1014,37 @@ int addons_pendente_grupo_min(int (*f)(const char *nome, int plugin, void *u), v
   return m;
 }
 
+static int abaEstado(unsigned char est) {
+  if (est == 1) return ADDON_ABA_BUSCANDO;
+  if (est == 3) return ADDON_ABA_FALHOU;
+  return ADDON_ABA_PRONTO;
+}
+
+int addons_parcial_abas(AddonAba *out, int max) {
+  int i, k = 0;
+  if (!out || max <= 0) return 0;
+  if (!addons_busca_parcial()) return 0;
+  pthread_mutex_lock(&progTrava);
+  for (i = 0; i < nAddon && i < ADD_MAX && k < max; i++) {
+    if (!progEstado[i]) continue;
+    snprintf(out[k].nome, sizeof out[k].nome, "%s", addon[i].nome);
+    fontefalha_addon_chave(addon[i].base, out[k].chave, sizeof out[k].chave);
+    out[k].ordem = i;
+    out[k].estado = abaEstado(progEstado[i]);
+    k++;
+  }
+  for (i = 0; i < ADD_EXTRA_MAX && k < max; i++) {
+    if (!progEstadoEx[i]) continue;
+    snprintf(out[k].nome, sizeof out[k].nome, "%s", progNomeEx[i]);
+    fontefalha_addon_chave(progNomeEx[i], out[k].chave, sizeof out[k].chave);
+    out[k].ordem = ADD_MAX + i;
+    out[k].estado = abaEstado(progEstadoEx[i]);
+    k++;
+  }
+  pthread_mutex_unlock(&progTrava);
+  return k;
+}
+
 int addons_ocupado(void) {
   return fioVivo || adotado || atomic_load(&estado) == ADD_BUSCANDO;
 }

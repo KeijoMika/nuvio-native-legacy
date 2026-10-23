@@ -13,6 +13,7 @@
 #define NV_ADDONS_H
 #include "watchstate.h"
 #include "addonurl.h"
+#include "fontefalha.h"
 #include <stdint.h>
 
 // Um teto so para a lista e para os consumidores que precisam de TODOS os donos.
@@ -194,6 +195,18 @@ int  addons_pendente_nome(const char *nome);
 // O menor grupo de auto-play (fonteregra.h, #202) que um pendente pode trazer;
 // `f` recebe o nome e se e plugin e devolve o grupo (-1 = nunca). 99 = nenhum.
 int  addons_pendente_grupo_min(int (*f)(const char *nome, int plugin, void *u), void *u);
+
+// Estado de um addon/plugin na busca parcial, para a folha de Fontes.
+enum { ADDON_ABA_PRONTO = 0, ADDON_ABA_BUSCANDO = 1, ADDON_ABA_FALHOU = 2 };
+typedef struct {
+  char nome[96];
+  char chave[FONTEFALHA_CHAVE];
+  int ordem;   // ordem de instalacao (addons) ou ADD_MAX + k (plugins)
+  int estado;  // ADDON_ABA_*
+} AddonAba;
+// Lista os addons/plugins desta busca, na ordem de exibicao, com quem ainda
+// nao respondeu ou falhou. Devolve quantos cabem em `out`.
+int addons_parcial_abas(AddonAba *out, int max);
 
 // A mesma consulta, SINCRONA E REENTRANTE, e addons_consultar — declarada em
 // fontecache.h, e nao aqui, porque a assinatura precisa de Stream (streams.h,
