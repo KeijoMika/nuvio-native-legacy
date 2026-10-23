@@ -740,7 +740,7 @@ static void estrelasDesenhar(float x, float y, float a) {
     l = txt_linha(TXT_ILHA_SUB, "/ 5", 160, 157, 153, 255);
     txt_desenhar_alpha(l, x + 582, y + 25, a);
   } else {
-    l = txt_linha(TXT_G18R, "Dar uma nota", 185, 180, 175, 255);
+    l = txt_linha(TXT_G18R, i18n("Dar uma nota"), 185, 180, 175, 255);
     txt_desenhar_alpha(l, x + 627 - l.w, y + 15, a);
   }
 }
@@ -772,7 +772,7 @@ static void painelNota(GfxRect r, float a) {
 
 // Approved 01 Ilha geometry, shared by detail and episode rating.
 static void textoNota(TxtEstilo estilo, const char *s, float x, float y, float a, int cor) {
-  TxtLinha l = txt_linha(estilo, s, cor, cor, cor, 255);
+  TxtLinha l = txt_linha(estilo, i18n(s), cor, cor, cor, 255);
   txt_desenhar_alpha(l, x, y, a);
 }
 
@@ -796,7 +796,7 @@ static void ilhaNotaDesenhar(float baseY, float a) {
     gfx_tex_aspect_atual = tex_aspecto(c.poster);
     gfx_rect(thumb, tex, GFX_CARD, 0, 0, 0, 12.f / 76, 1, 1, 1, a);
   }
-  plrui_kicker(ep ? "Avaliar episódio" : "Sua opinião", tx + 83, ty, 184, 170, 160, a);
+  plrui_kicker(ep ? i18n("Avaliar episódio") : i18n("Sua opinião"), tx + 83, ty, 184, 170, 160, a);
   textoNota(TXT_ILHA_PERGUNTA, ep ? "Como foi este episódio?" : "Valeu a sessão?", tx + 83, ty + 25, a, 243);
   char title[220];
   int t, e;
@@ -841,7 +841,7 @@ static void ilhaNotaDesenhar(float baseY, float a) {
       int selected = (c.tags & (1u << i)) != 0;
       gfx_cor((GfxRect){bx, by, 153, 44}, .5f, ar, ag, ab, (f ? 1 : selected ? .20f : .08f) * a);
       int ink = f ? 33 : selected ? 230 : 207;
-      TxtLinha l = txt_linha_corta(TXT_G18R, TAGS[i], ink, ink, ink, 255, 137);
+      TxtLinha l = txt_linha_corta(TXT_G18R, i18n(TAGS[i]), ink, ink, ink, 255, 137);
       txt_desenhar_alpha(l, bx + (153 - l.w) * .5f, by + (44 - l.h) * .5f, a);
     }
     ty += 220;
@@ -855,7 +855,8 @@ static void ilhaNotaDesenhar(float baseY, float a) {
   else textoNota(TXT_ILHA_NUM, "Sua nota, junto das outras opiniões.", tx, ty + 15, a, 178);
   if (trakt_ativo() || simkl_ativo()) {
     const char *service = trakt_ativo() ? simkl_ativo() ? "Trakt · Simkl" : "Trakt" : "Simkl";
-    textoNota(TXT_ILHA_HORA, service, tx + 525, ty + 20, a, 178);
+    TxtLinha sv = txt_linha(TXT_ILHA_HORA, service, 178, 174, 170, 255);
+    txt_desenhar_alpha(sv, tx + 642 - sv.w, ty + 20, a);
   }
   float fy = y + h - 76;
   gfx_cor((GfxRect){tx, fy, 642, 1}, 0, 1, 1, 1, .08f * a);
