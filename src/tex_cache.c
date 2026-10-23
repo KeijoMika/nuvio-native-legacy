@@ -92,7 +92,7 @@ typedef struct {
 // ciclo nao termina nunca: o item ocupa uma vaga em voo e um turno na fila a
 // frente das imagens boas, para falhar de novo. Com recuo, a segunda tentativa
 // so acontece daqui a 2 s, a terceira a 10 s, e depois desiste na sessao.
-typedef enum { VAZIO=0, PENDENTE, DECODIFICADO, PRONTO, FALHOU, ENVIANDO } Estado;
+typedef enum { VAZIO=0, PENDENTE, DECODIFICADO, PRONTO, FALHOU } Estado;
 
 typedef struct {
   char caminho[NV_TEX_URL_MAX];
@@ -270,11 +270,6 @@ static SDL_Surface *uplSup;
 static int uplY;
 // 1 = os niveis da piramide da CPU ja tiveram o passo deles (ver tex_bombear).
 static int uplNiveis;
-#if defined(NV_ANDROID) || defined(NV_TEX_ASYNC_TEST)
-static void iniciarEnvioAsync(void);
-static void encerrarEnvioAsync(void);
-static int bombearAsync(int maximo);
-#endif
 // Libera a superficie de um item com os niveis da piramide da CPU (abaixo).
 static void liberarSup(SDL_Surface *s);
 // Bytes baixados que ainda nao foram consumidos pelo decode (LG e Tizen).
@@ -756,8 +751,7 @@ static int acharIndice(const char *caminho, unsigned long h) {
 static int emVoo(void) {
   int n = 0;
   for (int i = 0; i < nMax; i++)
-    if (itens[i].estado == PENDENTE || itens[i].estado == DECODIFICADO ||
-        itens[i].estado == ENVIANDO) n++;
+    if (itens[i].estado == PENDENTE || itens[i].estado == DECODIFICADO) n++;
   return n;
 }
 
@@ -3554,9 +3548,6 @@ int tex_iniciar(int max_itens) {
 #ifndef __EMSCRIPTEN__
   pthread_mutex_unlock(&vidaMtx);
 #endif
-#if defined(NV_ANDROID) || defined(NV_TEX_ASYNC_TEST)
-  iniciarEnvioAsync();
-#endif
   // DOIS fios de decode, nao um. A fila e retirada sob o mutex e cada fio leva
   // um indice proprio, entao mais consumidores e seguro sem outra mudanca.
   //
@@ -3585,9 +3576,6 @@ int tex_iniciar(int max_itens) {
 
 void tex_encerrar(void) {
   if (!mtx) return;
-#if defined(NV_ANDROID) || defined(NV_TEX_ASYNC_TEST)
-  encerrarEnvioAsync();
-#endif
   SDL_LockMutex(mtx); rodando = 0;
   SDL_CondBroadcast(cond); SDL_CondBroadcast(condDec);
   SDL_CondBroadcast(condLivre);
@@ -4519,198 +4507,7 @@ static void uplAbortar(void) {
   uplTex = 0; uplIdx = -1; uplSup = NULL; uplY = 0; uplNiveis = 0;
 }
 
-#if defined(NV_ANDROID) || defined(NV_TEX_ASYNC_TEST)
-/* One surface stays owned by its ENVIANDO slot until publication. No cache
- * mutex or renderer state is touched while the driver submits/completes it. */
-#ifdef NV_ANDROID
-#include <EGL/egl.h>
-static EGLDisplay envioDisplay;
-static EGLSurface envioPbuffer;
-static EGLContext envioEgl;
-#endif
-static SDL_Window *envioJanela;
-static SDL_GLContext envioContexto;
-static SDL_Thread *envioThread;
-static SDL_sem *envioAcordar;
-static SDL_atomic_t envioEstado;
-static int envioAlvo, envioMip, envioErro;
-static GLuint envioTex;
-static SDL_Surface *envioSup;
-
-static int threadEnvio(void *unused) {
-  (void)unused;
-#ifdef NV_ANDROID
-  if (!eglMakeCurrent(envioDisplay, envioPbuffer, envioPbuffer, envioEgl)) {
-#else
-  if (SDL_GL_MakeCurrent(envioJanela, envioContexto) != 0) {
-#endif
-    SDL_AtomicSet(&envioEstado, -2);
-    return 0;
-  }
-  for (;;) {
-    SDL_SemWait(envioAcordar);
-    if (SDL_AtomicGet(&envioEstado) == -1) break;
-    SDL_Surface *s = envioSup;
-    while (glGetError() != GL_NO_ERROR) { }
-    glGenTextures(1, &envioTex);
-    glBindTexture(GL_TEXTURE_2D, envioTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->w, s->h, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, s->pixels);
-    if (s->userdata) subirNiveis(s);
-    else if (envioMip) glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    envioMip ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    /* Completion is waited here, before another context can sample the name.
-     * Do not call gfx_tex_aquecer: it owns the frame renderer's mutable state. */
-    glFinish();
-    envioErro = glGetError() != GL_NO_ERROR;
-    if (envioErro) { glDeleteTextures(1, &envioTex); envioTex = 0; }
-    SDL_AtomicSet(&envioEstado, 2);
-  }
-#ifdef NV_ANDROID
-  eglMakeCurrent(envioDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-#else
-  SDL_GL_MakeCurrent(envioJanela, NULL);
-#endif
-  return 0;
-}
-
-static void iniciarEnvioAsync(void) {
-  SDL_GLContext frame = SDL_GL_GetCurrentContext();
-  envioJanela = SDL_GL_GetCurrentWindow();
-  if (!frame || !envioJanela) return;
-#ifdef NV_ANDROID
-  /* EGL window surfaces cannot be current on two threads. Use a private
-   * pbuffer with the frame context's config and shared texture namespace. */
-  envioDisplay = eglGetCurrentDisplay();
-  EGLContext current = eglGetCurrentContext();
-  EGLint id = 0, count = 0;
-  EGLConfig config;
-  eglQueryContext(envioDisplay, current, EGL_CONFIG_ID, &id);
-  EGLint attrs[] = { EGL_CONFIG_ID, id, EGL_NONE };
-  EGLint size[] = { EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE };
-  EGLint version[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
-  if (!eglChooseConfig(envioDisplay, attrs, &config, 1, &count) || !count) return;
-  envioPbuffer = eglCreatePbufferSurface(envioDisplay, config, size);
-  if (envioPbuffer == EGL_NO_SURFACE) return;
-  envioEgl = eglCreateContext(envioDisplay, config, current, version);
-  if (envioEgl == EGL_NO_CONTEXT) {
-    eglDestroySurface(envioDisplay, envioPbuffer);
-    return;
-  }
-#else
-  int share = 0;
-  SDL_GL_GetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, &share);
-  SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-  envioContexto = SDL_GL_CreateContext(envioJanela);
-  SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, share);
-  SDL_GL_MakeCurrent(envioJanela, frame);
-  if (!envioContexto) {
-    fprintf(stderr, "[tex] shared upload context unavailable: %s\n", SDL_GetError());
-    return;
-  }
-#endif
-  envioAcordar = SDL_CreateSemaphore(0);
-  SDL_AtomicSet(&envioEstado, 0);
-  if (envioAcordar) envioThread = SDL_CreateThread(threadEnvio, "nv-upload", NULL);
-  if (!envioThread) {
-    if (envioAcordar) SDL_DestroySemaphore(envioAcordar);
-    envioAcordar = NULL;
-#ifdef NV_ANDROID
-    eglDestroyContext(envioDisplay, envioEgl);
-    eglDestroySurface(envioDisplay, envioPbuffer);
-#else
-    SDL_GL_DeleteContext(envioContexto); envioContexto = NULL;
-#endif
-  }
-}
-
-static void encerrarEnvioAsync(void) {
-  if (!envioThread) return;
-  /* Shutdown may wait for the driver; ordinary frames never join this worker. */
-  while (SDL_AtomicGet(&envioEstado) == 1) SDL_Delay(1);
-  SDL_AtomicSet(&envioEstado, -1);
-  SDL_SemPost(envioAcordar);
-  SDL_WaitThread(envioThread, NULL); envioThread = NULL;
-  if (envioTex) glDeleteTextures(1, &envioTex);
-  envioTex = 0;
-  SDL_DestroySemaphore(envioAcordar); envioAcordar = NULL;
-#ifdef NV_ANDROID
-  eglDestroyContext(envioDisplay, envioEgl);
-  eglDestroySurface(envioDisplay, envioPbuffer);
-#else
-  SDL_GL_DeleteContext(envioContexto); envioContexto = NULL;
-#endif
-}
-
-static int bombearAsync(int maximo) {
-  int subiu = 0;
-  if (maximo <= 0 || !envioThread) return 0;
-  int estado = SDL_AtomicGet(&envioEstado);
-  if (estado == 1 || estado < 0 || SDL_TryLockMutex(mtx) != 0) return 0;
-  if (estado == 2) {
-    Item *it = &itens[envioAlvo];
-    if (envioErro) {
-      it->sup = NULL;
-      if (it->tex) desistir(envioAlvo);
-      else {
-        it->estado = FALHOU; it->falhas++;
-        it->tentarEm = SDL_GetTicks() + 2000;
-      }
-    } else {
-      if (it->tex) {
-        gfx_tex_esquecer(it->tex);
-        glDeleteTextures(1, &it->tex);
-        bytesUsados -= bytesTextura(it);
-      }
-      it->tex = envioTex; it->w = envioSup->w; it->h = envioSup->h;
-      it->mip = envioMip; it->estado = PRONTO;
-      it->sup = NULL; it->urgente = 0; it->falhas = 0;
-      bytesUsados += bytesTextura(it);
-      tex_upl_n++; tex_upl_bytes += (long)it->w * it->h * 4;
-      subiu = 1;
-    }
-    liberarSup(envioSup); envioSup = NULL; envioTex = 0;
-    SDL_AtomicSet(&envioEstado, 0);
-  }
-  unsigned char blocked[MAX_ITENS_ABS] = {0};
-  for (int passo = 0; passo < nMax; passo++) {
-    int alvo = -1;
-    for (int i = 0; i < nMax; i++)
-      if (!blocked[i] && itens[i].estado == DECODIFICADO && itens[i].sup &&
-          (alvo < 0 || itens[i].urgente > itens[alvo].urgente)) alvo = i;
-    if (alvo < 0) break;
-    Item *it = &itens[alvo];
-    SDL_Surface *s = it->sup;
-    int mip = temPiramide(s->w, s->h, it->card) &&
-              (!mipCpuAtivo() || s->userdata);
-    long extra = bytesTexturaMip(s->w, s->h, mip);
-    if (it->tex) extra -= bytesTextura(it);
-    while (bytesUsados + extra > limiteBytes())
-      if (despejar(0) < 0) break;
-    if (bytesUsados + extra <= limiteBytes()) {
-      envioAlvo = alvo; envioSup = s; envioMip = mip;
-      it->estado = ENVIANDO;
-      SDL_AtomicSet(&envioEstado, 1);
-      SDL_SemPost(envioAcordar);
-      break;
-    }
-    blocked[alvo] = 1;  // Retry next frame; smaller uploads may still fit.
-  }
-  SDL_UnlockMutex(mtx);
-  return subiu;
-}
-#endif
-
 int tex_bombear(int max_por_quadro) {
-#if defined(NV_ANDROID) || defined(NV_TEX_ASYNC_TEST)
-  /* Failed shared-context startup must never restore frame-thread uploads.
-   * Keep decoded art queued and existing textures visible until shutdown. */
-  return bombearAsync(max_por_quadro);
-#endif
   int subiu = 0, trabalhou = 0, porClasse[3] = {0};
   unsigned char blocked[MAX_ITENS_ABS] = {0};
   // UMA LINHA POR SESSAO com o caminho da piramide e a GPU: e o que separa,
@@ -4875,8 +4672,7 @@ void tex_estatisticas(int *nItens, int *nPend, long *bytes,
       a++; b += t;
       if (quente(&itens[i])) { q++; bq += t; }
     }
-    if (itens[i].estado == PENDENTE || itens[i].estado == DECODIFICADO ||
-        itens[i].estado == ENVIANDO) p++;
+    if (itens[i].estado == PENDENTE || itens[i].estado == DECODIFICADO) p++;
   }
   SDL_UnlockMutex(mtx);
   if (nItens) *nItens = a;
