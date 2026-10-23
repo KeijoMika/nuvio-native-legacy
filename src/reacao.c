@@ -373,6 +373,11 @@ static const char *const TAGS[] = {
 // Display order is independent of the persisted tag bits.
 static const int TAG_ORDEM[] = {12, 13, 14, 2, 1, 4, 0, 3, 5, 6, 7, 8, 9, 10, 11};
 #define TAG_N 15
+// O episodio desenha os chips 3 por linha, 2 linhas por pagina, e o foco
+// anda pela MESMA grade: a pagina visivel e sempre a do foco.
+#define TAG_PAGINA 6
+#define TAG_COLS   3
+int reacao_tag_foco(void) { return c.aberto ? c.tagFoco : -1; }
 static struct { char id[40], tipo[8]; int nota, estado; unsigned tags; uint64_t sessao; } anterior;
 
 static void desfazerNota(const void *ctx) {
@@ -574,8 +579,24 @@ int reacao_evento(const SDL_Event *e, int controlesVisiveis) {
     }
     if (k == SDLK_LEFT && c.tagFoco > 0) c.tagFoco--;
     if (k == SDLK_RIGHT && c.tagFoco < TAG_N) c.tagFoco++;
-    if (k == SDLK_UP) c.tagFoco = c.tagFoco >= 5 ? c.tagFoco - 5 : 0;
-    if (k == SDLK_DOWN) c.tagFoco = c.tagFoco < TAG_N - 5 ? c.tagFoco + 5 : TAG_N;
+    if (k == SDLK_UP) {
+      // A MESMA GRADE do desenho (3 chips por linha, 6 por pagina): a
+      // pagina visivel e sempre a do foco, o OK nunca cai num chip oculto.
+      if (c.tagFoco >= TAG_N) c.tagFoco = TAG_N - 1;
+      else {
+        int linha = (c.tagFoco % TAG_PAGINA) / TAG_COLS;
+        if (linha > 0) c.tagFoco -= TAG_COLS;
+        else if (c.tagFoco >= TAG_PAGINA) c.tagFoco = (c.tagFoco / TAG_PAGINA - 1) * TAG_PAGINA + c.tagFoco % TAG_COLS;
+      }
+    }
+    if (k == SDLK_DOWN) {
+      if (c.tagFoco < TAG_N) {
+        int linha = (c.tagFoco % TAG_PAGINA) / TAG_COLS;
+        if (linha == 0 && c.tagFoco + TAG_COLS < (c.tagFoco / TAG_PAGINA + 1) * TAG_PAGINA && c.tagFoco + TAG_COLS < TAG_N) c.tagFoco += TAG_COLS;
+        else if ((c.tagFoco / TAG_PAGINA + 1) * TAG_PAGINA < TAG_N) c.tagFoco = (c.tagFoco / TAG_PAGINA + 1) * TAG_PAGINA + c.tagFoco % TAG_COLS;
+        else c.tagFoco = TAG_N;
+      }
+    }
     if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
       if (c.tagFoco == TAG_N) c.aberto = 0;
       else {
@@ -658,6 +679,24 @@ static void ponteiroResposta(int i, int b) {
 }
 int reacao_teste_foco(void) { return c.foco; }
 
+// Ponteiro na ilha de avaliacao: hover so foca; o OK do clique segue por
+// reacao_evento (o ativar NULL nao consome), como nas pilulas de reacao.
+static void ponteiroNota(int nota, int b) {
+  (void)b;
+  if (!c.aberto || c.escrevendo || nota < 1 || nota > 10) return;
+  c.estrelas = 1; c.nota = nota; c.notaA = nota; c.varredura = 0; c.desde = ultimoAgora;
+}
+static void ponteiroTag(int i, int b) {
+  (void)b;
+  if (!c.aberto || c.escrevendo || i < 0 || i > TAG_N) return;
+  c.tagFoco = i; c.desde = ultimoAgora;
+}
+static void ponteiroDesfazer(int i, int b) {
+  (void)b;
+  if (!c.aberto || c.escrevendo) return;
+  c.desfazerFoco = i; c.desde = ultimoAgora;
+}
+
 #ifdef NV_TOUCH_UI
 static int reacaoTelefoneRolar(const PonteiroRolagem *e) {
   if (!c.aberto || c.escrevendo || !telefoneui_ativo()) return 0;
@@ -733,6 +772,7 @@ static void corNota(float *r, float *g, float *b) {
 
 static void estrelasDesenhar(float x, float y, float a) {
   const float t = 47.0f, g = 7.0f;
+  int reg = c.aberto && a > .99f && a < 1.01f;
   const int saved = c.passo == 2 && !strchr(c.alvo, ':');
   float v = c.nota ? notaVisivel() : reacao_nota(c.alvo);
   int i;
@@ -752,6 +792,10 @@ static void estrelasDesenhar(float x, float y, float a) {
     GfxRect r = { sx - (size - t) * .5f, y - (size - t) * .5f, size, size };
     float fill = anim_clamp((v - 2 * i) * .5f, 0, 1);
     gfx_icone(r, "pl_star", .953f, .949f, .937f, al * .27f);
+    if (reg) {
+      ponteiro_alvo(sx - 8, y - 8, t * .5f + 8, t + 16, NULL, ponteiroNota, i * 2 + 1, 0);
+      ponteiro_alvo(sx + t * .5f, y - 8, t * .5f + 8, t + 16, NULL, ponteiroNota, i * 2 + 2, 0);
+    }
     if (fill > .001f) {
       gfx_recorte(r.x, r.y, size * fill, size);
       gfx_icone(r, "pl_star-f", ar, ag, ab, al * (.85f + .15f * pulse));
@@ -861,20 +905,21 @@ static void ilhaNotaDesenhar(float baseY, float a) {
     textoNota(TXT_ILHA_ITEM, "O que ficou com você?", tx, ty + 22, a, 232);
     textoNota(TXT_ILHA_NUM, "Opcional", tx + 263, ty + 25, a, 157);
     // Six chips per page; every legacy bit remains reachable and unchanged.
-    int first = c.tagFoco < TAG_N ? c.tagFoco / 6 * 6 : 0;
+    int first = c.tagFoco < TAG_N ? c.tagFoco / TAG_PAGINA * TAG_PAGINA : 0;
     float bx = tx, by = ty + 62;
-    for (int i = first; i < TAG_N && i < first + 6; i++) {
+    for (int i = first; i < TAG_N && i < first + TAG_PAGINA; i++) {
       int bit = TAG_ORDEM[i], selected = (c.tags & (1u << bit)) != 0;
       float f = salvo && c.tagFoco == i ? 1 : 0;
       int ink = f ? 33 : selected ? 230 : 207;
       TxtLinha l = txt_linha(TXT_G18R, TAGS[bit], ink, ink, ink, 255);
       float cw = l.w + 34 + (selected ? 23 : 0);
-      if (bx + cw > tx + 642 || i == first + 5) { bx = tx; by += 54; }
+      if (i > first && ((i - first) % TAG_COLS == 0 || bx + cw > tx + 642)) { bx = tx; by += 54; }
       gfx_cor((GfxRect){bx, by, cw, 44}, .5f, selected || f ? ar : .953f,
               selected || f ? ag : .949f, selected || f ? ab : .937f,
               (f ? 1 : selected ? .16f : .08f) * a);
       if (selected) gfx_icone((GfxRect){bx + 17, by + 13, 17, 17}, "aj_check", ar, ag, ab, a);
       txt_desenhar_alpha(l, bx + 17 + (selected ? 23 : 0), by + (44 - l.h) * .5f, a);
+      if (c.aberto && a > .99f && a < 1.01f) ponteiro_alvo(bx, by, cw, 44, ponteiroTag, NULL, i, 0);
       bx += cw + 10;
     }
     ty += 160;
@@ -894,11 +939,13 @@ static void ilhaNotaDesenhar(float baseY, float a) {
   float fy = y + h - (salvo || ep ? 106 : 76);
   gfx_cor((GfxRect){tx, fy, 642, 1}, 0, 1, 1, 1, .08f * a);
   if (salvo && !ep) {
-    notaBotao(tx, fy + 21, "Desfazer", "pl_rotate-ccw", c.desfazerFoco, a, 0);
+    float dw = notaBotao(tx, fy + 21, "Desfazer", "pl_rotate-ccw", c.desfazerFoco, a, 0);
+    if (c.aberto && a > .99f && a < 1.01f) ponteiro_alvo(tx, fy + 21, dw, 56, ponteiroDesfazer, NULL, 1, 0);
     const char *keys[] = {"OK", "Voltar"}, *labels[] = {"Desfazer", "Fechar"};
     plrui_dicas(keys, labels, 2, tx + 642, fy + 49, 1, a);
   } else if (ep && salvo) {
-    notaBotao(tx, fy + 21, "Salvar avaliação", NULL, c.tagFoco == TAG_N, a, 0);
+    float sw = notaBotao(tx, fy + 21, "Salvar avaliação", NULL, c.tagFoco == TAG_N, a, 0);
+    if (c.aberto && a > .99f && a < 1.01f) ponteiro_alvo(tx, fy + 21, sw, 56, ponteiroTag, NULL, TAG_N, 0);
     const char *keys[] = {"OK", "Voltar"}, *labels[] = {"Selecionar", "Sair"};
     plrui_dicas(keys, labels, 2, tx + 642, fy + 49, 1, a);
   } else {

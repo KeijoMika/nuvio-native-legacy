@@ -108,6 +108,7 @@ void reacao_painel_desenhar(Uint32 agora);
 int  reacao_passo(void);
 // Teste do ponteiro (#99): a resposta em foco (0..2).
 int  reacao_teste_foco(void);
+int  reacao_tag_foco(void);
 
 // Para o teste de tela: abre o cartao como no player, com origem opcional.
 void reacao_teste_abrir(const char *imdb, const char *titulo, const char *midia,

@@ -208,10 +208,29 @@ static void nota(void) {
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
     CHECA(reacao_tags("tt0903747:1:2") == (3u << 12), "selected tag toggles off");
     e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
+    // Grade 3x2 por pagina: Right, Down, OK fica sempre num chip visivel
+    // (o modelo de 5 colunas pulava para a pagina escondida).
+    reacao_episodio_abrir(&s, 1, 2);
+    { SDL_Event ev = tecla(SDLK_RETURN); reacao_evento(&ev, 1); }
+    { int j;
+      for (j = 0; j < 15; j++) { e = tecla(SDLK_LEFT); reacao_evento(&e, 1); }
+      e = tecla(SDLK_RIGHT); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 1, "ep foco no segundo chip");
+      e = tecla(SDLK_DOWN); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 4, "ep baixo fica na mesma pagina");
+      e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
+      CHECA(reacao_tags("tt0903747:1:2") == (3u << 12) + 2u, "chip visivel alternado");
+      e = tecla(SDLK_DOWN); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 7, "ep terceira linha sobe de pagina");
+      e = tecla(SDLK_DOWN); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 10, "ep pagina 3 pelo baixo");
+      e = tecla(SDLK_UP); reacao_evento(&e, 1);
+      CHECA(reacao_tag_foco() == 7, "ep volta uma linha"); }
+    e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
     perfis_definir_ativo(2);
     CHECA(reacao_nota("tt0903747:1:2") == 0 && !reacao_tags("tt0903747:1:2"), "profile isolates ratings and tags");
     perfis_definir_ativo(1);
-    CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_tags("tt0903747:1:2") == (3u << 12), "ratings and tags reload from disk");
+    CHECA(reacao_nota("tt0903747:1:2") == 8 && reacao_tags("tt0903747:1:2") == (3u << 12) + 2u, "ratings and tags reload from disk");
     reacao_episodio_abrir(&s, 1, 2);
     perfis_definir_ativo(2);
     e = tecla(SDLK_RETURN); reacao_evento(&e, 1);
