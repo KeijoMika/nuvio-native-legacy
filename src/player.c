@@ -88,6 +88,7 @@ static void avisarCascaAberto(int v) { (void)v; tex_pressao_reproducao(v); }
 #include "plrguia.h"
 #include "episodios.h"
 #include "streams.h"
+#include "addons.h"
 #include "duracaook.h"
 #include "partes.h"
 #include "badges.h"
@@ -4248,7 +4249,10 @@ void player_evento(const SDL_Event *e) {
     if (abrecine_tecla(&cine, k)) return;
     if (k == SDLK_DOWN) { abrindoExp = 1; return; }
     if (k == SDLK_UP && abrindoExp) { abrindoExp = 0; return; }
-    if ((k == SDLK_RETURN || k == SDLK_KP_ENTER) && motivoInicio[0] && !abrecine_cinema(&cine)) { pedAjFonte = 1; return; }
+    if ((k == SDLK_RETURN || k == SDLK_KP_ENTER) && !abrecine_cinema(&cine)) {
+      if (stream_n() > 0 && addons_busca_parcial()) { pedFontes = 1; return; }
+      if (motivoInicio[0]) { pedAjFonte = 1; return; }
+    }
   }
 
   // PAINEL DE PAUSA: com ele de pe, a tecla e DELE. Vem antes de tudo o que
@@ -5805,14 +5809,25 @@ static void abrindoAtualizar(Uint32 agora) {
 }
 static void motivoDesenhar(GfxRect r, float a) {
   float x = r.x + 18.0f, w = r.w - 36.0f, yc = r.y + r.h - 22.0f - ABR_MOTIVO_H * 0.5f + 6.0f;
-  const char *k[1] = { "OK" }, *rt[1] = { "Ajustes" };
-  float dw = 150.0f;
+  const char *k[2], *rt[2];
+  int nk = 0;
+  float dw = 0.0f;
   TxtLinha l;
-  if (!motivoInicio[0]) return;
+  if (!motivoInicio[0] && !(stream_n() > 0 && addons_busca_parcial())) return;
+  if (motivoInicio[0]) {
+    k[nk] = "OK"; rt[nk] = "Ajustes"; nk++;
+    dw = 150.0f;
+  }
+  if (stream_n() > 0 && addons_busca_parcial()) {
+    k[nk] = "OK"; rt[nk] = "Fontes"; nk++;
+    dw = fmaxf(dw, 150.0f);
+  }
   gfx_cor((GfxRect){ x, yc - ABR_MOTIVO_H * 0.5f, w, 1.0f }, 0.0f, 1, 1, 1, 0.07f * a);
-  l = txt_linha_corta(TXT_G19M, motivoInicio, 255, 196, 90, 235, w - dw - 24.0f);
-  txt_desenhar_alpha(l, x + 6.0f, yc + 4.0f - (float)l.h * 0.5f, a);
-  plrui_dicas_video(k, rt, 1, x + w - 6.0f, yc + 4.0f, 1, a * 0.85f);
+  if (motivoInicio[0]) {
+    l = txt_linha_corta(TXT_G19M, motivoInicio, 255, 196, 90, 235, w - dw - 24.0f);
+    txt_desenhar_alpha(l, x + 6.0f, yc + 4.0f - (float)l.h * 0.5f, a);
+  }
+  plrui_dicas_video(k, rt, nk, x + w - 6.0f, yc + 4.0f, 1, a * 0.85f);
 }
 static void corpoCarregando(GfxRect r, float a, void *u) {
   float x = r.x + 18.0f, w = r.w - 36.0f, y = r.y + 22.0f;

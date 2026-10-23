@@ -257,6 +257,13 @@ static pthread_mutex_t progTrava = PTHREAD_MUTEX_INITIALIZER;
 static unsigned char progEstado[ADD_MAX];
 static unsigned char progEstadoEx[ADD_EXTRA_MAX];
 static char progNomeEx[ADD_EXTRA_MAX][48];
+// A chave da aba do plugin nasce do ID do scraper ("plugin:<id>"), o mesmo que
+// fonteExtraChave tira do bingeGroup das fontes — chavear pelo nome de exibicao
+// abria uma aba duplicada para cada plugin que entregasse fontes.
+static char progChaveEx[ADD_EXTRA_MAX][FONTEFALHA_CHAVE];
+// Sobe a cada progMarcar/progMarcarEx: a folha observa e reavalie as abas
+// mesmo quando a parte terminou sem fontes (0 ou falha nao geram Chegada).
+static _Atomic unsigned progRev;
 static Chegada progFila[ADD_MAX * 2 + ADD_EXTRA_MAX];
 static int progN;
 static int progLigado, progPublicou, progExtraPublicou;
@@ -314,6 +321,7 @@ static void progMarcar(int i, const Stream *a, int n, int estadoNovo) {
     copia = malloc(sizeof(Stream) * (size_t)n);
     if (copia) memcpy(copia, a, sizeof(Stream) * (size_t)n);
   }
+  atomic_fetch_add(&progRev, 1);
   pthread_mutex_lock(&progTrava);
   progEstado[i] = (unsigned char)estadoNovo;
   if (copia && progN < (int)(sizeof progFila / sizeof *progFila)) {
@@ -325,9 +333,11 @@ static void progMarcar(int i, const Stream *a, int n, int estadoNovo) {
 }
 
 // A parte `k` da origem extra (um scraper). Mesmo contrato de progMarcar,
-// com a ordem de exibicao ADD_MAX + k.
-static void progMarcarEx(int k, const char *nome, const Stream *a, int n, int estadoNovo) {
+// com a ordem de exibicao ADD_MAX + k. `id` identifica o scraper na chave da
+// aba ("plugin:<id>", a mesma das fontes); fallback: a das proprias fontes.
+static void progMarcarEx(int k, const char *nome, const char *id, const Stream *a, int n, int estadoNovo) {
   Stream *copia = NULL;
+  char chave[FONTEFALHA_CHAVE];
   if (k < 0 || k >= ADD_EXTRA_MAX) return;
   stream_preparar_dica_p2p(a, n);
   if (a && n > 0) {
@@ -337,9 +347,18 @@ static void progMarcarEx(int k, const char *nome, const Stream *a, int n, int es
       fonteExtraCarimbar(copia, n, k);
     }
   }
+  chave[0] = 0;
+  if (id && *id) {
+    char base[80];
+    snprintf(base, sizeof base, "plugin:%s", id);
+    fontefalha_addon_chave(base, chave, sizeof chave);
+  } else if (a && n > 0)
+    fonteExtraChave(a, chave, sizeof chave);
+  atomic_fetch_add(&progRev, 1);
   pthread_mutex_lock(&progTrava);
   progEstadoEx[k] = (unsigned char)estadoNovo;
   if (nome) snprintf(progNomeEx[k], sizeof progNomeEx[k], "%s", nome);
+  if (chave[0]) snprintf(progChaveEx[k], sizeof progChaveEx[k], "%s", chave);
   if (copia && progN < (int)(sizeof progFila / sizeof *progFila)) {
     progFila[progN].idx = ADD_MAX + k; progFila[progN].a = copia; progFila[progN].n = n;
     progN++; copia = NULL;
@@ -361,6 +380,7 @@ static void progLimpar(void) {
   progN = 0;
   memset(progEstado, 0, sizeof progEstado);
   memset(progEstadoEx, 0, sizeof progEstadoEx);
+  memset(progChaveEx, 0, sizeof progChaveEx);
   pthread_mutex_unlock(&progTrava);
   for (q = 0; q < progPubN; q++) free(progPub[q].a);
   progPubN = 0;
@@ -898,6 +918,8 @@ int addons_busca_parcial(void) {
   return fioVivo && progLigado && atomic_load(&estado) == ADD_BUSCANDO;
 }
 
+unsigned addons_parcial_rev(void) { return atomic_load(&progRev); }
+
 unsigned addons_busca_ms(void) {
   return addons_busca_parcial() ? SDL_GetTicks() - progInicio : 0;
 }
@@ -1024,6 +1046,37 @@ int addons_pendente_grupo_min(int (*f)(const char *nome, int plugin, void *u), v
     if (progEstadoEx[i] == 1 && !naoSegura(chaveEstatisticaPlugin(progNomeEx[i]))) { int g = f(progNomeEx[i], 1, u); if (g >= 0 && g < m) m = g; }
   pthread_mutex_unlock(&progTrava);
   return m;
+}
+
+static int abaEstado(unsigned char est) {
+  if (est == 1) return ADDON_ABA_BUSCANDO;
+  if (est == 3) return ADDON_ABA_FALHOU;
+  return ADDON_ABA_PRONTO;
+}
+
+int addons_parcial_abas(AddonAba *out, int max) {
+  int i, k = 0;
+  if (!out || max <= 0) return 0;
+  if (!addons_busca_parcial()) return 0;
+  pthread_mutex_lock(&progTrava);
+  for (i = 0; i < nAddon && i < ADD_MAX && k < max; i++) {
+    if (!progEstado[i]) continue;
+    snprintf(out[k].nome, sizeof out[k].nome, "%s", addon[i].nome);
+    fontefalha_addon_chave(addon[i].base, out[k].chave, sizeof out[k].chave);
+    out[k].ordem = i;
+    out[k].estado = abaEstado(progEstado[i]);
+    k++;
+  }
+  for (i = 0; i < ADD_EXTRA_MAX && k < max; i++) {
+    if (!progEstadoEx[i]) continue;
+    snprintf(out[k].nome, sizeof out[k].nome, "%s", progNomeEx[i]);
+    snprintf(out[k].chave, sizeof out[k].chave, "%s", progChaveEx[i]);
+    out[k].ordem = ADD_MAX + i;
+    out[k].estado = abaEstado(progEstadoEx[i]);
+    k++;
+  }
+  pthread_mutex_unlock(&progTrava);
+  return k;
 }
 
 int addons_ocupado(void) {
@@ -3038,7 +3091,8 @@ static int cancelaExtra(void *u) {
   PedidoExtra *p = u;
   return !nv_perfil_sessao_atual(p->sessao) || (p->cancelado && p->cancelado(p->ctx));
 }
-static void avisoExtra(void *u, int k, const char *nome, int estado, const void *fontes, int n) {
+static void avisoExtra(void *u, int k, const char *nome, const char *id,
+                       int estado, const void *fontes, int n) {
   UmaOrigem *o = u;
   PedidoExtra *p = o->pai;
   if (cancelaExtra(p)) return;
@@ -3061,7 +3115,7 @@ static void avisoExtra(void *u, int k, const char *nome, int estado, const void 
       nv_perfil_sessao_destravar();
     }
   if (nv_perfil_sessao_travar(p->sessao)) {
-    progMarcarEx(k, nome, (const Stream *)fontes, n, estado);
+    progMarcarEx(k, nome, id, (const Stream *)fontes, n, estado);
     nv_perfil_sessao_destravar();
   }
 }
@@ -3552,10 +3606,10 @@ static int cancelaConsultaCapturada(void *u) {
   if (!nv_perfil_sessao_atual(c->snapshot->sessao)) return 1;
   return c->cancelado && c->cancelado(c->ctx);
 }
-static void avisoExtraCapturado(void *u, int k, const char *nome, int estado,
-                                const void *fontes, int n) {
+static void avisoExtraCapturado(void *u, int k, const char *nome, const char *id,
+                                int estado, const void *fontes, int n) {
   ResultadoExtraCapturado *o = u;
-  (void)nome;
+  (void)nome; (void)id;
   if (fontes && n > 0 && k >= 0 && k < ADD_EXTRA_MAX) {
     const Stream *s = fontes;
     if (s->addonChave[0]) snprintf(o->chaves[k], sizeof o->chaves[k], "%s", s->addonChave);
