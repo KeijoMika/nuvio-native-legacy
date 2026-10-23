@@ -4340,7 +4340,7 @@ static unsigned folhaDadosVersao;
 static void folhaDados(void) {
   static int busy, valid;
   static struct FolhaChave {
-    unsigned revisao, regras, mortas;
+    unsigned revisao, regras, mortas, abas;
     int valores[29];
     char audio[96], qualidade[32];
     FonteFalhaConfig falhas;
@@ -4351,6 +4351,9 @@ static void folhaDados(void) {
   key.revisao = atomic_load(&folhaRevisao);
   key.regras = fonteregra_versao();
   key.mortas = fontesmortas_versao();
+  // Addon/plugin que terminou sem fontes ou falhou nao publica Chegada:
+  // sem esta chave a aba dele ficava "…"/"Buscando…" para sempre.
+  key.abas = addons_parcial_rev();
   memcpy(key.decoder, decoder4k, sizeof decoder4k);
   memcpy(key.decoder + 4, decoderFalhaAltura, sizeof decoderFalhaAltura);
   int v[] = {n, (int)listaGeracao, filtro, soMp4, soCache, soDub, atual, preferida,
