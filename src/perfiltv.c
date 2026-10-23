@@ -129,6 +129,12 @@ const char *ptv_plataforma_nome(PtvPlataforma p) {
 }
 
 int ptv_tex_auto_mb(PtvPlataforma p, long mem) {
+  if (p == PTV_ANDROID) {
+    if (!mem || mem < 1500) return 32;
+    if (mem < 3000) return 64;
+    if (mem < 4000) return 96;
+    return 128;
+  }
   if (p == PTV_TPK) {
     if (!mem) return NV_TEX_ORCAMENTO_MB;
     if (mem < 1200) return 64;
@@ -148,6 +154,7 @@ int ptv_tex_auto_mb(PtvPlataforma p, long mem) {
 }
 
 int ptv_tex_teto_mb(PtvPlataforma p, long mem) {
+  if (p == PTV_ANDROID) return ptv_tex_auto_mb(p, mem);
   if (p == PTV_TIZEN) return ptv_tex_auto_mb(p, mem);
   if (p == PTV_TPK) {
     if (!mem || mem < 1200) return 96;
