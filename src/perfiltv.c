@@ -131,9 +131,11 @@ const char *ptv_plataforma_nome(PtvPlataforma p) {
 int ptv_tex_auto_mb(PtvPlataforma p, long mem) {
   if (p == PTV_ANDROID) {
     if (!mem || mem < 1500) return 32;
-    if (mem < 3000) return 64;
-    if (mem < 4000) return 96;
-    return 128;
+    // Keep several poster rows resident; OS memory pressure still trims the cache.
+    if (mem < 2000) return 96;
+    if (mem < 3000) return 160;
+    if (mem < 4000) return 192;
+    return 256;
   }
   if (p == PTV_TPK) {
     if (!mem) return NV_TEX_ORCAMENTO_MB;
