@@ -715,6 +715,7 @@ typedef enum {
   AJ_PLR_FORMATO_POS,
   // Mostrar o codec do audio (E-AC-3, DTS-HD MA...) na fileira de formato. LOCAL, ligado de fabrica.
   AJ_PLR_CODEC,
+  AJ_SUAVIZAR_DEGRADES, // Device-local, append-only: Automatic / Strong / Off.
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -747,6 +748,7 @@ static const char *V_ARTE_TOM[] = { "Vívido", "Claro" };
 static const char *V_NT_EP[]    = { "Como na linha do título", "IMDb", "TMDB", "IMDb + TMDB", "Desligado" };
 static const char *V_PALCO_FUNDO[] = { "Cortina", "Como está", "Só arte", "Preto", "Aura", "Tríptico", "Monumento" };
 static const char *V_TITULO_FIL[] = { "Clássico", "Ilha", "Editorial", "Acento" };
+static const char *V_DEGRADES[] = { "Automático", "Forte", "Desligado" };
 static const char *V_VIDRO_QUALIDADE[] = { "Automática", "Desempenho", "Alta" };
 static const char *V_FUNDO_DIN[] = { "Cinza", "Cor", "Imersivo", "Cinza escuro" };
 // A cor do fundo "Cor" sai da paleta do acento (TEMA_ACENTO), em ordem de
@@ -1847,6 +1849,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Elenco ao pausar", V_LIGA, 2),                 // local: pausaElencoLocal
   ESC("Posição do formato no player", V_PLR_FORMATO_POS, 2),   // local: plrFormatoPosLocal
   ESC("Mostrar o codec do áudio", V_LIGA, 2),          // local: plrCodecLocal
+  ESC("Suavizar degradês", V_DEGRADES, 3),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2176,6 +2179,7 @@ static const char *CHAVE[] = {
   "pausaElencoLocal",
   "plrFormatoPosLocal",
   "plrCodecLocal",
+  "suavizarDegradesLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2997,6 +3001,7 @@ int ajustes_efeitos_automaticos(void) {
          (valor[AJ_VIDRO_FOSCO] == 2 ? 2 : 0) |
          (valor[AJ_ANIM] == 2 ? 4 : 0) | (valor[AJ_VIDRO] == 2 ? 8 : 0);
 }
+float ajustes_suavizar_degrades(void) { return valor[AJ_SUAVIZAR_DEGRADES] == 2 ? 0.0f : valor[AJ_SUAVIZAR_DEGRADES] == 1 ? 2.0f : 1.0f; }
 int ajustes_vidro_qualidade(void) { return valor[AJ_VIDRO_QUALIDADE] == 1 ? 1 : valor[AJ_VIDRO_QUALIDADE] == 2 ? 2 : gpun_efeito_ativo(1) ? 1 : 0; }   // 0 Automatica, 1 Desempenho, 2 Alta
 // Capturas do teste do vidro: NUVIO_SHOT_VIDRO_OPAC=60|70|78|86|92 e
 // NUVIO_SHOT_VIDRO_FOSCO=1 e NUVIO_SHOT_VIDRO_QUAL=0|1|2 (sem gravar nada). INTENCIONAL no release: so os
@@ -6023,6 +6028,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_TRAILER_ZOOM_TPK: /* #241: o firmware de cada Samsung reage de um jeito */
     case AJ_FUNDO:          /* o desfoque custa GPU desta TV; o web nao tem */
     case AJ_VIDRO_OPAC: case AJ_VIDRO_FOSCO: /* teste do vidro: visual desta TV */
+    case AJ_SUAVIZAR_DEGRADES: /* panel banding and grain preference, only this TV */
     case AJ_VIDRO_QUALIDADE: /* o custo do desfoque e da GPU desta TV */
     case AJ_SELO_VISTO:     /* o web nao tem a escolha */
     case AJ_OCULTAR_FILMES_VISTOS: /* por perfil desta TV; fora do blob da conta */

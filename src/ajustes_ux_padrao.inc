@@ -349,3 +349,4 @@
   1, /* cast on the pause panel: Off (V_LIGA 1) */
   1, /* player format position: Original, the top corner (V_PLR_FORMATO_POS 1) */
   0, /* show the audio codec in the format row: On (V_LIGA 0) */
+  0, /* gradient smoothing: Automatic */
