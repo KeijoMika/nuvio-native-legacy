@@ -47,7 +47,9 @@ int main(int argc,char **argv) {
   SDL_GLContext gl=SDL_GL_CreateContext(window);assert(gl);SDL_GL_SetSwapInterval(0);
   gfx_tamanho_alvo(1920,1080);assert(gfx_iniciar());assert(txt_iniciar("deploy/app",1));assert(tex_iniciar(32));
   char art[1024];assert(realpath("deploy/app/art",art));gfx_icones_dir(art);dados_iniciar(art);
-  assert(dados_gravar("ajustes.txt","idioma 0\nselected_theme 10\n")); ajustes_iniciar();
+  assert(dados_gravar("aparencia-20.txt","1\n"));
+  assert(dados_gravar("ajustes.txt","idioma 0\nselected_theme 10\n")); ajustes_iniciar(); ajustes_dir(dados_dir());
+  assert(ajustes_idioma()==0);
   // Capture uses Portuguese and the existing Arctic Blue accent setting.
   static MusAlbum a;
   const char *names[]={"filme","foco-faixa","serie","guardado"};
@@ -61,6 +63,9 @@ int main(int argc,char **argv) {
       if(mode==1) { ui.p.ativa=0; musicaui_atualizar(now); ui.p.ativa=1;ui.p.faixa=2;ui.pendente=1; }
       else musicaui_atualizar(now);
       ui.entrada=now-1000;ui.mudou=now-1000;
+      if(mode==1) {
+        VideoSimulacao sim={0}; sim.pos=12; video_simular(&sim); ui.pendente=0;
+      }
       musicaui_desenhar(now);if(frame<99)SDL_GL_SwapWindow(window);
       SDL_Delay(5);
     }

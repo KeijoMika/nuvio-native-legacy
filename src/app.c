@@ -75,6 +75,7 @@
 #include "home.h"
 #include "trailer.h"
 #include "detail.h"
+#include "musicaui.h"
 #include "menu.h"
 #include "busca.h"
 #include "spotlight.h"
@@ -4151,6 +4152,13 @@ static int relogioPedidoPagina(void) {
 }
 
 void app_evento(const SDL_Event *e) {
+  if (musicaui_aberta()) {
+    if (e->type == SDL_APP_WILLENTERBACKGROUND || e->type == SDL_APP_TERMINATING || e->type == SDL_QUIT)
+      musicaui_fechar();
+    else if (e->type == SDL_KEYDOWN || e->type == SDL_KEYUP) {
+      musicaui_evento(e); return;
+    }
+  }
   static int backRetido;
   static Uint32 backUltimo;
   // Guard before any sheet/panel consumes Back. Flagged repeats are always held;

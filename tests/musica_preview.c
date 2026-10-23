@@ -43,11 +43,11 @@ int main(void){
  ready=1;seconds=1;musicaui_atualizar(++tick);
  key(SDLK_ESCAPE);assert(ui.aberta&&!ui.p.ativa&&!active&&vol==0&&blocked);
  key(SDLK_RETURN);musicaui_atualizar(++tick);assert(active);
- key(SDLK_RETURN);assert(!active&&ui.aberta);
+ key(SDLK_RETURN);assert(!active&&ui.aberta&&vol==0);
  ui.foco=1;key(SDLK_RETURN);musicaui_atualizar(++tick);ready=1;seconds=30;
  musicaui_atualizar(++tick);assert(ui.p.ativa&&ui.p.faixa==1&&!active);
  seconds=0;musicaui_atualizar(++tick);assert(active);
- failed=1;musicaui_atualizar(++tick);assert(!active&&!ui.p.ativa);failed=0;
+ ui.foco=4;failed=1;musicaui_atualizar(++tick);assert(!active&&!ui.p.ativa&&ui.foco==1);failed=0;
  ui.foco=5;key(SDLK_RETURN);musicaui_atualizar(++tick);ended=1;
  musicaui_atualizar(++tick);assert(!active&&!ui.p.ativa);ended=0;
  ui.foco=1;startOk=0;key(SDLK_RETURN);musicaui_atualizar(++tick);assert(!active&&!ui.p.ativa);startOk=1;

@@ -123,17 +123,22 @@ void mus_cores(const unsigned char *px, int w, int h, int pitch, unsigned char *
     unsigned sum[3] = {0}; int n = 0;
     if (px && w > 0 && h > 0 && pitch >= w * 4)
       for (int dy = -3; dy <= 3; dy++) for (int dx = -3; dx <= 3; dx++) {
-        int sx = ((x + dx) * w) / 32, sy = ((y + dy) * h) / 18;
+        // Match the mock's 100px overscan before its static 90px blur.
+        int sx = ((x * 1920 / 32 + 100 + dx * 60) * w) / 2120;
+        int sy = ((y * 1080 / 18 + 100 + dy * 60) * h) / 1280;
         if (sx < 0) sx = 0; if (sx >= w) sx = w - 1;
         if (sy < 0) sy = 0; if (sy >= h) sy = h - 1;
         const unsigned char *q = px + sy * pitch + sx * 4;
-        for (int c = 0; c < 3; c++) sum[c] += q[c];
-        n++;
+        static const int weight[7] = {1,4,7,10,7,4,1};
+        int wt = weight[dx+3] * weight[dy+3];
+        for (int c = 0; c < 3; c++) sum[c] += q[c] * wt;
+        n += wt;
       }
     float lum = n ? (sum[0] * .213f + sum[1] * .715f + sum[2] * .072f) / n : 13;
     float veil = .52f * (1.0f - .7f * y / 17.0f);
     for (int c = 0; c < 3; c++) {
       float v = n ? (lum + (sum[c] / (float)n - lum) * 1.65f) * veil : 13;
+      if (n) v += (c == 0 ? 5 : c == 1 ? 8 : 15) * .7f * y / 17.0f;
       out[(y*32+x)*4+c] = (unsigned char)(v < 0 ? 0 : v > 255 ? 255 : v);
     }
     out[(y*32+x)*4+3] = 255;

@@ -1307,7 +1307,6 @@ static MusEstado musEstadoAtual(MusAlbum *out) {
   return mus_estado(ci->imdb, musTemp(), out);
 }
 static void musAbrir(void);
-static int musPagina;
 static void musPedir(void) {
   const CatItem *ci = cat_item(idx);
   if (!ci || !ci->imdb[0] || (ehSerie() && musTemp() <= 0)) return;
@@ -1931,14 +1930,14 @@ const char *detail_transicao(void) {
   if (!aberto || (fabsf(pg - pgAlvo) <= 0.02f && fabsf(velY) < 5.0f)) return "-";
   return pgAlvo < pg || velY < 0.0f ? "sobe" : "desce";
 }
-int detail_relogio_oculto(void) { return aberto && carro && !carCheia && nivel == 0; }
+int detail_relogio_oculto(void) { return musicaui_aberta() || (aberto && carro && !carCheia && nivel == 0); }
 // #407: detail_pediu_social saiu (CIMA no topo nao abre mais o painel); a
 // accessor fica para o linkage e diz 0, para o caminho de app.c nao crescer
 // um #ifdef a mais por causa de um atalho que nao existe mais.
 int detail_pediu_social(void) { return 0; }
 int detail_pediu_relogio(void) { int p = pediuRelogio; pediuRelogio = 0; return p; }
 int detail_relogio_navegavel(void) {
-  return aberto && !saindo && !sinopse_aberta() && !corpoSobArte() &&
+  return aberto && !musicaui_aberta() && !saindo && !sinopse_aberta() && !corpoSobArte() &&
          !trailer_cheia() && !trocaarte_aberto() && !reacao_aberta() &&
          !amtui_aberta() && !detmais_aberto() && !episodios_menu_aberto() &&
          !trailerCinema.oculta;
@@ -3371,12 +3370,6 @@ static void detail_evento_(const SDL_Event *e) {
   if (foco.fileira == SEC_NOTAS) {
     if (k == SDLK_RIGHT) return;
     if (k == SDLK_LEFT) { pediuMenu = 1; return; }
-  }
-  if (foco.fileira == SEC_MUSICAS && (k == SDLK_LEFT || k == SDLK_RIGHT)) {
-    static MusAlbum al;
-    if (musEstadoAtual(&al) == MUS_PRONTO)
-      musPagina = mus_pagina(musPagina, al.n, k == SDLK_RIGHT ? 1 : -1);
-    return;
   }
   if (k == SDLK_RIGHT) {
     if (!focus_mover(&foco, 1, 0) && !ehSerie() && parDir(foco.fileira) >= 0 &&
@@ -6602,17 +6595,10 @@ static void cartazColecao(GfxRect r, const char *po, float a) {
 // 130x195 em leque a direita. Foco: a pilula vira o botao no acento (o OK
 // abre a lista da saga) e o bloco sobe um degrau, sem anel.
 // Music section opens the approved full-screen album page.
-static char musChave[48];
-static void musSinc(const CatItem *ci) {
-  char k[48];
-  snprintf(k, sizeof k, "%s/%d", ci->imdb, musTemp());
-  if (strcmp(k, musChave)) { strcpy(musChave, k); musPagina = 0; }
-}
 static void musAbrir(void) {
   static MusAlbum al;
   const CatItem *ci = cat_item(idx);
   if (!ci || musEstadoAtual(&al) != MUS_PRONTO) return;
-  musSinc(ci);
   musicaui_abrir(&al, ci->imdb, ci->titulo, atoi(ci->meta), musTemp());
 }
 

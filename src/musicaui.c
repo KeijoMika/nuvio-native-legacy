@@ -18,7 +18,7 @@ static struct {
   MusAlbum a;
   MusPrevia p;
   char imdb[16], titulo[128], qrUrl[512];
-  int aberta, temp, ano, foco, guardado, suporta, pendente, som, erro;
+  int aberta, temp, ano, foco, guardado, suporta, pendente, som, erro, volumePronto;
   Uint32 entrada, mudou, toast, agora;
   GLuint qr, ambiente;
   int coresProntas;
@@ -61,13 +61,15 @@ void musicaui_abrir(const MusAlbum *a, const char *imdb, const char *titulo, int
   // Retained main playback owns the backend; closing a trailer is safe only otherwise.
   if (!ocupado()) trailer_fechar();
   mus_url_celular(ui.qrUrl, sizeof ui.qrUrl, imdb, titulo, ano, temp);
+  // The worker resolves canonical metadata from IMDb; keep long/CJK titles
+  // within the existing QR version-6 capacity without changing identity.
+  if (strlen(ui.qrUrl) > 134) mus_url_celular(ui.qrUrl, sizeof ui.qrUrl, imdb, ".", ano, temp);
   if (ui.qrUrl[0]) qr_textura(&ui.qr, ui.qrUrl);
 }
 static void tocar(int faixa, int shuffle) {
   if (!ui.suporta) return;
   if (ocupado() || (!trailer_aberto() && video_ativo())) { ui.erro = 1; ui.toast = SDL_GetTicks(); return; }
-  ui.som = trailer_aberto() ? trailer_com_som() : 1;
-  if (trailer_aberto()) trailer_fechar();
+  if (trailer_aberto()) { ui.som = trailer_com_som(); trailer_fechar(); }
   int k = mus_previa_iniciar(&ui.p, &ui.a, faixa, shuffle, SDL_GetTicks(), SDL_GetTicks(), 0);
   if (k >= 0) { ui.pendente = 1; ui.mudou = SDL_GetTicks(); ui.foco = 5 + k; }
 }
@@ -112,9 +114,9 @@ void musicaui_atualizar(Uint32 agora) {
   if (!ui.aberta) return;
   ui.agora = agora;
   if (!ui.coresProntas) {
-    unsigned char px[8*8*4], ambient[32*18*4];
+    unsigned char px[16*16*4], ambient[32*18*4];
     if (tex_cores(ui.a.capa, px)) {
-      mus_cores(px, 8, 8, 32, ambient);
+      mus_cores(px, 16, 16, 64, ambient);
       glGenTextures(1, &ui.ambiente); glBindTexture(GL_TEXTURE_2D, ui.ambiente);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 32, 18, 0, GL_RGBA, GL_UNSIGNED_BYTE, ambient);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -137,14 +139,19 @@ void musicaui_atualizar(Uint32 agora) {
       if (!video_tocar(ui.a.faixa[ui.p.faixa].previa)) {
         video_parar(); video_volume(ui.som ? 100 : 0); parar(); return;
       }
-      video_volume(100); ui.pendente = 0; ui.p.desde = agora;
+      video_volume(100); ui.volumePronto = 0; ui.pendente = 0; ui.p.desde = agora;
     } else {
+      // uMS and TPK may ignore volume before their load/playing event.
+      if (!ui.volumePronto && (video_pronto() || video_tocando())) {
+        video_volume(100); ui.volumePronto = 1;
+      }
       int old = ui.p.faixa;
       int next = mus_previa_passo(&ui.p, agora, video_pos(), video_tocando() || video_pronto() || video_pos() > 0,
                                   video_falhou() ? MUS_PREV_ERRO : video_terminou() ? MUS_PREV_FIM : MUS_PREV_CONTINUA);
       if (next != old) {
         video_parar(); video_volume(ui.som ? 100 : 0);
         if (next >= 0) { ui.pendente = 1; ui.foco = 5 + next; ui.mudou = agora; }
+        else if (ui.foco == 4) ui.foco = ui.suporta ? 1 : 3;
       }
     }
   }
@@ -173,7 +180,7 @@ static void botao(int foco, const char *label, const char *icon, float x, float 
   txt_desenhar_alpha(l,x+63,y+(60-l.h)*.5f,1);
 }
 static void ilha(GfxRect r) {
-  gfx_cor(r, .5f, .055f,.059f,.071f, ajustes_vidro() ? .9f : 1);
+  gfx_cor(r, r.h > 60 ? 26.0f/r.h : .5f, .055f,.059f,.071f, ajustes_vidro() ? .9f : 1);
 }
 void musicaui_desenhar(Uint32 agora) {
   if (!ui.aberta) return;
@@ -184,24 +191,33 @@ void musicaui_desenhar(Uint32 agora) {
   float ent = ajustes_animacoes_reduzidas() ? 1 : ease((agora-ui.entrada)/360.0f);
   float header = ajustes_animacoes_reduzidas() ? 1 : ease(((float)(agora-ui.entrada)-80)/300.0f);
   float cx = 108 - 28*(1-ent), cy = 185, hy = 16*(1-header);
-  ilha((GfxRect){72,48,56,56}); icone("aj_corner-up-left",88,64,24,1);
+  ilha((GfxRect){72,48,56,56}); icone("mus_back",88,64,24,1);
   char buf[512];
-  snprintf(buf,sizeof buf,"%s   /   %s   /   %s",i18n(ui.temp ? "Séries" : "Filmes"),ui.titulo,i18n("Música"));
-  texto(TXT_G22M,buf,152,64,1440,.66f);
+  const char *crumbs[] = {i18n(ui.temp ? "Séries" : "Filmes"), ui.titulo, i18n("Música")};
+  float bx = 152;
+  for (int i = 0; i < 3; i++) {
+    if (i) { texto(TXT_G22M,"/",bx,64,20,.3f); bx += 34; }
+    TxtLinha l = txt_linha(TXT_G22M,crumbs[i],243,242,239,255);
+    txt_desenhar_alpha(l,bx,64,i==2?1:.66f); bx+=l.w+22;
+  }
   time_t now = time(NULL); struct tm tm; localtime_r(&now,&tm); strftime(buf,sizeof buf,"%H:%M",&tm);
   ilha((GfxRect){1740,48,108,56}); texto(TXT_G20M,buf,1764,65,80,1);
   if (ui.foco == 0) gfx_cor((GfxRect){72,48,56,56},.5f,1,1,1,.13f);
   gfx_rect((GfxRect){cx-25,cy+10,500,520},0,GFX_SOMBRA,.36f,0,0,.052f,0,0,0,ent);
-  if (capa) gfx_rect((GfxRect){cx,cy,450,450},capa,GFX_CARD,0,0,0,26.0f/450,0,0,0,ent);
+  if (capa) gfx_rect((GfxRect){cx,cy,450,450},capa,GFX_ARTE,0,0,0,26.0f/450,0,0,0,ent);
   txt_tracking(TXT_MUS_KICK,i18n("A MÚSICA POR TRÁS DA HISTÓRIA"),243,242,239,cx,673,.66f*ent,2.24f);
-  txt_bloco_corta(TXT_G22M,i18n("Reviva a história, uma faixa de cada vez."),243,242,239,cx,710,425,33,ent*.66f,2);
-  gfx_cor((GfxRect){108,800,450,1},0,1,1,1,.1f);
+  const char *note = i18n("Reviva a história, uma faixa de cada vez.");
+  if (!strcmp(ui.imdb,"tt0468569")) note = i18n("Da primeira nota de tensão ao último acerto de contas em Gotham.");
+  if (!strcmp(ui.imdb,"tt0944947")) note = i18n("Volte a Westeros, um tema de cada vez.");
+  float nh = txt_bloco_corta(TXT_G22M,note,243,242,239,cx,710,425,33,ent*.66f,2);
+  float phoneY = 710+nh+32;
+  gfx_cor((GfxRect){108,phoneY,450,1},0,1,1,1,.1f);
   if (ui.qr) {
-    gfx_cor((GfxRect){108,825,96,96},.1f,.953f,.949f,.937f,1);
-    gfx_rect((GfxRect){115,832,82,82},ui.qr,GFX_SNAP,0,0,0,0,0,0,0,1);
-    texto(TXT_G20M,i18n("Abrir no celular"),224,836,330,1);
-    texto(TXT_MUS_17,"Spotify / Apple Music / YouTube",224,869,340,.66f);
-    texto(TXT_MUS_17,i18n("Aponte a câmera para abrir o álbum"),224,896,340,.66f);
+    gfx_cor((GfxRect){108,phoneY+25,96,96},10.0f/96,.953f,.949f,.937f,1);
+    gfx_rect((GfxRect){115,phoneY+32,82,82},ui.qr,GFX_SNAP,0,0,0,0,0,0,0,1);
+    texto(TXT_G20M,i18n("Abrir no celular"),224,phoneY+36,330,1);
+    texto(TXT_MUS_17,"Spotify / Apple Music / YouTube",224,phoneY+69,340,.66f);
+    texto(TXT_MUS_17,i18n("Aponte a câmera para abrir o álbum"),224,phoneY+96,340,.66f);
   }
   const float x = 650, w = 1162;
   char kicker[160], season[64];
@@ -218,15 +234,19 @@ void musicaui_desenhar(Uint32 agora) {
   snprintf(buf,sizeof buf,"%d · %s · %s · %s",ui.a.ano ? ui.a.ano : ui.ano,i18n("Trilha sonora"),tracks,minutes);
   texto(TXT_G20M,buf,x,316+hy,w,.66f*header);
   if (ui.suporta) {
-    botao(1,i18n("Tocar prévias"),"aj_play",x,364,239);
-    botao(2,i18n("Aleatório"),"aj_shuffle",901,364,200);
+    botao(1,i18n("Tocar prévias"),"aj_play",x,370,219);
+    botao(2,i18n("Aleatório"),"aj_shuffle",881,370,176);
   }
   TxtLinha save = txt_linha(TXT_G22M,i18n(ui.guardado ? "Salvo" : "Salvar"),243,242,239,255);
-  botao(3,i18n(ui.guardado ? "Salvo" : "Salvar"),ui.guardado ? "aj_check" : "aj_bookmark",1812-save.w-89,364,save.w+89);
-  txt_tracking(TXT_MUS_KICK,i18n("Faixas"),243,242,239,670,451,.66f,1.6f);
-  gfx_cor((GfxRect){1470,443,140,34},8.0f/34,.055f,.059f,.071f,.72f); texto(TXT_MUS_16,"Apple Music",1483,448,130,1);
+  botao(3,i18n(ui.guardado ? "Salvo" : "Salvar"),ui.guardado ? "aj_check" : "aj_bookmark",1812-save.w-89,370,save.w+89);
+  char upper[256];
+  snprintf(upper,sizeof upper,"%s",i18n("Faixas"));
+  for (char *p=upper;*p;p++) if(*p>='a'&&*p<='z')*p-=32;
+  txt_tracking(TXT_MUS_16,upper,243,242,239,670,455,.66f,1.6f);
+  gfx_cor((GfxRect){1490,447,120,34},8.0f/34,.055f,.059f,.071f,.72f); texto(TXT_MUS_16,"Apple Music",1503,455,106,1);
   snprintf(buf,sizeof buf,"%s · %s",i18n("Prévia"),i18n("Duração"));
-  texto(TXT_MUS_16,buf,1630,451,183,.66f);
+  for (char *p=buf;*p;p++) if(*p>='a'&&*p<='z')*p-=32;
+  texto(TXT_MUS_16,buf,1630,455,183,.66f);
   int page = pagina(), first = page*MUS_POR_PAGINA;
   float ar,ag,ab; ajustes_acento(&ar,&ag,&ab);
   for (int j = 0; j < MUS_POR_PAGINA && first+j < ui.a.n; j++) {
@@ -240,7 +260,8 @@ void musicaui_desenhar(Uint32 agora) {
         gfx_cor((GfxRect){681+bar*8,y+28-h*.5f,4,h},.5f,ar,ag,ab,1);
       }
     } else { snprintf(buf,sizeof buf,"%d",ui.a.faixa[k].n ? ui.a.faixa[k].n : k+1); texto(TXT_G20M,buf,686,y+17,45,.66f); }
-    texto(TXT_MUS_TRACK,ui.a.faixa[k].titulo,732,y+1,830,header);
+    TxtLinha title = txt_linha_corta(TXT_MUS_TRACK,ui.a.faixa[k].titulo,243,242,239,255,830);
+    txt_desenhar_tom(title,732,y+1,playing?ar:1,playing?ag:1,playing?ab:1,header);
     texto(TXT_MUS_17,ui.a.faixa[k].artista,732,y+31,830,.66f*header);
     const char *tag = ui.suporta && ui.a.faixa[k].previa[0] ? "30 s" : i18n("Indisponível");
     TxtLinha lt = txt_linha(TXT_MUS_16,tag,243,242,239,255);
@@ -257,7 +278,7 @@ void musicaui_desenhar(Uint32 agora) {
     float anim = ajustes_animacoes_reduzidas() ? 1 : ease((agora-ui.mudou)/220.0f);
     float y = 914+12*(1-anim);
     ilha((GfxRect){650,y,1162,88});
-    if(capa) gfx_rect((GfxRect){672,y+16,56,56},capa,GFX_CARD,0,0,0,8.0f/56,0,0,0,1);
+    if(capa) gfx_rect((GfxRect){672,y+16,56,56},capa,GFX_ARTE,0,0,0,8.0f/56,0,0,0,1);
     texto(TXT_G20M,ui.a.faixa[ui.p.faixa].titulo,746,y+18,460,1);
     texto(TXT_MUS_16,i18n("Tocando prévia de 30 segundos"),746,y+49,460,.66f);
     double sec = ui.pendente ? 0 : video_pos(); if(sec<0)sec=0;if(sec>30)sec=30;
@@ -269,13 +290,15 @@ void musicaui_desenhar(Uint32 agora) {
     icone("mus_square",1756,y+34,20,1);
   }
   if (ui.toast && agora-ui.toast<3500u && (ui.guardado || ui.erro)) {
-    ilha((GfxRect){1320,114,528,90}); icone("aj_check",1346,145,24,.85f);
-    texto(TXT_G20M,i18n(ui.erro ? "Pare o vídeo antes de tocar prévias" : "Álbum salvo"),1385,132,450,1);
-    if (!ui.erro) texto(TXT_MUS_17,i18n("Encontre em Listas › Músicas"),1385,163,450,.66f);
+    float width = ui.erro ? 528 : 310, tx = 1848-width;
+    gfx_cor((GfxRect){tx,114,width,84},28.0f/84,.055f,.059f,.071f,ajustes_vidro()?.94f:1);
+    icone("aj_check",tx+26,143,24,.85f);
+    texto(TXT_G20M,i18n(ui.erro ? "Pare o vídeo antes de tocar prévias" : "Álbum salvo"),tx+65,132,width-85,1);
+    if (!ui.erro) texto(TXT_MUS_17,i18n("Encontre em Listas › Músicas"),tx+65,163,width-85,.66f);
   }
   gfx_cor((GfxRect){108,1010,36,28},.25f,1,1,1,.09f); texto(TXT_G14B,"OK",116,1017,36,1);
   texto(TXT_G18R,i18n(ui.p.ativa ? "Parar prévia" : ui.suporta ? "Tocar prévia de 30 segundos" : "Selecionar"),153,1015,450,.66f);
-  gfx_cor((GfxRect){470,1010,75,28},.25f,1,1,1,.09f); texto(TXT_G14B,i18n("Voltar"),478,1017,75,1);
-  texto(TXT_G18R,i18n("Voltar ao título"),554,1015,350,.66f);
-  texto(TXT_MUS_16,i18n("Trilha original · Prévias de áudio"),1550,1017,290,.66f);
+  gfx_cor((GfxRect){409,1010,50,28},.25f,1,1,1,.09f); texto(TXT_G14B,i18n("Voltar"),416,1017,50,1);
+  texto(TXT_G18R,i18n("Voltar ao título"),468,1015,350,.66f);
+  texto(TXT_MUS_16,i18n("Trilha original · Prévias de áudio"),1595,1017,290,.66f);
 }

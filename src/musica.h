@@ -1,7 +1,5 @@
-// MUSICAS do titulo: a trilha sonora original (filme ou temporada) vinda do
-// servico de recomendacoes (NV_REC_URL/musica/v1, MusicBrainz + iTunes) e a
-// lista "Guardadas" do perfil. Sem Spotify/Apple Music: o app so MOSTRA a
-// trilha e entrega um QR para abrir a busca no celular (NV_REC_URL/m/).
+// Film/season soundtrack from NV_REC_URL/musica/v1, bounded iTunes previews,
+// and the active profile's saved albums. Full albums open through the phone QR.
 #ifndef NV_MUSICA_H
 #define NV_MUSICA_H
 
