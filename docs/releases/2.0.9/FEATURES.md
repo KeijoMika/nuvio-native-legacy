@@ -34,6 +34,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Fixes
 
+- **Consistent collection timeline spacing**: Collection timeline cells use the same height for layout and drawing, keeping rows aligned. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `3e00f1e4b`, merge `9b5511cda`.
+
 - **Keyboard crash recovery**: If the webOS system keyboard crashes or fails to appear on webOS 26, input falls back to the app keyboard so you can continue searching and editing fields. Platforms: webOS. Refs: #642, `831cfca4a`, `749f6a0e5`, `481f890b0`.
 
 - **Next episode focus and playback exit**: Series focus follows the next episode, and playback exits at the end when the post-play prompt has already been dismissed. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #674, #675, `9e3cf67d8`.
@@ -111,6 +113,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Performance
 
+- **Bounded source parsing**: Large source responses avoid repeated scans across unrelated stream objects, reducing source-list parsing delays. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-streamparse-quad`, `e8883d07d`; merge `31b2a6cb9`.
+
 - **More reliable soundtrack lookup**: When iTunes throttles requests, fall back to Deezer (with 30-second previews) and MusicBrainz instead of returning empty, and stop caching a miss too early. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `2823b3c7f`.
 
 - **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Row residency and shared artwork budgets are enforced and restored on Android. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, `483ff3348`, `a81e27c2c`, `2c3854211`, `395189bf0`, `b6ba4c9ff`, merge `90e5b321a`.
@@ -129,7 +133,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Internal
 
-- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `76f31a538`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
@@ -148,7 +152,6 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 ## Pending (not integrated yet)
 
 
-- **Bounded source parsing**: Large source responses avoid repeated scans across unrelated stream objects, reducing source-list parsing delays. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-streamparse-quad`, `e8883d07d`; done, awaiting review and integration.
 
 - **Hero size setting**: Choose how large the Home hero appears, and the reserved layout scales with your choice. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-herotamanho`, `agente/205-porta-perdidos`, `4bada8211`.
 
