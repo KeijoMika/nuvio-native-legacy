@@ -2081,7 +2081,7 @@ static void capacidadesDoManifesto(int i, const char *corpo) {
     addon[i].soVivo = manifestoSoVivo(corpo, addon[i].canal, addon[i].nCanal);
     __atomic_store_n(&addon[i].sondado, 1, __ATOMIC_RELEASE);
     printf("[addons] %s: manifesto sem \"resources\" legivel; capacidades ficam supostas%s\n",
-           addon[i].nome, addon[i].soVivo ? " (so ao vivo)" : "");
+           addon[i].nome, addon[i].soVivo ? " soVivo=1" : "");
     fflush(stdout);
     return;
   }
