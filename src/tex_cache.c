@@ -651,11 +651,14 @@ static void amostrar(void);
 // no cache, e o LRU sabe despejar; jogar fora custa o decode inteiro outra vez.
 static int pedidoObsoleto(const Item *it) {
   Uint32 agora;
-  if (!it->ultimoPedido || !it->ultimoQuadro) return 0;
+  // Only ultimoQuadro is sentinel: SDL_GetTicks may return 0 at startup, and a
+  // real request at tick zero was treated as never requested (flaky abandon).
+  if (!it->ultimoQuadro) return 0;
   if (it->sup || it->lookahead) return 0;   /* ja decodificado: nao se joga fora o que custou */
   agora = SDL_GetTicks();
   return quadroAtual > it->ultimoQuadro + NV_TEX_STALE_FRAMES &&
-         agora - it->ultimoPedido >= NV_TEX_STALE_MS;
+         (it->ultimoPedido > agora ||
+          agora - it->ultimoPedido >= NV_TEX_STALE_MS);
 }
 
 static void podar(void);
