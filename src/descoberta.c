@@ -8932,40 +8932,54 @@ static int deMetaTrakt(const char *p, const char *f, const char *midia,
 // do TMDB — mesma lista de chaves que applyTmdbDiscoverFilters do web.
 static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv) {
   const char *fim = filtros ? filtros + strlen(filtros) : NULL;
-  static const struct { const char *js, *url; int soTv; } M[] = {
+  static const struct { const char *js, *url; int tipo; /* 0 string, 1 TV string, 2 number */ } M[] = {
     {"withGenres","with_genres",0}, {"withoutGenres","without_genres",0},
-    {"voteAverageGte","vote_average.gte",0}, {"voteAverageLte","vote_average.lte",0},
-    {"voteCountGte","vote_count.gte",0},
+    {"voteAverageGte","vote_average.gte",2}, {"voteAverageLte","vote_average.lte",2},
+    {"voteCountGte","vote_count.gte",2},
     {"withOriginalLanguage","with_original_language",0},
     {"withOriginCountry","with_origin_country",0},
     {"withKeywords","with_keywords",0}, {"withoutKeywords","without_keywords",0},
     {"withCompanies","with_companies",0}, {"withoutCompanies","without_companies",0},
     {"withNetworks","with_networks",1},
-    {"withRuntimeGte","with_runtime.gte",0}, {"withRuntimeLte","with_runtime.lte",0},
+    {"withRuntimeGte","with_runtime.gte",2}, {"withRuntimeLte","with_runtime.lte",2},
   };
   char v[128];
   size_t u;
   if (!filtros || *filtros != '{') return;
   for (u = 0; u < sizeof M / sizeof *M; u++) {
-    if (M[u].soTv && !isTv) continue;
+    if (M[u].tipo == 1 && !isTv) continue;
+    if (M[u].tipo == 2) {
+      double valor = js_num(filtros, fim, M[u].js, -1);
+      if (valor >= 0)
+        snprintf(q + strlen(q), n - strlen(q), "&%s=%g", M[u].url, valor);
+      continue;
+    }
     if (js_texto(filtros, fim, M[u].js, v, sizeof v) && v[0])
       snprintf(q + strlen(q), n - strlen(q), "&%s=%s", M[u].url, v);
   }
   if (js_texto(filtros, fim, "releaseDateGte", v, sizeof v) && v[0])
     snprintf(q + strlen(q), n - strlen(q), "&%s.gte=%s",
-             isTv ? "first_air_date" : "release_date", v);
+             isTv ? "first_air_date" : "primary_release_date", v);
   if (js_texto(filtros, fim, "releaseDateLte", v, sizeof v) && v[0])
     snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
-             isTv ? "first_air_date" : "release_date", v);
+             isTv ? "first_air_date" : "primary_release_date", v);
   { long ano = (long)js_num(filtros, fim, "year", 0.0);
     if (ano > 0)
       snprintf(q + strlen(q), n - strlen(q), "&%s=%ld",
                isTv ? "first_air_date_year" : "year", ano); }
-  if (js_texto(filtros, fim, "withWatchProviders", v, sizeof v) && v[0]) {
-    char reg[8] = "";
-    js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
-    snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s&with_watch_providers=%s",
-             reg[0] ? reg : "US", v);
+  { char sem[128] = "", reg[8] = "";
+    v[0] = 0;
+    js_texto(filtros, fim, "withWatchProviders", v, sizeof v);
+    js_texto(filtros, fim, "withoutWatchProviders", sem, sizeof sem);
+    if (v[0] || sem[0]) {
+      js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
+      snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s", reg[0] ? reg : "US");
+    }
+    if (v[0])
+      snprintf(q + strlen(q), n - strlen(q),
+               "&with_watch_providers=%s&with_watch_monetization_types=flatrate|free|ads|rent|buy", v);
+    if (sem[0])
+      snprintf(q + strlen(q), n - strlen(q), "&without_watch_providers=%s", sem);
   }
 }
 
