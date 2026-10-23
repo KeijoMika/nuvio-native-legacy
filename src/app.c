@@ -62,6 +62,7 @@
 #include "guia.h"
 #include "livetvdiag.h"
 #include "proxyts.h"
+#include "webosver.h"
 #include "livetv_regras.h"
 #include "livestall.h"
 #include "bufavanco.h"
@@ -448,6 +449,7 @@ static NvLiveStall liveStall;             // vigia de trava do canal (livestall.
 // canalFonteIdx foi entregue ao player por proxyts; se ela morrer, a MESMA
 // fonte e tentada direto antes de passar para a proxima.
 static int    canalViaProxy;
+static int    canalDiretoTentado;
 static Uint32 canalFonteDesde;            // quando a fonte atual foi pedida
 // So o automatico usa o fallback. Uma escolha manual e uma decisao explicita
 // do dono e nao pode ser trocada por outra fonte por tras da tela.
@@ -1235,22 +1237,34 @@ static void renovarListaDoPlayer(void) {
 // que ja tocava nao muda. Desligado em Ajustes > Live TV, como no Xtream.
 static const char *urlCanal(const Stream *s, char *buf, size_t n) {
   const char *id = player_id_canal();
-  canalViaProxy = 0;
+  canalViaProxy = canalDiretoTentado = 0;
   if (s && xtream_url_limitada(s->url)) return s->url;
   if (!s) return "";
   // Toda troca de fonte do guia passa aqui, inclusive a do watchdog.
   video_definir_cabecalhos(s->cabecalhos);
+  int salvoProxy = guia_proxy_do_canal(id, -1);
+  int usarProxy = salvoProxy < 0 ? ajustes_livetv_proxy() : salvoProxy;
+  // A source-specific diagnostic overrides the direct continuous-TS shortcut.
+  if (salvoProxy == 1 && proxyts_disponivel() &&
+      proxyts_candidata(s->url, s->mp4) &&
+      strlen(s->url) + strlen(PROXYTS_PREFIXO) < n) {
+    proxyts_definir_cabecalhos(s->cabecalhos);
+    snprintf(buf, n, "%s%s", PROXYTS_PREFIXO, s->url);
+    canalViaProxy = 1;
+    return buf;
+  }
   // Confirmed TS already plays directly; avoid another probe and a local 302.
   if (s->tsContinuo) {
     proxyts_definir_cabecalhos("");
     return s->url;
   }
   if (!strncmp(s->url, PROXYTS_PREFIXO, strlen(PROXYTS_PREFIXO))) {
-    // Xtream: a lista ja vem marcada, e sem cabecalho de addon.
+    // Xtream: the list already selected the proxy route.
+    canalViaProxy = 1;
     proxyts_definir_cabecalhos(s->cabecalhos);
     return s->url;
   }
-  if (id[0] && !xtream_e_id(id) && !stalker_e_id(id) && ajustes_livetv_proxy() &&
+  if (id[0] && !xtream_e_id(id) && !stalker_e_id(id) && usarProxy &&
       proxyts_disponivel() && proxyts_candidata(s->url, s->mp4) &&
       strlen(s->url) + strlen(PROXYTS_PREFIXO) < n) {
     proxyts_definir_cabecalhos(s->cabecalhos);
@@ -1263,6 +1277,43 @@ static const char *urlCanal(const Stream *s, char *buf, size_t n) {
   }
   proxyts_definir_cabecalhos("");
   return s->url;
+}
+
+// Return whether the current guide source was retried before advancing.
+static int retentarCanal(void) {
+  const Stream *mesma = stream_item(canalFonteIdx);
+  if (canalViaProxy) {
+    if (canalDiretoTentado) return 0;
+    int redir = proxyts_redirecionou();
+    canalViaProxy = 0;
+    if (mesma && !redir) {
+      proxyts_definir_cabecalhos("");
+      canalFonteDesde = SDL_GetTicks();
+      canalDiretoTentado = 1;
+      const char *url = mesma->url;
+      if (!strncmp(url, PROXYTS_PREFIXO, strlen(PROXYTS_PREFIXO)))
+        url += strlen(PROXYTS_PREFIXO);
+      printf("[canal] source %d: proxy failed, retrying direct\n", canalFonteIdx);
+      player_definir_fonte(url);
+      return 1;
+    }
+    canalDiretoTentado = 1;
+  }
+  if (!canalDiretoTentado && mesma && nv_webos_major() > 0 &&
+      video_buffer_fim() > 0 && !video_decoder_anunciou() &&
+      proxyts_disponivel() && proxyts_candidata(mesma->url, mesma->mp4)) {
+    static char url[4200];
+    if (strlen(mesma->url) + strlen(PROXYTS_PREFIXO) >= sizeof url) return 0;
+    canalDiretoTentado = canalViaProxy = 1;
+    video_definir_cabecalhos(mesma->cabecalhos);
+    proxyts_definir_cabecalhos(mesma->cabecalhos);
+    snprintf(url, sizeof url, "%s%s", PROXYTS_PREFIXO, mesma->url);
+    canalFonteDesde = SDL_GetTicks();
+    printf("[canal] source %d: buffered without decoder, retrying proxy-ts\n", canalFonteIdx);
+    player_definir_fonte(url);
+    return 1;
+  }
+  return 0;
 }
 
 static int tocarFonteGuardada(void) {
@@ -1450,7 +1501,7 @@ static int resolverCanalXtream(void) {
       // pelo proxy local — HLS (ou .ts que o painel responde com playlist) vira
       // TS continuo; o que ja e TS continuo o proxy redireciona direto. As
       // fontes diretas ficam atras, de reserva.
-      if (!i && !xtream_conexoes_limitadas() && ajustes_livetv_proxy() && proxyts_disponivel() && n < (int)(sizeof s / sizeof *s) - 1) {
+      if (!i && !xtream_conexoes_limitadas() && guia_proxy_do_canal(player_id_canal(), ajustes_livetv_proxy()) && proxyts_disponivel() && n < (int)(sizeof s / sizeof *s) - 1) {
         snprintf(s[n].url, sizeof s[n].url, "%s%s", PROXYTS_PREFIXO, url);
         if (strcmp(ord[j].id, player_id_canal()) && ord[j].nome[0])
           snprintf(s[n].rotulo, sizeof s[n].rotulo, "Xtream (%s, proxy) · %s", f, ord[j].nome);
@@ -6287,26 +6338,9 @@ void app_atualizar(float dt, Uint32 agora) {
       fflush(stdout);
       int prox = stream_canal_proxima(canalFonteIdx);
       const Stream *s;
-      // PELO PROXY NAO ABRIU: a MESMA fonte direto, antes da proxima (#283).
-      // Cobre o HLS que o proxy nao converte (cifrado, fMP4, audio a parte) e
-      // a TV em que o motor HLS do uMS toca melhor que o TS continuo. Se o
-      // proxy so redirecionou, a tentativa direta ja foi esta.
-      if (canalViaProxy) {
-        const Stream *mesma = stream_item(canalFonteIdx);
-        int redir = proxyts_redirecionou();
-        canalViaProxy = 0;
-        if (mesma && !redir) {
-          printf("[canal] fonte %d pelo proxy nao abriu (%s); tentando direto\n", canalFonteIdx,
-                 video_falhou() ? video_erro_texto()
-                                : semDecoder ? "dado sem decoder" : "sem dado no prazo");
-          fflush(stdout);
-          marco("canal: proxy falhou, fonte direto");
-          proxyts_definir_cabecalhos("");
-          canalFonteDesde = SDL_GetTicks();
-          player_definir_fonte(mesma->url);
-          return;
-        }
-      }
+      // Try the other route once before advancing: proxy -> direct (#283),
+      // or webOS direct -> proxy when bytes arrived without a decoder (#625).
+      if (retentarCanal()) return;
       // PORTAL STALKER: nao existe "proxima fonte" — cada canal tem uma so, e
       // o que morre nao e o canal, e o LINK, que vale minutos. Avancar o indice
       // aqui cairia direto no ramo de desistir, entao o conserto e pedir um
@@ -6508,7 +6542,7 @@ void app_atualizar(float dt, Uint32 agora) {
       }
       // Escolha manual num canal tambem entra no watchdog: fonte viva escolhida
       // a dedo pode morrer igual.
-      if (player_id_canal()[0]) { canalFonteIdx = fonte; canalFonteDesde = SDL_GetTicks(); canalViaProxy = 0; }
+      if (player_id_canal()[0]) { canalFonteIdx = fonte; canalFonteDesde = SDL_GetTicks(); canalViaProxy = canalDiretoTentado = 0; }
     }
   }
   if (aguardandoFonte != 2 && player_pediu_fontes()) {
