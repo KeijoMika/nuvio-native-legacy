@@ -717,6 +717,19 @@ int main(int argc, char **argv) {
     ajustes_dir(dados_dir()); }
 
   montarCatalogo();
+  if (getenv("NV_674_SHOTS")) {
+    itens[0].progresso = 0;
+    cat_definir_tudo(itens, 2, &filEnsaio, 1);
+    cat_definir_episodios(0, episodios, T1_N + T2_N + T3_N);
+    semear(1, T1_N, T1_N); semear(2, T2_N, 8); semear(3, T3_N, 0);
+    HomeItem hi = {0}; hi.indice = 0;
+    detail_abrir(&hi); quadros(120);
+    nivel = 1; foco.fileira = SEC_EPISODIOS;
+    foco.coluna = foco.colunaLembrada[SEC_EPISODIOS];
+    quadros(120);
+    snprintf(nome, sizeof nome, "%s-pt-BR.png", saida); gravar(nome);
+    return 0;
+  }
   if (getenv("NV_AVALIAR_SHOTS")) {
     ajustes_definir_vidro(0);
     semear(1, T1_N, 3);

@@ -572,6 +572,9 @@ static int temporada = 0;            // temporada ESCOLHIDA (nao a focada)
 // antes a troca de temporada arrastava o FOCO para o episodio, e com isso o
 // D-pad saia da fileira de abas: nao dava para passar da segunda temporada.
 static int    epAncora = 0;
+static int    epEscolhido;
+static int episodioPadrao(int *temp, int *epis, int *origem);
+static void sincronizarEpisodioPadrao(void);
 static RevelaVarre epVarre = {.alvo=-1};
 static float epSheen;
 // Comentarios: 0 = da SERIE, 1 = do EPISODIO. E o seletor que a referencia poe
@@ -1675,18 +1678,13 @@ static void abrirInterno(const HomeItem *it) {
   // respondeu neste instante.
   temporada = 0;
   epAncora = 0;
+  epEscolhido = 0;
   comentEp = 0;  // Every title opens on show comments, never a previous episode.
   comEpT = comEpE = 0;
   comPicando = 0;
   { const CatItem *ci0 = cat_item(idx);
     int t = 0, e = 0, achou = 0;
-    if (ci0 && ci0->progresso > 0 && ci0->progresso < ajustes_cw_concluido() &&
-        ci0->temporada >= 0 && ci0->episodio > 0) {
-      t = ci0->temporada; e = ci0->episodio; achou = 1;
-    } else {
-      const CatEp *e0 = primeiroEpRegular();
-      if (e0) { t = e0->temporada; e = e0->episodio; achou = 1; }
-    }
+    achou = episodioPadrao(&t, &e, NULL);
     if (achou && ci0) {
       int k, n = cat_n_episodios(idx), i, col = 0, achouCol = -1;
       for (k = 0; k < ci0->nTemporadas; k++)
@@ -1976,21 +1974,10 @@ float detail_progresso(void) { return aberto && !carro ? suave(t) : 0.0f; }
 // dono relatou.
 //
 // `origem` (opcional) devolve 1 = foco, 2 = retomar, 3 = proximo, 0 = primeiro.
-static int episodioAlvo(int *temp, int *epis, int *origem) {
+static int episodioPadrao(int *temp, int *epis, int *origem) {
   const CatItem *ci = cat_item(idx);
-  const CatEp *ep = NULL;
+  const CatEp *ep;
   if (origem) *origem = 0;
-
-  if (foco.fileira == SEC_EPISODIOS) ep = cat_episodio(idx, epAbsoluto(foco.coluna));
-  if (ep) {
-    if (temp) *temp = ep->temporada;
-    if (epis) *epis = ep->episodio;
-    // O episodio em foco E o que esta em andamento: e o "Retomar" (com o
-    // "Assistir do começo" ao lado), como o mockup "detalhe-retomar".
-    if (origem) *origem = (ci && ci->progresso > 0 && ci->progresso < ajustes_cw_concluido() &&
-                           ci->temporada == ep->temporada && ci->episodio == ep->episodio) ? 2 : 1;
-    return 1;
-  }
   // Em andamento: o item do "Continuar assistindo" traz temporada e episodio.
   if (ci && ci->progresso > 0 && ci->progresso < ajustes_cw_concluido() && ci->temporada >= 0 && ci->episodio > 0 &&
       !extras_ep_visto(ci->temporada, ci->episodio)) {
@@ -1999,10 +1986,10 @@ static int episodioAlvo(int *temp, int *epis, int *origem) {
     if (origem) *origem = 2;
     return 1;
   }
-  // Primeiro nao assistido. So vale quando o Trakt ja respondeu; sem dado
-  // nenhum extras_n_temporadas() e 0 e cai no primeiro episodio, como antes.
+  // Local history works before the asynchronous progress response arrives.
   { int t, e;
-    if (extras_proximo_episodio(&t, &e)) {
+    if ((ci && vistoep_primeiro_nao_visto(ci->imdb, &t, &e)) ||
+        extras_proximo_episodio(&t, &e)) {
       if (temp) *temp = t;
       if (epis) *epis = e;
       if (origem) *origem = 3;
@@ -2022,14 +2009,45 @@ static int episodioAlvo(int *temp, int *epis, int *origem) {
         }
       }
     } }
-  // O PRIMEIRO DA TEMPORADA EM EXIBICAO, que e o que a nota acima promete —
-  // com a lista emendada isto era o primeiro episodio da SERIE, qualquer que
-  // fosse a aba aberta.
-  ep = cat_episodio(idx, epAbsoluto(0));
+  // No history or everything watched: start from the first regular episode.
+  ep = primeiroEpRegular();
   if (!ep) return 0;
   if (temp) *temp = ep->temporada;
   if (epis) *epis = ep->episodio;
   return 1;
+}
+
+static int episodioAlvo(int *temp, int *epis, int *origem) {
+  const CatItem *ci = cat_item(idx);
+  const CatEp *ep = foco.fileira == SEC_EPISODIOS && nivel > 0
+                    ? cat_episodio(idx, epAbsoluto(foco.coluna)) : NULL;
+  if (!ep) return episodioPadrao(temp, epis, origem);
+  if (temp) *temp = ep->temporada;
+  if (epis) *epis = ep->episodio;
+  if (origem) *origem = (ci && ci->progresso > 0 && ci->progresso < ajustes_cw_concluido() &&
+                         ci->temporada == ep->temporada && ci->episodio == ep->episodio) ? 2 : 1;
+  return 1;
+}
+
+// Seed again when history or episodes arrive, until the user browses the rows.
+static void sincronizarEpisodioPadrao(void) {
+  const CatItem *ci = cat_item(idx);
+  int t, e, k, c;
+  if (epEscolhido || !ehSerie() || !ci) return;
+  if (nivel > 0) { epEscolhido = 1; return; }
+  if (!episodioPadrao(&t, &e, NULL)) return;
+  for (k = 0; k < ci->nTemporadas; k++) if (ci->temporadas[k] == t) break;
+  if (k >= ci->nTemporadas) return;
+  temporada = k;
+  foco.colunaLembrada[SEC_TEMPORADAS] = colTemp(k);
+  for (c = 0; c < epVisiveis(); c++) {
+    const CatEp *ep = cat_episodio(idx, epAbsoluto(c));
+    if (ep && ep->episodio == e) {
+      epAncora = c;
+      foco.colunaLembrada[SEC_EPISODIOS] = c;
+      break;
+    }
+  }
 }
 
 // Episodio que os COMENTARIOS seguem: o ultimo pisado pelo foco; antes de o
@@ -3312,6 +3330,8 @@ static void detail_evento_(const SDL_Event *e) {
     // CARROSSEL: a primeira seta para baixo so estica o cartao (ver carCheia).
     if (k == SDLK_DOWN && carro && !carCheia) { carCheia = 1; return; }
     if (k == SDLK_DOWN) {
+      sincronizarEpisodioPadrao();
+      epEscolhido = 1;
       // Descer do hero cai na primeira fileira FOCAVEL. Num filme nao ha
       // temporadas nem episodios, e parar numa fileira vazia deixava o D-pad
       // sem resposta. Tem de ser secaoColunas e nao secaoN: os trailers sao
@@ -3818,6 +3838,7 @@ static void detail_atualizar_(float dt, Uint32 agora) {
         desc_episodios(idx, ci ? ci->temporada : 0);
       }
     } }
+  sincronizarEpisodioPadrao();
   sincronizarColunas();
   // Solta o pedido de episodios que ficou guardado por ter chegado com outro
   // carregamento em voo.
