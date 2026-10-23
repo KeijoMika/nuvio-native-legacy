@@ -52,9 +52,12 @@ int main(void) {
   assert((size_t)s->pitch * s->h <= 4u * 480 * 270 * 4);
   assert(largestPixels <= 4u * 480 * 270 * 4);
   SDL_FreeSurface(s);
-  assert(ptv_tex_auto_mb(PTV_ANDROID, 1024) == 32);
-  assert(ptv_tex_auto_mb(PTV_ANDROID, 2400) == 64);
-  assert(ptv_tex_auto_mb(PTV_ANDROID, 4096) == 128);
-  assert(ptv_tex_teto_mb(PTV_ANDROID, 2400) == 64);
+  assert(ptv_tex_auto_mb(PTV_ANDROID, 2400) >= 160);
+  const long ram[] = {0, 1024, 1499, 1500, 1999, 2000, 2400, 2999, 3000, 3999, 4000, 4096};
+  const int mb[] = {32, 32, 32, 96, 96, 160, 160, 160, 192, 192, 256, 256};
+  for (size_t i = 0; i < sizeof(ram) / sizeof(ram[0]); i++) {
+    assert(ptv_tex_auto_mb(PTV_ANDROID, ram[i]) == mb[i]);
+    assert(ptv_tex_teto_mb(PTV_ANDROID, ram[i]) == mb[i]);
+  }
   puts("PASS: 4K JPEG decoded at 480x270; Android budgets scale with MemTotal");
 }
