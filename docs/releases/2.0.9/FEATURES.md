@@ -27,6 +27,10 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Guest stars in this episode**: Open the player episode panel to see guest stars supplied by TMDB. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `26f616d6d`, `5f0913815`.
 
+- **Hero size setting**: Choose how large the Home hero appears, and the reserved layout scales with your choice. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-herotamanho`, `agente/205-porta-perdidos`, `4bada8211`.
+
+- **Quick episode chips and saved polish**: Jump episodes with quick chips on a 3x2 paged grid, see a compact rating on saved cards and sweep fill, remote-style keycaps on hints, localized island copy, a Remove action on the panel card, and glass-outline focus accents. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`.
+
 ## Fixes
 
 - **Broader anime source matching**: Translate anime IDs through all ARM endpoints and query each declared namespace in parallel while preserving explicit specials, source ID spaces and safe AIOStreams deduplication. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `dd70f889e`, `1511b615c`, `08673b9ea`, `af48dee49`, `680ab96e7`, `fbd7c059b`.
@@ -85,6 +89,12 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Faster confirmed live streams**: Bound live startup probes and open confirmed transport streams directly. Platforms: Samsung .tpk. Refs: owner request, `440074537`.
 
+- **More sources when manifests are unclear**: Treat unreadable manifest resources as presumed capabilities and keep optimistic stream queries unless the add-on is live-TV-only. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `bf129e9af`, `606a892e8`, `bf6757c3a`.
+
+- **Trakt device login retry**: Bound login polling by the code expiry and show a retry state instead of looping silently. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-205-traktlogin`, `71c849ae6`.
+
+- **Safer Dolby Vision picking**: Keep MP4 Dolby Vision profile 5 below same-band HDR10 so incompatible files lose the tie. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `d4f1dca81`.
+
 ## Performance
 
 - **More reliable soundtrack lookup**: When iTunes throttles requests, fall back to Deezer (with 30-second previews) and MusicBrainz instead of returning empty, and stop caching a miss too early. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `2823b3c7f`.
@@ -116,6 +126,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`, `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`, `65a3fa795`, `25189dea6`, `795af84b4`, `0e3b2c9b6`, `4fc14fb74`.
 
 - **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys, and record the Portuguese mockup and native preview proof with device validation limits. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`, `4654bdb0f`, `8fb90ad5f`.
+
+- **Regression tracing helpers**: Trace issue regressions from development tools without changing release behavior. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `234ed9374`.
 
 ## Pending (ainda não integrado)
 
