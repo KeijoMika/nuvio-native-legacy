@@ -35,6 +35,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Fixes
 
+- **Add-on source status translated**: The "Searching add-on sources…" and "not responding" lines in the sources sheet now follow the interface language instead of always showing Portuguese. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `f49598336`.
+
 - **Broader anime source matching**: Translate anime IDs through all ARM endpoints and query each declared namespace in parallel while preserving explicit specials, source ID spaces and safe AIOStreams deduplication. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `dd70f889e`, `1511b615c`, `08673b9ea`, `af48dee49`, `680ab96e7`, `fbd7c059b`.
 
 - **Compatible poster templates**: Accept Nuvio poster templates that specify alternative title identifiers. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `8f99c7b43`.
@@ -171,6 +173,8 @@ _Nothing pending in this snapshot._
 - **Chips rápidos de episódio e polimento de Salvos**: Pule episódios com chips em grade paginada 3x2, veja nota compacta nos cartões salvos e sweep fill, keycaps de controle nas dicas, textos de ilha localizados, ação Remover no cartão do painel e foco de acento com contorno de vidro. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`, `22c77e099`.
 
 ## Correções
+
+- **Status de fontes do add-on traduzido**: As linhas "Buscando fontes…" e "não respondeu" na folha de fontes agora seguem o idioma da interface em vez de sempre em português. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: `f49598336`.
 
 - **Busca de fontes de anime mais ampla**: Traduz IDs de anime por todos os endpoints ARM e consulta cada namespace declarado em paralelo, preservando especiais explícitos, espaços de ID de fonte e deduplicação segura para AIOStreams. Plataformas: webOS, Android, Samsung .tpk, WASM. Refs: pedido do dono, `dd70f889e`, `1511b615c`, `08673b9ea`, `af48dee49`, `680ab96e7`, `fbd7c059b`.
 
