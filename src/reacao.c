@@ -298,7 +298,7 @@ static struct {
   // contagem, centrado em `cx` (o painel) em vez do canto do player.
   int    modoPainel;
   float  cx;
-  float  anim, focoA[3];
+  float  anim, focoA[3], tagA[13], estrelaA, notaA;
   Uint32 desde;                  // ultima tecla (ou abertura), para os 8 s
 } c;
 static char  oferecido[24];      // titulo ja perguntado nesta sessao do player
@@ -683,21 +683,24 @@ static void reacaoTelefoneDesenhar(const char *perg, const char *orig, const cha
 // valor que ja existe (c.nota) em branco suave.
 #define ESTRELA_LINHA 76.0f
 static void estrelasDesenhar(float x, float y, float a) {
-  const float t = 44.0f, g = 8.0f;
+  const float t = 40.0f, g = 12.0f;
   int v = c.nota ? c.nota : reacao_nota(c.alvo), i;
-  float al = c.estrelas ? a : a * 0.6f;
+  c.estrelaA = anim_mola(c.estrelaA, c.estrelas ? 1 : 0, 1.f / 60, NV_MOLA_FOCO);
+  c.notaA = anim_mola(c.notaA, v, 1.f / 60, NV_MOLA_FOCO);
+  float al = a * (.65f + .35f * c.estrelaA);
+  float ar, ag, ab;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor((GfxRect){x - 12, y - 8, 428, 56}, .5f, 1, 1, 1, .10f * a * c.estrelaA);
   char dica[96];
   TxtLinha l;
   for (i = 0; i < 5; i++) {
     float sx = x + (float)i * (t + g);
     GfxRect r = { sx, y, t, t };
-    float cr = .953f, cg = .949f, cb = .937f;
-    if (c.estrelas) ajustes_acento(&cr, &cg, &cb);
-    gfx_icone(r, "pl_star", 0.953f, 0.949f, 0.937f, al * 0.35f);
-    if (v >= 2 * i + 2) gfx_icone(r, "pl_star-f", cr, cg, cb, al);
-    else if (v == 2 * i + 1) {
-      gfx_recorte(sx, y, t * 0.5f, t);
-      gfx_icone(r, "pl_star-f", cr, cg, cb, al);
+    float fill = anim_clamp((c.notaA - 2 * i) * .5f, 0, 1);
+    gfx_icone(r, "pl_star", .953f, .949f, .937f, al * .35f);
+    if (fill > .001f) {
+      gfx_recorte(sx, y, t * fill, t);
+      gfx_icone(r, "pl_star-f", ar, ag, ab, al);
       gfx_sem_recorte();
     }
   }
@@ -709,15 +712,27 @@ static void estrelasDesenhar(float x, float y, float a) {
 
 static float notaBotao(float x, float y, const char *rotulo, const char *icone, float foco, float a, float largura) {
   float w = largura > 0 ? largura : (float)txt_largura(TXT_ILHA_ITEM, i18n(rotulo)) + 56 + (icone ? 34 : 0);
-  GfxRect r = {x, y, w, 60};
-  if (foco > .5f) plrui_pilula_foco(r, a);
-  else plrui_botao_repouso(r, a);
-  int cor = foco > .5f ? plrui_tinta() : 225;
-  if (icone) gfx_icone((GfxRect){x + 20, y + 18, 24, 24}, icone, cor / 255.f, cor / 255.f, cor / 255.f, a);
+  float f = anim_clamp(foco, 0, 1), ar, ag, ab;
+  GfxRect r = {x, y - 2 * f, w, 56};
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor(r, .5f, .141f, .149f, .173f, a);
+  // Selection remains visible after focus moves away; glass belongs to the island.
+  if (icone && !strcmp(icone, "aj_check")) gfx_cor(r, .5f, ar, ag, ab, .22f * a);
+  if (f > .005f) gfx_cor(r, .5f, ar, ag, ab, f * a);
+  int cor = f > .5f ? plrui_tinta() : 239;
+  if (icone) gfx_icone((GfxRect){x + 20, r.y + 16, 24, 24}, icone, cor / 255.f, cor / 255.f, cor / 255.f, a);
   float dx = icone ? 54 : 24;
   TxtLinha l = txt_linha_corta(TXT_ILHA_ITEM, rotulo, cor, cor, cor, 255, w - dx - 18);
-  txt_desenhar_alpha(l, x + dx, y + (60 - l.h) * .5f, a);
+  txt_desenhar_alpha(l, x + dx, r.y + (56 - l.h) * .5f, a);
   return w;
+}
+
+static void painelNota(GfxRect r, float a) {
+  plrui_material(r, 32, 0, a);
+  // A quiet scrim keeps bright artwork from washing out the floating island.
+  gfx_cor(r, 32 / r.h, .071f, .075f, .086f, (ajustes_vidro() ? .48f : 1.f) * a);
+  gfx_luz_canto(r, 32 / r.h, 80, 0, r.w * .8f, .8f, .85f, .9f,
+                (ajustes_vidro() ? .055f : .04f) * a);
 }
 
 static void reacao_desenharCorpo_(Uint32 agora, float baseY);
@@ -730,21 +745,23 @@ void reacao_desenhar(Uint32 agora, float baseY) {
   if (c.aberto && c.escrevendo && teclado_aberto()) teclado_desenhar(agora);
 }
 static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
-  float a = c.anim, w = 760.0f, h, x, y, lead, hp, pw = 0.0f;
+  float a = c.anim, w = 800.0f, h, x, y, lead, hp, pw = 0.0f;
   char perg[256], orig[160], ver[160];
   static const char *const ICONE[3] = { "pl_thumbs-up", NULL, "pl_thumbs-down" };
   int i;
   if (a < 0.01f || !c.imdb[0] || !perfis_sessao_atual(c.sessao)) return;
   if (c.passo == 2) {
-    w = 900; h = 480; x = NV_TELA_W - RX_MARGEM - w; y = baseY - h;
-    plrui_material((GfxRect){x, y, w, h}, 36, 0, a);
-    TxtLinha l = txt_linha(TXT_ILHA_CORPO, i18n("Tags · até 3"), 243, 242, 239, 255);
-    txt_desenhar_alpha(l, x + 36, y + 28, a);
+    w = 920; h = 520; x = NV_TELA_W - RX_MARGEM - w; y = baseY - h + (1 - a) * 24;
+    painelNota((GfxRect){x, y, w, h}, a);
+    plrui_kicker("Sua nota", x + 40, y + 28, 174, 179, 186, a);
+    TxtLinha l = txt_linha(TXT_ILHA_PERGUNTA, "Tags · até 3", 243, 242, 239, 255);
+    txt_desenhar_alpha(l, x + 40, y + 52, a);
     for (i = 0; i < 13; i++) {
-      float bx = x + 36 + (i % 3) * 276, by = y + 82 + (i / 3) * 72;
+      float bx = x + 40 + (i % 3) * 284, by = y + 120 + (i / 3) * 72;
+      c.tagA[i] = anim_mola(c.tagA[i], c.tagFoco == i ? 1 : 0, 1.f / 60, NV_MOLA_FOCO);
       const char *rotulo = i == 12 ? "Concluir" : TAGS[i];
       notaBotao(bx, by, rotulo, i < 12 && (c.tags & (1u << i)) ? "aj_check" : NULL,
-                   c.tagFoco == i ? 1 : 0, a, 264);
+                   c.tagA[i], a, 272);
     }
     return;
   }
@@ -764,7 +781,7 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
   if (pw + 72.0f > w) w = pw + 72.0f;
   lead = (float)txt_linha(TXT_ILHA_PERGUNTA, "Ág", 245, 246, 248, 255).h + 6.0f;
   hp = txt_bloco_corta(TXT_ILHA_PERGUNTA, perg, 0, 0, 0, -4000.0f, -4000.0f, w - 72.0f, lead, 0.0f, 2);
-  h = 34.0f + (orig[0] ? 30.0f + 8.0f : 0.0f) + hp + 26.0f + 60.0f + 24.0f + 22.0f + 30.0f + (c.passo == 0 ? ESTRELA_LINHA : 0.0f);
+  h = 66.0f + (orig[0] ? 30.0f + 12.0f : 0.0f) + hp + 28.0f + 56.0f + 28.0f + 22.0f + 30.0f + (c.passo == 0 ? ESTRELA_LINHA : 0.0f);
   x = NV_TELA_W - RX_MARGEM - w;
   y = baseY - h + (1.0f - a) * 24.0f;
   if (c.modoPainel) {
@@ -779,16 +796,17 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
   // vazam): camada, os alvos de tras deixam de valer. No player ele nao e
   // camada — com os controles no ar as teclas sao do player.
   if (c.aberto && (c.modoDetalhe || c.modoPainel)) ponteiro_camada();
-  plrui_material((GfxRect){ x, y, w, h }, 36.0f, 0, a);
-  { float ty = y + 34.0f, tx = x + 36.0f;
+  painelNota((GfxRect){ x, y, w, h }, a);
+  plrui_kicker("Sua nota", x + 36, y + 28, 174, 179, 186, a);
+  { float ty = y + 66.0f, tx = x + 36.0f;
     if (orig[0]) {
       TxtLinha lo = txt_linha_corta(TXT_CAPTION, orig, 243, 242, 239, 158, w - 72.0f - 42.0f);
       rec_avatar_estilo((GfxRect){ tx, ty, 30.0f, 30.0f }, "", c.nome, c.nome, a, TXT_MINI);
       txt_desenhar_alpha(lo, tx + 30.0f + 12.0f, ty + (30.0f - (float)lo.h) * 0.5f, a);
-      ty += 30.0f + 8.0f;
+      ty += 30.0f + 12.0f;
     }
     txt_bloco_corta(TXT_ILHA_PERGUNTA, perg, 243, 242, 239, tx, ty, w - 72.0f, lead, a, 2);
-    ty += hp + 26.0f;
+    ty += hp + 28.0f;
     { float bx = tx;
       // So assentado (a mola da entrada parada) e sem o teclado por cima.
       int reg = c.aberto && !c.escrevendo && a > 0.99f && a < 1.01f;
@@ -797,7 +815,7 @@ static void reacao_desenharCorpo_(Uint32 agora, float baseY) {
         if (reg) ponteiro_alvo(bx, ty, bw, 60.0f, ponteiroResposta, NULL, i, 0);
         bx += bw + 12.0f;
       } }
-    ty += 60.0f + 24.0f;
+    ty += 56.0f + 28.0f;
     if (c.passo == 0) { estrelasDesenhar(tx, ty, a); ty += ESTRELA_LINHA; }
     { float yc = ty + 11.0f, tw = 0.0f;
       if (ver[0]) {
@@ -847,7 +865,7 @@ int reacao_episodio_abrir(const CatItem *ci, int t, int e) {
 
 void reacao_detalhe_dica(const CatItem *ci, float a) {
   char perg[256];
-  TxtLinha l, s;
+  TxtLinha l;
   float x, y, w;
   // O cartao aberto (pela pagina) desenha por cima de tudo, com a mola dele.
   if (c.aberto && !perfis_sessao_atual(c.sessao)) c.aberto = 0;
@@ -869,13 +887,15 @@ void reacao_detalhe_dica(const CatItem *ci, float a) {
     char tx[160];
     snprintf(tx, sizeof tx, "%s · %d.%d", i18n("Sua nota"), n / 2, (n % 2) * 5);
     plrui_decimal(tx);
-    l = txt_linha(TXT_CAPTION, tx, 200, 204, 212, 255);
+    l = txt_linha(TXT_G18M, tx, 243, 242, 239, 255);
     w = 24.0f + 10.0f + (float)l.w;
     x = NV_TELA_W - RX_MARGEM - w;
     y = NV_TELA_H - 48.0f - (float)l.h;
     gfx_cor((GfxRect){ x - 18.0f, y - 10.0f, w + 36.0f, (float)l.h + 20.0f }, 0.5f,
-            .04f, .042f, .05f, .62f * a);
-    gfx_icone((GfxRect){ x, y + ((float)l.h - 24.0f) * 0.5f, 24.0f, 24.0f }, "pl_star-f", 0.961f, 0.773f, 0.259f, a * 0.95f);
+            .094f, .098f, .11f, .96f * a);
+    float ar, ag, ab;
+    ajustes_acento(&ar, &ag, &ab);
+    gfx_icone((GfxRect){ x, y + ((float)l.h - 24.0f) * 0.5f, 24.0f, 24.0f }, "pl_star-f", ar, ag, ab, a * .95f);
     txt_desenhar_alpha(l, x + 34.0f, y, a * 0.9f);
     return;
   }
@@ -883,15 +903,14 @@ void reacao_detalhe_dica(const CatItem *ci, float a) {
   snprintf(perg, sizeof perg, "%s", i18n("↑ nota em estrelas"));
   // DISCRETA: texto pequeno e cinza, sem caixa de foco — ela nao e um botao,
   // e um lembrete de que CIMA abre a pergunta.
-  s = txt_linha(TXT_CAPTION, "↑", 200, 204, 212, 255);
-  l = txt_linha_corta(TXT_CAPTION, perg, 176, 180, 190, 255, 620.0f);
-  w = (float)s.w + 12.0f + (float)l.w;
+  l = txt_linha_corta(TXT_G18M, perg, 176, 180, 190, 255, 620.0f);
+  w = 24.0f + 12.0f + (float)l.w;
   x = NV_TELA_W - RX_MARGEM - w;
   y = NV_TELA_H - 48.0f - (float)l.h;
   gfx_cor((GfxRect){ x - 18.0f, y - 10.0f, w + 36.0f, (float)l.h + 20.0f }, 0.5f,
-          .04f, .042f, .05f, .62f * a);
-  txt_desenhar_alpha(s, x, y, a * 0.9f);
-  txt_desenhar_alpha(l, x + (float)s.w + 12.0f, y, a * 0.85f);
+          .094f, .098f, .11f, .96f * a);
+  gfx_icone((GfxRect){x, y + (l.h - 24) * .5f, 24, 24}, "aj_arrow-up", .78f, .80f, .83f, a);
+  txt_desenhar_alpha(l, x + 36.0f, y, a * .85f);
 }
 
 void reacao_teste_abrir(const char *imdb, const char *titulo, const char *midia,

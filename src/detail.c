@@ -1224,6 +1224,7 @@ static const NotasSecao *notasDados(void) {
   int i;
   for (i = 0; i < EX_NFONTES; i++) s.cru[i] = extras_nota(i);
   if (!s.cru[EX_IMDB] && ajustes_mdblist_fonte(EX_IMDB)) s.cru[EX_IMDB] = notaDe(idx);
+  s.notaPessoal = reacao_nota(cat_item(idx)->imdb);
   s.nTemp = ehSerie() ? extras_n_temporadas() : 0;
   s.tempNum = extras_temporada_numero;
   s.nEps = extras_n_eps;
@@ -5569,13 +5570,15 @@ static void desenhaMinhaNotaEpisodio(GfxRect th, const char *imdb, int temp, int
   if (n <= 0) return;
   snprintf(tx, sizeof tx, "%d.%d", n / 2, (n % 2) * 5);
   plrui_decimal(tx);
-  l = txt_linha(TXT_CAPTION, tx, 255, 255, 255, 255);
-  w = 12 + 24 + 8 + (float)l.w + 12;
+  l = txt_linha(TXT_G18M, tx, 243, 242, 239, 255);
+  w = 14 + 20 + 8 + (float)l.w + 14;
   x = th.x + th.w - w - 18;
-  y = th.y + NV_DETP_EP_VISTO_Y + NV_DETP_EP_VISTO_H + 8;
-  gfx_cor((GfxRect){x, y, w, 36}, .5f, .055f, .068f, .09f, .96f * a);
-  gfx_icone((GfxRect){x + 12, y + 6, 24, 24}, "pl_star-f", .961f, .773f, .259f, a);
-  txt_desenhar_alpha(l, x + 44, y + (36 - (float)l.h) * .5f, a);
+  y = th.y + NV_DETP_EP_VISTO_Y + NV_DETP_EP_VISTO_H + 10;
+  float ar, ag, ab;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor((GfxRect){x, y, w, 40}, .5f, .071f, .075f, .086f, .96f * a);
+  gfx_icone((GfxRect){x + 14, y + 10, 20, 20}, "pl_star-f", ar, ag, ab, a);
+  txt_desenhar_alpha(l, x + 42, y + (40 - (float)l.h) * .5f, a);
 }
 
 static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agora);
