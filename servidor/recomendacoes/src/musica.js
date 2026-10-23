@@ -22,6 +22,60 @@ const json = async (buscar, url) => {
   return r.json();
 };
 
+// Deezer's public API needs no key and accepts Cloudflare egress.
+async function deezer(buscar, titulo, ano, temp) {
+  const term = encodeURIComponent(`${titulo}${temp ? ` season ${temp}` : ""} soundtrack`);
+  const search = await json(buscar, `https://api.deezer.com/search/album?q=${term}&limit=25`);
+  const restantes = (search.data || []).filter((a) => a.id && a.title &&
+    !/\b(tribute|karaoke|cover|inspired)\b/i.test(a.artist?.name || ""));
+  while (restantes.length) { // search hits carry no release year: match title, verify year per album
+    const match = escolher(restantes.map((a) => ({ id: a.id, title: a.title, "secondary-types": ["Soundtrack"] })), titulo, 0, temp);
+    if (!match) return null;
+    const [alvo] = restantes.splice(restantes.findIndex((a) => a.id === match.id), 1);
+    const d = await json(buscar, `https://api.deezer.com/album/${alvo.id}`);
+    const anoAl = parseInt(d.release_date, 10);
+    if (ano && !(Number.isFinite(anoAl) && Math.abs(anoAl - ano) <= (temp ? 15 : 1))) continue;
+    const faixas = (d.tracks?.data || []).filter((k) => k.title).slice(0, FAIXAS_MAX)
+      .map((k, i) => ({ n: k.track_position || i + 1, titulo: k.title,
+        artista: k.artist?.name || d.artist?.name || "", dur: k.duration || 0,
+        ...(https(k.preview) ? { previa: k.preview } : {}) }));
+    if (!faixas.length) continue;
+    return { album: { titulo: d.title, artista: d.artist?.name || alvo.artist?.name || "", ano: anoAl,
+      genero: d.genres?.data?.[0]?.name || "Soundtrack", capa: https(d.cover_xl), deezer: https(d.link) }, faixas };
+  }
+  return null;
+}
+
+// MusicBrainz metadata is the last resort: no previews, 1 req/s (UA above).
+let mbUntil = 0;
+async function mbJson(buscar, url, agora) {
+  const espera = Math.min(1100, Math.max(0, mbUntil - agora));
+  mbUntil = Math.max(agora, mbUntil) + 1100;
+  if (espera) await new Promise((r) => setTimeout(r, espera));
+  return json(buscar, url);
+}
+async function musicbrainz(buscar, titulo, ano, temp, agora) {
+  const q = encodeURIComponent(`"${titulo}${temp ? ` season ${temp}` : ""}" AND secondarytypes:Soundtrack`);
+  const search = await mbJson(buscar, `https://musicbrainz.org/ws/2/release-group/?query=${q}&fmt=json&limit=25`, agora);
+  const match = escolher((search["release-groups"] || []).map((g) => ({ id: g.id, title: g.title,
+    "secondary-types": g["secondary-types"], "first-release-date": g["first-release-date"], score: g.score })), titulo, ano, temp);
+  if (!match) return null;
+  const rel = await mbJson(buscar, `https://musicbrainz.org/ws/2/release?release-group=${match.id}&fmt=json&inc=recordings+artist-credits`, agora);
+  const release = (rel.releases || []).find((r) => r.media?.some((m) => m.tracks?.length));
+  if (!release) return null;
+  const artista = (c) => (c || []).map((a) => a.name).join("");
+  const faixas = release.media.flatMap((m) => m.tracks || []).filter((k) => k.title).slice(0, FAIXAS_MAX)
+    .map((k, i) => ({ n: Number(k.number) || i + 1, titulo: k.title,
+      artista: artista(k["artist-credit"]) || artista(release["artist-credit"]),
+      dur: Math.round((k.length || k.recording?.length || 0) / 1000) }));
+  if (!faixas.length) return null;
+  const capaUrl = `https://coverartarchive.org/release-group/${match.id}/front-500`;
+  const capaRes = await buscar(capaUrl, { method: "HEAD", headers: { "user-agent": UA }, redirect: "manual" }).catch(() => null);
+  const capa = capaRes && capaRes.status < 400 ? capaUrl : ""; // CAA answers 302 to archive.org when art exists.
+  return { album: { titulo: match.title, artista: artista(release["artist-credit"]),
+    ano: parseInt(match["first-release-date"], 10) || 0, genero: "Soundtrack", capa }, faixas };
+}
+
 // Provider search scores rank results; identity comes from title, type and year.
 const nomeAlbum = (s) => {
   const n = norm(s).replace(/\b(?:temporada|series) (\d+)\b/g, "season $1");
@@ -161,7 +215,7 @@ export async function rotaMusica(url, env, buscar = fetch, limite = null, ip = "
   if (!m || !ID_IMDB.test(m[1]) || !titulo || /[\u0000-\u001f]/.test(titulo)) return resp({ erro: "pedido invalido" }, 400);
   const requestedCountry = (url.searchParams.get("country") || "br").toLowerCase();
   const country = /^[a-z]{2}$/.test(requestedCountry) ? requestedCountry : "br";
-  const chave = `m5:${m[1]}:${temp}:${country}:${appleConfigured(env) ? "apple" : "itunes"}`;
+  const chave = `m6:${m[1]}:${temp}:${country}:${appleConfigured(env) ? "apple" : "itunes"}`;
   const guardado = await env?.MUS?.get(chave);
   if (guardado) return resp(JSON.parse(guardado), 200, { "cache-control": "public, max-age=3600" });
   if (limite && !(await limite(env, "musica:" + ip, 30, 600, Math.floor(agora / 1000)))) return resp({ erro: "muitos pedidos" }, 429);
@@ -173,13 +227,17 @@ export async function rotaMusica(url, env, buscar = fetch, limite = null, ip = "
       const nome = String(d.meta?.name || "").trim();
       const anoId = parseInt(d.meta?.year || d.meta?.releaseInfo || "", 10);
       if (!nome || !Number.isFinite(anoId)) throw new Error("missing canonical metadata");
-      const t = await catalogoApple(buscar, env, nome, anoId, temp, country, agora) ||
-        await trilha(buscar, nome, anoId, temp, country, state, agora);
+      let t = await catalogoApple(buscar, env, nome, anoId, temp, country, agora);
+      let falhou = false; // A provider that errored or backed off answered nothing; its silence is not an empty catalog.
+      if (!t) try { t = await trilha(buscar, nome, anoId, temp, country, state, agora); }
+        catch (error) { if (error.message !== "itunes backoff") throw error; falhou = true; }
+      if (!t) try { t = await deezer(buscar, nome, anoId, temp); } catch { falhou = true; }
+      if (!t) try { t = await musicbrainz(buscar, nome, anoId, temp, agora); } catch { falhou = true; }
+      if (falhou && !t) return { corpo: { vazio: true }, status: 200, cache: "no-store" };
       const corpo = t || { vazio: true };
       await env?.MUS?.put(chave, JSON.stringify(corpo), { expirationTtl: t ? CACHE_ACHOU : CACHE_VAZIO });
       return { corpo, status: 200, cache: "public, max-age=3600" };
     } catch (error) {
-      if (error.message === "itunes backoff") return { corpo: { vazio: true }, status: 200, cache: "no-store" };
       return { corpo: { erro: "fonte indisponivel" }, status: 502, cache: "no-store" };
     }
   })());
