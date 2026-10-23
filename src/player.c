@@ -1175,7 +1175,7 @@ void player_definir_episodio(int t, int e) {
         else if(ep->episodio==epE+1)dP=duracaoTexto(ep->duracao);
       }
       { int tt, te; introTmdb = tmdbDoTocando(&tt, &te);
-        if (introTmdb > 0) intro_pedir_ids(c->imdb, introTmdb, tt, te, dA, dP);
+        if (introTmdb > 0) intro_pedir_ids_mapeados(c->imdb, introTmdb, tt, te, epT, epE, dA, dP);
         else intro_pedir_ids(c->imdb, 0, epT, epE, dA, dP); } }
     credAvisado=credFimAvisado=semProxAvisado=0;credAvisadoEm=credAvisadoDur=0;
   }
@@ -4407,7 +4407,7 @@ static void introTmdbTardio(Uint32 agora) {
             else if (ep->episodio == epE + 1) dP = duracaoTexto(ep->duracao);
           }
         printf("[intro] tmdb %ld chegou depois: pedindo de novo por tmdb_id\n", tm); fflush(stdout);
-        intro_pedir_ids(cx->imdb, tm, epE > 0 ? tt : 0, epE > 0 ? te : 0, dA, dP);
+        intro_pedir_ids_mapeados(cx->imdb, tm, epE > 0 ? tt : 0, epE > 0 ? te : 0, epT, epE, dA, dP);
       }
     }
   }
