@@ -786,6 +786,27 @@ void ajustes_idiomas_da_conta(const char *json);
 void ajustes_perfil_guardar(int perfil);
 int  ajustes_perfil_restaurar(int perfil);
 void ajustes_perfil_esquecer(void);
+// 2.1: escopo de cada opcao: 0 nenhum (acao/leitura/estado em outro arquivo),
+// 1 desta TV, 2 do perfil e da conta (blob), 3 do perfil so nesta TV.
+int  ajustes_escopo(int op);
+// Migracao unica para o escopo por perfil (ver ajustes.c). Devolve 1 quando rodou.
+int  ajustes_migrar_escopo(void);
+int  ajustes_migrar_escopo_para(const int *perfis, int n, int ativo);
+// 2.1: copia dos ajustes DO PERFIL (escopos 2 e 3; nunca os da TV) de `origem`
+// para `destino`. Devolve quantas opcoes mudaram no destino, ou -1 se falhou.
+// Nunca toca em credencial; a parte da conta fica como PENDENTE do destino e so
+// sobe quando ele for o perfil ativo.
+int  ajustes_copiar_perfil(int origem, int destino);
+// Volta o perfil ao padrao de fabrica (so o que e do perfil). Devolve quantas mudaram.
+int  ajustes_restaurar_padrao_perfil(int perfil);
+// Sessao de EDICAO dos ajustes de outro perfil: valor[] passa a ser o dele ate
+// ajustes_edicao_encerrar. 0 = nenhuma; senao o profile_index em edicao.
+int  ajustes_edicao_perfil(void);
+int  ajustes_edicao_iniciar(int perfil);
+void ajustes_edicao_encerrar(void);
+// Padroes seguros de perfil infantil aplicados aos ajustes do perfil (sem
+// enquetes/Seekr, sem notas de terceiros, classificacao no player ligada).
+void ajustes_padroes_infantis(int perfil);
 
 // O CAMINHO DE VOLTA (#85): devolve em *saida uma copia do blob `base` (o mesmo
 // objeto `settings_json` que ajustes_aplicar_blob le) com os valores DESTA TV

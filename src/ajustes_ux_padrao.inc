@@ -344,6 +344,7 @@
   1, /* experimental P7 conversion: Off until explicitly enabled */
   1, /* log page on the local network (logrede.h): Desligado */
   2, /* player format style: Marks (V_PLR_FORMATO 2), the look the OSD always had */
+  1, /* kids profile: Desligado (V_LIGA: 1); the state lives in perfilinfantil.c */
   0, /* Trakt comments on the pause panel: On (V_LIGA 0) */
   0, /* ratings on the pause panel: On (V_LIGA 0) */
   1, /* cast on the pause panel: Off (V_LIGA 1) */
