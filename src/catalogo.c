@@ -1904,6 +1904,27 @@ int cat_copiar_por_id(const char *id, const char *tipo, CatItem *saida) {
   return melhor >= 0;
 }
 
+int cat_titulo_serie_ou_incerto(const char *id, char *titulo, size_t tam) {
+  size_t nId;
+  int i, melhor = -1;
+  if (!id || !*id || !titulo || !tam) return 0;
+  titulo[0] = 0;
+  nId = idbase_len(id);
+  catTravar();
+  for (i = 0; itens && i < n; i++) {
+    int serie;
+    if (idbase_len(itens[i].imdb) != nId || strncmp(itens[i].imdb, id, nId)) continue;
+    if (!strcmp(itens[i].tipo, "movie") || !itens[i].titulo[0]) continue;
+    serie = !strcmp(itens[i].tipo, "series") || !strcmp(itens[i].tipo, "show");
+    if (melhor < 0 ||
+        (serie && strcmp(itens[melhor].tipo, "series") && strcmp(itens[melhor].tipo, "show")))
+      melhor = i;
+  }
+  if (melhor >= 0) snprintf(titulo, tam, "%s", itens[melhor].titulo);
+  pthread_mutex_unlock(&pubTrava);
+  return melhor >= 0;
+}
+
 int cat_n_fileiras(void) { return nFils; }
 const CatFileira *cat_fileira(int r) {
   return (r >= 0 && r < nFils) ? &fils[r] : NULL;

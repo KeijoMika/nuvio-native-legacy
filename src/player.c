@@ -734,6 +734,13 @@ static int atualizarTipoItem(void) {
   if (itemTipoConfirmado[0] &&
       (strcmp(itemTipoConfirmado, "series") ||
        (epPedidoT >= 0 && epPedidoE > 0 && !fonteSemEpisodio))) {
+    // Pedido de episodio nao vira filme. Uma copia movie do mesmo id e a
+    // colisao do Cinemeta (#524), e adotá-la apagava T/E e gravava o filme.
+    if (!strcmp(itemTipoConfirmado, "movie") &&
+        epPedidoT >= 0 && epPedidoE > 0 && !fonteSemEpisodio) {
+      nv_perfil_sessao_destravar();
+      return 0;
+    }
     // O retrato continua sendo o da abertura. Nunca copiar nome, arte,
     // progresso ou URL de uma republicacao da home para a sessao tocando.
     snprintf(itemFixo.tipo, sizeof itemFixo.tipo, "%s", itemTipoConfirmado);
@@ -1109,6 +1116,13 @@ void player_definir_episodio(int t, int e) {
   // Matroska — e num MP4, nada.
   if (!c) { epT = epE = 0; intro_desligar(); return; }
   if (strcmp(c->tipo, "series")) {
+    // Tipo incerto ("anime") guarda o episodio pedido. Zerar aqui fazia o
+    // scrobble e o Continuar assistindo sairem como filme (#524). Filme
+    // confirmado, e fonte aberta sem episodio, continuam sem T/E.
+    if (t >= 0 && e > 0 && strcmp(c->tipo, "movie") && !fonteSemEpisodio) {
+      epPedidoT = t; epPedidoE = e;
+      return;
+    }
     epT = epE = 0;
     if (idx != introIdx || introT || introE) {
       int tt, te;
@@ -4883,7 +4897,10 @@ void player_atualizar(float dt, Uint32 agora) {
     const CatItem *ci = item();
     if (epsPedidoRev != cat_revisao() || epsPedidoGer != cat_geracao_episodios()) {
       epsPedidoRev = cat_revisao(); epsPedidoGer = cat_geracao_episodios(); epsPedidoDe[0] = 0; }
-    if (!ehCanal() && epE > 0 && ci && ci->imdb[0] && strcmp(epsPedidoDe, ci->imdb)) {
+    // Tipo incerto guarda T/E e ainda nao e serie. A lista espera o tipo
+    // confirmado; other-title pedia a ficha ao tirar o titulo do catalogo.
+    if (!ehCanal() && epE > 0 && ci && !strcmp(ci->tipo, "series") &&
+        ci->imdb[0] && strcmp(epsPedidoDe, ci->imdb)) {
       int ix = idxAtual();
       if (cat_n_episodios(ix) > 0) {
         snprintf(epsPedidoDe, sizeof epsPedidoDe, "%s", ci->imdb);

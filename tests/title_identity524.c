@@ -235,9 +235,18 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < sizeof ids / sizeof *ids; i++) {
       setup();
       desc_pedir_titulo(ids[i]);
-      if (!awaitTitle("tt1629757", "movie", "Chasing Mavericks") || pediu("/meta/series/tt1629757.json")) return 1;
+      // Sufixo invalido nao e episodio. A serie pode ser sondada; sem
+      // temporada ela nao ganha, e o filme verdadeiro continua o resultado.
+      if (!awaitTitle("tt1629757", "movie", "Chasing Mavericks")) return 1;
     }
     return 0;
+  }
+  if (!strcmp(mode, "untyped-collision")) {
+    // Id sem tipo e sem sufixo de episodio. O filme do Cinemeta nao pode
+    // vencer a serie que tem temporadas.
+    desc_pedir_titulo("tt9054364");
+    return !awaitTitle("tt9054364", "series", "That Time I Got Reincarnated as a Slime") ||
+           pediu("/meta/movie/tt9054364.json");
   }
   fprintf(stderr, "unknown scenario: %s\n", mode);
   return 2;

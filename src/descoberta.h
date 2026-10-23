@@ -353,6 +353,10 @@ int  desc_elenco_precisa_pessoas(const CatItem *c);
 int  desc_meta_tipos(const char *tipo, const char *saida[2]);
 void desc_meta_chave(char *dst, size_t n, const char *tipo, const char *id);
 int  desc_meta_tem_temporadas(const char *corpo);
+// Nome da serie deste id quando ela tem temporadas. O catalogo ganha;
+// senao a ficha /meta/series. 0 se o id for filme. shortcut: uma ficha de
+// serie por id de filme na sessao quando o catalogo nao tem a serie.
+int  desc_titulo_serie(const char *id, char *titulo, size_t tam);
 int  desc_meta_n_episodios(const char *corpo);
 
 // Busca o meta de um titulo que o catalogo NAO tem e o acrescenta ao fim.

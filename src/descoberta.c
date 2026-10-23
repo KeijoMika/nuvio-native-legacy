@@ -7386,6 +7386,40 @@ int desc_meta_tem_temporadas(const char *corpo) {
   return 0;
 }
 
+int desc_titulo_serie(const char *id, char *titulo, size_t tam) {
+  char base[24], chave[96], *corpo, *corte;
+  int i, ok = 0;
+  static char neg[48][24];
+  static int nNeg;
+  static pthread_mutex_t negTrava = PTHREAD_MUTEX_INITIALIZER;
+  if (!id || !*id || !titulo || !tam) return 0;
+  titulo[0] = 0;
+  snprintf(base, sizeof base, "%s", id);
+  corte = strchr(base, ':');
+  if (corte) *corte = 0;
+  if (cat_titulo_serie_ou_incerto(base, titulo, tam)) return 1;
+  pthread_mutex_lock(&negTrava);
+  for (i = 0; i < nNeg; i++)
+    if (!strcmp(neg[i], base)) { pthread_mutex_unlock(&negTrava); return 0; }
+  pthread_mutex_unlock(&negTrava);
+  desc_meta_chave(chave, sizeof chave, "series", base);
+  corpo = metaCacheObter(chave);
+  if (!corpo) {
+    corpo = metaprov_meta("series", base, 8, NULL);
+    if (corpo) metaCacheGuardar(chave, corpo);
+  }
+  if (corpo && desc_meta_tem_temporadas(corpo))
+    ok = metaTextos(corpo, titulo, tam, NULL, 0);
+  free(corpo);
+  if (!ok) {
+    pthread_mutex_lock(&negTrava);
+    if (nNeg < 48) snprintf(neg[nNeg++], sizeof neg[0], "%s", base);
+    pthread_mutex_unlock(&negTrava);
+    titulo[0] = 0;
+  }
+  return ok;
+}
+
 // CONJUNTO DE (temporada, episodio) JA VISTOS num videos[]. Um addon de FONTES
 // pode responder o /meta com um video por ARQUIVO de torrent (relato de TV LG,
 // Breaking Bad: 18529 entradas para 62 episodios), entao contar e deduplicar
@@ -9697,7 +9731,9 @@ void desc_episodios_pendente(void) {
 // O meta vem do Cinemeta, a mesma fonte do resto do catalogo, e o item entra no
 // FIM do vetor (cat_acrescentar). O tipo do TMDB e o sufixo de episodio sao
 // preservados: movie e tv podem compartilhar o numero no TMDB, mas sao obras
-// diferentes. So sem tipo conhecido tenta filme e depois serie.
+// diferentes. Sem tipo conhecido vale desc_meta_tipos: serie com temporada
+// primeiro. Aceitar o filme antes foi o que gravou tt9054364 como
+// "Chasing Mavericks" (#524) — o /meta/movie desse id e outro filme.
 static char sobId[24];
 static long sobTmdb;          // quando > 0, o id do IMDb ainda precisa ser resolvido
 static char sobTipo[8];
@@ -9770,10 +9806,17 @@ static void *buscarTitulo(void *arg) {
     }
   }
 
-  for (passo = 0; passo < (sobTipo[0] ? 1 : 2) && achou < 0; passo++) {
-    const char *tipo = sobTipo[0] ? sobTipo : passo ? "series" : "movie";
+  const char *tiposPedido[2];
+  int nTipos = sobTipo[0] ? 1 : desc_meta_tipos("", tiposPedido);
+  if (sobTipo[0]) tiposPedido[0] = sobTipo;
+  for (passo = 0; passo < nTipos && achou < 0; passo++) {
+    const char *tipo = tiposPedido[passo];
+    int ultimo = passo == nTipos - 1;
     corpo = metaprov_meta(tipo, id, 20, NULL);   // Nuvio, depois Cinemeta
     if (!corpo) continue;
+    // Serie sem temporada nao prova o tipo (o filme cai no passo seguinte).
+    // Com temporada, o filme do mesmo id nao entra: e a colisao do #524.
+    if (!ultimo && !desc_meta_tem_temporadas(corpo)) { free(corpo); continue; }
     { const char *m = strstr(corpo, "\"meta\"");
       CatItem it;
       if (m && deMeta(m, NULL, tipo, &it) &&
