@@ -215,6 +215,9 @@ NAO_E_TELA = ("printf", "fprintf", "puts", "fputs", "perror", "marco",
               "fontevolta_", "addons_buscar", "cat_indice_por",
               # video_tpk.c: motivo so vai para o log [mkvfix] (#638)
               "mfLigar",
+              # logrede.c: log filter terms and LAN browser page, never TV UI.
+              '"[fonte", "[voltafonte"', '"[abrir-diag]"', '"[tocar-diag]"',
+              "static const char PAGINA[]",
               "idioma_registrar", "assert", "_Static_assert",
               "EM_ASM", "MAIN_THREAD",
               # NOME DE ICONE NAO E TEXTO. gfx_icone recebe o basename do SVG
@@ -587,6 +590,8 @@ IGNORAR = {
     "com", "configuração necessária", "doação", "donación", "faca uma doacao",
     "faça uma doação", "nao disponivel", "não disponível",
     "sem fontes disponiveis", "unterstutze das projekt", "unterstütze das projekt",
+    # legsync.c: motivos de autoEncerrar(), so no log "[legsync] automatico: encerra".
+    "sem progresso", "sem referencia nesta plataforma",
 }
 
 def sem_corpo_em_js(txt):

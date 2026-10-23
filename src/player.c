@@ -133,6 +133,7 @@ static void avisarCascaAberto(int v) { (void)v; tex_pressao_reproducao(v); }
 #include "plrui.h"
 #include "escala.h"
 #include "plrilha.h"
+#include "neste.h"
 #include "cacheboost.h"
 #include "audioinfo.h"
 #include "legendasui.h"   /* F04: second subtitle band */
@@ -163,6 +164,8 @@ static void avisarCascaAberto(int v) { (void)v; tex_pressao_reproducao(v); }
 // — foi a queixa — mas a primeira versao disparava a ~20 min/s e "ja voava pro
 // final". A regra e os degraus estao em salto.h.
 #include "salto.h"
+#include "seekgesto.h"    // .tpk: seek gesture (owner-tuned values, SEEKG_PADRAO)
+#include "video_seekretry.h"
 // Sem tecla por este tempo, o avanco termina: manda a posicao ao pipeline e
 // retoma. 420 ms e maior que o intervalo de repeticao do controle (que na C9
 // fica perto de 100 ms) e menor que o tempo de reacao de quem soltou de
@@ -221,13 +224,41 @@ static void avisarCascaAberto(int v) { (void)v; tex_pressao_reproducao(v); }
 // IDs estaveis: a ordem visual e de navegacao vem de transporteAcoes.
 // Na serie, Anterior/Proximo ficam ao lado do Play; o restante conserva a ordem.
 enum { PLR_PLAY, PLR_CC, PLR_AUDIO, PLR_ASPECTO,
-       PLR_FONTES, PLR_EPISODIOS, PLR_PROXIMO, PLR_REINICIAR, PLR_NBTNS };
+       PLR_FONTES, PLR_EPISODIOS, PLR_PROXIMO, PLR_REINICIAR, PLR_NESTE, PLR_NBTNS };
 
 // Avanco em curso: enquanto vale, posSeg e do DONO e nao do pipeline.
 static int    scrubbing, scrubPassos, scrubTocava, scrubDir, scrubToque;
 static double scrubInicio;
 static Uint32 scrubUltimo;
 static SaltoEst scrubSalto;   // rajada do teclado (salto.h)
+#ifdef NV_TPK
+// .tpk SEEK GESTURE (seekgesto.h, owner 20/10): taps and holds share one
+// remembered step; the memory lives until the seek commits (terminarSalto).
+static SeekGesto gesto;
+static const SeekParams seekPar = SEEKG_PADRAO;
+// SEEK IN FLIGHT. The host only updates its position cache once
+// SetPlayPositionAsync finishes, so for a while after a seek video_pos() is
+// the OLD position. Copying it into posSeg made the bar slide back to where
+// the video was, and a press in that window scrubbed from the old spot. While
+// `vooAtivo` the bar, the clock and a new scrub use the target instead.
+static int    vooAtivo, vooTentativas;
+static double vooAlvo;
+static Uint32 vooDesde, vooLivreEm, vooRetryEm;
+static unsigned vooFalhas, vooGer;
+#define VOO_PRAZO_MS   20000u   // the host gives up at 15 s and reconnects
+#define VOO_PERTO_S    3.0      // landed: position within this of the target
+#define VOO_LIVRE_MS   1500u    // or this long after the TV stopped seeking
+// Elapsed ms, never negative. `agora` is the frame clock (taken once, before
+// player_atualizar) while a commit from the inactivity timer stamps
+// SDL_GetTicks() LATER in the same frame: unsigned `agora - vooDesde` wrapped
+// to ~4e9 and the 20 s timeout fired on the very next line (the log showed
+// "gave up waiting" 16 ms after "seek sent"), dropping the target and bringing
+// the snap-back back.
+static Uint32 vooDecorrido(Uint32 agora, Uint32 desde) {
+  Sint32 d = (Sint32)(agora - desde);
+  return d > 0 ? (Uint32)d : 0u;
+}
+#endif
 // BUSCA SUAVE: o que a BARRA mostra durante o avanco. posSeg anda em degraus
 // (10 s, 30 s, 60 s, 120 s por passo, ~3 passos por segundo) e desenhar direto dele fazia
 // o preenchimento saltar aos trancos. posVis persegue posSeg por mola de
@@ -582,6 +613,33 @@ static const char *textoAudioAtual(void) {
   }
   return txt;
 }
+// IDIOMA E CANAIS DA FAIXA TOCANDO, o texto da fileira de formato ("Inglês
+// 5.1"), com o CODEC no meio quando o dono quer (Ajustes > Mostrar o codec do
+// audio, ligado de fabrica): "Inglês · E-AC-3 5.1 Atmos". O idioma vem da
+// etiqueta do arquivo ("und" e vazio ficam de fora); "" sem nenhum dos dois.
+static const char *rotuloAudioOsd(void) {
+  static char txt[112], chave[160];
+  const VideoFaixa *f = video_audio(video_audio_atual());
+  int pt = cacheboost_ganho_estado() == CB_GANHO_PASSTHROUGH;
+  const char *cod = ajustes_plr_codec() ? textoAudioAtual() : "";   // ja traz canais, Atmos e "receptor"
+  char k[sizeof chave];
+  snprintf(k, sizeof k, "%d|%s|%d|%d|%d|%s", video_audio_atual(), f ? f->idioma : "", f ? f->canais : 0, pt,
+           ajustes_idioma(), cod);
+  if (strcmp(k, chave)) {
+    const char *nome = (f && f->idioma[0] && strcasecmp(f->idioma, "und")) ? i18n(ling_nome(f->idioma)) : "";
+    const char *ch = f ? audioinfo_canais(f->canais) : "";
+    memcpy(chave, k, sizeof chave);
+    if (cod[0]) snprintf(txt, sizeof txt, "%s%s%s", nome, nome[0] ? " \xc2\xb7 " : "", cod);
+    else {
+      snprintf(txt, sizeof txt, "%s%s%s", nome, nome[0] && ch[0] ? " " : "", ch);
+      if (txt[0] && pt) {
+        size_t n = strlen(txt);
+        snprintf(txt + n, sizeof txt - n, " \xc2\xb7 %s", i18n("receptor"));
+      }
+    }
+  }
+  return txt;
+}
 const char *player_id_canal(void) { return canalSessao ? itemCanal.imdb : ""; }
 const char *player_tipo_canal(void) { return canalSessao ? itemCanal.tipo : ""; }
 
@@ -635,6 +693,17 @@ static double retomarFonteSeg = -1.0;
 static double basePos, baseDur;
 static int basePct, baseTocou, baseT = -1, baseE = -1;
 static int epT, epE, pedFontes, erroFonte, pedProxT, pedProxE;
+// Sinopse do episodio em exibicao (do catalogo); vazia se ele nao a trouxe,
+// e ai a pausa usa a da serie.
+static const char *sinopseEpisodioAtual(void) {
+  int ix = idxAtual();
+  if (epE <= 0) return "";
+  for (int i = 0; i < cat_n_episodios(ix); i++) {
+    const CatEp *ep = cat_episodio(ix, i);
+    if (ep && ep->temporada == epT && ep->episodio == epE) return ep->sinopse;
+  }
+  return "";
+}
 
 static int itemTipoCerto(void) {
   return temFixo && (!strcmp(itemFixo.tipo, "movie") || !strcmp(itemFixo.tipo, "series"));
@@ -1734,6 +1803,10 @@ void player_abrir(int indiceCatalogo, const char *url) {
   // pipeline novo assim que o silencio vencesse.
   scrubbing = 0; scrubPassos = 0; scrubTocava = 0; scrubDir = 0; scrubToque = 0; scrubInicio = 0.0;
   posVis = 0.0f; posVisV = 0.0f; posVisSolto = 0;
+#ifdef NV_TPK
+  seekgesto_zerar(&gesto);
+  vooAtivo = 0; vooRetryEm = 0;
+#endif
   encolhe = 1.0f; encolheAlvo = 0.0f; encolheT = 0.0f; encolheEm = 0;
   posplay_fechar();   // titulo novo, painel do anterior nao vale mais
   reacao_fechar();
@@ -2039,7 +2112,10 @@ static void tocarFonteInterno(const char *url) {
   zerarAssistido();
   mkvass_video_aberto(comVideo);
   aspArmar();
-  if (!comVideo) erroSemVideo();
+  if (!comVideo) {
+    fontesonda_recusa(url, video_erro_texto(), 1);
+    erroSemVideo();
+  }
   // No PiP a fonte nova retoca o mesmo canto — o destino de tela cheia do
   // aplicarAspecto so vale com a tela aberta.
   if (mini) { PlrRect r = miniDestino();
@@ -3122,6 +3198,26 @@ int player_recarregar_fonte(unsigned contexto) {
   return 1;
 }
 
+// NESTE EPISODIO: painel da ilha com o elenco convidado (TMDB), sem sincronia.
+static int nesteAberto, nesteT, nesteE;
+static char nesteImdb[16];
+static void corpoNeste(GfxRect r, float a, void *u) {
+  NesteElenco el;
+  float x = r.x + 36.0f, w = r.w - 72.0f, y = r.y + 18.0f;
+  NesteEstado st = neste_estado(nesteImdb, nesteT, nesteE, &el);
+  (void)u;
+  if (st != NESTE_PRONTO) {
+    txt_bloco_corta(TXT_ILHA_TEXTO, i18n(st == NESTE_CARREGANDO || st == NESTE_NADA ? "Carregando…" : "Sem elenco convidado listado."),
+                    158, 157, 155, x, y + 8.0f, w, 30.0f, a, 2);
+    return;
+  }
+  for (int i = 0; i < el.n; i++) {
+    y += txt_bloco_corta(TXT_ILHA_PERGUNTA, el.p[i].nome, 243, 242, 239, x, y, w * 0.5f - 12.0f, 30.0f, a, 1);
+    txt_bloco_corta(TXT_ILHA_TEXTO, el.p[i].personagem, 158, 157, 155, x + w * 0.5f, y - 30.0f + 3.0f, w * 0.5f, 30.0f, a, 1);
+    y += 4.0f;
+  }
+}
+
 typedef struct { int id, habilitada; } PlrAcao;
 static int transporteSerie(void) { return !ehCanal() && epT >= 0 && epE > 0; }
 static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
@@ -3136,6 +3232,7 @@ static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
   a[n++] = (PlrAcao){PLR_ASPECTO, 1};
   a[n++] = (PlrAcao){PLR_FONTES, 1};
   if (temUltimoBotao()) a[n++] = (PlrAcao){PLR_EPISODIOS, 1};
+  if (serie) a[n++] = (PlrAcao){PLR_NESTE, 1};
   return n;
 }
 static int transporteHabilitado(int id) {
@@ -3794,10 +3891,76 @@ static void buscarUsuario(double alvo) {
     if (!xtream_url_limitada(video_url_atual())) seekprobe_iniciar(video_url_atual(), video_cabecalhos());   // #557: own proxies handle Range
   creditosauto_destino(&creditosAuto, alvo);
   video_buscar(alvo);
+#ifdef NV_TPK
+  vooAtivo = 1; vooAlvo = alvo; vooDesde = SDL_GetTicks(); vooLivreEm = vooRetryEm = 0;
+  vooTentativas = 0; vooFalhas = video_busca_falhas(); vooGer = fonteAcaoGeracao;
+#endif
 }
+
+#ifdef NV_TPK
+// Once per frame, before the position is read: follow the seek in flight
+// until the TV confirms it, retry a refused one (0.5 / 1.5 / 3 s, like the
+// webOS seekretry) and only then tell the person it failed.
+static void vooPasso(Uint32 agora) {
+  unsigned f;
+  double p;
+  if (!vooAtivo) return;
+  if (vooGer != fonteAcaoGeracao || !comVideo) {
+    printf("[seek] in-flight seek dropped (source changed)\n"); fflush(stdout);
+    vooAtivo = 0; vooRetryEm = 0;
+    return;
+  }
+  f = video_busca_falhas();
+  if (f != vooFalhas) {
+    vooFalhas = f;
+    if (vooTentativas < NV_SEEK_MAX) {
+      vooTentativas++;
+      vooRetryEm = (agora + nv_seek_espera_ms(vooTentativas)) | 1u;
+      printf("[seek] retry %d/%d in %u ms (TV refused the seek to %.1f)\n", vooTentativas, NV_SEEK_MAX,
+             nv_seek_espera_ms(vooTentativas), vooAlvo);
+      fflush(stdout);
+    } else {
+      printf("[seek] failed: TV refused the seek to %.1f %d times, staying at %.1f\n", vooAlvo,
+             NV_SEEK_MAX + 1, video_pos());
+      fflush(stdout);
+      player_toast_ex("Seek failed", 3500u, "pl_triangle-alert", 1);
+      vooAtivo = 0; vooRetryEm = 0;
+      return;
+    }
+  }
+  if (vooRetryEm) {
+    if ((Sint32)(agora - vooRetryEm) < 0) return;   // signed: see vooDecorrido
+    vooRetryEm = 0; vooLivreEm = 0;
+    printf("[seek] retry sent target=%.1f\n", vooAlvo); fflush(stdout);
+    video_buscar(vooAlvo);
+    return;
+  }
+  if (video_busca_em_voo()) {
+    vooLivreEm = 0;
+    if (vooDecorrido(agora, vooDesde) > VOO_PRAZO_MS) {
+      printf("[seek] gave up waiting: no confirmation in %u ms, staying at %.1f\n", VOO_PRAZO_MS, video_pos());
+      fflush(stdout);
+      player_toast_ex("Seek failed", 3500u, "pl_triangle-alert", 1);
+      vooAtivo = 0;
+    }
+    return;
+  }
+  if (!vooLivreEm) vooLivreEm = agora | 1u;
+  p = video_pos();
+  if (fabs(p - vooAlvo) < VOO_PERTO_S || vooDecorrido(agora, vooLivreEm) >= VOO_LIVRE_MS) {
+    vooAtivo = 0;
+  }
+}
+#endif
 
 static void iniciarSalto(int toque) {
   scrubInicio = comVideo ? video_pos() : posSeg;
+#ifdef NV_TPK
+  // A seek still in flight: start from where the person sent it, not from the
+  // stale position the TV is still reporting (the second half of the bug).
+  if (vooAtivo) { scrubInicio = vooAlvo; posSeg = (float)scrubInicio; }
+  seekgesto_zerar(&gesto);
+#endif
   scrubToque = toque;
   scrubbing = 1;
   scrubPassos = 0;
@@ -3819,6 +3982,19 @@ static void saltar(int dir, int repeticao) {
   scrubToque = 0;
   scrubDir = dir;
   Uint32 agora = SDL_GetTicks();
+#ifdef NV_TPK
+  { const SeekParams *sp = &seekPar;
+    float s = seekgesto_tecla(&gesto, sp, dir, agora, duracaoSeg, NULL);
+    (void)novo; (void)repeticao;
+    scrubUltimo = agora;
+    if (s != 0.0f) {
+      double de = posSeg;
+      scrubPassos++;
+      posSeg = anim_clamp(posSeg + s, 0.0f, duracaoSeg);
+      recuarAutomatico(de, posSeg);
+    }
+    return; }
+#endif
   // Repeticao de tecla segurada entre dois passos: so mantem o avanco vivo (scrubUltimo), nao anda.
   float passo = salto_tecla(&scrubSalto, novo, repeticao, agora, duracaoSeg);
   scrubUltimo = agora;
@@ -3841,6 +4017,9 @@ static void terminarSalto(void) {
   retomandoSalto = scrubTocava;
   pausao_fechar();
   seekr_ocioso();   // solta a folha decodificada (~22 MB), fica o JPEG
+#ifdef NV_TPK
+  seekgesto_zerar(&gesto);   // the memory lives until the commit
+#endif
   if (comVideo) {
     if (posSeg >= scrubInicio) creditosauto_buscar(&creditosAuto, posSeg);
     buscarUsuario(posSeg);
@@ -3898,6 +4077,7 @@ static int ativarBotao(int i, int repetiu) {
     case PLR_CC: pedFaixas = 2; break;
     case PLR_AUDIO: pedFaixas = 1; break;
     case PLR_FONTES: pedFontes = 1; break;
+    case PLR_NESTE: nesteAberto = 1; nesteT = epT; nesteE = epE; break;
     case PLR_EPISODIOS:
       if (ehCanal()) pedGuia = 1;
       else if (epE > 0) episodios_abrir(idxAtual(), epT, epE);
@@ -3910,6 +4090,17 @@ static int ativarBotao(int i, int repetiu) {
 }
 
 void player_evento(const SDL_Event *e) {
+  // QUALQUER ENTRADA E ATIVIDADE, antes de qualquer return: tecla, clique ou roda
+  // do Magic Remote/mouse, toque e botoes do controle. O painel de pausa so sobe
+  // depois de 4 s SEM nenhum comando; mexer em legenda, audio ou na barra
+  // recomeca a conta (o movimento do ponteiro entra em player_atualizar).
+  switch (e->type) {
+    case SDL_KEYDOWN: case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP: case SDL_MOUSEWHEEL:
+    case SDL_FINGERDOWN: case SDL_FINGERMOTION: case SDL_FINGERUP:
+    case SDL_CONTROLLERBUTTONDOWN: case SDL_JOYBUTTONDOWN: case SDL_JOYHATMOTION:
+      pausao_activity(); break;
+    default: break;
+  }
   if (e->type == SDL_KEYUP && (e->key.keysym.sym == SDLK_RETURN ||
       e->key.keysym.sym == SDLK_KP_ENTER || e->key.keysym.sym == SDLK_SPACE))
     confirmacaoTransporteRetida = 0;
@@ -3945,6 +4136,7 @@ void player_evento(const SDL_Event *e) {
   // Left/Right - never has it reappear under their hands and take the controls
   // away. Called before any handler returns.
   pausao_activity();
+  if (nesteAberto) { nesteAberto = 0; return; }
 
   // DIGITAR O NUMERO DO CANAL (M7): 1-9 (e o 0 com digitacao em curso) montam o
   // numero; 1,5 s sem tecla ou OK confirma; Voltar cancela so o numero.
@@ -4393,10 +4585,18 @@ void player_atualizar(float dt, Uint32 agora) {
                  itens, bytes / 1048576.0, mem); }
         fflush(stdout);
       } }
+#ifdef NV_TPK
+  vooPasso(agora);
+#endif
   if (fontePrincipal() && video_ativo()) {
     double d = video_duracao();
     // AVANCANDO, a posicao e a que o dono escolheu. Ler video_pos() aqui era o
     // que fazia a barra pular de volta a cada repeticao de tecla.
+#ifdef NV_TPK
+    // Seek in flight: the target, never the stale position (vooAtivo).
+    if (!scrubbing && vooAtivo) posSeg = (float)vooAlvo;
+    else
+#endif
     if (!scrubbing) posSeg = (float)video_pos();
     // Move a janela de colheita da legenda ASS embutida (#92). Barato: so
     // acorda o fio quando a posicao andou meio segundo.
@@ -4534,8 +4734,12 @@ void player_atualizar(float dt, Uint32 agora) {
   if (scrubbing) {
     posVisSolto = 1;
     double de = posSeg;
+#ifdef NV_TPK
+    posSeg = anim_clamp(posSeg + seekgesto_quadro(&gesto, &seekPar, agora, dt), 0.0f, duracaoSeg);
+#else
     posSeg = anim_clamp(posSeg + salto_quadro(&scrubSalto, scrubDir, agora, dt, duracaoSeg),
                         0.0f, duracaoSeg);
+#endif
     if (!scrubToque) recuarAutomatico(de, posSeg);
   }
   if (posVisSolto) {
@@ -4730,9 +4934,13 @@ void player_atualizar(float dt, Uint32 agora) {
   // clock kept running under a moving pointer: it only ever read `ultimoInput`,
   // which only a key updates.
   { Uint32 mov = ponteiro_last_motion();
-    if (mov && (Sint32)(mov - ultimoInput) > 0) ultimoInput = mov; }
+    if (mov && (Sint32)(mov - ultimoInput) > 0) { ultimoInput = mov; pausao_activity(); } }
   if (visivel && tocando && !player_carregando() && !episodios_aberto() &&
-      !stream_folha_aberta() && !faixas_aberta() && agora - ultimoInput > PLR_ESCONDE_MS) visivel = 0;
+      !stream_folha_aberta() && !faixas_aberta() && agora - ultimoInput > PLR_ESCONDE_MS
+#ifdef NV_TPK
+      && !vooAtivo   // the bar stays while the TV is still seeking
+#endif
+      ) visivel = 0;
   if (epE > 0 && !strstr(linhaEp, " · ")) player_definir_episodio(epT, epE);
   introTmdbTardio(agora);
 
@@ -4747,7 +4955,8 @@ void player_atualizar(float dt, Uint32 agora) {
   // nesta funcao) e cobriria a ficha. Pausar no fim de um episodio e comum
   // justamente porque a contagem esta correndo — sem esta linha o painel
   // subiria invisivel, atras dela.
-  pausao_atualizar(dt, agora,
+  {
+    int podeSubir =
                    // `!scrubbing`: durante o avanco o video fica pausado por
                    // conta do player, e nao porque o dono parou para olhar. Sem
                    // esta condicao o painel subia sozinho no meio de um avanco
@@ -4760,8 +4969,11 @@ void player_atualizar(float dt, Uint32 agora) {
                    // "comeca pausado" do Dolby Vision em MKV (video_iniciando).
                    !video_iniciando() && !dvtela_visivel() &&
                    !episodios_aberto() && !stream_folha_aberta() &&
-                   !faixas_aberta() && !player_janela_proximo(0) && !posplay_visivel(),
-                   idxAtual(), item() ? item()->imdb : "", linhaEp);
+                   !faixas_aberta() && !player_janela_proximo(0) && !posplay_visivel();
+    pausao_atualizar(dt, agora, podeSubir,
+                   idxAtual(), item() ? item()->imdb : "", epT, epE, linhaEp,
+                   podeSubir && ajustes_pausa_overlay() ? sinopseEpisodioAtual() : "");
+  }
   // Com o painel de pe os controles SAEM de cena. Este ponto ja foi das duas
   // formas: com os controles visiveis o dono achou pior e pediu de volta o
   // comportamento original, com o painel ocupando o rodape sozinho, so que
@@ -4970,6 +5182,7 @@ static const char *iconeBotao(int i) {
     case PLR_FONTES:    return "pl_layers";
     case PLR_PROXIMO:   return "pl_chevron-right";
     case PLR_REINICIAR: return "pl_rotate-ccw";
+    case PLR_NESTE:     return "pl_users";
     default:            return epE > 0 ? "pl_list-video" : "pl_film";
   }
 }
@@ -4982,6 +5195,7 @@ static const char *rotuloBotao(int i) {
     case PLR_FONTES:    return "Fontes";
     case PLR_PROXIMO:   return "Próximo episódio";
     case PLR_REINICIAR: return "Assistir do começo";
+    case PLR_NESTE:     return "Neste episódio";
     default:            return ehCanal() ? "Guia" : epE > 0 ? "Epis\xc3\xb3""dios" : "Relacionados";
   }
 }
@@ -6273,6 +6487,19 @@ void player_desenhar(Uint32 agora) {
     plrilha_pedir(&pd);
   }
 
+  if (nesteAberto && (epT != nesteT || epE != nesteE || !aberto || saindo)) nesteAberto = 0;
+  if (nesteAberto) {
+    PlrIlhaPedido pd;
+    const CatItem *c = item();
+    snprintf(nesteImdb, sizeof nesteImdb, "%s", c ? c->imdb : "");
+    neste_pedir(nesteImdb, nesteT, nesteE);
+    memset(&pd, 0, sizeof pd);
+    pd.icone = "pl_users"; pd.texto = i18n("Neste episódio");
+    pd.semFim = 1; pd.aberta = 1; pd.video = 1;
+    pd.w = 640.0f; pd.h = 36.0f + 34.0f * NESTE_MAX; pd.corpo = corpoNeste;
+    plrilha_pedir(&pd);
+  }
+
   // --- avisos do player: a PILULA DA ILHA que abre (plrilha.h) --------------
   // Era uma pilula de 128 px cheia de acento no meio da tela (o acento como
   // decoracao). Agora o aviso abre a pilula do canto para 64, com o icone do
@@ -6554,6 +6781,178 @@ static void desenharOsd(Uint32 agora, float a, float ac, const CatItem *c) {
   desenharOsdCorpo(agora, a, ac, c);
   ESCALA_FIM();
 }
+// FILEIRA DE FORMATO ("4K · Dolby Vision · Atmos · Inglês 5.1", como no pedido
+// #4141 do NuvioTV). Vem do FLUXO, nao de constante: selo que mente e pior que
+// selo ausente, porque e nele que o dono confia para saber se pegou a versao
+// boa. Dois ajustes do dono (Reproducao > Durante e depois): o ESTILO (Formato
+// no player) e a POSICAO (embaixo do titulo, ao lado dele ou no canto de cima,
+// do lado oposto ao da ilha da hora).
+//   TEXTO  em negrito, solto; PILULA  pilulas da ilha do relogio (a mesma
+//   medida, material e letra da hora e do "termina as"); MARCAS  todas as marcas
+//   na arte branca de badges.h, o que o OSD sempre mostrou (o padrao, no canto); SELOS  os do pacote
+//   configurado, como na folha de Fontes; DESLIGADO  sem a fileira.
+// Depois das marcas, o idioma e os canais da faixa tocando. Devolve a altura (0
+// = nada a mostrar) e, em `larg`, a largura; `medir` so faz a conta.
+#define FORMATO_FIL_H 42.0f
+#define FORMATO_PIL_H 56.0f   // PIL_H da ilha do relogio (plrilha.c)
+typedef struct { int tipo; int g; const char *ic; FormatoMarca f; TxtLinha l; float w; } FmtPeca;   // tipo: 0 texto, 1 arte, 2 selos do pacote; g: grupo da pilula (0 resolucao, 1 video/som, 2 idioma); ic: simbolo pequeno antes do texto (pilula)
+#define FMT_IC 24.0f       // o icone da ilha: 24 com 12 de folga
+#define FMT_IC_GAP 12.0f
+#define FMT_PIL_PAD 24.0f  // a margem de dentro da ilha
+#define FMT_PIL_SEP 25.0f  // 12 + filete de 1 + 12, como entre a hora e o "termina as"
+static void fmtPecaDesenhar(const FmtPeca *p, float x, float yy, float H, float mh, float a,
+                            const char *txtPac, float wPac, float hPac) {
+  if (p->ic) {
+    gfx_icone((GfxRect){ x, yy + (H - FMT_IC) * 0.5f, FMT_IC, FMT_IC }, p->ic, 0.953f, 0.949f, 0.937f, a);
+    x += FMT_IC + FMT_IC_GAP;
+  }
+  if (p->tipo == 0) txt_desenhar_alpha(p->l, x, yy + (H - (float)p->l.h) * 0.5f, a);
+  else if (p->tipo == 2) stream_selos_medidos(txtPac, x, yy + (H - hPac) * 0.5f, wPac + 1.0f, hPac, 0.953f, a, 0);
+  else marca_formato(p->f, x, yy + (H - mh) * 0.5f, mh, 0.953f, 0.949f, 0.937f, a);
+}
+static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir, float *larg) {
+  const float mh = 34.0f;
+  const int estilo = ajustes_plr_formato(), pil = estilo == PLR_FMT_PILULA;
+  const float gap = estilo == PLR_FMT_MARCAS ? 22.0f : 18.0f, H = pil ? FORMATO_PIL_H : FORMATO_FIL_H;
+  FormatoMarca selos[5];
+  FmtPeca p[8];
+  int nSelos = 0, n = 0, i;
+  float wPac = 0.0f, total = 0.0f;
+  const float hPac = 30.0f;
+  char txtPac[160] = "";
+  if (larg) *larg = 0.0f;
+  if (estilo == PLR_FMT_OFF) return 0.0f;
+  // A classe sai da LARGURA primeiro: filme 2.39:1 em 1080p chega como
+  // 1920x800. A faixa do 1440p (2560) fica SEM selo: ausente e mais honesto
+  // que errado.
+  { int w = video_largura(), h = video_altura();
+    if (w >= 3200 || h >= 1800)       selos[nSelos++] = FMT_4K;
+    else if (w >= 2400)               { /* 1440p: sem selo */ }
+    else if (w >= 1800 || h >= 1000)  selos[nSelos++] = FMT_1080;
+    else if (w >= 1200 || h >= 700)   selos[nSelos++] = FMT_720;
+    else if (w > 0)                   selos[nSelos++] = FMT_SD; }
+  // "Dolby Vision" so quando o PIPELINE devolveu DolbyVision no videoInfo
+  // (MEDIDO: um MKV anunciado como DV volta HDR10 nesta TV).
+  if (video_tem_dolby_vision())                  selos[nSelos++] = FMT_DV;
+  else if (!strcasecmp(video_hdr(), "HDR10"))    selos[nSelos++] = FMT_HDR10;
+#if defined(__EMSCRIPTEN__) || defined(NV_TPK)
+  else {
+    // AVPlay nao confirma HDR ativo: o selo e o da FONTE, nunca Dolby Vision
+    // (TV Samsung nao tem DV; badges_fonte_hdr so conhece HDR10+/HDR10/HDR).
+    const Stream *fonte = stream_item(stream_atual());
+    int hdr = fonte ? badges_fonte_hdr_marca(fonte->badges) : -1;
+    if (hdr >= 0) selos[nSelos++] = (FormatoMarca)hdr;
+  }
+#endif
+  if (video_tem_atmos())        selos[nSelos++] = FMT_ATMOS;
+  if (marcaDtsAtual() >= 0)     selos[nSelos++] = (FormatoMarca)marcaDtsAtual();
+  const char *rotAudio = ehCanal() ? "" : rotuloAudioOsd();
+  if (!nSelos && !rotAudio[0]) return 0.0f;
+  // SELOS: os do pacote que o dono configurou (Ajustes > Selos), a mesma arte
+  // da folha de Fontes, casados com o que foi MEDIDO (o codec da faixa entra
+  // no casamento). Sem pacote, ou sem casar nada, cai no texto.
+  if (estilo == PLR_FMT_SELOS && nSelos) {
+    const VideoFaixa *fa = ehCanal() ? NULL : video_audio(video_audio_atual());
+    const char *cod = fa ? audioinfo_codec(fa->codec) : "";
+    for (i = 0; i < nSelos; i++) {
+      size_t k = strlen(txtPac);
+      snprintf(txtPac + k, sizeof txtPac - k, "%s%s", i ? " " : "", marca_formato_nome(selos[i]));
+    }
+    if (cod[0]) {
+      size_t k = strlen(txtPac);
+      snprintf(txtPac + k, sizeof txtPac - k, " %s%s", cod, fa && strstr(fa->rotulo, "Atmos") ? " Atmos" : "");
+    }
+    wPac = stream_selos_medidos(txtPac, 0.0f, 0.0f, 1200.0f, hPac, 0.953f, 1.0f, 1);
+  }
+  if (wPac > 0.0f) { p[n].tipo = 2; p[n].g = 1; p[n].ic = NULL; p[n].w = wPac; n++; }
+  else for (i = 0; i < nSelos; i++, n++) {
+    // MARCAS: todas as marcas na arte branca de badges.h, como o OSD sempre
+    // mostrou (4K, HDR, Dolby Vision, Atmos, DTS).
+    int arte = estilo == PLR_FMT_MARCAS;
+    p[n].f = selos[i];
+    p[n].tipo = arte;
+    p[n].ic = NULL;
+    p[n].g = (n == 0 && marca_resolucao(marca_formato_nome(selos[i])) >= 0) ? 0 : 1;
+    if (arte) p[n].w = marca_formato_largura(selos[i], mh);
+    else {
+      const char *nome = marca_formato_nome(selos[i]);
+      // Na pilula o simbolo da Dolby abre "Dolby Vision" e "Atmos" (o "Dolby" do
+      // Atmos vira o proprio simbolo), como no pedido #4141.
+      if (pil && (selos[i] == FMT_DV || selos[i] == FMT_ATMOS)) {
+        p[n].ic = "marca_dolby";
+        if (selos[i] == FMT_ATMOS) nome = "Atmos";
+      }
+      p[n].l = txt_linha(pil ? TXT_ILHA_NOME : TXT_G23B, nome, 243, 242, 239, 255);
+      p[n].w = (float)p[n].l.w;
+    }
+    if (p[n].ic) p[n].w += FMT_IC + FMT_IC_GAP;
+  }
+  if (rotAudio[0]) {
+    // Na pilula, o idioma tem o peso do "termina as": o segundo dado da ilha.
+    p[n].tipo = 0; p[n].g = 2; p[n].ic = pil ? "aj_audio-lines" : NULL;
+    p[n].l = pil ? txt_linha(TXT_G19M, rotAudio, 243, 242, 239, 153) : txt_linha(TXT_G22M, rotAudio, 243, 242, 239, 255);
+    p[n].w = (float)p[n].l.w + (p[n].ic ? FMT_IC + FMT_IC_GAP : 0.0f); n++;
+  }
+  // LARGURA TOTAL (a conta que decide se cabe ao lado do titulo).
+  if (pil) {
+    int k = 0;
+    while (k < n) {
+      int g = p[k].g, m = k;
+      float W = FMT_PIL_PAD * 2.0f;
+      while (m < n && p[m].g == g) { W += p[m].w + (m > k ? FMT_PIL_SEP : 0.0f); m++; }
+      total += (k > 0 ? (g == 2 ? 28.0f : 10.0f) : 0.0f) + W;
+      k = m;
+    }
+  } else for (i = 0; i < n; i++) total += p[i].w + (i ? gap : 0.0f);
+  if (larg) *larg = total;
+  if (medir) return H;
+  // ENTRADA ESCALONADA: o rasterizador faz poucas linhas por quadro e os
+  // selos ja chegariam um a um; a curva assume a cadencia (90 ms, 10 px).
+  // Conta de quando o OSD APARECEU, nao da ultima tecla: navegar nos
+  // botoes ou no seek fazia os selos sumirem e voltarem a cada toque
+  // (dono, 11/10). Quadro sem selos ha mais de 300 ms = OSD fechou.
+  static Uint32 selosDesde, selosVisto;
+  if (!selosVisto || agora - selosVisto > 300 || ac < 0.01f) selosDesde = agora;
+  selosVisto = agora;
+  float t0 = (float)(agora - selosDesde) / 1000.0f;
+#define ENTRADA(k) (1.0f - (1.0f - anim_clamp((t0 - (k) * 0.09f) / 0.26f, 0.0f, 1.0f)) * \
+                           (1.0f - anim_clamp((t0 - (k) * 0.09f) / 0.26f, 0.0f, 1.0f)))
+  if (pil) {
+    // PILULAS SEPARADAS, como no pedido #4141: [4K]  [Dolby Vision | Atmos]  |  [Inglês 5.1].
+    // Cada grupo e uma pilula da ilha do relogio (mesmo material, 56 de altura,
+    // margem de 24); dentro do grupo, o filete da ilha entre um dado e o outro.
+    int k = 0;
+    while (k < n) {
+      int g = p[k].g, m = k;
+      float W = FMT_PIL_PAD * 2.0f, eg = ENTRADA(k);
+      while (m < n && p[m].g == g) { W += p[m].w + (m > k ? FMT_PIL_SEP : 0.0f); m++; }
+      if (k > 0) {
+        if (g == 2) {
+          if (eg > 0.004f) plrui_sep(x + 13.0f, y + H * 0.5f + (1.0f - eg) * 10.0f, ac * eg);
+          x += 28.0f;
+        } else x += 10.0f;
+      }
+      if (eg > 0.004f)
+        plrui_material_video((GfxRect){ x, y + (1.0f - eg) * 10.0f, W, H }, H * 0.5f, ac * eg);
+      { float xi = x + FMT_PIL_PAD;
+        for (i = k; i < m; i++) {
+          float e = ENTRADA(i), yy = y + (1.0f - e) * 10.0f;
+          if (i > k && e > 0.004f) plrui_sep(xi - 13.0f, yy + H * 0.5f, ac * e);
+          if (e > 0.004f) fmtPecaDesenhar(&p[i], xi, yy, H, mh, ac * e, txtPac, wPac, hPac);
+          xi += p[i].w + FMT_PIL_SEP;
+        } }
+      x += W; k = m;
+    }
+  } else {
+    for (i = 0; i < n; i++) {
+      float e = ENTRADA(i), yy = y + (1.0f - e) * 10.0f;
+      if (e > 0.004f) fmtPecaDesenhar(&p[i], x, yy, H, mh, ac * e * 0.9f, txtPac, wPac, hPac);
+      x += p[i].w + gap;
+    }
+  }
+#undef ENTRADA
+  return H;
+}
 static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) {
   // O bloco inteiro desliza junto: titulo, barra e botoes sao UM objeto que
   // sobe, acompanhando o OSD (`anim`) e a abertura da tela (`entrada`, numa
@@ -6649,6 +7048,11 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
       }
       yBase -= 12.0f;
     }
+    // A fileira de formato (Ajustes > Posicao do formato no player): EMBAIXO,
+    // entre a meta e o titulo (o logo sobe junto). A posicao "Original", o canto
+    // de cima, e desenhada la embaixo, junto da ilha.
+    { float hfF = ajustes_plr_formato_pos() == PLR_POS_ABAIXO ? fileiraFormato(agora, cx, 0.0f, ac, 1, NULL) : 0.0f;
+      if (hfF > 0.0f) { yBase -= hfF; fileiraFormato(agora, cx, yBase, ac, 0, NULL); yBase -= 14.0f; } }
     if (logo) {
       float ar = tex_aspecto(marca), w = 480.0f, h = ar > 0.0f ? w / ar : 150.0f;
       if (h > 150.0f) { h = 150.0f; w = h * ar; }
@@ -6746,6 +7150,9 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
         float xr = cx + cw - l2.w, y = cyTempo - (float)l1.h * 0.5f;
         txt_desenhar_alpha(l2, xr, y, a * cheio);
         txt_desenhar_alpha(l1, xr - 8.0f - l1.w, y, a * cheio);
+#ifdef NV_TPK
+        if (vooAtivo && !scrubbing) plrui_anel(xr - 8.0f - l1.w - 24.0f, cyTempo, 24.0f, 0, agora, a * cheio);
+#endif
       }
       if (cheio < 0.99f) {
         char r[32];
@@ -6754,6 +7161,10 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
         else { char f[24]; plrui_tempo(f, sizeof f, duracaoSeg - posSeg); snprintf(r, sizeof r, "\xe2\x88\x92%s", f); }
         l2 = txt_linha(TXT_ILHA_NOME, r, 243, 242, 239, 128);
         txt_desenhar_alpha(l1, cx, yBarra + 32.0f, a * (1.0f - cheio));
+#ifdef NV_TPK
+        if (vooAtivo && !scrubbing)
+          plrui_anel(cx + l1.w + 26.0f, yBarra + 32.0f + l1.h * 0.5f, 24.0f, 0, agora, a * (1.0f - cheio));
+#endif
         txt_desenhar_alpha(l2, cx + cw - l2.w, yBarra + 32.0f, a * (1.0f - cheio));
       }
     }
@@ -6763,72 +7174,15 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // canto da Posicao do relogio. O canal nao tem fim.
   plrilha_relogio(ac, ehCanal() ? -1.0 : vel_tempo_real((double)(duracaoSeg - posSeg), velMed.efetiva));
 
-  // Selos de formato no alto, no canto OPOSTO ao da ilha. Vem do FLUXO, nao
-  // de constante: selo que mente e pior que selo ausente, porque e nele que o
-  // dono confia para saber se pegou a versao boa. Brancos e soltos, sem chapa.
-  {
-    // A classe sai da LARGURA primeiro: filme 2.39:1 em 1080p chega como
-    // 1920x800. A faixa do 1440p (2560) fica SEM selo: ausente e mais honesto
-    // que errado.
-    FormatoMarca selos[4];
-    int nSelos = 0;
-    { int w = video_largura(), h = video_altura();
-      if (w >= 3200 || h >= 1800)       selos[nSelos++] = FMT_4K;
-      else if (w >= 2400)               { /* 1440p: sem selo */ }
-      else if (w >= 1800 || h >= 1000)  selos[nSelos++] = FMT_1080;
-      else if (w >= 1200 || h >= 700)   selos[nSelos++] = FMT_720;
-      else if (w > 0)                   selos[nSelos++] = FMT_SD; }
-    // "Dolby Vision" so quando o PIPELINE devolveu DolbyVision no videoInfo
-    // (MEDIDO: um MKV anunciado como DV volta HDR10 nesta TV).
-    if (video_tem_dolby_vision())                  selos[nSelos++] = FMT_DV;
-    else if (!strcasecmp(video_hdr(), "HDR10"))    selos[nSelos++] = FMT_HDR10;
-#if defined(__EMSCRIPTEN__) || defined(NV_TPK)
-    else {
-      // AVPlay nao confirma HDR ativo: o selo e o da FONTE, nunca Dolby Vision
-      // (TV Samsung nao tem DV; badges_fonte_hdr so conhece HDR10+/HDR10/HDR).
-      const Stream *fonte = stream_item(stream_atual());
-      int hdr = fonte ? badges_fonte_hdr_marca(fonte->badges) : -1;
-      if (hdr >= 0) selos[nSelos++] = (FormatoMarca)hdr;
+  // POSICAO "canto" da fileira de formato (Ajustes > Posicao do formato no
+  // player): no alto, no canto OPOSTO ao da ilha, centrada na altura dela, no
+  // estilo escolhido. As outras posicoes saem do bloco do titulo, acima.
+  if (ajustes_plr_formato_pos() == PLR_POS_CANTO) {
+    float lw = 0.0f, hf = fileiraFormato(agora, 0.0f, 0.0f, ac, 1, &lw);
+    if (hf > 0.0f) {
+      float xx = plrilha_direita() ? NV_ILHA_MARGEM_D : NV_VTELA_W - NV_ILHA_MARGEM_D - lw;
+      fileiraFormato(agora, xx, NV_ILHA_Y + (56.0f - hf) * 0.5f + desce, ac, 0, NULL);
     }
-#endif
-    if (video_tem_atmos())        selos[nSelos++] = FMT_ATMOS;
-    if (marcaDtsAtual() >= 0)     selos[nSelos++] = (FormatoMarca)marcaDtsAtual();
-    // #293: o codec da faixa tocando vira texto na mesma fileira, depois dos
-    // selos (a marca do DTS/Atmos diz o FORMATO; isto diz o que a faixa e).
-    const char *rotAudio = ehCanal() ? "" : textoAudioAtual();
-    TxtLinha lAudio = { 0 };
-    if (rotAudio[0]) lAudio = txt_linha(TXT_G18M, rotAudio, 243, 242, 239, 255);
-    { const float mh = 34.0f, ySelos = NV_ILHA_Y + (56.0f - mh) * 0.5f;   // 56 = PIL_H da ilha do player
-      float w[4], tot = 0.0f, x;
-      int i, esq = plrilha_direita();
-      if (lAudio.w > 0) tot += (nSelos ? 22.0f : 0.0f) + (float)lAudio.w;
-      // ENTRADA ESCALONADA: o rasterizador faz poucas linhas por quadro e os
-      // selos ja chegariam um a um; a curva assume a cadencia (90 ms, 10 px).
-      // Conta de quando o OSD APARECEU, nao da ultima tecla: navegar nos
-      // botoes ou no seek fazia os selos sumirem e voltarem a cada toque
-      // (dono, 11/10). Quadro sem selos ha mais de 300 ms = OSD fechou.
-      static Uint32 selosDesde, selosVisto;
-      if (!selosVisto || agora - selosVisto > 300 || ac < 0.01f) selosDesde = agora;
-      selosVisto = agora;
-      float t0 = (float)(agora - selosDesde) / 1000.0f;
-      for (i = 0; i < nSelos; i++) { w[i] = marca_formato_largura(selos[i], mh); tot += w[i] + (i ? 22.0f : 0.0f); }
-      // Espelho da ilha do relogio (plrilha.c): mesma margem, centro na altura dela.
-      x = esq ? NV_ILHA_MARGEM_D : NV_VTELA_W - NV_ILHA_MARGEM_D - tot;
-      for (i = 0; i < nSelos; i++) {
-        float ts = anim_clamp((t0 - i * 0.09f) / 0.26f, 0.0f, 1.0f);
-        float e  = 1.0f - (1.0f - ts) * (1.0f - ts);
-        if (e > 0.004f)
-          marca_formato(selos[i], x, ySelos + desce + (1.0f - e) * 10.0f, mh,
-                        0.953f, 0.949f, 0.937f, ac * 0.82f * e);
-        x += w[i] + 22.0f;
-      }
-      if (lAudio.w > 0) {
-        float ts = anim_clamp((t0 - nSelos * 0.09f) / 0.26f, 0.0f, 1.0f);
-        float e  = 1.0f - (1.0f - ts) * (1.0f - ts);
-        if (e > 0.004f)
-          txt_desenhar_alpha(lAudio, x, ySelos + desce + (mh - (float)lAudio.h) * 0.5f + (1.0f - e) * 10.0f,
-                             ac * 0.82f * e);
-      } }
   }
 
   // POR CIMA DE TUDO: o painel de pos-reproducao e o mais recente na tela.

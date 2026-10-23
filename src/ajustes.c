@@ -3,6 +3,7 @@
 // cancela. A lista mostra valor e chevron, a ficha explica alcance e padrao.
 // IDs, chaves persistidas e indices de valores continuam os legados.
 #include "ajustes.h"
+#include "logrede.h"
 #include "jsw.h"
 #include <limits.h>
 #include "player.h"
@@ -697,6 +698,23 @@ typedef enum {
   AJ_LIMPAR_CACHE,
   AJ_TUNNELING,        // Android-only, device-local; off by default, append-only.
   AJ_DV7, // independent P7 conversion, append-only
+  // REGISTRO NA REDE LOCAL (logrede.h, dono 16/10 e 20/10): Desligado. LOCAL, append-only.
+  AJ_LOG_REDE,
+  // Fileira de formato do player (4K, HDR, Atmos, idioma do audio; player.c,
+  // fileiraFormato): o estilo. LOCAL (o web nao tem). No fim:
+  // valor[]/CHAVE[] posicionais.
+  AJ_PLR_FORMATO,
+  // Comentarios do Trakt no painel de pausa (pausacom.h). LOCAL (o web nao tem),
+  // ligado de fabrica. No fim: valor[]/CHAVE[] posicionais.
+  AJ_PAUSA_COMENTARIOS,
+  // Notas (IMDb, Rotten Tomatoes...) no painel de pausa. LOCAL, ligado de fabrica.
+  AJ_PAUSA_NOTAS,
+  // Elenco (fotos, nomes e papeis) no painel de pausa. LOCAL, DESLIGADO de fabrica.
+  AJ_PAUSA_ELENCO,
+  // Onde a fileira de formato fica: embaixo do titulo ou no canto ("Original").
+  AJ_PLR_FORMATO_POS,
+  // Mostrar o codec do audio (E-AC-3, DTS-HD MA...) na fileira de formato. LOCAL, ligado de fabrica.
+  AJ_PLR_CODEC,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -747,6 +765,11 @@ _Static_assert(sizeof V_FUNDO_DIN_COR / sizeof *V_FUNDO_DIN_COR == sizeof FUNDO_
 static const char *V_QUALIDADE[] = { "Automática", "4K", "1080p", "720p" };
 static const char *V_LIGA[]      = { "Ligado", "Desligado" };
 static const char *V_LIGA_AUTO[] = { "Ligado", "Desligado", "Automático" };
+// Estilo da fileira de formato do player; o indice e o PLR_FMT_* de ajustes.h
+// e o gravado em "plrFormatoLocal".
+static const char *V_PLR_FORMATO[] = { "Texto", "Pílula", "Marcas", "Selos", "Desligado" };
+// Posicao da fileira; o indice e o PLR_POS_* de ajustes.h e o gravado em "plrFormatoPosLocal".
+static const char *V_PLR_FORMATO_POS[] = { "Embaixo do título", "Original" };
 // TRAILER DO CARTAZ EM FOCO EM TRES MODOS (dono, 07/10/2026). O indice e o
 // AJ_TRAILER_CARTAZ_* de ajustes.h e o gravado em "trailerCartazModo"; a chave
 // antiga (V_LIGA, a mesma do web) migra no carregar (focoTrailerMigrar) e a
@@ -1336,7 +1359,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Idioma da legenda",          V_LINGUA, 2),
   ESC("Idioma do áudio",            V_LINGUA, 2),
   // `playback_pause_overlay` (settingsScreen.js:6320). Liga o painel que
-  // sobe cinco segundos depois de pausar; ver pausao.h.
+  // sobe quatro segundos depois de pausar; ver pausao.h.
   ESC("Painel ao pausar",           V_LIGA, 2),   // pauseOverlayEnabled
   ESC("Escolher a fonte ao reproduzir", V_LIGA, 2), // local: ver ajustes_fonte_manual
   ESC("Fonte automática",           V_FONTE_AUTO, 2),  // local: ver fonteauto.h
@@ -1817,6 +1840,13 @@ static const Opcao OPCOES[AJ_N] = {
   ACAO("Limpar cache"),
   ESC("Reprodução em túnel", V_VIDRO_FOSCO, 2),
   ESC("Dolby Vision P7 para P8.1 (experimental)", V_LIGA, 2),
+  ESC("Registro na rede local", V_LIGA, 2),                   // local: logRedeLocal
+  ESC("Formato no player", V_PLR_FORMATO, 5),          // local: plrFormatoLocal
+  ESC("Comentários do Trakt ao pausar", V_LIGA, 2),   // local: pausaComentariosLocal
+  ESC("Notas ao pausar", V_LIGA, 2),                  // local: pausaNotasLocal
+  ESC("Elenco ao pausar", V_LIGA, 2),                 // local: pausaElencoLocal
+  ESC("Posição do formato no player", V_PLR_FORMATO_POS, 2),   // local: plrFormatoPosLocal
+  ESC("Mostrar o codec do áudio", V_LIGA, 2),          // local: plrCodecLocal
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2139,6 +2169,13 @@ static const char *CHAVE[] = {
   "-limparCache",
   "tunneledPlaybackLocal",
   "dv7ConversionLocal",
+  "logRedeLocal",
+  "plrFormatoLocal",
+  "pausaComentariosLocal",
+  "pausaNotasLocal",
+  "pausaElencoLocal",
+  "plrFormatoPosLocal",
+  "plrCodecLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2781,7 +2818,13 @@ int ajustes_720p(void)                { return valor[AJ_RESOLUCAO] == RES_720 &&
 int ajustes_dolby_vision(void)        { return lig(AJ_DV); }
 int ajustes_dolby_atmos(void)         { return lig(AJ_ATMOS); }
 int ajustes_pausa_overlay(void)       { return lig(AJ_PAUSA_OVERLAY); }
+int ajustes_pausa_comentarios(void)   { return lig(AJ_PAUSA_COMENTARIOS); }
+int ajustes_pausa_notas(void)         { return lig(AJ_PAUSA_NOTAS); }
+int ajustes_pausa_elenco(void)        { return lig(AJ_PAUSA_ELENCO); }
 int ajustes_reacao_creditos(void)     { return lig(AJ_REACAO_CREDITOS); }
+int ajustes_plr_codec(void)           { return lig(AJ_PLR_CODEC); }
+int ajustes_plr_formato_pos(void)     { int v = valor[AJ_PLR_FORMATO_POS]; return v >= 0 && v < PLR_POS_N ? v : PLR_POS_CANTO; }
+int ajustes_plr_formato(void)         { int v = valor[AJ_PLR_FORMATO]; return v >= 0 && v < PLR_FMT_N ? v : PLR_FMT_MARCAS; }
 int ajustes_pular_abertura(void)      { return lig(AJ_PULAR_ABERTURA); }
 int ajustes_pular_resumo(void)        { return lig(AJ_PULAR_RESUMO); }
 int ajustes_proximo_auto(void)        { return lig(AJ_PROXIMO_AUTO); }
@@ -2837,6 +2880,7 @@ int ajustes_fonte_preparar(void) { return lig(AJ_FONTE_PREPARAR); }
 int ajustes_fonte_grupo(void) { return ajustes_fonte_prioridade() != 3 && lig(AJ_FONTE_GRUPO); }
 int ajustes_fonte_grupo_sessoes(void) { return lig(AJ_FONTE_GRUPO_SESSOES); }
 int ajustes_link_reusar(void) { return lig(AJ_LINK_REUSAR); }
+int ajustes_log_rede(void) { return lig(AJ_LOG_REDE); }
 unsigned ajustes_link_prazo_s(void) {
   int v = valor[AJ_LINK_PRAZO], n = (int)(sizeof LINK_PRAZO_H / sizeof *LINK_PRAZO_H);
   if (v < 0 || v >= n) v = 5;
@@ -5845,6 +5889,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_TEX_MB:         /* teto de memoria de imagem: depende da RAM */
     case AJ_QUALIDADE_IMG:  /* resolucao da arte decodificada: idem */
     case AJ_ENVIO_AUTO:     /* consentimento de envio de registro deste aparelho */
+    case AJ_LOG_REDE:       /* pagina de registro na rede desta casa */
     case AJ_ANIM:           /* animacoes reduzidas: acessibilidade nesta TV */
     case AJ_IDIOMA:         /* idioma da interface deste aparelho */
     case AJ_FIL_LIMITE:     /* fileiras da home: por aparelho (fileirasui-p<N>.txt) */
@@ -5983,7 +6028,11 @@ static int somenteDesteAparelho(int op) {
     case AJ_OCULTAR_FILMES_VISTOS: /* por perfil desta TV; fora do blob da conta */
     case AJ_BIB_HOME:       /* #507: idem */
     case AJ_REACAO_CREDITOS: /* o web nao tem a pergunta */
+    case AJ_PAUSA_COMENTARIOS: /* o web nao tem os comentarios do Trakt no painel de pausa */
+    case AJ_PAUSA_NOTAS: /* nem as notas */
+    case AJ_PAUSA_ELENCO: /* nem o elenco */
     case AJ_PULAR_ABERTURA: case AJ_PULAR_RESUMO: case AJ_PROXIMO_AUTO: case AJ_PULAR_CREDITOS: case AJ_PROXIMO_CONTAGEM: /* idem: local desta TV */
+    case AJ_PLR_FORMATO: case AJ_PLR_FORMATO_POS: case AJ_PLR_CODEC: /* o web nao tem a fileira de formato */
     case AJ_SEEKR_LIGADO: case AJ_SEEKR_FITA: case AJ_SEEKR_AJUSTE: /* o web nao tem o Seekr */
     case AJ_MENU_EXPLORAR: case AJ_MENU_GUIA: case AJ_MENU_AGENDA: case AJ_MENU_PERFIL:
     // Linha do titulo: o web nao tem, e nenhuma conta pode desliga-las aqui.
@@ -6392,6 +6441,9 @@ static int foraDestaPlataforma(int op) {
 #endif
 #ifndef NV_ANDROID
   if (op == AJ_FONTE_PRECARREGAR || op == AJ_LEG_SYNC_AUDIO || op == AJ_TUNNELING) return 1;
+#endif
+#if defined(NV_ANDROID) && !defined(NV_P2P_MOTOR)
+  if (op == AJ_P2P_LIMITE || op == AJ_P2P_DESTINO) return 1;
 #endif
 #ifdef __EMSCRIPTEN__
   if (op == AJ_P2P_LIGADO || op == AJ_P2P_URL || op == AJ_P2P_TESTAR || op == AJ_P2P_LIMITE || op == AJ_P2P_DESTINO) return 1;
@@ -7049,6 +7101,12 @@ static int inativa(int op) {
     // nao existe nesta TV — o "Explorar" daqui e outra tela. A escolha vem e
     // vai para a conta, mas aqui nao muda nada, e a linha tem de dizer isso.
     case AJ_DESCOBRIR:    return 1;
+    // Comentarios do Trakt no painel de pausa: a linha fica apagada sem o painel.
+    case AJ_PAUSA_COMENTARIOS: return !lig(AJ_PAUSA_OVERLAY);
+    case AJ_PAUSA_NOTAS: return !lig(AJ_PAUSA_OVERLAY);
+    case AJ_PAUSA_ELENCO: return !lig(AJ_PAUSA_OVERLAY);
+    // A posicao da fileira de formato so vale com a fileira ligada.
+    case AJ_PLR_FORMATO_POS: case AJ_PLR_CODEC: return valor[AJ_PLR_FORMATO] == PLR_FMT_OFF;
     // Tela de descanso: o estilo depende de haver descanso; os titulos, de ele
     // ser a vitrine.
     case AJ_DESCANSO_ESTILO: return valor[AJ_ESMAECER] == 0;
@@ -7352,7 +7410,13 @@ static const char *ajudaOpcaoBase(int op) {
       snprintf(b, sizeof b, i18n("Nos créditos, uma contagem de %d s toca o próximo episódio enquanto eles ainda rolam. Voltar cancela e deixa os créditos terminarem. Desligado, o cartão espera você apertar OK."), ajustes_proximo_contagem());
       return b;
     }
+    case AJ_PLR_FORMATO: return "A fileira com o formato do vídeo e do áudio. Texto: em negrito, sem fundo. Pílula: em pílulas, como a da hora. Marcas: todas as marcas com o logo, como sempre foi. Selos: os selos do seu pacote, como na lista de fontes. Desligado: sem a fileira.";
+    case AJ_PLR_FORMATO_POS: return "Onde a fileira de formato aparece: embaixo do título ou no canto da tela, do lado oposto ao da hora, como era antes (Original).";
+    case AJ_PLR_CODEC: return "Acrescenta o codec da faixa (E-AC-3, DTS-HD MA, TrueHD...) ao idioma e aos canais na fileira de formato. Desligado, fica só o idioma e os canais.";
     case AJ_REACAO_CREDITOS: return "Nos créditos de um filme, ou no fim de uma temporada, um cartão pequeno pergunta o que você achou. Some sozinho em 8 s. Com o Trakt ligado, a resposta vira nota lá.";
+    case AJ_PAUSA_COMENTARIOS: return "Com o painel ao pausar ligado, comentários públicos do Trakt sobre o que você está vendo passam em rodízio. Não precisa de conta; sem comentários ou sem rede, nada aparece.";
+    case AJ_PAUSA_NOTAS: return "Com o painel ao pausar ligado, mostra as notas do título (IMDb, Rotten Tomatoes, Metacritic, TMDB e outras) embaixo do ano e da duração. Num episódio, só as notas do próprio episódio. Fonte sem nota não aparece.";
+    case AJ_PAUSA_ELENCO: return "Com o painel ao pausar ligado, mostra o elenco (foto, nome e papel) embaixo da sinopse. Desligado, o painel fica só com a ficha, as notas e o comentário.";
     case AJ_STALKER_PORTAL: return "Os canais do portal entram no Guia de TV, junto com os dos addons. Endereço sem http:// e sem barra no fim: meu-portal.exemplo.tv:8080";
     case AJ_STALKER_MAC: return "O MAC que o provedor cadastrou para você. É credencial: vale como senha, e só aparece nesta tela mascarado.";
     case AJ_STALKER_LIMPAR: return "Apaga o portal e o MAC deste perfil, e os canais dele somem do Guia. Sair da conta também apaga.";
@@ -7726,6 +7790,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_DICASCONTROLE: return "Dicas do controle";
     case AJ_NOVIDADES20: return "O tour do que mudou na 2.0, capítulo por capítulo, com o que vale neste aparelho. Abre do começo.";
     case AJ_APOIAR: return "Se o Nuvio te ajuda e você quiser apoiar quem faz o app, aponte a câmera do celular para um dos códigos. É opcional: nada muda no app.";
+    case AJ_LOG_REDE: return "Mostra o registro desta TV numa página da sua rede: abra o endereço abaixo no celular ou no computador, na mesma rede. Sem senhas nem chaves; endereços vão cortados no host. Desligue quando terminar.";
     case AJ_ENVIAR_LOG: return "Manda os últimos 200 KB do registro desta sessão (sem senhas nem chaves) para quem faz o app. Use quando algo estiver errado agora.";
     case AJ_ENVIO_AUTO: return "Ligado, o app manda o registro sozinho: o da sessão anterior ao abrir e o desta a cada minuto. Sem senhas nem chaves; serve para achar o que trava a Samsung. Desligue quando quiser.";
     case AJ_DIAGNOSTICO: return "Testa manifestos, fontes e artes dos addons, mede os tempos e aplica um perfil seguro de Qualidade ou Desempenho. O teste não marca títulos como assistidos.";
@@ -7772,6 +7837,11 @@ static const char *ajudaOpcaoBase(int op) {
 static const char *ajudaOpcao(int op) {
   const char *base = ajudaOpcaoBase(op);
   static char b[2048];
+  // O endereco da pagina vai junto da ajuda, ao vivo (muda com o IP da TV).
+  if (op == AJ_LOG_REDE && logrede_url()[0]) {
+    snprintf(b, sizeof b, "%s\n%s", i18n(base), logrede_url());
+    return b;
+  }
   if (op == AJ_AMPLIAR_UI && saidaLimitada && ampliarUiVale()) {
     snprintf(b, sizeof b, "%s\n%s",
       i18n("A saída da interface nesta TV está limitada a 1080p. O app amplia até esse limite; a TV completa até 4K."), i18n(base));
@@ -10303,7 +10373,9 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_QUALIDADE: case AJ_DV: case AJ_ATMOS: case AJ_LEG_LINGUA: case AJ_LEG_LINGUA2: case AJ_CACHE_SEEK: case AJ_BUFFER: case AJ_PLAYER_EXTERNO: case AJ_PLAYER_ANIME: case AJ_ESTAT_TAMANHO: case AJ_ESTAT_LADO:
     case AJ_DV_MKV:
     case AJ_LEG_FORCADA:
+    case AJ_PAUSA_COMENTARIOS: case AJ_PAUSA_NOTAS: case AJ_PAUSA_ELENCO:
     case AJ_AUD_LINGUA: case AJ_AUD_LINGUA2: case AJ_PAUSA_OVERLAY: case AJ_PLR_CLASSIF: case AJ_TELA_ABERTURA: case AJ_ABERTURA_ADDON: case AJ_ABERTURA_FUNDO: case AJ_ABERTURA_ESTILO: case AJ_FONTE_MANUAL:
+    case AJ_PLR_FORMATO: case AJ_PLR_FORMATO_POS: case AJ_PLR_CODEC:
     case AJ_FONTE_AUTO: case AJ_FONTE_REPOR: case AJ_FONTE_TEXTO: case AJ_FONTE_ORDEM_ADDON: case AJ_SELOS_CORES: case AJ_FONTE_TOCAR_CONFERINDO: case AJ_FONTE_AQUECER: case AJ_FONTE_CONFERIR_VARIAS: case AJ_FONTE_PREPARAR: case AJ_FONTE_PRECARREGAR:
     case AJ_FONTE_GRUPO: case AJ_FONTE_GRUPO_SESSOES:
     case AJ_LINK_REUSAR: case AJ_LINK_PRAZO:
@@ -10365,7 +10437,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_SALVOS_DEST: case AJ_TRAKT: case AJ_SIMKL: case AJ_DISCORD: case AJ_HIST_CONTA: case AJ_SOCIAL:
       return AJPV_RASTREIO;
     case AJ_VERSAO_I: case AJ_ATUALIZAR: case AJ_ENVIAR_LOG: case AJ_GUIA: case AJ_NOVIDADES20: case AJ_DICASCONTROLE: case AJ_APOIAR:
-    case AJ_ENVIO_AUTO: case AJ_VER_REGISTRO:
+    case AJ_ENVIO_AUTO: case AJ_VER_REGISTRO: case AJ_LOG_REDE:
 #ifdef NV_ANDROID
     case AJ_BAIXAR_REGISTRO:
 #endif

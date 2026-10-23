@@ -7,7 +7,7 @@ Source for the in-app What's New card and release notes. English follows the own
 
 ## Highlights
 
-None recorded yet.
+- **More precise Samsung playback controls**: Seek more accurately with the reworked seek gesture, inspect local network logs, and avoid source ghosting. Platforms: Samsung .tpk. Refs PR #640, @Namer03, `f67359b37`, `49714272a`, merge `178d3da67`.
 
 ## New
 
@@ -15,11 +15,19 @@ None recorded yet.
 
 - **Automatic performance defaults**: Start performance settings in Automatic mode and migrate saved choices to the updated selection model. Platforms: webOS, Android, Samsung .tpk, WASM. Refs owner request, `fcdae1879`.
 
-- **Android tunneled playback**: Offer an optional hardware audio/video synchronization setting, disabled by default. Platforms: Android. Refs owner request, `19e638ea1`; `agente/205-205-tunnel`.
+- **Android tunneled playback**: Offer an optional hardware audio/video synchronization setting, disabled by default. Platforms: Android. Refs #626, owner request, `19e638ea1`; `agente/205-205-tunnel`.
 
 - **Android cache controls**: Clear regenerable cache while preserving durable user data, APK staging and viable torrent streaming windows; superseded update APKs are removed. Platforms: Android. Refs owner request; d8699b55c, e731a7847, d35f60069, 70b1f55e3; merges a1169f5ad, fcc581387.
 
 ## Fixes
+
+- **Stable library membership**: Preserve complete library synchronization snapshots and removal evidence, and keep local saved titles while their add action is pending. Platforms: Samsung .tpk; shared library code on webOS, Android and WASM. Refs #639, `75a1c56ae`, `515408fe5`, merge `afcf66f36`.
+
+- **Safer local network logs**: Remove URL credentials, nonstandard URL schemes and long tokens from local network logs. Platforms: Samsung .tpk. Refs PR #640, `b05a33bcc`, merge `82f8b16a9`.
+
+- **Empty add-on responses stay valid**: Accept an empty streams array as a valid response when an add-on has no sources to offer. Platforms: webOS, Android, Samsung .tpk, WASM. Refs `d4d850204`.
+
+- **Large Live TV requests complete**: Handle long stream requests without the obsolete channel limit. Platforms: webOS, Android, Samsung .tpk, WASM. Refs `a5f0675e5`, merge `b02444677`.
 
 - **Stage backgrounds appear immediately**: Resolve stage backdrops from Home without first opening the title details. Platforms: webOS, Android, Samsung .tpk, WASM. Refs owner request, `4befffb89`, merge `5eb14e909`.
 
@@ -53,6 +61,7 @@ None recorded yet.
 - **Expanded-card trailers fill their frame**: Keep focused-card trailer placement in its own coordinate space so video fills expanded artwork at different text scales. Platforms: webOS, Android, Samsung .tpk. Refs owner request, `8271a8dbb`, merge `a4d52842e`.
 
 - **Interface follows your language again**: Restore sorted translation keys so selecting another language no longer leaves the interface in Portuguese. Platforms: webOS, Android, Samsung .tpk, WASM. Refs owner incident; `98ed41d91`.
+- **720p interface keeps rendering on weaker GPUs**: Start app-side 720p upscaling on 4K panels and retain the 720p surface when GPU upscaling is unsupported. Platforms: Android. Refs `8c083d04c`, `e85d5a89d`; merge `1890f9f67`.
 - **Resume survives TV power loss**: Save durable playback checkpoints while keeping tracker playback active during checkpoint updates. Platforms: webOS, Android, Samsung .tpk, WASM. Refs owner request; 5623ab442, ceca13b7e; merges 9e6c12d47, eb5203637.
 - **LG buffer presets apply to direct video**: Apply the chosen buffer preset to direct HTTP video on demand. Platforms: webOS. Refs owner request; 6c9bc485b; merge 6c8233ded.
 - **Live diagnostics on limited accounts**: Run explicitly requested live-TV diagnostics even when the account has limited access. Platforms: webOS, Android, Samsung .tpk, WASM. Refs owner request; 6a392a97f; merge bf6df9a8e.
@@ -82,9 +91,13 @@ None recorded yet.
 
 - **Useful scrapers run first**: Remember recent scraper hits per profile, defer anime-only scrapers for other titles, and show checked, queued and cut counts when no sources are found. Platforms: webOS, Android, Samsung .tpk, WASM with local plugins. Refs owner request, `cfe0215b4`, merge `f215e7fd8`.
 
+- **Manual graphics choices survive automatic recovery**: Order automatic frost and animation throttling and keep manual effects selections when adaptive reductions reset. Platforms: webOS, Android, Samsung .tpk, WASM. Refs `4c7b5e47a`, `0b7036d03`, `c271714aa`; merge `59633662a`.
+
 Low-memory playback and bounded torrent-startup reads are listed under Fixes.
 
 ## Community
+
+- **Samsung playback and network tools contribution**: Enjoy precise seeking, revised seek gestures, network logging, and the source ghosting fix contributed by @Namer03. Platforms: Samsung .tpk. Refs PR #640, `f67359b37`.
 
 - **Samsung subtitle contribution**: Playback benefits from the ASS decoder fix contributed by @Namer03 in PR #638. Platforms: Samsung .tpk. Refs PR #638, #638, `5fb8810aa`.
 
@@ -100,12 +113,12 @@ Low-memory playback and bounded torrent-startup reads are listed under Fixes.
 - **C9 artwork comparison**: Verify native C9 artwork against the earlier rendering baseline while preserving both capture modes. Platforms: webOS; host verification. Refs `bdc7d7c8c`, merge `d072c891b`.
 
 - **Browser build link fix**: Restore the browser build's missing network-function stub so Samsung browser packages can link successfully. Platforms: Samsung browser/WASM. Refs `b84091f4c`.
-- **Issue tracking**: Keep release and issue tracking current. Additional refs: `80a3b437b`. Additional refs: `612a2ecd2`. Additional refs: `c9e4f8038`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs `609ed3cc3`, `ad6ec6fb9`, `89b48afe7`, `12bedced8`, `d2a392e14`, `dacee39da`, `9460c0dd8`, `e901b95e7`, `f1743efe5`, `009bba7ae`.
+- **DV7 converter builds on the host**: Build the host-side Dolby Vision converter outside the container so the ARM build has the required Rust toolchain. Platforms: webOS build. Refs `96c2ba90e`.
+
+- **Issue tracking**: Keep release and issue tracking current. Snapshot refs: `d023e32ef`, `0d33a122b`, `0870b8caa`, `58342b5ce`. Additional refs: `d1563d5b3`. Snapshot refs: `cebe243ac`, `88f1a6d8a`, `1a9cf77eb`, `1e9121e7f`. Additional refs: `80a3b437b`. Additional refs: `612a2ecd2`. Additional refs: `c9e4f8038`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs `609ed3cc3`, `ad6ec6fb9`, `89b48afe7`, `12bedced8`, `d2a392e14`, `dacee39da`, `9460c0dd8`, `e901b95e7`, `f1743efe5`, `009bba7ae`, `324182411`, `a580c7eae`.
 
 ## Pending (not integrated yet)
 
-- **720p interface upscaling**: Upscaling work for a 720p interface on 4K panels awaits fixes requested by review. Platforms: Android; confirm other targets in review. Refs owner request, `agente/205-205-amp720`, `8c083d0`; latest review BLOQUEIA.
-- **Automatic graphics effects**: Automatic effects and frost adjustments await fixes requested by review. Platforms: confirm from review. Refs owner request, `agente/205-205-escada`; latest review BLOQUEIA.
 
 - **Add-on subtitle synchronization**: Subtitle add-on synchronization work awaits review before its final user-facing behavior can be confirmed. Platforms: Confirm from review. Refs agente/205-205-legaddonsync.
 Earlier report named `agente/205-i429hbs` (#429), `agente/205-p2pusb` (#334, #505), `agente/205-i513autoplay` (#513), `agente/205-barra27`, PRs #489/#490/#491/#493/#498, `agente/205-dicatoque` (#472), m3umisto, palco2, logos, fileiraui, diretorpol and triagem-velhas as pending. Their branches are absent from the current open snapshot; retain this historical record without presenting them as pending 2.0.8 features or duplicating already released work.
