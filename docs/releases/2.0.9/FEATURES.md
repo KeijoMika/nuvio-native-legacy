@@ -5,7 +5,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Highlights
 
-- **Personal title and episode ratings**: Rate titles and episodes, retain ratings per profile, reopen the star editor and use quick tags with undo; send supported ratings to Trakt and Simkl. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-205-avaliar21`, `3f70510ea`, `892f61354`, `ecc7119c8`, `303d852c0`, `6d6ca3c2d`.
+- **Personal title and episode ratings**: Rate titles and episodes, retain ratings per profile, reopen the star editor and use quick tags with undo; send supported ratings to Trakt and Simkl. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-205-avaliar21`, `3f70510ea`, `892f61354`, `ecc7119c8`, `303d852c0`, `6d6ca3c2d`, `22c77e099`.
 
 - **A richer pause panel**: After four seconds paused, see the episode synopsis, enabled ratings and rotating Trakt comments, with optional cast and local visibility settings. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #627, @I0-oX, `288115d6e`, `ef1b66a97`.
 
@@ -29,7 +29,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Hero size setting**: Choose how large the Home hero appears, and the reserved layout scales with your choice. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-herotamanho`, `agente/205-porta-perdidos`, `4bada8211`.
 
-- **Quick episode chips and saved polish**: Jump episodes with quick chips on a 3x2 paged grid, see a compact rating on saved cards and sweep fill, remote-style keycaps on hints, localized island copy, a Remove action on the panel card, and glass-outline focus accents. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`.
+- **Quick episode chips and saved polish**: Jump episodes with quick chips on a 3x2 paged grid, see a compact rating on saved cards and sweep fill, remote-style keycaps on hints, localized island copy, a Remove action on the panel card, and glass-outline focus accents. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`, `22c77e099`.
 
 ## Fixes
 
