@@ -268,7 +268,7 @@ static inline int arm_ids_stream(const char *id, const char *tipo, char (*alt)[A
   if (arm_id_anime(base)) {
     // "kitsu:X:E": o episodio e o da entrada. "kitsu:X:T:E" nao e convencao de
     // ninguem; nao se traduz.
-    if (!filme && t > 0) return 0;
+    if (!filme && t >= 0) return 0;
     if (!arm_consultar(base, tipo, &a)) return 0;
     for (k = 0; k < ARM_COLS && n < max; k++) {
       char s[ARM_ALT_TAM];
