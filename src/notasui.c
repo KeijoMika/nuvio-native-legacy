@@ -55,6 +55,10 @@ static void pilula(float x, float yc, float w, float h, const char *txt,
 // item da linha NAO PODE depender de a textura ja ter carregado, senao o
 // encaixe decidiria diferente no primeiro quadro e no segundo.
 typedef struct { const char *nome; float asp; } Png;
+// 1 = a linha usa o logotipo do Trakt (o check vermelho) em vez do wordmark e o logo do
+// Metacritic em vez do quadro colorido (o painel de pausa).
+static int modoIcone;
+void notasui_modo_icone(int ligado) { modoIcone = ligado; }
 
 static Png pngDe(int f, int cru, int nalinha) {
   Png p = { NULL, 1.0f };
@@ -67,9 +71,9 @@ static Png pngDe(int f, int cru, int nalinha) {
     case EX_TMDB:     p.nome = "tmdb";       p.asp = 1.40f; break;
     // Trakt: o WORDMARK na linha (o nome), o icone redondo nas linhas do
     // heatmap e nos cartoes.
-    case EX_TRAKT:    p.nome = nalinha ? "trakt_wordmark" : "trakt";
-                      p.asp = nalinha ? 2.62f : 1.0f; break;
-    case EX_LETTERBOXD: p.nome = "letterboxd"; p.asp = 1.0f; break;
+    case EX_TRAKT:    p.nome = modoIcone ? "trakt_logomark" : nalinha ? "trakt_wordmark" : "trakt";
+                      p.asp = (nalinha && !modoIcone) ? 2.62f : 1.0f; break;
+    case EX_LETTERBOXD: p.nome = "letterboxd"; p.asp = 2.2f; break;
     case EX_IMDB:     p.nome = "imdb";       p.asp = 1.98f; break;
     case EX_METACRITIC: case EX_METAUSER:
                       p.nome = "metacritic"; p.asp = 1.0f; break;
@@ -141,7 +145,7 @@ static float larguraItem(int f, int cru) {
   (void)n100;
   if (f == EX_IMDB) return badge_imdb_largura(cru);
   textoLinha(f, cru, v, sizeof v);
-  if (f == EX_METACRITIC) {
+  if (f == EX_METACRITIC && !modoIcone) {
     float w = (float)txt_largura(TXT_CAPTION2, v) + 14.0f;
     return w > ALT_QUADRO ? w : ALT_QUADRO;
   }
@@ -188,7 +192,7 @@ static void desenhaItem(int f, int cru, float x, float yc, float a) {
   char v[24];
   textoLinha(f, cru, v, sizeof v);
   if (f == EX_IMDB) { badge_imdb(x, yc - BADGE_H * 0.5f, cru, 0, a); return; }
-  if (f == EX_METACRITIC) {
+  if (f == EX_METACRITIC && !modoIcone) {
     float r, g, b, w = larguraItem(f, cru);
     int c;
     TxtLinha l;
@@ -226,14 +230,23 @@ static void desenhaItem(int f, int cru, float x, float yc, float a) {
   }
 }
 
-float notasui_desenhar_linha(const NotasPlano *p, float x, float yc, float a) {
+float notasui_desenhar_linha_vao(const NotasPlano *p, float x, float yc, float vao, float a) {
   int i;
   for (i = 0; i < p->n; i++) {
-    if (i) x += VAO_ITEM;
+    if (i) x += vao;
     desenhaItem(p->fonte[i], p->cru[i], x, yc, a);
     x += p->larg[i];
   }
   return x;
+}
+float notasui_desenhar_linha(const NotasPlano *p, float x, float yc, float a) {
+  return notasui_desenhar_linha_vao(p, x, yc, VAO_ITEM, a);
+}
+float notasui_plano_largura(const NotasPlano *p, float vao) {
+  float w = 0.0f;
+  int i;
+  for (i = 0; i < p->n; i++) w += p->larg[i] + (i ? vao : 0.0f);
+  return w;
 }
 
 // ---------------------------------------------------------------------------

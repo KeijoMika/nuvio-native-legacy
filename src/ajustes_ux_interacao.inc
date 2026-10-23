@@ -441,7 +441,7 @@ static int uxEvento(SDL_Keycode k) {
           else uxNotificar("Não foi possível salvar. O valor anterior foi mantido.");
           return 1;
         }
-        if (t == AJ2_T_PERFIL) { focarOpcao(AJ_PERFIL_ATIVO); return 1; }
+        if (t == AJ2_T_PERFIL) { pfAbrir(); return 1; }
         // Diferentes do padrao: abre a lista (degrau 1); Voltar devolve a pilula (uxTopo fica nela).
         if (t == AJ2_T_DIF) { uxListarDiferencas(); uxDifFoco = 0; uxIndice = 1; focoIndice = 0; return 1; }
         if (t == AJ2_T_LAYOUT) return uxAlternarLayout();   // o foco fica na pilula
