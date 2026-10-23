@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt не е свързан. Свържете акаунта, за да видите профила си."),
   T("Trakt e Simkl", "Trakt и Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt и TMDB се заявяват едновременно, през връзки, които остават отворени между заглавията — без нов handshake."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt ограничи заявките; нов опит…"),
   T("Trakt neste perfil", "Trakt в този профил"),
   T("Trakt · perfil público", "Trakt · публичен профил"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl и Letterboxd стават един човек, без повтарящи се приятели. В панела Social разделите са до заглавието: Приятели, Активност и График."),

@@ -5379,6 +5379,7 @@
   { "Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt disconnected. Link the account to see your profile." },
   { "Trakt e Simkl", "Trakt and Simkl" },
   { "Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt and TMDB are queried at the same time, over connections kept open between titles — no handshake again." },
+  { "Trakt limitou os pedidos; tentando de novo…", "Trakt rate limit; retrying…" },
   { "Trakt neste perfil", "Trakt on this profile" },
   { "Trakt · perfil público", "Trakt · public profile" },
   { "Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl and Letterboxd become one person, with no duplicated friends. In the Social panel, tabs sit beside the title: Friends, Activity and Schedule." },

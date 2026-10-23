@@ -7280,11 +7280,12 @@ static const char *textoLeitura(int op) {
     }
   }
   if (op == AJ_TRAKT) {
+    if (traktauth_aguardando()) return traktauth_erro();
     if (trakt_aguardando()) return i18n("Não foi possível agora. Tente novamente.");
     if (trakt_ativo()) return i18n("Sair da conta");
     switch (traktauth_estado()) {
       case TRA_LIGADO:     return i18n("Sair da conta");
-      case TRA_PEDINDO:    return traktauth_aguardando() ? i18n("Não foi possível agora. Tente novamente.") : i18n("preparando…");
+      case TRA_PEDINDO:    return i18n("preparando…");
       case TRA_AGUARDANDO: return i18n("aguardando");
       case TRA_ERRO:       return i18n("falhou");
       case TRA_INVALIDO:   return i18n("expirou — reconectar");

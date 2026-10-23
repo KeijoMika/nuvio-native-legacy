@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt neprijungtas. Prijunkite paskyrą, kad matytumėte savo profilį."),
   T("Trakt e Simkl", "Trakt ir Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt ir TMDB užklausiami vienu metu, per ryšius, kurie tarp pavadinimų lieka atviri — be pakartotinio handshake."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt užklausų limitas; bandoma dar kartą…"),
   T("Trakt neste perfil", "Trakt šiame profilyje"),
   T("Trakt · perfil público", "Trakt · viešas profilis"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl ir Letterboxd tampa vienu asmeniu, be pasikartojančių draugų. Social skydelyje skirtukai šalia pavadinimo: Draugai, Veikla ir Tvarkaraštis."),

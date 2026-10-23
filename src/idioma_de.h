@@ -5379,6 +5379,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt getrennt. Verknüpfe das Konto, um dein Profil zu sehen."),
   T("Trakt e Simkl", "Trakt und Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt und TMDB werden gleichzeitig abgefragt, über Verbindungen, die zwischen den Titeln offen bleiben — ohne erneuten Handshake."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt-Anfragelimit erreicht; neuer Versuch…"),
   T("Trakt neste perfil", "Trakt in diesem Profil"),
   T("Trakt · perfil público", "Trakt · öffentliches Profil"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl und Letterboxd werden zu einer Person, ohne doppelte Freunde. Im Social-Bereich stehen die Tabs neben dem Titel: Freunde, Aktivität und Kalender."),

@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt đã ngắt kết nối. Hãy liên kết tài khoản để xem hồ sơ của bạn."),
   T("Trakt e Simkl", "Trakt và Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt và TMDB được truy vấn cùng lúc, qua các kết nối được giữ mở giữa các tựa phim — không cần handshake lại."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt giới hạn yêu cầu; đang thử lại…"),
   T("Trakt neste perfil", "Trakt trên hồ sơ này"),
   T("Trakt · perfil público", "Trakt · hồ sơ công khai"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl và Letterboxd gộp thành một người, không trùng bạn bè. Trong bảng Social, các thẻ nằm cạnh tiêu đề: Bạn bè, Hoạt động và Lịch."),

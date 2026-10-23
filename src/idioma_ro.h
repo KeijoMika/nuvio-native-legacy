@@ -5379,6 +5379,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt deconectat. Leagă contul pentru a-ți vedea profilul."),
   T("Trakt e Simkl", "Trakt și Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt și TMDB sunt interogate simultan, prin conexiuni păstrate deschise între titluri — fără a reface handshake-ul."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt a limitat cererile; reîncercăm…"),
   T("Trakt neste perfil", "Trakt pe acest profil"),
   T("Trakt · perfil público", "Trakt · profil public"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl și Letterboxd devin o singură persoană, fără prieteni dublați. În panoul Social, filele stau lângă titlu: Prieteni, Activitate și Agendă."),

@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Το Trakt αποσυνδέθηκε. Σύνδεσε τον λογαριασμό για να δεις το προφίλ σου."),
   T("Trakt e Simkl", "Trakt και Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Το Trakt και το TMDB ερωτώνται ταυτόχρονα, μέσω συνδέσεων που μένουν ανοιχτές ανάμεσα στους τίτλους — χωρίς νέο handshake."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Όριο αιτημάτων Trakt· νέα προσπάθεια…"),
   T("Trakt neste perfil", "Trakt σε αυτό το προφίλ"),
   T("Trakt · perfil público", "Trakt · δημόσιο προφίλ"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl και Letterboxd γίνονται ένα πρόσωπο, χωρίς διπλούς φίλους. Στο πάνελ Social οι καρτέλες είναι δίπλα στον τίτλο: Φίλοι, Δραστηριότητα και Πρόγραμμα."),

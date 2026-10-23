@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt 未连接。绑定账号后即可查看你的个人资料。"),
   T("Trakt e Simkl", "Trakt 和 Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt 和 TMDB 会同时查询，两次作品之间保持连接不断开，无需重新握手。"),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt 请求受限；正在重试…"),
   T("Trakt neste perfil", "此个人资料的 Trakt"),
   T("Trakt · perfil público", "Trakt · 公开个人资料"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt、Simkl 和 Letterboxd 合并为一个人，好友不再重复。社交面板的标签在标题旁：好友、动态和日程。"),

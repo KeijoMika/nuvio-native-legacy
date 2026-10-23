@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt bağlantısı kesildi. Profilini görmek için hesabı bağla."),
   T("Trakt e Simkl", "Trakt ve Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt ve TMDB, başlıklar arasında açık tutulan bağlantılar üzerinden aynı anda sorgulanır — yeniden el sıkışma yok."),
+  T("Trakt limitou os pedidos; tentando de novo…", "Trakt istek sınırı; yeniden deneniyor…"),
   T("Trakt neste perfil", "Bu profilde Trakt"),
   T("Trakt · perfil público", "Trakt · herkese açık profil"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt, Simkl ve Letterboxd tek kişi olur, tekrarlanan arkadaş olmaz. Social panelinde sekmeler başlığın yanındadır: Arkadaşlar, Etkinlik ve Takvim."),

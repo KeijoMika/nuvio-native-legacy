@@ -5380,6 +5380,7 @@
   T("Trakt desconectado. Vincule a conta para ver seu perfil.", "Trakt が未連携です。アカウントを連携すると、プロフィールが表示されます。"),
   T("Trakt e Simkl", "Trakt と Simkl"),
   T("Trakt e TMDB são consultados ao mesmo tempo, por conexões que ficam abertas entre um título e outro — sem refazer o handshake.", "Trakt と TMDB は同時に問い合わせます。作品の切り替え間も接続を開いたままにするので、ハンドシェイクをやり直しません。"),
+  T("Trakt limitou os pedidos; tentando de novo…", "Traktのリクエスト制限。再試行中…"),
   T("Trakt neste perfil", "このプロフィールのTrakt"),
   T("Trakt · perfil público", "Trakt · 公開プロフィール"),
   T("Trakt, Simkl e Letterboxd viram uma pessoa só, sem amigo repetido. No painel Social, as abas ficam ao lado do título: Amigos, Atividade e Agenda.", "Trakt、Simkl、Letterboxd が一人にまとまり、友達の重複はありません。ソーシャルパネルではタイトルの横にタブ：友達、アクティビティ、スケジュール。"),
