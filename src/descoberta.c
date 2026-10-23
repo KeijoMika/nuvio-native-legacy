@@ -12,6 +12,7 @@
 #include "colecoes.h"
 #include "marco.h"
 #include "metaprov.h"
+#include "armids.h"
 #include <SDL2/SDL.h>
 #include "catalogo.h"
 #include "addons.h"
@@ -7976,13 +7977,16 @@ static void completarRaso(CatItem *dst, const char *corpo, const char *tipo) {
 //   b) outros addons com "meta" ATIVOS, na ordem da lista do usuario, cujo
 //      idPrefixes casa com o id (addons_aceita_id == 1). Id do IMDb aceita
 //      tambem quem nao declarou prefixo (-1), porque "tt" e o id que todo mundo
-//      fala. So se ainda falta: uma fonte que ja entregou ficha completa
-//      (sinopse + episodios) encerra a busca.
+//      fala. Um addon que NAO atende o id do item recebe o id do mesmo titulo
+//      que ele atende, pelo ARM (armIdParaAddon: kitsu -> mal, anidb -> kitsu,
+//      "tt"/"tmdb:" de anime -> kitsu...). So se ainda falta: uma fonte que ja
+//      entregou ficha completa (sinopse + episodios) encerra a busca.
 //   c) o Cinemeta, para id do IMDb — e para o "tt" que a propria ficha do addon
 //      revelou (imdb_id, imdbId, link do IMDb).
 //   d) id que nao e do IMDb, sem "tt" a vista e a ficha incompleta: a API ARM
-//      (arm.haglund.dev, publica, sem chave — conferido em 29/09/2026) converte
-//      kitsu/mal/anilist/anidb em imdb, e dai o Cinemeta entra como em (c).
+//      (arm.haglund.dev, publica, sem chave — conferido em 22/10/2026) converte
+//      qualquer id de site de anime (e tmdb/tvdb de serie de anime) em imdb, e
+//      dai o Cinemeta entra como em (c).
 //
 // A REGRA DE MESCLA: a primeira fonte que responde uma ficha valida e a BASE
 // (titulo, sinopse, episodios, generos, elenco). As seguintes so preenchem o que
@@ -8104,41 +8108,69 @@ static char *cinemetaMeta(const char *tipoItem, const char *tt, int *ehFilme) {
   return corpo;
 }
 
-// ARM (arm.haglund.dev): converte id de anime em IMDb. Publica e sem chave; o
-// unico dado enviado e o numero do id. "kitsu:41370" -> tt9335498. Cache no
-// mesmo metaCache (chave "arm/<id>"). Vazio quando nao ha mapeamento.
-static void armImdb(const char *id, char *dst, size_t n) {
-  static const struct { const char *pref, *fonte; } MAPA[] = {
-    { "kitsu:", "kitsu" }, { "mal:", "myanimelist" }, { "anilist:", "anilist" },
-    { "anidb:", "anidb" }, { "myanimelist:", "myanimelist" },
-  };
-  char chave[96], num[24], url[200], *c;
-  size_t k = 0, i;
-  const char *fonte = NULL;
-  if (n) dst[0] = 0;
-  for (i = 0; i < sizeof MAPA / sizeof *MAPA; i++)
-    if (!strncmp(id, MAPA[i].pref, strlen(MAPA[i].pref))) {
-      fonte = MAPA[i].fonte;
-      id += strlen(MAPA[i].pref);
-      break;
-    }
-  if (!fonte) return;
-  while (id[k] >= '0' && id[k] <= '9' && k + 1 < sizeof num) { num[k] = id[k]; k++; }
-  num[k] = 0;
-  if (!k) return;
-  snprintf(chave, sizeof chave, "arm/%s:%s", fonte, num);
-  c = metaCacheObter(chave);
-  if (!c) {
-    if (metaNegAtiva(chave)) return;
-    snprintf(url, sizeof url, "https://arm.haglund.dev/api/v2/ids?source=%s&id=%s", fonte, num);
-    c = rede_baixar(url, 8);
-    if (!c) { metaNegGuardar(chave); return; }
-    metaCacheGuardar(chave, c);
+// ARM: ver armids.h (o mesmo anime em cada site; tambem usado pelas fontes).
+
+// Vale perguntar ao ARM por este titulo? Id de site de anime, sempre. "tt",
+// "tmdb:" e "tvdb:" so quando o titulo e anime pela mesma regra de
+// artehero_eh_anime (genero Animacao/Anime E pais Japao): o ARM so conhece
+// anime, e um filme qualquer pagaria uma consulta para nada.
+static int armVale(const CatItem *c, const char *id) {
+  if (arm_id_anime(id)) return 1;
+  if (!arm_id_conhecido(id)) return 0;
+  if (!strstr(c->genero, "Anima") && !strstr(c->genero, "Anime")) return 0;
+  return strstr(c->pais, "Jap") != NULL;
+}
+
+// O mesmo titulo no espaco de ids que o addon `i` declara atender, quando nao e
+// o do item: "kitsu:41370" num addon so de "mal:" vira "mal:38000"; um "tt" de
+// anime num addon so de "kitsu:" vira "kitsu:41370" (so se sem ambiguidade). A
+// consulta e feita UMA vez por abertura (`feito`/`a`), so se algum addon
+// precisar; um addon que ja atende o id do item nem chega aqui. 1 com o id em `dst`.
+static int armIdParaAddon(int i, const char *tipo, const char *id, ArmIds *a, int *feito,
+                          char *dst, size_t n) {
+  size_t k;
+  // So vale consultar se o addon declara algum dos prefixos que o ARM devolve:
+  // addon so de fontes, so de "tt" ou sem manifesto lido nunca aceitaria.
+  for (k = 0; k < ARM_COLS; k++) {
+    snprintf(dst, n, "%s1", arm_prefixo((int)k));
+    if (addons_aceita_id(i, tipo, dst) == 1) break;
   }
-  { char tt[32] = "";
-    if (js_texto_raiz(c, "imdb", tt, sizeof tt) && !strncmp(tt, "tt", 2))
-      snprintf(dst, n, "%s", tt); }
-  free(c);
+  if (k == ARM_COLS) return 0;
+  if (!*feito) { *feito = 1; arm_consultar(id, tipo, a); }
+  for (k = 0; k < ARM_COLS; k++) {
+    if (!a->id[k]) continue;
+    snprintf(dst, n, "%s%lu", arm_prefixo((int)k), a->id[k]);
+    if (!strcmp(dst, id)) continue;
+    if (addons_aceita_id(i, tipo, dst) == 1) return 1;
+  }
+  return 0;
+}
+
+// Ficha pedida com um id TRADUZIDO ("mal:38000" para um item "kitsu:41370"): os
+// ids de video dela ("mal:38000:5") sao do addon de metadados, e cat_id_stream
+// os mandaria aos addons de FONTE, que falam o id do item. A chave "id" desses
+// videos vira "_id": o episodio fica sem id proprio e cat_id_stream monta o do
+// item ("kitsu:41370:5", ou "tt...:T:E"). Devolve um corpo novo (ou NULL).
+static char *armSemIdsDeVideo(const char *corpo, const char *qid) {
+  size_t nq = strlen(qid), extra = 0;
+  const char *p;
+  char *novo, *d;
+  for (p = strstr(corpo, "\"id\""); p; p = strstr(p + 4, "\"id\"")) extra++;
+  novo = malloc(strlen(corpo) + extra + 1);
+  if (!novo) return NULL;
+  for (p = corpo, d = novo; *p; ) {
+    if (!strncmp(p, "\"id\"", 4)) {
+      const char *v = p + 4;
+      while (*v == ' ' || *v == ':' || *v == '\t' || *v == '\n' || *v == '\r') v++;
+      if (*v == '"' && !strncmp(v + 1, qid, nq) && v[1 + nq] == ':') {
+        memcpy(d, "\"_id\"", 5); d += 5; p += 4;
+        continue;
+      }
+    }
+    *d++ = *p++;
+  }
+  *d = 0;
+  return novo;
 }
 
 // Tenta a ficha do addon `i`; guarda em `mf` se valida. Um pedido, no tipo
@@ -8218,6 +8250,9 @@ static int metaCatalogoResolver(const CatItem *orig, MetaFontes *mf, int indice)
   char id[64];
   int origem = addonDaOrigem(orig->origem), i, n = addons_n(), extras = 0;
   int ehImdb = !strncmp(orig->imdb, "tt", 2);
+  ArmIds arm;
+  int armFeito = 0;
+  char armAlt[64];
   const char *cid;
   EpCine cedo = { orig, indice, 1, epPedidoAtual(), NULL };
   pthread_t cineFio;
@@ -8235,10 +8270,25 @@ static int metaCatalogoResolver(const CatItem *orig, MetaFontes *mf, int indice)
   // b) outros addons de metadados, na ordem do usuario
   for (i = 0; i < n && !epPedidoSaiu() && extras < 2 && (!mf->n || !metaCompleta(mf->corpo[0])); i++) {
     int r;
+    const char *qid = id;
     if (i == origem) continue;
     r = addons_aceita_id(i, orig->tipo, id);
+    // Id que este addon nao atende: o ARM diz qual id do MESMO titulo ele
+    // atende (kitsu -> mal, anidb -> kitsu, tt/tmdb de anime -> kitsu...). Para
+    // "tt" so quando o addon declarou que nao fala IMDb (r == 0) e o titulo e
+    // anime: um filme qualquer nao custa uma consulta.
+    if (r != 1 && (!ehImdb || r == 0) && armVale(orig, id) &&
+        armIdParaAddon(i, orig->tipo, id, &arm, &armFeito, armAlt, sizeof armAlt)) {
+      qid = armAlt;
+      r = 1;
+      if (epPedidoSaiu()) break;   // a consulta ao ARM pode ter esperado ate 8 s
+    }
     if (r == 1 || (r == -1 && ehImdb && addons_sondado(i) && addons_fornece(i, ADD_META))) {
-      if (tentarFichaDoAddon(mf, i, orig->tipo, id)) {
+      if (tentarFichaDoAddon(mf, i, orig->tipo, qid)) {
+        if (qid != id) {
+          char *limpo = armSemIdsDeVideo(mf->corpo[mf->n - 1], qid);
+          if (limpo) { free(mf->corpo[mf->n - 1]); mf->corpo[mf->n - 1] = limpo; }
+        }
         if (mf->n == 1 && !epPedidoSaiu()) {
           int alvo = epAlvo(indice);
           if (alvo >= 0) {
@@ -8255,9 +8305,11 @@ static int metaCatalogoResolver(const CatItem *orig, MetaFontes *mf, int indice)
   // O IMDb do titulo: o proprio id, ou o que a ficha revelou.
   if (ehImdb) snprintf(mf->tt, sizeof mf->tt, "%s", id);
   else for (i = 0; i < mf->n && !mf->tt[0]; i++) metaImdbDaFicha(mf->corpo[i], mf->tt, sizeof mf->tt);
-  // d) sem IMDb a vista e ficha incompleta: a API ARM
-  if (!mf->tt[0] && !ehImdb && (!mf->n || !metaCompleta(mf->corpo[0])))
-    armImdb(id, mf->tt, sizeof mf->tt);
+  // d) sem IMDb a vista e ficha incompleta: a API ARM (a consulta de b, se houve)
+  if (!mf->tt[0] && !ehImdb && armVale(orig, id) && (!mf->n || !metaCompleta(mf->corpo[0]))) {
+    if (!armFeito) { armFeito = 1; arm_consultar(id, orig->tipo, &arm); }
+    snprintf(mf->tt, sizeof mf->tt, "%s", arm.imdb);
+  }
   // c) o Cinemeta completa o que faltar (ou e a base, se nenhum addon serviu).
   // "tmdb:" sem IMDb na ficha: o catalogo do Nuvio resolve o proprio id (#555).
   cid = mf->tt[0] ? mf->tt : (!strncmp(id, "tmdb:", 5) ? id : "");
@@ -8932,40 +8984,54 @@ static int deMetaTrakt(const char *p, const char *f, const char *midia,
 // do TMDB — mesma lista de chaves que applyTmdbDiscoverFilters do web.
 static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv) {
   const char *fim = filtros ? filtros + strlen(filtros) : NULL;
-  static const struct { const char *js, *url; int soTv; } M[] = {
+  static const struct { const char *js, *url; int tipo; /* 0 string, 1 TV string, 2 number */ } M[] = {
     {"withGenres","with_genres",0}, {"withoutGenres","without_genres",0},
-    {"voteAverageGte","vote_average.gte",0}, {"voteAverageLte","vote_average.lte",0},
-    {"voteCountGte","vote_count.gte",0},
+    {"voteAverageGte","vote_average.gte",2}, {"voteAverageLte","vote_average.lte",2},
+    {"voteCountGte","vote_count.gte",2},
     {"withOriginalLanguage","with_original_language",0},
     {"withOriginCountry","with_origin_country",0},
     {"withKeywords","with_keywords",0}, {"withoutKeywords","without_keywords",0},
     {"withCompanies","with_companies",0}, {"withoutCompanies","without_companies",0},
     {"withNetworks","with_networks",1},
-    {"withRuntimeGte","with_runtime.gte",0}, {"withRuntimeLte","with_runtime.lte",0},
+    {"withRuntimeGte","with_runtime.gte",2}, {"withRuntimeLte","with_runtime.lte",2},
   };
   char v[128];
   size_t u;
   if (!filtros || *filtros != '{') return;
   for (u = 0; u < sizeof M / sizeof *M; u++) {
-    if (M[u].soTv && !isTv) continue;
+    if (M[u].tipo == 1 && !isTv) continue;
+    if (M[u].tipo == 2) {
+      double valor = js_num(filtros, fim, M[u].js, -1);
+      if (valor >= 0)
+        snprintf(q + strlen(q), n - strlen(q), "&%s=%g", M[u].url, valor);
+      continue;
+    }
     if (js_texto(filtros, fim, M[u].js, v, sizeof v) && v[0])
       snprintf(q + strlen(q), n - strlen(q), "&%s=%s", M[u].url, v);
   }
   if (js_texto(filtros, fim, "releaseDateGte", v, sizeof v) && v[0])
     snprintf(q + strlen(q), n - strlen(q), "&%s.gte=%s",
-             isTv ? "first_air_date" : "release_date", v);
+             isTv ? "first_air_date" : "primary_release_date", v);
   if (js_texto(filtros, fim, "releaseDateLte", v, sizeof v) && v[0])
     snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
-             isTv ? "first_air_date" : "release_date", v);
+             isTv ? "first_air_date" : "primary_release_date", v);
   { long ano = (long)js_num(filtros, fim, "year", 0.0);
     if (ano > 0)
       snprintf(q + strlen(q), n - strlen(q), "&%s=%ld",
                isTv ? "first_air_date_year" : "year", ano); }
-  if (js_texto(filtros, fim, "withWatchProviders", v, sizeof v) && v[0]) {
-    char reg[8] = "";
-    js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
-    snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s&with_watch_providers=%s",
-             reg[0] ? reg : "US", v);
+  { char sem[128] = "", reg[8] = "";
+    v[0] = 0;
+    js_texto(filtros, fim, "withWatchProviders", v, sizeof v);
+    js_texto(filtros, fim, "withoutWatchProviders", sem, sizeof sem);
+    if (v[0] || sem[0]) {
+      js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
+      snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s", reg[0] ? reg : "US");
+    }
+    if (v[0])
+      snprintf(q + strlen(q), n - strlen(q),
+               "&with_watch_providers=%s&with_watch_monetization_types=flatrate|free|ads|rent|buy", v);
+    if (sem[0])
+      snprintf(q + strlen(q), n - strlen(q), "&without_watch_providers=%s", sem);
   }
 }
 

@@ -1,6 +1,7 @@
 #include "addons.h"
 #include "plugins.h"
 #include "idbase.h"
+#include "armids.h"
 #include "idcanal.h"
 #include "idioma.h"
 #include "linguas.h"
@@ -114,10 +115,10 @@ static void copiarPedido(int i, AddonPedido *p) {
   p->legenda = addon[i].legenda; p->sondado = addon[i].sondado;
   p->mudoSeg = addon[i].mudoSeg;
   memcpy(p->streamTipos, addon[i].streamTipos, sizeof p->streamTipos);
-  memcpy(p->streamPref, addon[i].streamPref, sizeof p->streamPref);
-  p->nStreamPref = addon[i].nStreamPref;
   chaveEstatistica(p->base, 0, p->estatistica);
   snprintf(p->tipoCanal, sizeof p->tipoCanal, "%s", addon[i].tipoCatalogo);
+  p->nStreamPref = addon[i].nStreamPref;
+  memcpy(p->streamPref, addon[i].streamPref, sizeof p->streamPref);
 }
 static AddonPedido *capturarPedidos(uint64_t sessao, int *n, unsigned *versao) {
   AddonPedido *p = NULL;
@@ -1493,8 +1494,8 @@ static void *legFioPuxa(void *u) {
     i = B->proximo < B->nLotes ? B->proximo++ : -1;
     pthread_mutex_unlock(&B->m);
     if (i < 0) return NULL;
-    // Addon que nao declara legenda nao e consultado.
-    if (!B->origens || !B->origens[i].ativo || !B->origens[i].legenda) continue;
+    // Only a known manifest can authorize a subtitles request.
+    if (!B->origens || !B->origens[i].ativo || !B->origens[i].sondado || !B->origens[i].legenda) continue;
     pthread_mutex_lock(&B->m);
     B->consultados++;
     pthread_mutex_unlock(&B->m);
@@ -2385,7 +2386,81 @@ typedef struct {
   unsigned versao;
   uint64_t sessao;
   pthread_mutex_t trava;
+  struct ArmFontes *arm;      // ids do mesmo titulo em outros sites (streamIdsExtras)
 } Consulta;
+
+// O MESMO EPISODIO COM OUTRO ID (armids.h). Em anime cada id acha fontes que o
+// outro nao acha: o Torrentio responde "kitsu:41370:5" com os lancamentos de
+// numeracao absoluta (fansubs, pacotes) e "tt9335498:1:5" com os de temporada;
+// addon so de "tt" nao responde nada a um "kitsu:", e addon so de anime nada a
+// um "tt". Um addon que declara no "stream" idPrefixes de outra familia de ids
+// tambem e perguntado por ela, e as listas se somam sem repetir fonte. A
+// consulta ao ARM e UMA por busca, feita pelo primeiro fio que precisar.
+struct ArmFontes {
+  pthread_mutex_t trava;
+  int feito, n;
+  char alt[ARM_COLS + 1][ARM_ALT_TAM];
+};
+
+// 1 = o /stream do addon declara este prefixo; 0 = declara outros; -1 = nao disse.
+static int streamAceita(const AddonPedido *a, const char *id) {
+  int k;
+  if (a->nStreamPref <= 0) return -1;
+  for (k = 0; k < a->nStreamPref; k++) {
+    size_t l = strlen(a->streamPref[k]);
+    if (l && !strncmp(id, a->streamPref[k], l)) return 1;
+  }
+  return 0;
+}
+
+// Query each declared mapped namespace once; ARM returns unique alternate IDs.
+static int streamIdsExtras(Consulta *c, const AddonPedido *a, int cobreOriginal,
+                           char (*out)[ARM_ALT_TAM]) {
+  struct ArmFontes *arm = c->arm;
+  int n = 0, k;
+  if (!arm || a->nStreamPref <= 0) return 0;
+
+  // Avoid ARM when the addon accepts only the original namespace.
+  { int precisa = 0;
+    if ((!cobreOriginal || !idbase_e_imdb(c->id)) && streamAceita(a, "tt1") == 1) precisa = 1;
+    for (k = 0; k < ARM_COLS && !precisa; k++) {
+      char amostra[32];
+      if (cobreOriginal && !strncmp(c->id, arm_prefixo(k), strlen(arm_prefixo(k)))) continue;
+      snprintf(amostra, sizeof amostra, "%s1", arm_prefixo(k));
+      if (streamAceita(a, amostra) == 1) precisa = 1;
+    }
+    if (!precisa) return 0; }
+  pthread_mutex_lock(&arm->trava);
+  if (!arm->feito) {
+    arm->feito = 1;
+    arm->n = arm_ids_stream(c->id, c->tipo, arm->alt, ARM_COLS + 1);
+    if (arm->n > 0) {
+      printf("[addons] ARM: %d ids do mesmo titulo para as fontes\n", arm->n);
+      fflush(stdout);
+    }
+  }
+  pthread_mutex_unlock(&arm->trava);
+  for (k = 0; k < arm->n && n < ARM_COLS + 1; k++) {
+    if (!strcmp(c->id, arm->alt[k]) || streamAceita(a, arm->alt[k]) != 1) continue;
+    snprintf(out[n++], ARM_ALT_TAM, "%s", arm->alt[k]);
+  }
+  return n;
+}
+
+// A mesma fonte vinda pelos dois ids. Mesma URL; mesmo torrent (infoHash +
+// arquivo); ou, quando a fonte ja vem com URL (AIOStreams/MediaFusion com
+// debrid: a URL de playback leva o pedido dentro e muda com o id), o mesmo
+// hashTorrent, ou o mesmo nome de arquivo com o mesmo videoSize.
+static int mesmaFonte(const Stream *x, const Stream *y) {
+  if (x->url[0] && !strcmp(x->url, y->url)) return 1;
+  if (x->infoHash[0] && y->infoHash[0])
+    return !strcasecmp(x->infoHash, y->infoHash) && x->fileIdx == y->fileIdx;
+  if (x->hashTorrent[0] && y->hashTorrent[0] && strcasecmp(x->hashTorrent, y->hashTorrent)) return 0;
+  if (x->arquivo[0] && !strcmp(x->arquivo, y->arquivo))
+    return x->hashTorrent[0] && y->hashTorrent[0] ? 1
+         : x->tamanhoBytes && x->tamanhoBytes == y->tamanhoBytes;
+  return 0;
+}
 static int consultaCancelada(const Consulta *c) {
   return !nv_perfil_sessao_atual(c->sessao) || (c->cancelado && c->cancelado(c->ctx));
 }
@@ -2420,12 +2495,51 @@ static int aceitaStream(const AddonPedido *p, const char *tipo, const char *id) 
     snprintf(marca, sizeof marca, "|%s|", tipo);
     if (!strstr(p->streamTipos, marca)) return 0;
   }
-  if (!p->nStreamPref) return 1;
+  if (!id || !p->nStreamPref) return 1;
   char longo[IDCANAL_LONGO_MAX + 1];
   id = idcanal_longo(id, longo, sizeof longo);
   for (int k = 0; k < p->nStreamPref; k++)
     if (!strncmp(id, p->streamPref[k], strlen(p->streamPref[k]))) return 1;
   return 0;
+}
+
+// Keep declared type filtering while admitting IDs that ARM can translate.
+static int candidatoStream(const AddonPedido *p, const char *tipo, const char *id) {
+  if (aceitaStream(p, tipo, id)) return 1;
+  if (!aceitaStream(p, tipo, NULL) ||
+      (strcmp(tipo, "movie") && strcmp(tipo, "series")) ||
+      (!idbase_e_imdb(id) && !arm_id_anime(id))) return 0;
+  if (streamAceita(p, "tt1") == 1) return 1;
+  for (int k = 0; k < ARM_COLS; k++) {
+    char sample[32];
+    snprintf(sample, sizeof sample, "%s1", arm_prefixo(k));
+    if (streamAceita(p, sample) == 1) return 1;
+  }
+  return 0;
+}
+
+// Resolve unknown capabilities inside the search worker, never on the UI thread.
+// A failed manifest keeps the legacy optimistic stream fallback.
+static int resolverStream(Consulta *c, int i) {
+  AddonPedido *p = &c->origens[i];
+  if (!p->sondado) {
+    char url[NV_ADDON_PEDIDO_MAX];
+    char *corpo = NULL;
+    if (nv_addon_pedido_coube(p->nome,
+          nv_addon_url(url, sizeof url, p->base, "/manifest.json"), sizeof url)) {
+      corpo = rede_baixar(url, 12);
+      if (corpo) addons_manifesto_recebido(p->base, c->versao, c->sessao, corpo);
+      free(corpo);
+    }
+    if (consultaCancelada(c) || !nv_perfil_sessao_travar(c->sessao)) return 0;
+    pthread_mutex_lock(&addonTrava);
+    int atual = c->versao == versaoLista && i < nAddon && !strcmp(addon[i].base, p->base);
+    if (atual) copiarPedido(i, p);
+    pthread_mutex_unlock(&addonTrava);
+    nv_perfil_sessao_destravar();
+    if (!atual) return 0;
+  }
+  return candidatoStream(p, c->tipo, c->id);
 }
 
 static int prazoDoAddon(const Consulta *c, int i) {
@@ -2472,6 +2586,77 @@ static char *baixarStream(const char *nome, const char *url, int segundos) {
   return corpo;
 }
 
+// Os ids a mais de UM addon (streamIdsExtras) num fio proprio, ao mesmo tempo
+// que o pedido pelo id do item: um agregador lento (AIOStreams espera os
+// scrapers dele a cada pedido) nao soma os dois tempos, e o que vier pelo id do
+// item ja vai para a tela antes. `ac` 1 = o fio escolhe os ids (o ARM pode
+// demorar); 0 = `extra[xi..]` ja escolhidos.
+typedef struct {
+  Consulta *c;
+  const AddonPedido *a;
+  Uint32 inicio;
+  int prazoS, ac, nExtra, xi;
+  char extra[ARM_COLS + 1][ARM_ALT_TAM];
+  Stream *l;
+  int n, respondeu;
+} IdsExtras;
+static void *fioIdsExtras(void *u) {
+  IdsExtras *x = u;
+  char url[NV_ADDON_PEDIDO_MAX], idX[3 * IDCANAL_LONGO_MAX + 1];
+  if (x->ac == 1) { x->nExtra = streamIdsExtras(x->c, x->a, 1, x->extra); x->xi = 0; }
+  for (; x->xi < x->nExtra && !consultaCancelada(x->c); x->xi++) {
+    char *cx;
+    Stream *ax = NULL;
+    int nx, novos = 0, restanteS;
+    Uint32 gasto = SDL_GetTicks() - x->inicio;
+    if (gasto >= (Uint32)x->prazoS * 1000u) break;
+    restanteS = (int)(((Uint32)x->prazoS * 1000u - gasto) / 1000u);
+    if (restanteS <= 0) break;
+    if (!nv_addon_id(idX, sizeof idX, x->extra[x->xi]) || !idX[0]) continue;
+    cx = nv_addon_pedido_coube(x->a->nome, nv_addon_url(url, sizeof url, x->a->base, "/stream/%s/%s.json",
+                                 x->c->tipo, idX), sizeof url)
+         ? baixarStream(x->a->nome, url, restanteS) : NULL;
+    if (!cx) continue;
+    x->respondeu = 1;
+    nx = stream_extrair(cx, x->a->nome, &ax);
+    free(cx);
+    if (nx > 0) {
+      Stream *tmp = realloc(x->l, sizeof(Stream) * (size_t)(x->n + nx));
+      if (tmp) {
+        x->l = tmp;
+        for (int j = 0; j < nx; j++) {
+          int dup = 0;
+          for (int q = 0; q < x->n + novos && !dup; q++) dup = mesmaFonte(&x->l[q], &ax[j]);
+          if (!dup) x->l[x->n + novos++] = ax[j];
+        }
+        x->n += novos;
+      }
+    }
+    free(ax);
+    printf("[addons] %s: %d fontes pelo id %s\n", x->a->nome, novos, x->extra[x->xi]);
+  }
+  return NULL;
+}
+// Junta ao fim de `*l` (com `*n`) o que o fio trouxe e o pedido do item nao.
+// Devolve quantas entraram.
+static int idsExtrasJuntar(IdsExtras *x, Stream **l, int *n) {
+  int novos = 0;
+  if (x->n > 0) {
+    Stream *tmp = realloc(*l, sizeof(Stream) * (size_t)(*n + x->n));
+    if (tmp) {
+      *l = tmp;
+      for (int j = 0; j < x->n; j++) {
+        int dup = 0;
+        for (int q = 0; q < *n && !dup; q++) dup = mesmaFonte(&(*l)[q], &x->l[j]);
+        if (!dup) (*l)[*n + novos++] = x->l[j];
+      }
+      *n += novos;
+    }
+  }
+  free(x->l); x->l = NULL; x->n = 0;
+  return novos;
+}
+
 static void *fioFontes(void *u) {
   Consulta *c = u;
   for (;;) {
@@ -2491,10 +2676,27 @@ static void *fioFontes(void *u) {
     if (consultaCancelada(c)) continue;
     i = c->baldes[meu].idx; origem = &c->origens[i];
     if (!origem->ativo) continue;   // desligado na conta: nunca consultado
+    if (!resolverStream(c, i)) continue;
     if (semStreamSondado(c, i)) continue;   // a sonda terminou depois dos baldes
+    // Id que o addon atende. Filme/serie de anime: se o /stream dele declara
+    // outros prefixos e nao o do item, vai o MESMO episodio no id que ele fala
+    // (streamIdsExtras); sem traducao, o id do item como sempre.
+    const char *primario = c->id;
+    char extra[ARM_COLS + 1][ARM_ALT_TAM];
+    int nExtra = 0, xi = 0, ac = -1;
+    int vod = !strcmp(c->tipo, "movie") || !strcmp(c->tipo, "series");
+    if (vod) ac = streamAceita(origem, c->id);
+    if (ac == 0) {
+      nExtra = streamIdsExtras(c, origem, 0, extra);
+      if (!nExtra) continue;
+      primario = extra[0]; xi = 1;
+    }
+    IdsExtras ex;
+    pthread_t exFio;
+    int exVivo = 0, exUsar = ac == 1 || (ac == 0 && nExtra > 1), publicados = 0;
     // Id codificado como o Nuvio web (nv_addon_id): "tt123:1:2" sai igual.
     { char longo[IDCANAL_LONGO_MAX + 1];   // apelido de canal longo (idcanal.h)
-      if (!nv_addon_id(idUrl, sizeof idUrl, idcanal_longo(c->id, longo, sizeof longo)) || !idUrl[0]) {
+      if (!nv_addon_id(idUrl, sizeof idUrl, idcanal_longo(primario, longo, sizeof longo)) || !idUrl[0]) {
         printf("[addons] %s: stream build error (invalid or oversized ID; request not sent)\n", origem->nome);
         continue;
       } }
@@ -2509,10 +2711,21 @@ static void *fioFontes(void *u) {
     // prefetch. Ver ADD_PRAZO_VOD_S em consultar().
     prazoS = prazoDoAddon(c, i);
     Uint32 inicioAddon = SDL_GetTicks();
+    if (exUsar) {
+      memset(&ex, 0, sizeof ex);
+      ex.c = c; ex.a = origem; ex.inicio = inicioAddon; ex.prazoS = prazoS; ex.ac = ac;
+      ex.nExtra = nExtra; ex.xi = xi;
+      memcpy(ex.extra, extra, sizeof ex.extra);
+      exVivo = pthread_create(&exFio, NULL, fioIdsExtras, &ex) == 0;
+    }
     corpo = nv_addon_pedido_coube(origem->nome, nv_addon_url(url, sizeof url, origem->base, "/stream/%s/%s.json",
                                     t1, idUrl), sizeof url) && idUrl[0]
             ? baixarStream(origem->nome, url, prazoS) : NULL;
-    if (consultaCancelada(c)) { free(corpo); break; }
+    if (consultaCancelada(c)) {
+      if (exVivo) pthread_join(exFio, NULL);
+      if (exUsar) free(ex.l);
+      free(corpo); break;
+    }
     achados = NULL; n = 0;
     if (corpo) n = stream_extrair(corpo, origem->nome, &achados);
     // Retry the remaining type names after an empty or failed response.
@@ -2553,7 +2766,11 @@ static void *fioFontes(void *u) {
       alt = nv_addon_pedido_coube(origem->nome, nv_addon_url(url, sizeof url, origem->base, "/stream/%s/%s.json",
                                     t2, idUrl), sizeof url) && idUrl[0]
             ? baixarStream(origem->nome, url, restanteS) : NULL;
-      if (consultaCancelada(c)) { free(alt); free(corpo); free(achados); return NULL; }
+      if (consultaCancelada(c)) {
+        if (exVivo) pthread_join(exFio, NULL);
+        if (exUsar) free(ex.l);
+        free(alt); free(corpo); free(achados); return NULL;
+      }
       if (alt) {
         Stream *a2 = NULL;
         int n2 = stream_extrair(alt, origem->nome, &a2);
@@ -2568,6 +2785,22 @@ static void *fioFontes(void *u) {
         } else { free(a2); free(alt); }
       }
     }
+    // O mesmo episodio pelo id da outra familia que o addon aceita (Torrentio,
+    // AIOStreams: "tt" e "kitsu"). O que ja veio pelo id do item vai para a tela
+    // enquanto o outro pedido termina; depois so entra fonte que ainda nao veio.
+    if (exUsar) {
+      if (exVivo && c->progresso && corpo && n > 0) {
+        fonteAddonCarimbar(achados, n, i, origem->base);
+        progMarcarSessao(c->sessao, i, achados, n, 1);
+        publicados = n;
+      }
+      if (exVivo) pthread_join(exFio, NULL);
+      else fioIdsExtras(&ex);
+      if (consultaCancelada(c)) { free(ex.l); free(corpo); free(achados); return NULL; }
+      { int novos = idsExtrasJuntar(&ex, &achados, &n);
+        if (novos > 0) printf("[addons] %s: +%d fontes pelos ids do mesmo titulo\n", origem->nome, novos); }
+      if (!corpo && ex.respondeu) corpo = strdup("{\"streams\":[]}");
+    }
     if (!corpo) {
       free(achados);
       printf("[addons] %s: stream query failed (%u ms, budget %d s; reason above)\n",
@@ -2579,7 +2812,8 @@ static void *fioFontes(void *u) {
       continue;
     }
     fonteAddonCarimbar(achados, n, i, origem->base);
-    if (c->progresso) progMarcarSessao(c->sessao, i, achados, n, 2);
+    if (c->progresso) progMarcarSessao(c->sessao, i, n > publicados ? achados + publicados : NULL,
+                                       n - publicados, 2);
     c->baldes[meu].respondeu = 1;
     c->baldes[meu].ms = (unsigned)(SDL_GetTicks() - c->inicio);
     c->baldes[meu].n = n;
@@ -2641,7 +2875,7 @@ static void segundaChance(Consulta *c, int fios) {
   }
   if (m > 0) {
     c2.origens = c->origens; c2.nOrigens = c->nOrigens; c2.sessao = c->sessao; c2.versao = c->versao;
-    c2.id = c->id; c2.tipo = c->tipo;
+    c2.id = c->id; c2.tipo = c->tipo; c2.arm = c->arm;
     c2.nBaldes = m; c2.cancelado = c->cancelado; c2.ctx = c->ctx;
     c2.timeout = c->timeout > 20 ? c->timeout : 20;
     c2.progresso = c->progresso; c2.rodada = 2; c2.inicio = c->inicio;
@@ -2856,6 +3090,11 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
   c.id = id; c.tipo = tipo;
   c.cancelado = cancelado; c.ctx = ctx;
   c.progresso = progresso;
+  // Filme/serie: os ids do mesmo titulo em outros sites, sob demanda (armids.h).
+  struct ArmFontes arm;
+  memset(&arm, 0, sizeof arm);
+  pthread_mutex_init(&arm.trava, NULL);
+  if (!strcmp(tipo, "movie") || !strcmp(tipo, "series")) c.arm = &arm;
   // PRAZO DA BUSCA DE FILME/SERIE (paridade com o Nuvio oficial, #202). O
   // Nuvio web espera 60 s por addon (streamRepository,
   // STREAM_SOURCE_REQUEST_TIMEOUT_MS) num pedido so. Aqui eram 12 s e, para
@@ -2877,7 +3116,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
       char alvo[NV_ADDON_URL_MAX], mine[NV_ADDON_URL_MAX];
       baseNormalizada(base, alvo, sizeof alvo);
       for (i = 0; i < c.nOrigens; i++) {
-        if (!aceitaStream(&c.origens[i], tipo, id)) continue;
+        if (!candidatoStream(&c.origens[i], tipo, id)) continue;
         baseNormalizada(c.origens[i].base, mine, sizeof mine);
         if (!strcmp(mine, alvo)) c.baldes[c.nBaldes++].idx = i;
       }
@@ -2886,7 +3125,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
     // como sempre. Melhor perguntar a mais do que nao perguntar a ninguem.
     if (c.nBaldes == 0)
       for (i = 0; i < c.nOrigens; i++)
-        if (aceitaStream(&c.origens[i], tipo, id)) c.baldes[c.nBaldes++].idx = i;
+        if (candidatoStream(&c.origens[i], tipo, id)) c.baldes[c.nBaldes++].idx = i;
   }
 
   // QUEM FICOU DE FORA, E POR QUE (issue #83).
@@ -2915,7 +3154,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
     if (!(base && *base) && (!folhaFeita || ultimaFolha != versaoLista)) {
       ultimaFolha = versaoLista; folhaFeita = 1;
       for (i = 0; i < c.nOrigens; i++) {
-        if (c.origens[i].ativo && c.origens[i].fonte) continue;
+        if (c.origens[i].ativo && c.origens[i].sondado && c.origens[i].fonte) continue;
         printf("[addons] fora da busca de fontes: %s (%s)\n", c.origens[i].nome,
                !c.origens[i].ativo ? "desligado" :
                c.origens[i].sondado ? "o manifesto nao declara stream"
@@ -2990,6 +3229,7 @@ static int consultar(const char *id, const char *tipo, const char *base, int fio
   }
   free(c.baldes); free(c.origens);
   pthread_mutex_destroy(&c.trava);
+  pthread_mutex_destroy(&arm.trava);
   if (temExtra) pthread_join(fioEx, NULL);
   if (rs) rs->extraIncompleta = extra.pendentes != 0 || extra.incompleta;
   if (progresso) addonstats_salvar();

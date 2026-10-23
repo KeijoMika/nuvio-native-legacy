@@ -384,6 +384,7 @@ IGNORAR = {
     "%s/poster/%02d.jpg",           # caminho da arte dos dados de exemplo (socialvis.c, so teste)
     "biblioteca.h", "catalogo.h", "fileiras.h", "perfil.h", "legenda.h",
     "perfil.txt",                   # #include e nome de arquivo
+    "perfil-infantil.txt", "perfil-ajustes-travados.txt",  # profile state filenames, never UI
     "com.webos.media.client.nuvio", # id do cliente LS2
     "abrir", "buscar", "erro",      # nomes de operacao do bridge JS (video_tizen.c)
     "fontes", "legenda", "mais", "nao", "poster",  # chaves internas, nao rotulo

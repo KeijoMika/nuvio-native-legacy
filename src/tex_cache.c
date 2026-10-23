@@ -296,6 +296,23 @@ static int rodando = 0;
 // corruption" dentro do SDL: era falta de memoria, nao bug de ponteiro.
 static long bytesUsados = 0;
 static long orcamento = 0;
+static long decodeReservado;
+
+/* Reserve before decode, including codec output, conversion and CPU mips.
+ * Completed surfaces remain charged until the frame pump releases them. */
+static int decodeCabe(void) {
+#if !defined(NV_ANDROID) && !defined(NV_TEX_MEMORY_TEST)
+  return 1;
+#endif
+  long bytes = decodeReservado;
+  for (int i = 0; i < nMax; i++)
+    for (SDL_Surface *s = itens[i].sup; s; s = s->userdata)
+      bytes += (long)s->pitch * s->h;
+  long cap = orcamento / 2;
+  if (cap < 64L * 1024 * 1024) cap = 64L * 1024 * 1024;
+  if (cap > 96L * 1024 * 1024) cap = 96L * 1024 * 1024;
+  return bytes + 48L * 1024 * 1024 <= cap;
+}
 // Pasta do cache de download. Declarada aqui e nao mais abaixo porque
 // noCache() precisa dela.
 static char dirCache[512];
@@ -758,7 +775,7 @@ static int emVoo(void) {
 
 static int despejar(int forcar);
 static int slotLivre(void) {
-  if (emVoo() >= nMax / 3) return -1;   // pede de novo no proximo quadro
+  if (emVoo() >= (ptv_plataforma() == PTV_ANDROID && nMax / 3 > 8 ? 8 : nMax / 3)) return -1;   // pede de novo no proximo quadro
   for (int i = 0; i < nMax; i++) if (itens[i].estado == VAZIO) return i;
   // Slot que ja desistiu vale mais como vaga que um PRONTO em uso: reaproveita
   // antes de despejar arte que esta na tela.
@@ -1805,6 +1822,10 @@ static char *baixarImagem(const char *url, long *n, TexFetchTrace *trace) {
   // Ja se sabe que esta URL nao tem arte (ver negTem): falha na hora, sem
   // ocupar o fio — quem desenha cai na proxima fonte como num 404.
   if (negTem(url)) return NULL;
+#ifdef NV_ANDROID
+  long tetoAnterior = rede_teto;
+  rede_teto = 8L * 1024 * 1024;
+#endif
   // 8 s e nao 25: isto e uma IMAGEM. Com 25 s, duas URLs mortas seguravam os
   // dois fios de decode por quase um minuto e a tela inteira parava de receber
   // arte — repetidamente, porque nada guarda a falha.
@@ -1860,6 +1881,9 @@ static char *baixarImagem(const char *url, long *n, TexFetchTrace *trace) {
       trace->netMs += SDL_GetTicks() - t;
       trace->netCalls++;
     } }
+#ifdef NV_ANDROID
+  rede_teto = tetoAnterior;
+#endif
   // ESTE RAMO ERA MUDO. Medido numa navegacao da home: 93 "decode falhou" com
   // ZERO "[rede] falha" no log — todas as falhas passavam por aqui, com o curl
   // dizendo sucesso e um corpo curto demais para ser imagem. Sem a linha nao
@@ -2253,6 +2277,17 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
         if (trace) trace->persistMs += SDL_GetTicks() - persistEm; }
     }
     SDL_LockMutex(mtx);
+#ifdef NV_ANDROID
+    // Backpressure compressed responses too; at most the network workers keep
+    // one bounded response each while waiting for the decode queue to drain.
+    while (rodando && mesmoPedido(idx, pedido)) {
+      long pending = n;
+      for (int i = 0; i < nMax; i++) pending += itens[i].nBruto;
+      if (pending <= orcamento / 4) break;
+      SDL_CondWaitTimeout(condLivre, mtx, 20);
+    }
+    if (!rodando) { SDL_UnlockMutex(mtx); free(corpo); return 0; }
+#endif
     if (!mesmoPedido(idx, pedido)) {
       int salvo = salvarPedidoMovido(pedido, url, limitePedido, corpo, n, NV_CACHE_ARTE_MEDIUM);
       SDL_UnlockMutex(mtx);
@@ -2700,7 +2735,8 @@ static int threadDecode(void *arg) {
   SDL_SetThreadPriority(SDL_THREAD_PRIORITY_NORMAL);
   for (;;) {
     SDL_LockMutex(mtx);
-    while (rodando && decIni == decFim) SDL_CondWait(condDec, mtx);
+    while (rodando && (decIni == decFim || !decodeCabe()))
+      SDL_CondWaitTimeout(condDec, mtx, 20);
     if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
     int idx = tirarFila(filaDec, &decIni, decFim);
     // O marcador cobre tambem o decode em andamento. Limpa-lo aqui abre uma
@@ -2713,6 +2749,7 @@ static int threadDecode(void *arg) {
       SDL_UnlockMutex(mtx);
       continue;
     }
+    decodeReservado += 48L * 1024 * 1024;
     char caminho[NV_TEX_URL_MAX];
     int limite, card;
     Uint32 filaEm = 0, filaWait = 0;
@@ -2767,7 +2804,7 @@ static int threadDecode(void *arg) {
     SDL_Surface *conv = NULL;
     if (bruto) {
       bruta = jpeg_rapido_carregar_mem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(NV_ANDROID)
       // No LG o _mem so faz JPEG; PNG pelo SDL_image e WebP pela libwebp do
       // sistema, na mesma ordem do caminho por arquivo abaixo.
       if (!bruta) {
@@ -2801,11 +2838,15 @@ static int threadDecode(void *arg) {
     // ARQUIVO — e o que `fonteW` guarda para decidir promocao — e nao com o
     // do que saiu. NULL cai no IMG_Load de sempre.
     bruta = jpeg_rapido_carregar(caminho, limite, &srcW, &srcH);
+#ifndef NV_ANDROID
     if (!bruta) { srcW = srcH = 0; bruta = IMG_Load(caminho); }
+#endif
     // O SDL2_image desta TV nao le WebP; a libwebp do sistema le (webp.c),
     // e ja reduz ao limite — os fundos do Xperience sao 3840x2160.
+#ifndef NV_ANDROID
     if (!bruta) bruta = webp_carregar_larg(caminho, limite, &srcW, &srcH);
-#ifndef __EMSCRIPTEN__
+#endif
+#if !defined(__EMSCRIPTEN__) && !defined(NV_ANDROID)
     if (!bruta) bruta = gifFotoArquivo(caminho, limite, &srcW, &srcH);
 #endif
     }
@@ -3043,6 +3084,7 @@ static int threadDecode(void *arg) {
 
     int falhou = 0;
     SDL_LockMutex(mtx);
+    decodeReservado -= 48L * 1024 * 1024;
     // O SLOT AINDA E DESTE PEDIDO? (23/09/2026, cards com a arte de OUTRO
     // titulo.) O decode roda sem a trava; se o slot foi despejado e
     // reaproveitado por outro caminho nesse meio tempo, ele esta PENDENTE de
@@ -3336,6 +3378,10 @@ static int orcamentoMB(void) {
       int v = atoi(env);
       if (v >= 16 && v <= 1024) { mb = v; porque = "NUVIO_TEX_MB"; orcFixo = 2; }
     } }
+#ifdef NV_ANDROID
+  { int cap = ptv_tex_teto_mb(PTV_ANDROID, mem);
+    if (mb > cap) mb = cap; }
+#endif
   printf("[tex] orcamento de texturas: %d MB (%s; MemTotal=%ld MB)\n", mb, porque, mem);
   fflush(stdout);
   orcMB = mb; orcMemTotal = mem; orcAuto = mb;
@@ -4449,6 +4495,9 @@ static int publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
     int ap = (sup->h > 0) && ((sup->h & (sup->h - 1)) == 0);
     if (!lp || !ap) comMip = 0; }
 #endif
+  // CPU mip allocation failure must not schedule GPU generation on the
+  // render thread. A linear base texture remains complete and usable.
+  if (comMip && mipCpuAtivo() && !sup->userdata) comMip = 0;
   if (envioFalhou(alvo, t, sup)) return 0;
   Uint32 mipEm = SDL_GetTicks();
   glBindTexture(GL_TEXTURE_2D, t);
@@ -4466,8 +4515,15 @@ static int publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   gfx_tex_esquecer(0);  // o bind do upload passou por fora do gfx_rect
   if (envioFalhou(alvo, t, sup)) return 0;
+  Uint32 mipMs = SDL_GetTicks() - mipEm;
+  Uint32 warmEm = SDL_GetTicks();
   gfx_tex_aquecer(t);
   if (envioFalhou(alvo, t, sup)) return 0;
+  Uint32 warmMs = SDL_GetTicks() - warmEm;
+  if (glMs >= NV_TEX_TRACE_UPLOAD_MS || mipMs >= NV_TEX_TRACE_UPLOAD_MS ||
+      warmMs >= NV_TEX_TRACE_UPLOAD_MS)
+    printf("[tex-trace] upload-stages hash=%08lx pixels_ms=%u mip_ms=%u warm_ms=%u\n",
+           hashCaminho(uploadPath), (unsigned)glMs, (unsigned)mipMs, (unsigned)warmMs);
   glMs += SDL_GetTicks() - mipEm;
 
   SDL_LockMutex(mtx);
@@ -4548,7 +4604,7 @@ int tex_bombear(int max_por_quadro) {
       if (trabalhou) break;  // residencia ocupa o quadro sozinha
       Uint64 passoEm = SDL_GetPerformanceCounter();
       int ok, alvo = uplIdx;
-      SDL_LockMutex(mtx);
+      if (SDL_TryLockMutex(mtx) != 0) break;
       ok = itens[alvo].estado == DECODIFICADO && itens[alvo].sup == uplSup &&
            !strcmp(itens[alvo].caminho, uplPath);
       SDL_UnlockMutex(mtx);
@@ -4597,7 +4653,8 @@ int tex_bombear(int max_por_quadro) {
     SDL_Surface *sup = NULL; int alvo = -1, nivel = -1, classe = 0;
     Uint32 filaEm = 0, filaWait = 0;
     char uploadPath[512] = "";
-    SDL_LockMutex(mtx);
+    // Defer queued work if a network/decode worker holds the cache lock.
+    if (SDL_TryLockMutex(mtx) != 0) break;
     for (int i = 0; i < nMax; i++)
       if (!blocked[i] && itens[i].estado == DECODIFICADO && itens[i].sup && itens[i].urgente > nivel) {
         alvo = i; nivel = itens[i].urgente;
@@ -4619,7 +4676,10 @@ int tex_bombear(int max_por_quadro) {
       // textures remain, so drawing never triggers another download/decode.
       long extra = bytesTexturaMip(s->w, s->h,
                                   temPiramide(s->w, s->h, itens[alvo].card));
+      // The previous texture remains live until publication; charge both.
+#ifndef NV_ANDROID
       if (itens[alvo].tex) extra -= bytesTextura(&itens[alvo]);
+#endif
       long lim = limiteBytes();
       while (bytesUsados + extra > lim)
         if (despejar(0) < 0) break;

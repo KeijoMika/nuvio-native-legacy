@@ -4785,6 +4785,7 @@ static void recuperarErroFonte(void) {
 
 void app_atualizar(float dt, Uint32 agora) {
   relogioFocoValidar();
+  ajustes_fontes_atualizar();
   { static int morno = -1; int ligado = ajustes_retomada_morna();
     if (morno != ligado) { morno = ligado; cacheboost_backend_morno(ligado); }
   }

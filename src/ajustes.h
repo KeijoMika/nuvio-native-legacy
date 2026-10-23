@@ -28,6 +28,7 @@ int  ajustes_interface_mobile(void);
 void ajustes_dir(const char *dir);
 void ajustes_evento(const SDL_Event *e);
 void ajustes_atualizar(float dt, Uint32 agora);
+void ajustes_fontes_atualizar(void);
 void ajustes_desenhar(Uint32 agora);
 int  ajustes_quer_sair(void);
 // 1 quando a linha "Addons" foi acionada. Lido e zerado na chamada.
@@ -586,6 +587,7 @@ int   ajustes_leg2_borda(void);
 void  ajustes_leg_contorno_rgb(int *r, int *g, int *b);   // #475: cor do contorno/sombra da legenda (0..255)
 unsigned ajustes_leg_borda_rgb(int corBorda);   // corBorda >= 0: explicit colour; -1: legacy #475 colour
 // Independent secondary overrides; absent fields inherit the main style.
+int ajustes_leg2_fonte_principal(void);
 void ajustes_leg2_estilo(const VideoLegendaEstilo *principal, VideoLegendaEstilo *out);
 int ajustes_leg2_posicao(void); // -1 keeps the existing Top/Stacked placement
 int ajustes_leg2_atraso(void);
@@ -613,6 +615,7 @@ float ajustes_vidro_opacidade(void);   // 0,60..0,92; 0,78 = o vidro de sempre
 int   ajustes_vidro_fosco(void);
 // Raw Automatic preferences: quality/frost/animations/glass, bits 0..3.
 int   ajustes_efeitos_automaticos(void);
+float ajustes_suavizar_degrades(void); // Noise amplitude: Automatic 1, Strong 2, Off 0.
 int   ajustes_vidro_qualidade(void);   // 0 Automatica (frost + governor), 1 Desempenho (smoked glass, no blur), 2 Alta (frost)
 void  ajustes_teste_vidro_env(void);   // so capturas        // 1 = arte borrada atras do vidro
 int   ajustes_icone_app(void);
@@ -786,6 +789,27 @@ void ajustes_idiomas_da_conta(const char *json);
 void ajustes_perfil_guardar(int perfil);
 int  ajustes_perfil_restaurar(int perfil);
 void ajustes_perfil_esquecer(void);
+// 2.1: escopo de cada opcao: 0 nenhum (acao/leitura/estado em outro arquivo),
+// 1 desta TV, 2 do perfil e da conta (blob), 3 do perfil so nesta TV.
+int  ajustes_escopo(int op);
+// Migracao unica para o escopo por perfil (ver ajustes.c). Devolve 1 quando rodou.
+int  ajustes_migrar_escopo(void);
+int  ajustes_migrar_escopo_para(const int *perfis, int n, int ativo);
+// 2.1: copia dos ajustes DO PERFIL (escopos 2 e 3; nunca os da TV) de `origem`
+// para `destino`. Devolve quantas opcoes mudaram no destino, ou -1 se falhou.
+// Nunca toca em credencial; a parte da conta fica como PENDENTE do destino e so
+// sobe quando ele for o perfil ativo.
+int  ajustes_copiar_perfil(int origem, int destino);
+// Volta o perfil ao padrao de fabrica (so o que e do perfil). Devolve quantas mudaram.
+int  ajustes_restaurar_padrao_perfil(int perfil);
+// Sessao de EDICAO dos ajustes de outro perfil: valor[] passa a ser o dele ate
+// ajustes_edicao_encerrar. 0 = nenhuma; senao o profile_index em edicao.
+int  ajustes_edicao_perfil(void);
+int  ajustes_edicao_iniciar(int perfil);
+void ajustes_edicao_encerrar(void);
+// Padroes seguros de perfil infantil aplicados aos ajustes do perfil (sem
+// enquetes/Seekr, sem notas de terceiros, classificacao no player ligada).
+void ajustes_padroes_infantis(int perfil);
 
 // O CAMINHO DE VOLTA (#85): devolve em *saida uma copia do blob `base` (o mesmo
 // objeto `settings_json` que ajustes_aplicar_blob le) com os valores DESTA TV
