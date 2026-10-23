@@ -13,11 +13,17 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## New
 
+- **Profile settings and parental controls**: Separate TV and profile settings, protect administration with a PIN, copy or restore profile settings, and edit another profile with account actions guarded. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request; agente/205-205-ajperfil21, `0b5aadb03`, `5b6521fcf`, `69abb0294`, `6b8bb2d9b`, `470a5780c`, `914279f7f`, `2801ffa08`, `3e7864bf7`, `e37ca493e`, `bcbf9b13e`, `14c3ea923`, `f40ae2c10`, `e8259e3f2`.
+
+- **Import your own fonts**: Import interface and subtitle fonts independently, preview the interface font, and retain selections during playback and backup. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #573; agente/205-pr573, `7f359731e`, `87dc223cc`, `857e3c215`, `8002ef61f`, `eb86643a5`, `0a9382efd`.
+
 - **Player format display choices**: Choose pills, text, marks, badges or no format row, place it under the title or in the corner, and choose whether to show the audio codec alongside its language. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #669, @I0-oX, `e76811f15`.
 
 - **Guest stars in this episode**: Open the player episode panel to see guest stars supplied by TMDB. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `26f616d6d`, `5f0913815`.
 
 ## Fixes
+
+- **More complete skip markers**: Fill missing intro and credits marker types from IntroDB so available skip actions remain accessible. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #615; agente/205-pr615, `2cb47b044`.
 
 - **Supported add-on source searches**: Resolve pending manifests before searching sources so requests use the add-on's supported resources. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-stream-antes-manifesto`, `ea677f958`, `179148c79`, merge `cd006c785`.
 
@@ -67,6 +73,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Performance
 
+- **Responsive artwork uploads on TCL**: Load cached artwork on a shared graphics worker and defer unavailable, contended or budget-blocked uploads to keep navigation responsive. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, merge `90e5b321a`.
+
 - **Bounded source-sheet work**: Limit source-sheet frame work to visible rows to keep navigation responsive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d28ff9e77`.
 
 - **Protected native HTTP read-ahead**: Native playback reads ahead in RAM with memory safeguards, responsive replacement ranges and seek handling, and contiguous buffered progress on the standard rail. Platforms: webOS, Android, Samsung .tpk. Refs: PR #673, `e19571da2`, `7547e3715`, `396c2a70e`, `5462e5933`, `f35f5a25a`, `d365dd646`, `0eb86c3be`.
@@ -81,6 +89,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Internal
 
+- **Font and upload regression evidence**: Cover imported fonts, subtitle rendering, marker fixtures and graphics upload limits without changing release behavior. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `c2e7d0ef9`, `bca33e5b1`, `42cfd5215`, `be613c39e`, `00d81ca89`, `1faca80c1`, `2ca240e08`, `361fb458d`, `b92af68f9`, `abeb4ad04`, `8c25bc1e0`.
+
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
 - **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
@@ -89,6 +99,5 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Pending (not yet integrated)
 
-- **Responsive artwork uploads on TCL**: Avoid waiting on contended texture uploads and GPU mipmap fallback so artwork work does not stall navigation. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `42cfd5215`.
 
 - **Richer soundtrack catalog data**: Add Apple catalog artwork and track preview metadata with fallback lookup; the redesigned app UI and preview playback still await implementation and approval. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-musica-visual`, `3c65dda20`.
