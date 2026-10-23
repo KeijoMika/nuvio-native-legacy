@@ -128,6 +128,19 @@ const char *ptv_plataforma_nome(PtvPlataforma p) {
   }
 }
 
+// Cache contract budgets. Keep docs/cache-capas.md and its SHA256 in sync.
+PtvCache ptv_cache(PtvPlataforma p, long mem) {
+  PtvCache c = {2, 96, 48, 8, 512, 1024, 5};
+  if (!mem || mem < 1200) { c.fileiras = 1; c.decodeMb = 64; }
+  if (p == PTV_ANDROID) {
+    c.decodeMb = ptv_tex_auto_mb(p, mem) / 2;
+    if (c.decodeMb < 64) c.decodeMb = 64;
+    if (c.decodeMb > 96) c.decodeMb = 96;
+    c.discoMb = 64;
+  } else if (p == PTV_TIZEN) c.discoMb = 48;
+  return c;
+}
+
 int ptv_tex_auto_mb(PtvPlataforma p, long mem) {
   if (p == PTV_ANDROID) {
     if (!mem || mem < 1500) return 32;

@@ -174,6 +174,11 @@ int  tex_opaca(const char *caminho);
 // Chamar uma vez por quadro, na thread de desenho: sobe para a GPU o que a
 // thread de decode terminou. Devolve quantas subiu.
 int tex_bombear(int max_por_quadro);
+#define NV_CACHE_RESIDENCY 1
+// Main thread: refresh cached row membership before new requests. No fetch/decode.
+void tex_residencia_inicio(int foco);
+int tex_residencia_fileiras(void);
+void tex_residencia_marcar(const char *url, int fileira);
 // Estado por tela: aguarda dois quadros parados; no maximo um pedido/quadro.
 typedef struct { float scroll; unsigned long quadro; int parados, direcao; } TexLookahead;
 int tex_lookahead_parado(TexLookahead *s, float scroll);
