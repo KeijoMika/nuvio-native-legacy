@@ -185,6 +185,12 @@ static void *buscar(void *arg) {
     corpo = rede_baixar(url, 15);
   }
   if (corpo) achou = mus_interpretar(corpo, &alb);
+  // Sem a URL (ela leva o segredo do worker): id, se o pedido saiu e quantas
+  // faixas vieram — o "nao aparece a secao" se distingue entre nao-pedido,
+  // erro de rede e resposta vazia.
+  printf("[musica] %s temp=%d pedido=%d faixas=%d\n", pd.imdb, pd.temp,
+         NV_REC_URL[0] != 0, achou ? alb.n : 0);
+  fflush(stdout);
   chaveDe(chave, sizeof chave, pd.imdb, pd.temp);
   pthread_mutex_lock(&mtx);
   e = reservar(chave);

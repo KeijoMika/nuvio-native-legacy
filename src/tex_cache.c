@@ -2804,9 +2804,11 @@ static int threadDecode(void *arg) {
     SDL_Surface *conv = NULL;
     if (bruto) {
       bruta = jpeg_rapido_carregar_mem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-#if !defined(__EMSCRIPTEN__) && !defined(NV_ANDROID)
-      // No LG o _mem so faz JPEG; PNG pelo SDL_image e WebP pela libwebp do
-      // sistema, na mesma ordem do caminho por arquivo abaixo.
+#if !defined(__EMSCRIPTEN__)
+      // O BitmapFactory do Android ja reduz no codec; quando ele recusa (ou no
+      // LG, onde o _mem so faz JPEG), o SDL_image e a libwebp decodificam o
+      // buffer inteiro como antes — o fallback so roda sobre falha, entao o
+      // subsample continua sendo o caminho comum.
       if (!bruta) {
         SDL_RWops *rw = SDL_RWFromConstMem(bruto, (int)nBruto);
         srcW = srcH = 0;
@@ -2838,15 +2840,11 @@ static int threadDecode(void *arg) {
     // ARQUIVO — e o que `fonteW` guarda para decidir promocao — e nao com o
     // do que saiu. NULL cai no IMG_Load de sempre.
     bruta = jpeg_rapido_carregar(caminho, limite, &srcW, &srcH);
-#ifndef NV_ANDROID
     if (!bruta) { srcW = srcH = 0; bruta = IMG_Load(caminho); }
-#endif
     // O SDL2_image desta TV nao le WebP; a libwebp do sistema le (webp.c),
     // e ja reduz ao limite — os fundos do Xperience sao 3840x2160.
-#ifndef NV_ANDROID
     if (!bruta) bruta = webp_carregar_larg(caminho, limite, &srcW, &srcH);
-#endif
-#if !defined(__EMSCRIPTEN__) && !defined(NV_ANDROID)
+#if !defined(__EMSCRIPTEN__)
     if (!bruta) bruta = gifFotoArquivo(caminho, limite, &srcW, &srcH);
 #endif
     }
