@@ -17,13 +17,22 @@ assert 'eglCreateContext' not in source, 'shared upload context retained'
 assert 'decodeReservado' in source, 'decode bytes not reserved before allocation'
 android = pathlib.Path('src/jpegrapido.c').read_text()
 assert 'inSampleSize' in android, 'Android decode still depends on optional libjpeg'
-# Local PNG/GIF/WebP decode must survive a BitmapFactory miss on Android:
-# inside the decode body the SDL/webp/gif fallbacks must not be gated out.
+# Decode dispatch must preserve local/remote fallbacks, and Android must
+# keep codec bounds before any fallback that allocates source pixels.
 cache = pathlib.Path('src/tex_cache.c').read_text()
-dec = cache[cache.index('jpeg_rapido_carregar_mem(bruto'):cache.index('tLoad = SDL_GetTicks()')]
-for pat in ['IMG_Load_RW', 'webp_carregar_larg_mem', 'gifFotoMem',
-            'IMG_Load(caminho)', 'webp_carregar_larg(caminho', 'gifFotoArquivo']:
-    assert pat in dec, f'missing decode fallback: {pat}'
+for fn in ['decodeArteMem', 'decodeArteArquivo']:
+    body = cache[cache.index(f'static SDL_Surface *{fn}'):]
+    body = body[:body.index('\n}\n')]
+    for pat in ['IMG_Load_RW', 'webp_carregar_larg_mem', 'gifFotoMem'] if fn == 'decodeArteMem' else \
+               ['IMG_Load(caminho)', 'webp_carregar_larg(caminho', 'gifFotoArquivo']:
+        assert pat in body, f'missing {fn} fallback: {pat}'
+    assert body.index('fallbackCabe') < body.index('IMG_Load'), f'{fn} decodes before bounds'
+dec = cache[cache.index('decodeArteMem(bruto'):cache.index('tLoad = SDL_GetTicks()')]
 for m in re.finditer(r'#if[^\n]*NV_ANDROID[^\n]*', dec):
     assert 'ifndef' not in m.group(0), m.group(0)
+# Exercise the exact source dispatch path the decode thread calls.
+import subprocess
+r = subprocess.run(['python3', 'tests/tex_fallback.py'], check=True, text=True,
+                   capture_output=True)
+print(r.stdout, end='')
 print('PASS: mechanism bisect and bounded Android decode wiring')

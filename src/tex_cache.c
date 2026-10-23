@@ -2717,6 +2717,47 @@ static SDL_Surface *gifFotoArquivo(const char *caminho, int limite, int *ow, int
 }
 #endif
 
+/* Android fallbacks allocate the full source before resizing. Only allow
+ * sources within the codec's pixel ceiling; unknown bounds fail closed.
+ * Both paths run under threadDecode's existing 48 MiB reservation. */
+static int fallbackCabe(int w, int h) {
+#ifdef NV_ANDROID
+  return w > 0 && h > 0 && (uint64_t)w * (uint64_t)h <= 2u * 1024 * 1024;
+#else
+  (void)w; (void)h;
+  return 1;
+#endif
+}
+
+static SDL_Surface *decodeArteMem(const unsigned char *b, size_t n, int limite,
+                                  int *ow, int *oh) {
+  SDL_Surface *s = jpeg_rapido_carregar_mem(b, n, limite, ow, oh);
+#ifndef __EMSCRIPTEN__
+  if (!s && fallbackCabe(*ow, *oh)) {
+    SDL_RWops *rw = n <= (size_t)SDL_MAX_SINT32 ? SDL_RWFromConstMem(b, (int)n) : NULL;
+    s = rw ? IMG_Load_RW(rw, 1) : NULL;
+    if (s) { *ow = s->w; *oh = s->h; }
+    if (!s) s = webp_carregar_larg_mem(b, n, limite, ow, oh);
+    if (!s) s = gifFotoMem(b, n, limite, ow, oh);
+  }
+#endif
+  return s;
+}
+
+static SDL_Surface *decodeArteArquivo(const char *caminho, int limite,
+                                      int *ow, int *oh) {
+  SDL_Surface *s = jpeg_rapido_carregar(caminho, limite, ow, oh);
+  if (!s && fallbackCabe(*ow, *oh)) {
+    s = IMG_Load(caminho);
+    if (s) { *ow = s->w; *oh = s->h; }
+    if (!s) s = webp_carregar_larg(caminho, limite, ow, oh);
+#ifndef __EMSCRIPTEN__
+    if (!s) s = gifFotoArquivo(caminho, limite, ow, oh);
+#endif
+  }
+  return s;
+}
+
 static int threadDecode(void *arg) {
   (void)arg;
   // PRIORIDADE BAIXA, e isto nao e detalhe.
@@ -2803,20 +2844,7 @@ static int threadDecode(void *arg) {
     SDL_Surface *bruta = NULL;
     SDL_Surface *conv = NULL;
     if (bruto) {
-      bruta = jpeg_rapido_carregar_mem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-#if !defined(__EMSCRIPTEN__)
-      // O BitmapFactory do Android ja reduz no codec; quando ele recusa (ou no
-      // LG, onde o _mem so faz JPEG), o SDL_image e a libwebp decodificam o
-      // buffer inteiro como antes — o fallback so roda sobre falha, entao o
-      // subsample continua sendo o caminho comum.
-      if (!bruta) {
-        SDL_RWops *rw = SDL_RWFromConstMem(bruto, (int)nBruto);
-        srcW = srcH = 0;
-        bruta = rw ? IMG_Load_RW(rw, 1) : NULL;
-      }
-      if (!bruta) bruta = webp_carregar_larg_mem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-      if (!bruta) bruta = gifFotoMem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-#endif
+      bruta = decodeArteMem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
       free(bruto);
     } else
     {
@@ -2838,15 +2866,8 @@ static int threadDecode(void *arg) {
     // JPEG SAI DO DECODIFICADOR JA REDUZIDO (jpegrapido.h): 1/2, 1/4 ou 1/8
     // dentro da DCT, o que cobre o pedido. srcW/srcH ficam com o tamanho do
     // ARQUIVO — e o que `fonteW` guarda para decidir promocao — e nao com o
-    // do que saiu. NULL cai no IMG_Load de sempre.
-    bruta = jpeg_rapido_carregar(caminho, limite, &srcW, &srcH);
-    if (!bruta) { srcW = srcH = 0; bruta = IMG_Load(caminho); }
-    // O SDL2_image desta TV nao le WebP; a libwebp do sistema le (webp.c),
-    // e ja reduz ao limite — os fundos do Xperience sao 3840x2160.
-    if (!bruta) bruta = webp_carregar_larg(caminho, limite, &srcW, &srcH);
-#if !defined(__EMSCRIPTEN__)
-    if (!bruta) bruta = gifFotoArquivo(caminho, limite, &srcW, &srcH);
-#endif
+    // do que saiu. Fallbacks preserve the Android allocation ceiling.
+    bruta = decodeArteArquivo(caminho, limite, &srcW, &srcH);
     }
     tLoad = SDL_GetTicks();
     if (bruta && !srcW) { srcW = bruta->w; srcH = bruta->h; }

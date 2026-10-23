@@ -210,7 +210,9 @@ SDL_Surface *jpeg_rapido_carregar_mem(const unsigned char *dados, size_t n, int 
     bitmap = (*env)->CallObjectMethod(env, act, method, bytes, largMax, original);
   }
   if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionClear(env); bitmap = NULL; }
-  if (bitmap && original) {
+  /* Bounds remain available when the codec rejects pixels or runs out of
+   * memory, so fallback decoders can enforce the same allocation ceiling. */
+  if (original && !(*env)->ExceptionCheck(env)) {
     jint dims[2];
     (*env)->GetIntArrayRegion(env, original, 0, 2, dims);
     if (ow) *ow = dims[0];
@@ -242,6 +244,8 @@ SDL_Surface *jpeg_rapido_carregar_mem(const unsigned char *dados, size_t n, int 
 }
 
 SDL_Surface *jpeg_rapido_carregar(const char *path, int largMax, int *ow, int *oh) {
+  if (ow) *ow = 0;
+  if (oh) *oh = 0;
   FILE *f = path ? fopen(path, "rb") : NULL;
   if (!f) return NULL;
   fseek(f, 0, SEEK_END);
