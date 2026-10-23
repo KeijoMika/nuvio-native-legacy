@@ -5,6 +5,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Highlights
 
+- **Personal title and episode ratings**: Rate titles and episodes, retain ratings per profile, reopen the star editor and use quick tags with undo; send supported ratings to Trakt and Simkl. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-205-avaliar21`, `3f70510ea`, `892f61354`, `ecc7119c8`, `303d852c0`, `6d6ca3c2d`.
+
 - **A richer pause panel**: After four seconds paused, see the episode synopsis, enabled ratings and rotating Trakt comments, with optional cast and local visibility settings. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #627, @I0-oX, `288115d6e`, `ef1b66a97`.
 
 - **TorBox Airlock from the TV**: Keep or remove a source item from permanent Airlock storage directly in its files list, with refusal feedback and account-aware state. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #633, @I0-oX, `bcc63e3b1`, `7715cabc7`, `a01e8a134`, `ce6a7d1cd`.
@@ -12,6 +14,10 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **Soundtracks on title pages**: Browse film and season soundtrack tracks, save albums to your profile Library, and open listening links on your phone using a QR code. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `ff262d549`, `e5cd72149`, `cef09beab`, `b74db6de6`, `c3dd1b806`, `4ef90be21`, `33e728d1b`.
 
 ## New
+
+- **Readable Arabic interface fonts**: Use subsetted Noto Sans Arabic with real bold text and corrected Settings paragraph and label alignment. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d9a10596a`, `d11a8ef63`, `b5a2b3358`.
+
+- **Smoother TV gradients**: Choose gradient smoothing to reduce visible banding in video overlays, with translated controls. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `007b5009e`, `1770f7bf4`.
 
 - **Profile settings and parental controls**: Separate TV and profile settings, protect administration with a PIN, copy or restore profile settings, and edit another profile with account actions guarded. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request; agente/205-205-ajperfil21, `0b5aadb03`, `5b6521fcf`, `69abb0294`, `6b8bb2d9b`, `470a5780c`, `914279f7f`, `2801ffa08`, `3e7864bf7`, `e37ca493e`, `bcbf9b13e`, `14c3ea923`, `f40ae2c10`, `e8259e3f2`.
 
@@ -22,6 +28,14 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **Guest stars in this episode**: Open the player episode panel to see guest stars supplied by TMDB. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `26f616d6d`, `5f0913815`.
 
 ## Fixes
+
+- **Broader anime source matching**: Translate anime IDs through all ARM endpoints and query each declared namespace in parallel while preserving explicit specials, source ID spaces and safe AIOStreams deduplication. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `dd70f889e`, `1511b615c`, `08673b9ea`, `af48dee49`, `680ab96e7`, `fbd7c059b`.
+
+- **Compatible poster templates**: Accept Nuvio poster templates that specify alternative title identifiers. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `8f99c7b43`.
+
+- **Kaptain discovery filters**: Retain numeric TMDB discover filter values when loading Kaptain catalogs. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `4788e53fb`.
+
+- **Upcoming cards after Continue Watching**: Keep split upcoming cards visible even when the Continue Watching row is full. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `b83185b9f`.
 
 - **More complete skip markers**: Fill missing intro and credits marker types from IntroDB so available skip actions remain accessible. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #615; agente/205-pr615, `2cb47b044`.
 
@@ -73,7 +87,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Performance
 
-- **Responsive artwork uploads on TCL**: Load cached artwork on a shared graphics worker and defer unavailable, contended or budget-blocked uploads to keep navigation responsive. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, merge `90e5b321a`.
+- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, merge `90e5b321a`.
 
 - **Bounded source-sheet work**: Limit source-sheet frame work to visible rows to keep navigation responsive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d28ff9e77`.
 
@@ -89,11 +103,15 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Internal
 
+- **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
+
+- **Rating and Arabic screenshot validation**: Exercise real title and episode rating flows, reject blank screenshots and capture Arabic Home and Settings views. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `55baaaad5`, `ca7571952`, `61987b4dc`.
+
 - **Font and upload regression evidence**: Cover imported fonts, subtitle rendering, marker fixtures and graphics upload limits without changing release behavior. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `c2e7d0ef9`, `bca33e5b1`, `42cfd5215`, `be613c39e`, `00d81ca89`, `1faca80c1`, `2ca240e08`, `361fb458d`, `b92af68f9`, `abeb4ad04`, `8c25bc1e0`.
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `e06c70bc8`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
 
 - **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`.
 
