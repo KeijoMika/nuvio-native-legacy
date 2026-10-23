@@ -167,6 +167,22 @@ static void nota(void) {
     CHECA(reacao_nota("tt0111161") == 1, "undo restores previous rating");
     e = tecla(SDLK_ESCAPE); reacao_evento(&e, 1);
   }
+  { CatItem f = item("tt0777777", "movie", "Island rating");
+    SDL_Event e;
+    reacao_teste_abrir(f.imdb, f.titulo, f.tipo, 0, "", 0);
+    // Up reaches the star row; one Right is exactly half a star.
+    e = tecla(SDLK_UP); reacao_evento(&e, 0);
+    e = tecla(SDLK_RIGHT); reacao_evento(&e, 0);
+    e = tecla(SDLK_RETURN); reacao_evento(&e, 0);
+    CHECA(reacao_nota(f.imdb) == 9, "island Up/Right saves 4.5 stars");
+    e = tecla(SDLK_LEFT); reacao_evento(&e, 0);
+    e = tecla(SDLK_RETURN); reacao_evento(&e, 0);
+    CHECA(reacao_nota(f.imdb) == 0 && reacao_estado(f.imdb) == REACAO_NENHUMA,
+          "saved island undo restores unrated title");
+    reacao_fechar();
+    perfis_definir_ativo(2); perfis_definir_ativo(1);
+    CHECA(reacao_nota(f.imdb) == 0, "undo removal survives profile reload");
+  }
   reacao_nota_definir("tt0111161", 11);
   CHECA(reacao_nota("tt0111161") == 1, "nota fora de 1 a 10 ignorada");
   reacao_nota_definir("tt0903747:1:2", 7);
