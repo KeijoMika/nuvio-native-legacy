@@ -112,7 +112,12 @@ int main(int argc, char **argv) {
     return strcmp(ci->tipo, "series") || strcmp(ci->titulo, "That Time I Got Reincarnated as a Slime") ||
            cat_n_episodios(0) != 2 || pediu("/meta/movie/tt9054364.json");
   }
-  if (!strcmp(mode, "uncertain-detail-control")) {
+  if (!strcmp(mode, "uncertain-detail-control") || !strcmp(mode, "tmdb-only-enrichment")) {
+    if (!strcmp(mode, "tmdb-only-enrichment")) {
+      fakeTmdbBasico = 1;
+      tmdbFind = "{\"tv_results\":[{\"id\":82684}]}";
+      tmdbTemp1 = "{\"episodes\":[{\"episode_number\":2,\"name\":\"Meeting the Goblins\"}]}";
+    }
     catalogoDe("tt9054364", "anime", "That Time I Got Reincarnated as a Slime", "");
     abrir();
     const CatItem *ci = cat_item(0);

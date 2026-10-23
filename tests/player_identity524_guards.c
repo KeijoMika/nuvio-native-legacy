@@ -28,13 +28,6 @@ void nv_identity_trakt_marcar(const char *id, double p, double d, double a, int 
   (void)p; (void)d; (void)a; (void)fim; trackerCalls++;
   snprintf(trackerId, sizeof trackerId, "%s", id ? id : "");
 }
-// The player now dispatches its frozen canonical target through this boundary.
-// Capture outbound identity without requiring a real authenticated Trakt account.
-int nv_identity_scrobble_alvo(int evento, const TraktScrobbleAlvo *alvo,
-                               double pos, double dur, double assistido, int fim) {
-  if (evento == SCR_EV_SAIU) nv_identity_trakt_marcar(alvo->id, pos, dur, assistido, fim);
-  return SCR_NADA;
-}
 void nv_identity_parental_pedir(const char *id) {
   parentalRequests++; snprintf(parentalId, sizeof parentalId, "%s", id ? id : "");
 }

@@ -11,7 +11,6 @@
 #include "idbase.h"
 #include "idioma.h"
 #include "trakt.h"
-#include "descoberta.h"
 #include "traktscrobble.h"
 #include "artemetahub.h"
 #include "dados.h"
@@ -614,11 +613,8 @@ static void perfilLerTipo(const char *json, const char *lista, int filme,
     if (objetoRaiz(obra, obraFim, "ids", &ids, &idsFim))
       js_texto(ids, idsFim, "imdb", imdb, sizeof imdb);
     if (imdbValido(imdb)) {
-      char alt[sizeof r.titulo];
       snprintf(r.id, sizeof r.id, "%s", imdb);
       snprintf(r.titulo, sizeof r.titulo, "%s", titulo[0] ? titulo : imdb);
-      if (filme && desc_titulo_serie(imdb, alt, sizeof alt) && alt[0])
-        snprintf(r.titulo, sizeof r.titulo, "%s", alt);
       snprintf(r.poster, sizeof r.poster, "https://images.metahub.space/poster/medium/%s/img", imdb);
       snprintf(r.backdrop, sizeof r.backdrop, "https://images.metahub.space/background/medium/%s/img", imdb);
     }

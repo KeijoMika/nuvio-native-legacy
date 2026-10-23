@@ -7386,40 +7386,6 @@ int desc_meta_tem_temporadas(const char *corpo) {
   return 0;
 }
 
-int desc_titulo_serie(const char *id, char *titulo, size_t tam) {
-  char base[24], chave[96], *corpo, *corte;
-  int i, ok = 0;
-  static char neg[48][24];
-  static int nNeg;
-  static pthread_mutex_t negTrava = PTHREAD_MUTEX_INITIALIZER;
-  if (!id || !*id || !titulo || !tam) return 0;
-  titulo[0] = 0;
-  snprintf(base, sizeof base, "%s", id);
-  corte = strchr(base, ':');
-  if (corte) *corte = 0;
-  if (cat_titulo_serie_ou_incerto(base, titulo, tam)) return 1;
-  pthread_mutex_lock(&negTrava);
-  for (i = 0; i < nNeg; i++)
-    if (!strcmp(neg[i], base)) { pthread_mutex_unlock(&negTrava); return 0; }
-  pthread_mutex_unlock(&negTrava);
-  desc_meta_chave(chave, sizeof chave, "series", base);
-  corpo = metaCacheObter(chave);
-  if (!corpo) {
-    corpo = metaprov_meta("series", base, 8, NULL);
-    if (corpo) metaCacheGuardar(chave, corpo);
-  }
-  if (corpo && desc_meta_tem_temporadas(corpo))
-    ok = metaTextos(corpo, titulo, tam, NULL, 0);
-  free(corpo);
-  if (!ok) {
-    pthread_mutex_lock(&negTrava);
-    if (nNeg < 48) snprintf(neg[nNeg++], sizeof neg[0], "%s", base);
-    pthread_mutex_unlock(&negTrava);
-    titulo[0] = 0;
-  }
-  return ok;
-}
-
 // CONJUNTO DE (temporada, episodio) JA VISTOS num videos[]. Um addon de FONTES
 // pode responder o /meta com um video por ARQUIVO de torrent (relato de TV LG,
 // Breaking Bad: 18529 entradas para 62 episodios), entao contar e deduplicar
