@@ -87,7 +87,9 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Performance
 
-- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, `483ff3348`, `a81e27c2c`, merge `90e5b321a`. Android poster texture cache budgets are restored, and SDL_image/libwebp/GIF decode fallbacks keep their decode bounds while remaining active.
+- **More reliable soundtrack lookup**: When iTunes throttles requests, fall back to Deezer (with 30-second previews) and MusicBrainz instead of returning empty, and stop caching a miss too early. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `2823b3c7f`.
+
+- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Row residency and shared artwork budgets are enforced and restored on Android. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, `483ff3348`, `a81e27c2c`, `2c3854211`, `395189bf0`, `b6ba4c9ff`, merge `90e5b321a`.
 
 - **Bounded source-sheet work**: Limit source-sheet frame work to visible rows to keep navigation responsive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d28ff9e77`.
 
@@ -111,7 +113,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`, `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`, `65a3fa795`, `25189dea6`, `795af84b4`, `0e3b2c9b6`, `4fc14fb74`.
 
 - **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys, and record the Portuguese mockup and native preview proof with device validation limits. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`, `4654bdb0f`, `8fb90ad5f`.
 
