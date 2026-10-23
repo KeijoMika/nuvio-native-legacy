@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `bf6757c3a` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-23T04:56:53-03:00. 555 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `bf6757c3a` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-23T05:56:55-03:00. 555 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -180,13 +180,13 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 394 |
-| integrada | 54 |
+| integrada | 55 |
 | aberta | 52 |
 | respondida | 17 |
 | por-desenho | 15 |
 | fechada-sem-resposta | 8 |
-| em_revisao | 5 |
 | precisa-log | 4 |
+| em_revisao | 4 |
 | fora-do-escopo | 4 |
 | duplicada | 2 |
 
@@ -542,7 +542,7 @@ Snapshot 2026-10-23T04:56:53-03:00: agente/205-triagem3: merged; No mapped revie
 | [#639](https://github.com/iqui27/nuvio-native-legacy/issues/639) | [BUG] Library randomly removes, restores, and adds movies/TV | ? | ? | integrada | 2.0.7 | futuro | agente/205-205-bib639, agente/205-205-bib639 | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
 | [#641](https://github.com/iqui27/nuvio-native-legacy/issues/641) | Missing Refresh Rate AFR Option in Android | ? | bug | aberta | - | futuro | - | sem comentários | precisa job: chave de taxa de atualizacao (AFR) no caminho de video Android; nenhuma branc |
 | [#642](https://github.com/iqui27/nuvio-native-legacy/issues/642) | System Keyboard Crashes App LG WebOS 26 | ? | bug | aberta | - | futuro | - | sem comentários | precisa job: reproduzir e guardar a chamada de IME no webOS 26; nenhuma branch |
-| [#645](https://github.com/iqui27/nuvio-native-legacy/issues/645) | Files with Dolby vision and HDR will  chose to play the HDR  | ? | ? | em_revisao | 2.0.7 | futuro | 142ae407f?, agente/2031-dvp5-hdr10, agente/205-205-salvosremover | sem comentários | Review latest fix. |
+| [#645](https://github.com/iqui27/nuvio-native-legacy/issues/645) | Files with Dolby vision and HDR will  chose to play the HDR  | ? | ? | integrada | 2.0.7 | futuro | 142ae407f?, agente/2031-dvp5-hdr10, agente/205-205-salvosremover | sem comentários | Release 2.0.9. |
 | [#643](https://github.com/iqui27/nuvio-native-legacy/issues/643) | Friends: show Simkl watched history, newest first | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: historico do Simkl no feed de amigos, mais novo primeiro; nenhuma branch |
 | [#677](https://github.com/iqui27/nuvio-native-legacy/issues/677) | Selection Jumps Back to the First Item When Navigating Rows | ? | bug | integrada | 2.0.7 | futuro | agente/205-677-foco, agente/205-677-foco | sem comentários | Verify merged result; build/install and check device. |
 | [#676](https://github.com/iqui27/nuvio-native-legacy/issues/676) | Slow Loading of Menu Artwork, Posters, and HUD | ? | bug | integrada | 2.0.7 | futuro | agente/205-676-arte, agente/205-676-arte | sem comentários | Verify merged result; build/install and check device. |
@@ -1580,7 +1580,7 @@ Snapshot 2026-10-23T04:56:53-03:00: agente/205-205-traktlogin: needs review; j-r
 Snapshot 2026-10-23T04:56:53-03:00: agente/205-heroglassfoco: done-awaiting-review; No mapped review verdict. 
 Snapshot 2026-10-23T04:56:53-03:00: agente/205-herotamanho: done-awaiting-review; No mapped review verdict. 
 Snapshot 2026-10-23T04:56:53-03:00: agente/205-porta-perdidos: review-OK; j-rev-porta-perdidos.log: OK. 
-Snapshot 2026-10-23T04:56:53-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T04:56:53-03:00: agente/rastreio: done-awaiting-review; No mapped review verdict.  agente/205-porta-perdidos merged 90f7fb85b (23/10): ported dvp5-hdr10 DV-p5 fix (d4f1dca81), salvosremover, traktlogin, heroglassfoco, herotamanho, rastreio.
 - **#643**: Imported from local issues snapshot.
 [triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: historico do Simkl no feed de amigos, mais novo primeiro; nenhuma branch
 - **#677**: Imported from local issues snapshot.
