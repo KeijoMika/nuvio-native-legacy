@@ -64,6 +64,9 @@
 #include <signal.h>
 #include <setjmp.h>
 #endif
+#ifdef NV_WEBOS
+#include "webosver.h"
+#endif
 
 // #642 (webOS 26): a chamada de IME do SDL de fabrica pode derrubar o app
 // inteiro (teclado do sistema abre = crash). A protecao abaixo apanha o sinal
@@ -72,37 +75,61 @@
 // O mesmo vale para o teclado que nunca aparece (180 quadros sem OSK).
 #if defined(NV_WEBOS) || defined(NV_TEXTO_SDL_TESTE)
 static sigjmp_buf saltaIme;
-static volatile sig_atomic_t imeArmado, imeQuebrou;
-static void sinalIme(int s) {
-  (void)s;
+// Armado POR FIO: um sinal em outro fio nunca pode saltar para a pilha deste
+// fio (o saltaIme e daqui); a falha alheia cai no tratador anterior (queda.c).
+static __thread volatile sig_atomic_t imeArmado;
+static volatile sig_atomic_t imeQuebrou;
+static const int imeSinais[5] = { SIGSEGV, SIGBUS, SIGABRT, SIGILL, SIGFPE };
+static struct sigaction imeVelho[5];
+static void sinalIme(int s, siginfo_t *si, void *ctx) {
   if (imeArmado) { imeArmado = 0; imeQuebrou = 1; siglongjmp(saltaIme, 1); }
+  // Falha fora da chamada (outro fio, instalacao ou restauracao dos
+  // tratadores): repassa ao tratador que estava. Devolver aqui faria a falha
+  // se repetir para sempre, pois SA_NODEFER nao bloqueia o sinal.
+  {
+    int k;
+    for (k = 0; k < 5; k++) if (imeSinais[k] == s) {
+      struct sigaction *v = &imeVelho[k];
+      if ((v->sa_flags & SA_SIGINFO) && v->sa_sigaction) { v->sa_sigaction(s, si, ctx); return; }
+      if (!(v->sa_flags & SA_SIGINFO) && v->sa_handler &&
+          v->sa_handler != SIG_DFL && v->sa_handler != SIG_IGN) { v->sa_handler(s); return; }
+    }
+    signal(s, SIG_DFL);
+    raise(s);
+  }
 }
 static void notaQueda(void) {
   printf("[texto] chamada de IME do sistema falhou (#642): o teclado do app assume\n");
   fflush(stdout);
 }
+// O timeout de 180 quadros so condena o IME no webOS 26 (onde ele morre de
+// verdade). Nas versoes antigas o teclado pode so demorar: a sessao cai para
+// o teclado do app desta vez, mas TS_TECLADO volta a ser oferecido depois.
+static int imeSemOskMata(void) {
+#ifdef NV_TEXTO_SDL_TESTE
+  extern int texto_teste_webos_major(void);
+  return texto_teste_webos_major() >= 26;
+#else
+  return nv_webos_major() >= 26;
+#endif
+}
 static int sdlImeVazio(void (*fn)(void)) {
-  struct sigaction novo, velho[5];
+  struct sigaction novo;
+  int k;
   if (imeQuebrou) return -1;
-  memset(&novo, 0, sizeof novo);
-  novo.sa_handler = sinalIme;
-  sigemptyset(&novo.sa_mask);
-  novo.sa_flags = SA_NODEFER;
-  sigaction(SIGSEGV, &novo, &velho[0]);
-  sigaction(SIGBUS, &novo, &velho[1]);
-  sigaction(SIGABRT, &novo, &velho[2]);
-  sigaction(SIGILL, &novo, &velho[3]);
-  sigaction(SIGFPE, &novo, &velho[4]);
+  // O salto fica valido ANTES de instalar os tratadores e e desarmado antes
+  // de restaura-los: nunca ha siglongjmp para um buffer vencido.
   if (sigsetjmp(saltaIme, 1) == 0) {
+    memset(&novo, 0, sizeof novo);
+    novo.sa_sigaction = sinalIme;
+    sigemptyset(&novo.sa_mask);
+    novo.sa_flags = SA_SIGINFO | SA_NODEFER;
+    for (k = 0; k < 5; k++) sigaction(imeSinais[k], &novo, &imeVelho[k]);
     imeArmado = 1;
     fn();
     imeArmado = 0;
-  } else notaQueda();
-  sigaction(SIGSEGV, &velho[0], NULL);
-  sigaction(SIGBUS, &velho[1], NULL);
-  sigaction(SIGABRT, &velho[2], NULL);
-  sigaction(SIGILL, &velho[3], NULL);
-  sigaction(SIGFPE, &velho[4], NULL);
+  } else { notaQueda(); }
+  for (k = 0; k < 5; k++) sigaction(imeSinais[k], &imeVelho[k], NULL);
   return imeQuebrou ? -1 : 0;
 }
 static SDL_Window *imeWin;
@@ -115,8 +142,16 @@ static int sdlImeMostra(SDL_Window *w) {
 static int imeQuebrado(void) { return imeQuebrou; }
 #ifdef NV_TEXTO_SDL_TESTE
 void texto_sistema_teste_reset(void) { imeQuebrou = 0; }
-static void crashTeste(void) { raise(SIGSEGV); }
-static int querCrash(void) { const char *e = getenv("NUVIO_TEXTO_CRASH"); return e && *e == '1'; }
+// NUVIO_TEXTO_CRASH=1: falha no fio que chama. =2: o teste injeta a falha em
+// OUTRO fio (o SDL da webOS pode mexer no compositor fora do fio principal,
+// #642): a queda alheia tem de seguir para o tratador anterior, nao saltar.
+extern void texto_teste_crash_outro(void);
+static void crashTeste(void) {
+  const char *e = getenv("NUVIO_TEXTO_CRASH");
+  if (e && *e == '2') { texto_teste_crash_outro(); return; }
+  raise(SIGSEGV);
+}
+static int querCrash(void) { const char *e = getenv("NUVIO_TEXTO_CRASH"); return e && (*e == '1' || *e == '2'); }
 #endif
 #else
 static int sdlImeVazio(void (*fn)(void)) { fn(); return 0; }
@@ -422,9 +457,9 @@ void texto_sistema_quadro(void) {
       fflush(stdout);
 #if defined(NV_WEBOS) || defined(NV_TEXTO_SDL_TESTE)
       // #642: 3 s sem o teclado = IME morto nesta sessao (webOS 26). Falha
-      // declarada: o dono larga o sistema e a grade do app assume.
-      imeQuebrou = 1;
-      notaQueda();
+      // declarada: o dono larga o sistema e a grade do app assume. So o
+      // webOS 26 condena o IME para sempre; nas antigas ele pode demorar.
+      if (imeSemOskMata()) { imeQuebrou = 1; notaQueda(); }
       terminar(-1, "ime-sem-osk");
 #endif
     }

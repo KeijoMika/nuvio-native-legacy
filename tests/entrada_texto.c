@@ -5,9 +5,37 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <pthread.h>
 #include "../src/entrada_texto.h"
 
 void texto_sistema_teste_reset(void);
+
+// Versao de webOS que o modulo enxerga no teste (imeSemOskMata).
+static int tMajor = 26;
+int texto_teste_webos_major(void) { return tMajor; }
+
+// "queda.c" do teste: o tratador que ja existia quando o modulo instala o dele.
+// Uma falha em OUTRO fio tem de chegar aqui pelo encadeamento, nao saltar para
+// a pilha do fio principal.
+static sigjmp_buf saltaQueda;
+static int quedaChamou;
+static void quedaFake(int s, siginfo_t *si, void *ctx) {
+  (void)s; (void)si; (void)ctx;
+  quedaChamou++;
+  siglongjmp(saltaQueda, 1);
+}
+static void *fioQueCai(void *p) {
+  (void)p;
+  if (sigsetjmp(saltaQueda, 1) == 0) raise(SIGSEGV);
+  return NULL;
+}
+void texto_teste_crash_outro(void) {
+  pthread_t t;
+  pthread_create(&t, NULL, fioQueCai, NULL);
+  pthread_join(t, NULL);
+}
 
 static int falhas;
 #define OK(c, m) do { if (c) printf("ok - %s\n", m); else { printf("FALHOU - %s\n", m); falhas++; } } while (0)
@@ -109,6 +137,54 @@ int main(void) {
     OK(texto_sistema_aberto(), "sessao nova (reset) volta a oferecer o sistema");
     texto_sistema_fechar();
     quadro();
+  }
+
+  // #642 rev: uma falha em OUTRO fio nao pode saltar para a pilha do
+  // principal. O tratador anterior (aqui o quedaFake) e quem recebe a queda.
+  {
+    struct sigaction sa;
+    quedaChamou = 0;
+    memset(&sa, 0, sizeof sa);
+    sa.sa_sigaction = quedaFake;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, NULL);
+    texto_sistema_teste_reset();
+    setenv("NUVIO_TEXTO_CRASH", "2", 1);
+    texto_sistema_abrir("x", 0);
+    unsetenv("NUVIO_TEXTO_CRASH");
+    sigaction(SIGSEGV, &(struct sigaction){ .sa_handler = SIG_DFL }, NULL);
+    OK(quedaChamou == 1, "falha em outro fio cai no tratador anterior");
+    OK(texto_sistema_aberto(), "falha em outro fio nao quebra a sessao do principal");
+    OK(texto_sistema_disponivel() == TS_TECLADO, "falha em outro fio nao condena o IME");
+    texto_sistema_fechar();
+    quadro();
+  }
+
+  // #642 rev: 180 quadros sem o OSK. No webOS 26 condena o IME; nas antigas
+  // so derruba a sessao (o teclado delas pode so demorar a subir).
+  {
+    int i, nErro = 0;
+    SDL_Event e;
+    texto_sistema_teste_reset();
+    tMajor = 4;
+    texto_sistema_abrir("x", 0);
+    for (i = 0; i < 181; i++) texto_sistema_quadro();
+    while (SDL_PollEvent(&e))
+      if (e.type == texto_sistema_evento() && e.user.code == TS_EV_ERRO) nErro++;
+    OK(nErro == 1 && !texto_sistema_aberto(), "webOS antigo: 180q sem OSK fecha a sessao com erro");
+    OK(texto_sistema_disponivel() == TS_TECLADO, "webOS antigo: teclado do sistema NAO fica condenado");
+
+    nErro = 0;
+    texto_sistema_teste_reset();
+    tMajor = 26;
+    texto_sistema_abrir("x", 0);
+    for (i = 0; i < 181; i++) texto_sistema_quadro();
+    while (SDL_PollEvent(&e))
+      if (e.type == texto_sistema_evento() && e.user.code == TS_EV_ERRO) nErro++;
+    OK(nErro == 1 && !texto_sistema_aberto(), "webOS 26: 180q sem OSK fecha a sessao com erro");
+    OK(texto_sistema_disponivel() == 0, "webOS 26: IME fica condenado e o app assume");
+    texto_sistema_teste_reset();
   }
 
   SDL_Quit();
