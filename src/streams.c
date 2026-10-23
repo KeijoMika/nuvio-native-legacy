@@ -2899,7 +2899,7 @@ int stream_n_candidatas(void) {
 #define CANAL_PRAZO_S 3
 typedef struct {
   char url[4096], cabecalhos[512];
-  int altura, cabe, preferida;
+  int altura, cabe, preferida, tsContinuo;
 } CanalCandidata;
 typedef struct CanalConferencia {
   unsigned geracao;
@@ -2969,11 +2969,15 @@ static void *fioCanal(void *u) {
     }
     vetor[nc] = NULL;
     RedeMedida medida = {0};
-    RedeControle controle = { .cancelado = &c->cancelar };
+    // Continuous TS never ends: abort at the prefix, closing curl's socket.
+    RedeControle controle = { .max_bytes = 65536, .cancelado = &c->cancelar };
     if (canalCancelado(c)) return NULL;
     char *corpo = rede_baixar_medido_controle(a->url, CANAL_PRAZO_S, nc ? vetor : NULL, &controle, &medida);
     if (canalCancelado(c) || medida.cancelado) { free(corpo); return NULL; }
-    long tamanho = corpo ? (long)strlen(corpo) : 0;
+    long tamanho = corpo ? medida.bytes : 0;
+    c->candidatas[meu].tsContinuo = corpo && medida.status >= 200 && medida.status < 300 &&
+      tamanho > 376 && (unsigned char)corpo[0] == 0x47 &&
+      (unsigned char)corpo[188] == 0x47 && (unsigned char)corpo[376] == 0x47;
     // Header refusals are uncertain on WGT: AVPlay can send headers XHR cannot.
     if (corpo && medida.status >= 400 && a->cabecalhos[0]) {
       c->classes[meu] = 1;
@@ -2981,7 +2985,7 @@ static void *fioCanal(void *u) {
     } else if (!corpo) {
       c->classes[meu] = 3;
       printf("[fonte] %d muda: playlist nao respondeu em %ds\n", meu, CANAL_PRAZO_S);
-    } else if (strstr(corpo, "#EXTINF") || strstr(corpo, "#EXT-X-STREAM-INF")) c->classes[meu] = 1;
+    } else if (a->tsContinuo || strstr(corpo, "#EXTINF") || strstr(corpo, "#EXT-X-STREAM-INF")) c->classes[meu] = 1;
     else if (tamanho > CANAL_MORTA_MAX_B) {
       c->classes[meu] = 4;
       printf("[fonte] %d incerta: %ld B sem segmento (%s); quem decide e o player\n", meu, tamanho, tipoCorpo(corpo));
@@ -3040,6 +3044,8 @@ int stream_canal_primeira_viva_sessao(int tentativas, uint64_t sessao) {
   while (*link && *link != &c) link = &(*link)->proxima;
   if (*link) *link = c.proxima;
   if (atual && !canalCancelado(&c) && listaGeracao == c.geracao) {
+    // Publish only after all probe workers (and their connections) have exited.
+    for (q = 0; q < c.n; q++) lista[q].tsContinuo = c.candidatas[q].tsContinuo;
     static const unsigned char ordemClasse[] = {1, 4, 3, 2};
     canalOrdemN = 0;
     for (int cl = 0; cl < 4; cl++)
@@ -4173,6 +4179,8 @@ static void montarBase(int automatica) {
   float y = 0;
   int g, i, k, m = -1, nt;
   int needed = filtro == -1 ? ondever_n(alvoPedido) : n;
+  int saved = !canalFolha && ajustes_fonte_manual() && preferida >= 0 && preferida < n &&
+              passaFiltro(preferida) ? preferida : -1;
   if (ordemCap < needed) {
     int cap = needed + 32;
     int *o = realloc(ordem, cap * sizeof *o);
@@ -4203,9 +4211,10 @@ static void montarBase(int automatica) {
     fitAtualizar();
     memset(secN, 0, sizeof secN);
     nOrdem = 0;
+    if (saved >= 0) porLinha(saved, &y, automatica);
     for (int fora = 0; fora < (ordemDoAddon() ? 1 : 2); fora++) for (k = 0; k < n; k++) {
       i = ORD(k);
-      if (!passaFiltro(i) || (!ordemDoAddon() && !!lista[i].foraCache != fora)) continue;
+      if (i == saved || !passaFiltro(i) || (!ordemDoAddon() && !!lista[i].foraCache != fora)) continue;
       (void)grupoRes(&lista[i]);
       porLinha(i, &y, automatica);
     }
@@ -4222,7 +4231,11 @@ static void montarBase(int automatica) {
   }
   fitAtualizar();
   nOrdem = 0;
-  if (melhorFolha >= 0 && melhorFolha < n && !lista[melhorFolha].foraCache && passaFiltro(melhorFolha) && nFiltrados() > 1 &&
+  if (saved >= 0) {
+    m = saved;
+    porLinha(m, &y, automatica);
+    y += FOLHA_SEC_GAP - FOLHA_LINHA_GAP;
+  } else if (melhorFolha >= 0 && melhorFolha < n && !lista[melhorFolha].foraCache && passaFiltro(melhorFolha) && nFiltrados() > 1 &&
       (melhorFolha >= fitN || fitClasses[melhorFolha] != SF_PESADA)) {
     m = melhorFolha;
     porLinha(m, &y, automatica);
@@ -4605,12 +4618,19 @@ static PartesLista ptEscolhaL;
 // AS LINHAS DA MODAL (dono, 16/10): "Escolher outra copia" no topo (menos num
 // casamento por hash), os arquivos da aba (Episodios com separador por
 // temporada / Especiais / Extras), ou a lista de copias do titulo.
-enum { PR_ESCOLHER = 0, PR_TEMPORADA, PR_ARQ, PR_COPIA };
+enum { PR_ESCOLHER = 0, PR_TEMPORADA, PR_ARQ, PR_COPIA, PR_AIRLOCK };
 typedef struct { int tipo, idx; float y, h; } PtLinha;
 static PtLinha *ptLinhas;
 static int ptCapLinhas;
 static int ptNLinhas, ptAba, ptCopias, ptSemCopias;
 static int ptAbaTipos[3], ptNAbas;
+// AIRLOCK (TorBox): a linha do topo liga/desliga o item da lista. Visivel so
+// com a lista pronta e uma conta TorBox que pode usar a API.
+static int ptAirOcupado, ptAirItem, ptAirUsenet;
+static char ptAirMsg[160];
+static int ptAirlockVisivel(void) {
+  return ptL.estado == PARTES_PRONTO && ptL.item > 0 && !ptCopias && debrid_tb_disponivel() > 0;
+}
 
 static int linhaAceitaPartes(int i) {
   return partes_disponivel() && !canalFolha && i >= 0 && i < n &&
@@ -4619,6 +4639,7 @@ static int linhaAceitaPartes(int i) {
 static void partesAbrirPainel(int i) {
   ptAberto = 1; ptFonte = i; ptFoco = 0; ptFocoPosto = 0; ptRol = ptRolAlvo = 0; ptDesde = SDL_GetTicks();
   ptAba = 0; ptCopias = 0; ptSemCopias = 0; ptNLinhas = 0;
+  ptAirMsg[0] = 0;
   partes_lista_limpar(&ptL);
   ptL.estado = PARTES_BUSCANDO; ptL.atual = -1;
   nv_limpar_texto(lista[i].provedor, ptProv, sizeof ptProv, NV_LIMPA_UMA_LINHA);
@@ -4676,7 +4697,7 @@ static void ptAbas(void) {
 static void ptMontar(void) {
   float y = 0;
   ptNLinhas = 0;
-  int needed = 2 * ptL.n + PARTES_COPIAS + 1;
+  int needed = 2 * ptL.n + PARTES_COPIAS + 2;
   if (needed > ptCapLinhas) {
     PtLinha *rows = realloc(ptLinhas, (size_t)needed * sizeof *rows);
     if (!rows) { ptL.estado = PARTES_ERRO; return; }
@@ -4690,6 +4711,7 @@ static void ptMontar(void) {
   }
   if (ptL.estado != PARTES_PRONTO || ptL.n <= 0) return;
   ptAbas();
+  if (ptAirlockVisivel()) { ptLinhas[ptNLinhas++] = (PtLinha){PR_AIRLOCK, 0, y, 64.0f}; y += 64.0f; }
   if (!ptL.exato) { ptLinhas[ptNLinhas++] = (PtLinha){PR_ESCOLHER, 0, y, 64.0f}; y += 64.0f; }
   { int tipo = ptNAbas ? ptAbaTipos[ptAba] : PARTE_EP, temps = 0, ult = -1, ultT = -999;
     // Separador de temporada so com duas ou mais temporadas nos episodios.
@@ -4727,7 +4749,11 @@ static int partesEvento(const SDL_Event *e) {
   k = e->key.keysym.sym;
   if (k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE || k == SDLK_DELETE) {
     // Nas copias abertas pela linha "Escolher outra copia": volta aos arquivos.
-    if (ptCopias && ptL.estado == PARTES_PRONTO) { ptCopias = 0; ptMontar(); ptFoco = ptPrimeira(); ptRolAlvo = 0; return 1; }
+    if (ptCopias && ptL.estado == PARTES_PRONTO) {
+      ptCopias = 0; ptMontar(); ptFoco = ptPrimeira();
+      for (int r = 0; r < ptNLinhas; r++) if (ptLinhas[r].tipo == PR_ESCOLHER) { ptFoco = r; break; }
+      ptRolAlvo = 0; return 1;
+    }
     if (ptSemCopias) { ptSemCopias = 0; return 1; }
     ptAberto = 0; partes_cancelar(); return 1;
   }
@@ -4743,7 +4769,12 @@ static int partesEvento(const SDL_Event *e) {
   else if (k == SDLK_RIGHT && !ptCopiasVisiveis()) ptIrAba(1);
   else if ((k == SDLK_RETURN || k == SDLK_KP_ENTER) && ptSelecionavel(ptFoco)) {
     const PtLinha *ln = &ptLinhas[ptFoco];
-    if (ln->tipo == PR_ESCOLHER) {
+    if (ln->tipo == PR_AIRLOCK) {
+      if (!ptAirOcupado) {
+        ptAirOcupado = 1; ptAirMsg[0] = 0; ptAirItem = ptL.item; ptAirUsenet = ptL.usenet;
+        partes_airlock_pedir(ptL.usenet, ptL.item, !ptL.airlock);
+      }
+    } else if (ln->tipo == PR_ESCOLHER) {
       if (ptL.nCopias <= 0) { ptSemCopias = 1; return 1; }
       ptCopias = 1; ptMontar(); ptFoco = 0; ptRolAlvo = 0;
       for (int c = 0; c < ptL.nCopias; c++) if (ptL.copias[c].item == ptL.item) { ptFoco = c; break; }
@@ -4755,6 +4786,7 @@ static int partesEvento(const SDL_Event *e) {
         printf("[partes] copy %d picked (%d pts): TorBox torrent %d\n", ln->idx + 1, c->pontos, c->item);
         fflush(stdout);
         partes_pedir_item(&lista[ptFonte], c->item);
+        ptAirMsg[0] = 0;
         ptCopias = 0; ptFocoPosto = 0; ptDesde = SDL_GetTicks(); ptAba = 0; ptRolAlvo = 0;
         partes_lista_limpar(&ptL); ptL.estado = PARTES_BUSCANDO; ptL.atual = -1; ptNLinhas = 0;
       }
@@ -4914,6 +4946,17 @@ void stream_folha_atualizar(float dt, Uint32 agora) {
       else e = partes_resultado(&ptL);
       ptFocoPosto = 0;
       ptMontar();
+    }
+    // O resultado do Airlock: so vale para o item que esta na modal (o pedido
+    // pode ter saido de outra copia, ou de uma abertura anterior da modal).
+    if (ptAirOcupado) {
+      int lig = 0, r = partes_airlock_estado(&lig, ptAirMsg, sizeof ptAirMsg);
+      if (r != 0) {
+        ptAirOcupado = 0;
+        if (ptAirItem != ptL.item || ptAirUsenet != ptL.usenet) ptAirMsg[0] = 0;
+        else if (r == 1) ptL.airlock = lig;
+        else if (!ptAirMsg[0]) snprintf(ptAirMsg, sizeof ptAirMsg, "%s", "Não foi possível agora. Tente novamente.");
+      }
     }
     if (e == PARTES_PRONTO && !ptFocoPosto) {
       // Abre na aba e na linha do arquivo que toca (ou o da fonte).
@@ -5486,6 +5529,21 @@ static void desenhaPartes(float x, float w, int ptr, Uint32 agora) {
       if (ptr) {
         float t = ry < jy ? jy : ry, b = ry + rr.h > jy + jh ? jy + jh : ry + rr.h;
         if (b > t) ponteiro_alvo(rr.x, t, rr.w, b - t, ponteiroPartesLinha, NULL, r, 0);
+      }
+      if (ln->tipo == PR_AIRLOCK) {
+        // A MESMA LINHA de "Escolher outra copia" (64 px, so o titulo); o que o
+        // TorBox recusou aparece em vermelho na direita.
+        const char *tit = ptAirOcupado ? "Mudando o Airlock…" : ptL.airlock ? "Tirar do Airlock" : "Guardar no Airlock";
+        TxtLinha tl = txt_linha_corta(TXT_PAINEL_ITEM, tit, sel ? 250 : 220, sel ? 250 : 220, sel ? 248 : 218, 255, iw - 40);
+        txt_desenhar_alpha(tl, ix, ry + 16, a);
+        if (ptAirMsg[0]) {
+          float espaco = iw - tl.w - 32.0f;
+          if (espaco > 80.0f) {
+            TxtLinha el = txt_linha_corta(TXT_PG_FIM, ptAirMsg, 235, 130, 120, 255, espaco);
+            txt_desenhar_alpha(el, ix + iw - el.w, ry + 20, a);
+          }
+        }
+        continue;
       }
       if (ln->tipo == PR_ESCOLHER) {
         char cc[64];

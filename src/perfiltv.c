@@ -156,6 +156,7 @@ int ptv_tex_teto_mb(PtvPlataforma p, long mem) {
   }
   if (!mem) return 160;
   if (mem < 1200) return 64;
+  if (mem <= 1300) return 128;
   if (mem < 2000) return 160;
   if (mem < 3000) return p == PTV_ANDROID ? 192 : 300;
   return 512;
@@ -178,7 +179,7 @@ static int fiosTeto(PtvPlataforma p, long mem) {
 int ptv_heroi_max(PtvPlataforma p, long mem) {
   if (p == PTV_TIZEN) return mem >= 2000 ? 1920 : 1280;
   if (p == PTV_TPK && !mem) return 1280;
-  if (mem && mem < 1200) return 1280;
+  if (mem && mem <= 1300) return 1280;
   return 1920;
 }
 
