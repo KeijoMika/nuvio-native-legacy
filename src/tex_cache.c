@@ -154,6 +154,7 @@ typedef struct {
   // 1 = TODO pixel tem alfa 255 (conferido inteiro na thread de decode); 0 =
   // ha transparencia ou nao se sabe. Ver tex_opaca.
   int opaca;
+  unsigned char cores[16*16*4]; // Spatial cover samples, 1 KiB per cache slot.
   CorvivaPaleta paleta; // Ja extraida no decode; retratos publicam sob demanda.
   // Quando tentar de novo (ticks) e quantas vezes ja falhou. Ver o enum Estado.
   Uint32 tentarEm;
@@ -3135,6 +3136,16 @@ static int threadDecode(void *arg) {
       itens[idx].lum = lumMedia;
       itens[idx].opaca = opaca;
       itens[idx].paleta = pal;
+      if (conv && conv->format->BytesPerPixel == 4)
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+          unsigned sum[4] = {0};
+          for (int dy = 0; dy < 4; dy++) for (int dx = 0; dx < 4; dx++) {
+            int sx = (x * 4 + dx) * conv->w / 64, sy = (y * 4 + dy) * conv->h / 64;
+            const unsigned char *q = (unsigned char *)conv->pixels + sy * conv->pitch + sx * 4;
+            for (int c = 0; c < 4; c++) sum[c] += q[c];
+          }
+          for (int c = 0; c < 4; c++) itens[idx].cores[(y*16+x)*4+c] = sum[c] / 16;
+        }
       itens[idx].croma = cromaMedia;
       itens[idx].desvio1 = desvio1;
       itens[idx].corR = corR; itens[idx].corG = corG; itens[idx].corB = corB;
@@ -4259,6 +4270,18 @@ const char *tex_arquivo(const char *url) {
   tex_obter_limite(url, 128, 0, 0);
   pedidoArquivo = 0;
   return NULL;
+}
+
+int tex_cores(const char *caminho, unsigned char out[16*16*4]) {
+  int tem = 0;
+  if (!mtx || !caminho) return 0;
+  SDL_LockMutex(mtx);
+  for (int i = 0; i < nMax; i++) if (!strcmp(itens[i].caminho, caminho) &&
+      (itens[i].estado == PRONTO || itens[i].estado == DECODIFICADO)) {
+    memcpy(out, itens[i].cores, sizeof itens[i].cores); tem = 1; break;
+  }
+  SDL_UnlockMutex(mtx);
+  return tem;
 }
 
 void tex_publicar_paleta(const char *caminho) {

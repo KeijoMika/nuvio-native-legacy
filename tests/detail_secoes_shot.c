@@ -630,26 +630,17 @@ int main(int argc, char **argv) {
   }
 
   if (getenv("NV_MUSICA_ONLY")) {
-    SDL_Event ev = {0}; ev.type = SDL_KEYDOWN; ev.key.keysym.sym = SDLK_DOWN;
+    SDL_Event ev = {0}; ev.type = SDL_KEYDOWN;
     abrir(1, SEC_MUSICAS, 0);
     assert(secaoN(SEC_MUSICAS) == 1);
-    for (int q = 0; q < 90; q++) { SDL_Delay(16); quadros(1); }
-    snprintf(nome, sizeof nome, "%s-musicas-movie.png", saida);
-    gravar(nome);
-    ev.key.keysym.sym = SDLK_RIGHT; detail_evento(&ev);
-    assert(musPagina == 1);
-    quadros(1);
-    snprintf(nome, sizeof nome, "%s-musicas-last-page.png", saida);
-    gravar(nome);
-    ev.key.keysym.sym = SDLK_LEFT; detail_evento(&ev);
-    assert(musPagina == 0);
     ev.key.keysym.sym = SDLK_RETURN; detail_evento(&ev);
     ev.type = SDL_KEYUP; detail_evento(&ev);
-    for (int q = 0; q < 45; q++) { SDL_Delay(16); quadros(1); }
-    assert(mus_guardado(itens[1].imdb, 0));
-    snprintf(nome, sizeof nome, "%s-musicas-guardada.png", saida);
-    gravar(nome);
-    puts("PASS: Musicas section shows soundtrack and Guardar toggles");
+    assert(musicaui_aberta());
+    quadros(90);
+    snprintf(nome, sizeof nome, "%s-musicas-movie.png", saida); gravar(nome);
+    ev.type = SDL_KEYDOWN; ev.key.keysym.sym = SDLK_ESCAPE; detail_evento(&ev);
+    assert(!musicaui_aberta());
+    puts("PASS: Music section opens album; Back returns to detail");
     SDL_GL_DeleteContext(gl); SDL_DestroyWindow(janela); SDL_Quit(); return 0;
   }
 

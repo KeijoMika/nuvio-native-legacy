@@ -87,7 +87,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Performance
 
-- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, merge `90e5b321a`.
+- **Responsive artwork uploads on TCL**: Subsample artwork and bound texture pipeline memory, defer contended or budget-blocked uploads, and remove shared-context Android uploads to reduce memory pressure and navigation stalls. Platforms: Android. Refs: owner request, `agente/205-lento-tcl`, `9756ff9e9`, `44014cf78`, `d8b60bef5`, `38e369735`, `211efce22`, `a60aa5f86`, `e23561f55`, merge `90e5b321a`. Android poster texture cache budgets are restored while retaining memory safeguards.
 
 - **Bounded source-sheet work**: Limit source-sheet frame work to visible rows to keep navigation responsive. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `d28ff9e77`.
 
@@ -111,7 +111,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `e06c70bc8`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `e06c70bc8`, `8a9dd2dc0`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`.
 
 - **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`.
 
