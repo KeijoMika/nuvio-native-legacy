@@ -34,6 +34,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Fixes
 
+- **Episode progress survives source changes**: Switch playback sources without losing episode identity or watched state. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #570, `ee42d28cc`, merge `37fdc3ea0`.
+
 - **Older Samsung package compatibility**: Rebuild the rate-limited artwork sources correctly so the Tizen 4/5 package can link. Platforms: Samsung .tpk. Refs: PR #688, `00192c3fd`.
 
 - **Artwork restored on Samsung**: Use the active graphics context so posters and other artwork can upload instead of remaining blank. Platforms: Samsung .tpk. Refs: PR #685, `089f694b9`.
@@ -147,7 +149,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Samsung graphics and packaging regression checks**: Check active-context texture uploads and Tizen 4 rate-limit object selection. Platforms: Samsung .tpk. Refs: `1b805d013`, `7790e8b4f`.
 
-- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `76f31a538`, `5d9c3422e`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `76f31a538`, `5d9c3422e`, `fb80ad4e3`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
