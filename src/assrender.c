@@ -1157,6 +1157,16 @@ int assrender_adicionar_fonte(const char *nome, const void *dados, size_t tamanh
       if (assNFontesVistas >= ASS_FONTES_MAX ||
           assBytesFontesVistas + tamanho > ASS_FONTES_TETO_BYTES) {
         ass_clear_fonts(assLib);
+        // ass_clear_fonts removes every memory face, including the imported
+        // device-local selection. Restore it before attachments and system
+        // fonts so the selection keeps the same precedence after rollover.
+        if (assFonteLocal[0]) {
+          size_t localN = 0;
+          unsigned char *local = ass_fonte_local_ler(assFonteLocal, &localN);
+          if (local) ass_add_font(assLib, assFonteLocal, (const char *)local, (int)localN);
+          assFonteRegistrada = local != NULL;
+          free(local);
+        } else assFonteRegistrada = 0;
         ass_carregar_pasta_locked();
         ass_aplicar_fontes_locked();
         assNFontesVistas = 0; assBytesFontesVistas = 0;

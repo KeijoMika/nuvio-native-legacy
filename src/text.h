@@ -224,8 +224,8 @@ typedef enum {
   TXT_FAMILIA_ATKINSON,
   TXT_FAMILIA_JETBRAINS,
   TXT_FAMILIA_N,
-  // Subtitle-only identities; never persisted as bundled family IDs.
-  TXT_FAMILIA_IMPORTADA1 = 100, TXT_FAMILIA_IMPORTADA2
+  // Imported identities; never persisted as bundled family IDs.
+  TXT_FAMILIA_IMPORTADA1 = 100, TXT_FAMILIA_IMPORTADA2, TXT_FAMILIA_IMPORTADA_UI
 } TxtFamilia;
 
 extern const char *const TXT_FAMILIAS_PT[TXT_FAMILIA_N];

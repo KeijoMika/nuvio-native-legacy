@@ -2,12 +2,14 @@
 #define NV_LEGFONTES_H
 #include <stddef.h>
 
-/* Local subtitle fonts. Only the SDL/UI thread reads or changes this registry.
+/* Local fonts for subtitles and the interface. Only the SDL/UI thread reads or changes this registry.
  * IDs, never document URIs or user paths, are persisted with each selection. */
 #define LEGFONTES_MAX 8
 #define LEGFONTE_MAX_BYTES (32u * 1024u * 1024u)
 #define LEGFONTE_PRINCIPAL 0
 #define LEGFONTE_SECUNDARIA 1
+#define LEGFONTE_INTERFACE 2
+#define LEGFONTES_SLOTS 3
 void legfontes_dir(const char *dir);
 int legfontes_n(void);
 const char *legfontes_nome(int indice);
