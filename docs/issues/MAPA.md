@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `70785a283` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-23T12:56:42-03:00. 558 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `70785a283` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-23T14:05:00-03:00. 559 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -123,7 +123,7 @@ Plano de refatoração: `docs/plans/refatoracao-geral.md` (branch `agente/refato
 | 2.0.6 | 34 | #407, #412, #413, #414, #415, #418, #423, #424, #451, #459, #461, #462, #468, #469, #471, #479, #492, #494, #496, #500, #501, #503, #505, #507, #508, #530, #539, #545, #549, #551, #553, #555, #570, #687 |
 | 2.1 | 4 | #420, #457, #458, #514 |
 | 2.2 | 0 |  |
-| futuro | 52 | #437, #438, #450, #509, #510, #521, #542, #605, #606, #617, #621, #625, #626, #634, #636, #637, #639, #641, #642, #643, #645, #646, #647, #648, #649, #650, #653, #656, #657, #658, #659, #660, #661, #662, #663, #664, #665, #666, #667, #668, #671, #672, #674, #675, #676, #677, #679, #681, #682, #683, #684, #691 |
+| futuro | 53 | #437, #438, #450, #509, #510, #521, #542, #605, #606, #617, #621, #625, #626, #634, #636, #637, #639, #641, #642, #643, #645, #646, #647, #648, #649, #650, #653, #656, #657, #658, #659, #660, #661, #662, #663, #664, #665, #666, #667, #668, #671, #672, #674, #675, #676, #677, #679, #681, #682, #683, #684, #691, #692 |
 | nao vamos fazer | 0 |  |
 | ja-lancada | 11 | #410, #416, #417, #419, #421, #422, #425, #426, #433, #439, #440 |
 
@@ -180,30 +180,29 @@ Por status:
 | Status | Qtd |
 |---|---|
 | lancada | 394 |
-| integrada | 52 |
-| aberta | 40 |
-| em_revisao | 21 |
+| integrada | 56 |
+| aberta | 41 |
+| em_revisao | 18 |
 | respondida | 17 |
 | por-desenho | 15 |
 | fechada-sem-resposta | 8 |
 | precisa-log | 4 |
 | fora-do-escopo | 4 |
 | duplicada | 2 |
-| em_job | 1 |
 
 Por release (grupo de planejamento):
 
 | Grupo | Qtd |
 |---|---|
 | lançadas em tag v* (qualquer versão) | 394 |
-| sem release | 150 |
+| sem release | 151 |
 | futuro (2.1/2.2) | 13 |
 | 2.0.3 lançada, com pendência | 1 |
 
 Lançadas por versão: 1.0.7: 7, 1.0.8: 1, 1.0.10: 2, 1.0.11: 3, 1.0.15: 1, 1.0.22: 1, 1.0.24: 1, 1.0.29: 1, 1.0.30: 2, 1.0.31: 2, 1.0.32: 2, 1.0.34: 1, 1.0.35: 1, 1.0.37: 1, 1.0.38: 2, 1.0.39: 1, 1.0.42: 1, 1.0.43: 4, 1.0.44: 4, 1.0.45: 1, 1.0.51: 3, 1.0.52: 1, 1.0.53: 1, 1.0.55: 3, 1.2.1: 4, 1.3.0: 1, 1.3.2: 5, 1.3.4: 5, 1.3.5: 2, 1.3.8: 1, 1.3.9: 1, 1.3.10: 1, 1.3.11: 1, 1.3.12: 5, 1.4: 6, 1.4.1: 2, 1.4.2: 8, 1.4.3: 9, 1.4.4: 3, 1.4.5: 1, 1.4.6: 6, 1.4.7: 1, 1.5.0: 2, 1.5.1: 4, 1.5.2: 9, 1.5.3: 2, 1.5.4: 7, 1.6.0: 8, 1.6.1: 4, 1.6.2: 3, 1.6.3: 2, 1.6.4: 2, 1.6.5: 4, 1.7.0: 8, 1.7.1: 4, 1.7.2: 5, 1.7.4: 5, 2.0.0: 22, 2.0.1: 12, 2.0.2: 17, 2.0.3: 28, 2.0.4: 6, 2.0.5: 14, 2.0.7: 113, 2.1: 4.
 
-Abertas no GitHub: 103. Fechadas: 455.
-Abertas sem nenhum comentário nosso: 89.
+Abertas no GitHub: 104. Fechadas: 455.
+Abertas sem nenhum comentário nosso: 90.
 
 ## 2.0.3 lançada com pendência (precisa-log, respondida ou conserto parcial)
 
@@ -543,7 +542,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-triagem3: merged; No mapped revie
 
 ## Futuro (2.1, 2.2, depois)
 
-57 issues.
+58 issues.
 
 | # | Título | Plat. | Tipo | Status | Release | Alvo | Conserto | Última resposta | Próximo passo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -556,12 +555,12 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-triagem3: merged; No mapped revie
 | [#438](https://github.com/iqui27/nuvio-native-legacy/issues/438) | MdbList | LG | feature | aberta | - | futuro | - | nós 10-11 | triar/reproduzir; falta conserto comprovado |
 | [#450](https://github.com/iqui27/nuvio-native-legacy/issues/450) | PS5 Port | all | feature | integrada | 2.0.7 | futuro | agente/205-issues-novas | autor 10-11 | Verify merged result; build/install and check device. |
 | [#457](https://github.com/iqui27/nuvio-native-legacy/issues/457) | Add an option to show info for preresolved streams in detail | Android | feature | em_revisao | 2.0.7 | 2.1 | agente/205-issues-novas, agente/21-titulo | sem comentários | Deferred to 2.1; retain tracking. |
-| [#458](https://github.com/iqui27/nuvio-native-legacy/issues/458) | Check for duplicate sources | all | feature | em_revisao | 2.0.7 | 2.1 | agente/205-b4addons, agente/205-issues-novas, agente/21-titulo | autor 10-12 | Deferred to 2.1; retain tracking. |
+| [#458](https://github.com/iqui27/nuvio-native-legacy/issues/458) | Check for duplicate sources | all | feature | em_revisao | 2.0.7 | 2.1 | agente/205-b4addons, agente/205-issues-novas, agente/21-titulo | autor 10-12 | Aguardar jobs/reviews em agente/21-titulo. |
 | [#514](https://github.com/iqui27/nuvio-native-legacy/issues/514) | Ability to rate a movie or an episode | ? | ? | aberta | 2.1 | 2.1 | - | sem comentários | Deferred to 2.1: rating a movie or episode after watching; see backlog-21.txt. |
 | [#542](https://github.com/iqui27/nuvio-native-legacy/issues/542) | Torbox cloud library | ? | feature | aberta | - | futuro | - | sem comentários | triar; sem job |
 | [#606](https://github.com/iqui27/nuvio-native-legacy/issues/606) | Subtitle filenames from addons | ? | ? | integrada | 2.0.7 | futuro | agente/205-i606 | sem comentários | Verify merged result; build/install and check device. |
-| [#605](https://github.com/iqui27/nuvio-native-legacy/issues/605) | Strip hdr10+ metadata | ? | ? | em_job | 2.1 | futuro | agente/21-issue605-hdr10plus | sem comentários | Deferred to 2.1; retain tracking. |
-| [#617](https://github.com/iqui27/nuvio-native-legacy/issues/617) | Read watched state and resume positions from Jellyfin server | ? | ? | em_revisao | 2.1 | futuro | agente/21-issue617-jellyfin-vistos | sem comentários | Deferred to 2.1; retain tracking. |
+| [#605](https://github.com/iqui27/nuvio-native-legacy/issues/605) | Strip hdr10+ metadata | ? | ? | em_revisao | 2.1 | futuro | agente/21-issue605-hdr10plus | sem comentários | Fix done; aguarda revisao. |
+| [#617](https://github.com/iqui27/nuvio-native-legacy/issues/617) | Read watched state and resume positions from Jellyfin server | ? | ? | em_revisao | 2.1 | futuro | agente/21-issue617-jellyfin-vistos | sem comentários | Corrigir achados do review (BLOQUEIA) e reenviar para revisao. |
 | [#621](https://github.com/iqui27/nuvio-native-legacy/issues/621) | Distorted gif avatars | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-gifavatar, agente/205-205-gifavatar | sem comentários | Verify merged result; build/install and check device. |
 | [#625](https://github.com/iqui27/nuvio-native-legacy/issues/625) | Live tv doesn’t work | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-livets, agente/205-205-livets, agente/205-guiatv | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
 | [#626](https://github.com/iqui27/nuvio-native-legacy/issues/626) | [Feature Request] Android TV/Google TV: "Tunneled playback"  | Android | feature | integrada | 2.0.7 | futuro | agente/205-205-tunnel, 19e638ea1 | sem comentários | Verify merged result; build/install and check device. |
@@ -569,15 +568,15 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-triagem3: merged; No mapped revie
 | [#636](https://github.com/iqui27/nuvio-native-legacy/issues/636) | a few questions and issues | ? | ? | aberta | - | futuro | - | sem comentários | precisa job: ler, quebrar em itens e responder |
 | [#637](https://github.com/iqui27/nuvio-native-legacy/issues/637) | Bold setting does not work for Arabic subtitles | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-arabbold, agente/205-naskhbold, agente/205-205-arabbold | sem comentários | Verify merged result; build/install and check device. |
 | [#639](https://github.com/iqui27/nuvio-native-legacy/issues/639) | [BUG] Library randomly removes, restores, and adds movies/TV | ? | ? | integrada | 2.0.7 | futuro | agente/205-205-bib639, agente/205-205-bib639 | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
-| [#641](https://github.com/iqui27/nuvio-native-legacy/issues/641) | Missing Refresh Rate AFR Option in Android | ? | bug | em_revisao | 2.1 | futuro | agente/21-issue641-afr | sem comentários | Deferred to 2.1; retain tracking. |
-| [#642](https://github.com/iqui27/nuvio-native-legacy/issues/642) | System Keyboard Crashes App LG WebOS 26 | ? | bug | em_revisao | 2.0.9 | futuro | agente/205-issue642-teclado | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
+| [#641](https://github.com/iqui27/nuvio-native-legacy/issues/641) | Missing Refresh Rate AFR Option in Android | ? | bug | em_revisao | 2.1 | futuro | agente/21-issue641-afr | sem comentários | Corrigir achados do review (BLOQUEIA) e reenviar para revisao. |
+| [#642](https://github.com/iqui27/nuvio-native-legacy/issues/642) | System Keyboard Crashes App LG WebOS 26 | ? | bug | em_revisao | 2.0.9 | futuro | agente/205-issue642-teclado | sem comentários | Corrigir achados do review (BLOQUEIA) e reenviar para revisao. |
 | [#645](https://github.com/iqui27/nuvio-native-legacy/issues/645) | Files with Dolby vision and HDR will  chose to play the HDR  | ? | ? | em_revisao | 2.0.9 | futuro | 142ae407f?, agente/2031-dvp5-hdr10, agente/205-205-salvosremover | sem comentários | Review latest fix. |
-| [#643](https://github.com/iqui27/nuvio-native-legacy/issues/643) | Friends: show Simkl watched history, newest first | ? | ? | em_revisao | - | futuro | agente/205-amigos, agente/21-issue643-simkl-amigos | sem comentários | Deferred to 2.1; retain tracking. |
+| [#643](https://github.com/iqui27/nuvio-native-legacy/issues/643) | Friends: show Simkl watched history, newest first | ? | ? | em_revisao | - | futuro | agente/205-amigos, agente/21-issue643-simkl-amigos | sem comentários | Corrigir achados do review (BLOQUEIA) e reenviar para revisao. |
 | [#677](https://github.com/iqui27/nuvio-native-legacy/issues/677) | Selection Jumps Back to the First Item When Navigating Rows | ? | bug | integrada | 2.0.7 | futuro | agente/205-677-foco, agente/205-677-foco | sem comentários | Verify merged result; build/install and check device. |
 | [#676](https://github.com/iqui27/nuvio-native-legacy/issues/676) | Slow Loading of Menu Artwork, Posters, and HUD | ? | bug | integrada | 2.0.7 | futuro | agente/205-676-arte, agente/205-676-arte | sem comentários | Verify merged result; build/install and check device. |
 | [#675](https://github.com/iqui27/nuvio-native-legacy/issues/675) | Playback end behaviour | ? | ? | em_revisao | 2.0.9 | futuro | agente/205-issue674-675 | sem comentários | Review latest fix. |
 | [#674](https://github.com/iqui27/nuvio-native-legacy/issues/674) | Title page - focus and what plays next | ? | ? | em_revisao | 2.0.9 | futuro | agente/205-issue674-675 | sem comentários | Review latest fix. |
-| [#672](https://github.com/iqui27/nuvio-native-legacy/issues/672) | Library row - show all | ? | ? | em_revisao | 2.0.9 | futuro | agente/205-issue653-672 | sem comentários | Merge reviewed branch. |
+| [#672](https://github.com/iqui27/nuvio-native-legacy/issues/672) | Library row - show all | ? | ? | integrada | 2.0.9 | futuro | agente/205-issue653-672 | sem comentários | Lancar com 2.0.9 apos teste na TV. |
 | [#671](https://github.com/iqui27/nuvio-native-legacy/issues/671) | [Samsung Tizen 10 / v2.0.7 .tpk] Most subtitles show nothing | ? | ? | integrada | 2.0.7 | futuro | agente/205-205-legtizen10, agente/205-205-legtizen10 | sem comentários | Verify merged result; build/install and check device. |
 | [#668](https://github.com/iqui27/nuvio-native-legacy/issues/668) | Holding 'down' and 'up' in the TV guide brings up the Catego | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-guiasegurar, agente/205-205-guiasegurar, agente/205-guiatv | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
 | [#667](https://github.com/iqui27/nuvio-native-legacy/issues/667) | Turning on 'pick the source yourself' still auto selects the | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-fontemanual, agente/205-205-fontemanual | sem comentários | Verify merged result; build/install and check device. |
@@ -589,13 +588,13 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-triagem3: merged; No mapped revie
 | [#661](https://github.com/iqui27/nuvio-native-legacy/issues/661) | Showcase Mode Does Not Display All Catalogs in a Collection | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-vitrinetodos, agente/205-205-vitrinetodos | sem comentários | Verify merged result; build/install and check device. |
 | [#660](https://github.com/iqui27/nuvio-native-legacy/issues/660) | Animated GIFs in Profile Picker Sometimes Fail to Animate or | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-gifperfis, agente/205-205-gifperfis | sem comentários | Verify merged result; build/install and check device. |
 | [#659](https://github.com/iqui27/nuvio-native-legacy/issues/659) | Feature Request: Per-Catalog Stage Background Appearance | ? | ? | em_revisao | 2.1 | futuro | agente/21-issue659-stage | sem comentários | Deferred to 2.1; retain tracking. |
-| [#658](https://github.com/iqui27/nuvio-native-legacy/issues/658) | Cursor disappears while scrolling in Showcase mode | ? | bug | em_revisao | 2.0.9 | futuro | agente/205-issue658-vitrine | sem comentários | Merge reviewed branch. |
+| [#658](https://github.com/iqui27/nuvio-native-legacy/issues/658) | Cursor disappears while scrolling in Showcase mode | ? | bug | integrada | 2.0.9 | futuro | agente/205-issue658-vitrine | sem comentários | Lancar com 2.0.9 apos teste na TV. |
 | [#657](https://github.com/iqui27/nuvio-native-legacy/issues/657) | Image noise bug | ? | bug | integrada | 2.0.7 | futuro | agente/205-205-ruidoperfil, agente/205-205-ruidoperfil | sem comentários | Verify merged result; build/install and check device. |
 | [#656](https://github.com/iqui27/nuvio-native-legacy/issues/656) | Select Genre Filter in Catalogs | ? | ? | em_revisao | 2.1 | futuro | agente/21-issue656-genero | sem comentários | Deferred to 2.1; retain tracking. |
-| [#653](https://github.com/iqui27/nuvio-native-legacy/issues/653) | Settings: trailer sound help stays in Portuguese | ? | ? | em_revisao | 2.0.9 | futuro | strings, agente/205-issue653-672 | sem comentários | Merge reviewed branch. |
+| [#653](https://github.com/iqui27/nuvio-native-legacy/issues/653) | Settings: trailer sound help stays in Portuguese | ? | ? | integrada | 2.0.9 | futuro | strings, agente/205-issue653-672 | sem comentários | Lancar com 2.0.9 apos teste na TV. |
 | [#650](https://github.com/iqui27/nuvio-native-legacy/issues/650) | Trailer Audio | ? | bug | aberta | - | futuro | ajustes_trailer_som()/AJ_HERO_TRAILER_SOM | sem comentários | precisa job: confirmar plataforma do relator (Samsung .wgt sem som por desenho) e responde |
 | [#649](https://github.com/iqui27/nuvio-native-legacy/issues/649) | Lighter fork without p2p engine | ? | ? | integrada | 2.0.7 | futuro | agente/205-205-apklite, agente/205-205-buscaarte, agente/205-205-escada3 | sem comentários | Latest fix postdates review; review newest tip after queued/running work finishes. |
-| [#648](https://github.com/iqui27/nuvio-native-legacy/issues/648) | [Bug]: HTTP Addons Stream Timeout / No Response on Samsung T | ? | bug | em_revisao | 2.0.9 | futuro | agente/205-issue648-tizen-http | sem comentários | Review latest fix. |
+| [#648](https://github.com/iqui27/nuvio-native-legacy/issues/648) | [Bug]: HTTP Addons Stream Timeout / No Response on Samsung T | ? | bug | integrada | 2.0.9 | futuro | agente/205-issue648-tizen-http | sem comentários | Lancar com 2.0.9 apos teste na TV. |
 | [#647](https://github.com/iqui27/nuvio-native-legacy/issues/647) | Nuvio Legacy's LegaSync (Sync This TV Settings) and other fe | ? | ? | em_revisao | 2.1 | futuro | agente/21-issue647-legasync | sem comentários | Deferred to 2.1; retain tracking. |
 | [#646](https://github.com/iqui27/nuvio-native-legacy/issues/646) | Live TV doesn't work using M3U links and Sports Catalogs can | ? | bug | integrada | 2.0.7 | futuro | agente/205-live-auto-tpk, agente/205-live-auto-tpk, agente/205-guiatv | sem comentários | Verify merged result; build/install and check device. |
 | [#679](https://github.com/iqui27/nuvio-native-legacy/issues/679) | Função dos perfis secundários usar todos as configurações de | ? | ? | em_revisao | 2.0.9 | futuro | agente/205-205-ajperfil21, agente/205-205-ajperfil21, agente/204-colecao-vitrine | sem comentários | Deferred to 2.1; retain tracking. |
@@ -604,6 +603,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-triagem3: merged; No mapped revie
 | [#683](https://github.com/iqui27/nuvio-native-legacy/issues/683) | Black screen | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
 | [#684](https://github.com/iqui27/nuvio-native-legacy/issues/684) | The application needs to be launched twice - 2.0.8 .tpk65 | ? | ? | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
 | [#691](https://github.com/iqui27/nuvio-native-legacy/issues/691) | Plugins rarely work on my Tizen 5 screen | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
+| [#692](https://github.com/iqui27/nuvio-native-legacy/issues/692) | Bug Report: Subtitle Sync Add-on Does Not Appear in Subtitle | ? | bug | aberta | - | futuro | - | sem comentários | Triage; assign a job. |
 
 Notas:
 
@@ -1394,6 +1394,8 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-b4addons: merged; j-revg-b4addons
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-issues-novas: merged; No mapped review verdict. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-mercado: merged; No mapped review verdict. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/21-titulo: review-OK; j-rev5-21-titulo.log: OK. 
+Snapshot 2026-10-23T14:05:00-03:00: agente/205-mercado merged on integracao/2.0.5; ships with 2.0.9.
+Correcao: revertido para em_revisao; agente/21-titulo ainda aberta (jobs em execucao).
 - **#514**: Issue nova 14/10 20:52 (rating de filme/episodio). Feature, nao 2.0.5.
 Local backlog-21.txt explicitly defers post-watch rating to 2.1.
 - **#542**: Entered mapa 2026-10-15 from issues.json; feature request, not in 2.0.5 scope.
@@ -1456,11 +1458,13 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-i606: merged; j-rev1322-i606.log:
 Snapshot 2026-10-23T11:57:24-03:00: agente/21-issue605-hdr10plus: running; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/21-issue605-hdr10plus: running; No mapped review verdict. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue605-hdr10plus: running; No mapped review verdict. 
+Snapshot 2026-10-23T14:05:00-03:00: j-issue605-hdr10plus done 13:35; review pendente.
 - **#617**: Imported from local issues snapshot.
 [triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: lido/assistido e posicao de resume do Jellyfin; relacionado a feat/servidores-locais (parado para 2.2)
 Snapshot 2026-10-23T11:57:24-03:00: agente/21-issue617-jellyfin-vistos: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/21-issue617-jellyfin-vistos: needs review; j-rev-issue617.log: BLOQUEIA. Newer fix log requires review. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue617-jellyfin-vistos: needs review; j-rev-issue617.log: BLOQUEIA. Newer fix log requires review. 
+Snapshot 2026-10-23T14:05:00-03:00: review j-rev-issue617.log::  BLOQUEIA
 - **#621**: Imported from local issues snapshot.
 Snapshot 2026-10-20T22:47:33-03:00: agente/205-205-gifavatar: merged; j-revg-gifavatar-2145.log: OK.
 Snapshot 2026-10-20T23:47:26-03:00: agente/205-205-gifavatar: merged; j-revg-gifavatar-2145.log: OK.
@@ -1718,11 +1722,13 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-205-bib639: merged; j-revg-bib639
 Snapshot 2026-10-23T11:57:24-03:00: agente/21-issue641-afr: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/21-issue641-afr: needs review; j-rev-issue641.log: BLOQUEIA. Newer fix log requires review. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue641-afr: needs review; j-rev-issue641.log: BLOQUEIA. Newer fix log requires review. 
+Snapshot 2026-10-23T14:05:00-03:00: review j-rev-issue641.log::  BLOQUEIA
 - **#642**: Imported from local issues snapshot.
 [triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: reproduzir e guardar a chamada de IME no webOS 26; nenhuma branch
 Snapshot 2026-10-23T11:57:24-03:00: agente/205-issue642-teclado: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/205-issue642-teclado: needs review; j-rev-issue642.log: BLOQUEIA. Newer fix log requires review. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-issue642-teclado: needs review; j-rev-issue642.log: BLOQUEIA. Newer fix log requires review. 
+Snapshot 2026-10-23T14:05:00-03:00: review j-rev-issue642.log::  BLOQUEIA
 - **#645**: Imported from local issues snapshot.
 [triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: coberto pelo port de agente/2031-dvp5-hdr10 (PERDIDO); 2.1 nao tem a guarda.
 Snapshot 2026-10-23T01:56:49-03:00: agente/2031-dvp5-hdr10: running; No mapped review verdict.
@@ -1803,6 +1809,7 @@ Snapshot 2026-10-23T12:56:23-03:00: agente/205-amigos: merged; j-rev-205-amigos.
 Snapshot 2026-10-23T12:56:23-03:00: agente/21-issue643-simkl-amigos: done-awaiting-review; No mapped review verdict. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-amigos: merged; j-rev-205-amigos.log: OK. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue643-simkl-amigos: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T14:05:00-03:00: review j-rev-issue643.log::  BLOQUEIA
 - **#677**: Imported from local issues snapshot.
 Snapshot 2026-10-22T18:56:41-03:00: agente/205-677-foco: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-22T19:28:46-03:00: agente/205-677-foco: merged; j-rev3-677-foco.log: OK.
@@ -1856,6 +1863,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-issue674-675: done-awaiting-revie
 Snapshot 2026-10-23T11:57:24-03:00: agente/205-issue653-672: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/205-issue653-672: review-OK; j-rev-issue653-672.log: OK. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-issue653-672: review-OK; j-rev-issue653-672.log: OK. 
+Snapshot 2026-10-23T14:05:00-03:00: agente/205-issue653-672 merged on integracao/2.0.5; ships with 2.0.9.
 - **#671**: Imported from local issues snapshot.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-legtizen10: merged; j-revg-legtizen10.log: OK.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-legtizen10: merged; j-revg-legtizen10.log: OK.
@@ -2061,6 +2069,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue659-stage: done-awaiting-revi
 Snapshot 2026-10-23T11:57:24-03:00: agente/205-issue658-vitrine: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/205-issue658-vitrine: review-OK; j-rev-issue658.log: OK. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-issue658-vitrine: review-OK; j-rev-issue658.log: OK. 
+Snapshot 2026-10-23T14:05:00-03:00: agente/205-issue658-vitrine merged on integracao/2.0.5; ships with 2.0.9.
 - **#657**: Imported from local issues snapshot.
 Snapshot 2026-10-22T17:16:51-03:00: agente/205-205-ruidoperfil: merged; j-revg-ruidoperfil.log: OK.
 Snapshot 2026-10-22T18:01:11-03:00: agente/205-205-ruidoperfil: merged; j-revg-ruidoperfil.log: OK.
@@ -2092,6 +2101,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue656-genero: done-awaiting-rev
 Snapshot 2026-10-23T11:57:24-03:00: agente/205-issue653-672: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/205-issue653-672: review-OK; j-rev-issue653-672.log: OK. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-issue653-672: review-OK; j-rev-issue653-672.log: OK. 
+Snapshot 2026-10-23T14:05:00-03:00: agente/205-issue653-672 merged on integracao/2.0.5; ships with 2.0.9.
 - **#650**: Imported from local issues snapshot.
 [triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: conserto ja existe na 2.1; so falta confirmar a plataforma e responder.
 - **#649**: Imported from local issues snapshot.
@@ -2255,6 +2265,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/205-205-webosmem: merged; j-revg2-web
 Snapshot 2026-10-23T11:57:24-03:00: agente/205-issue648-tizen-http: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-23T12:56:23-03:00: agente/205-issue648-tizen-http: done-awaiting-review; No mapped review verdict. 
 Snapshot 2026-10-23T12:56:42-03:00: agente/205-issue648-tizen-http: done-awaiting-review; No mapped review verdict. 
+Snapshot 2026-10-23T14:05:00-03:00: agente/205-issue648-tizen-http merged on integracao/2.0.5; ships with 2.0.9.
 - **#647**: Imported from local issues snapshot.
 [triagem-perdidos 2026-10-23 01:30]: triagem-perdidos: precisa job: sync de ajustes (LegaSync / Sync This TV); nenhuma branch
 Snapshot 2026-10-23T11:57:24-03:00: agente/21-issue647-legasync: done-awaiting-review; No mapped review verdict.
@@ -2315,6 +2326,7 @@ Snapshot 2026-10-23T12:56:42-03:00: agente/21-issue647-legasync: done-awaiting-r
 - **#683**: Imported from local issues snapshot.
 - **#684**: Imported from local issues snapshot.
 - **#691**: Imported from local issues snapshot.
+- **#692**: Imported from local issues snapshot.
 
 ## Outras pendências
 

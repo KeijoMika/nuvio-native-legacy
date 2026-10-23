@@ -31,6 +31,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Quick episode chips and saved polish**: Jump episodes with quick chips on a 3x2 paged grid, see a compact rating on saved cards and sweep fill, remote-style keycaps on hints, localized island copy, a Remove action on the panel card, and glass-outline focus accents. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`, `22c77e099`.
 
+- **See all in the Library row**: Open the full Library from a See all card at the end of the Home row. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #672, `d316b4dbd`.
+
 ## Fixes
 
 - **Add-on source status translated**: The "Searching add-on sources…" and "not responding" lines in the sources sheet now follow the interface language instead of always showing Portuguese. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `f49598336`.
@@ -98,6 +100,12 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **Trakt device login retry**: Bound login polling by the code expiry and show a retry state instead of looping silently. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-205-traktlogin`, `71c849ae6`.
 
 - **Safer Dolby Vision picking**: Keep MP4 Dolby Vision profile 5 below same-band HDR10 so incompatible files lose the tie. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `d4f1dca81`.
+
+- **Header-bound add-on streams on Tizen**: Relay through the local server the add-on sources that need headers the TV player cannot send, so they play instead of timing out. Platforms: Samsung .tpk. Refs: #648, `f7615ebea`.
+
+- **Trailer sound help translated**: The rewritten trailer sound help follows the interface language. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #509, #653, `808fadff2`.
+
+- **Collection showcase scrolling on Samsung**: Register pointer hit targets on showcase rows so hover and scroll work in TV pointer mode. Platforms: Samsung .tpk. Refs: #658, `a47aec93d`.
 
 ## Performance
 
