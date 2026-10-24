@@ -16,9 +16,9 @@
 
 #include "metaprov.h"
 const char *metaprov_idioma(void) { return "en"; }
-char *metaprov_meta_cinemeta_com(const char *t, const char *id, int s, MetaprovGet g, void *ctx, int *ausente) {
+char *metaprov_meta_cinemeta_com(const char *t, const char *id, int s, MetaprovGet g, void *ctx, MetaprovCineResult *result) {
   (void)t; (void)id; (void)s; (void)g; (void)ctx;
-  if (ausente) *ausente = 0;
+  if (result) *result = METAPROV_CINE_RETRY;
   return NULL;
 }
 unsigned int SDL_GetTicks(void) { return 0; }

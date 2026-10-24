@@ -617,13 +617,13 @@ static void cineNegMarcar(const char *chave) {
 // Ficha do Cinemeta (so ele) em cache proprio, para conferir episodios que a
 // ficha do Nuvio nao lista. Devolve copia (free) ou NULL.
 static char *cinemetaDaSerie(const char *tipo, const char *serie) {
-  int ausente = 0;
+  MetaprovCineResult result;
   char *c = fichaBuscar("cinemeta-series", serie);
   if (c) return c;
   if (cineNegSabe(serie)) return NULL;   // ja nao tinha: nao pergunta de novo
-  c = metaprov_meta_cinemeta_com(tipo, serie, 8, NULL, NULL, &ausente);
-  if (c) fichaGuardar("cinemeta-series", serie, c);
-  else if (ausente) cineNegMarcar(serie);
+  c = metaprov_meta_cinemeta_com(tipo, serie, 8, NULL, NULL, &result);
+  if (result == METAPROV_CINE_FOUND) fichaGuardar("cinemeta-series", serie, c);
+  else if (result == METAPROV_CINE_ABSENT) cineNegMarcar(serie);
   return c;
 }
 

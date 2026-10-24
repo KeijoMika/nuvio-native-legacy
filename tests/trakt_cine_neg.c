@@ -99,6 +99,14 @@ int main(int argc, char **argv) {
       cineBadOnce = "{\"meta\":{}, broken}";
     if (!strcmp(argv[1], "truncated-retry"))
       cineBadOnce = "{\"meta\":{\"name\":\"The Rookie\",\"videos\":[";
+    if (!strcmp(argv[1], "error-retry"))
+      cineBadOnce = "{\"error\":\"temporary backend failure\"}";
+    if (!strcmp(argv[1], "no-meta-retry"))
+      cineBadOnce = "{}";
+    if (!strcmp(argv[1], "null-meta-retry"))
+      cineBadOnce = "{\"meta\":null}";
+    if (!strcmp(argv[1], "error-meta-retry"))
+      cineBadOnce = "{\"error\":\"temporary backend failure\",\"meta\":{}}";
     assert(um("tt7587890", 9, 2, &r) == 0);
     assert(cineGets == 1);
     agora += 60;
