@@ -571,13 +571,57 @@ static void fichaGuardar(const char *tipo, const char *id, const char *corpo) {
   pthread_mutex_unlock(&fichaTrava);
 }
 
+// CACHE NEGATIVO DO CINEMETA (P2). 329 linhas de "episodio ausente na
+// ficha Nuvio; Cinemeta tambem nao tem" em 14 registros, com os MESMOS tt SxEy
+// repetidos a cada sync (155 num so registro). Duas coisas se repetiam:
+//   1. a LINHA, por episodio (tt:SxEy) — o ruido de log;
+//   2. o GET ao Cinemeta, por serie — a rede.
+// As duas ficam 24 h sem repetir. A chave do log e o EPISODIO (S9E19 nao
+// some, mas nao reimprime; S9E2 continua sendo conferido, #356). A chave do GET
+// e a SERIE, porque sem ficha nao ha o que conferir de qualquer episodio — e
+// isso so vale quando a resposta foi "nao tem": serie que o Cinemeta tem fica
+// no cache positivo (fichaGuardar), que vem antes.
+#define TK_CINE_NEG_MAX 32
+#define TK_CINE_NEG_S (24 * 3600)
+static struct { char chave[32]; time_t quando; } cineNeg[TK_CINE_NEG_MAX];
+static int cineNegProx;
+static pthread_mutex_t cineNegTrava = PTHREAD_MUTEX_INITIALIZER;
+
+// 1 = a chave (episodio "tt:SxEy" ou serie "tt") ja deu negativo no prazo.
+static int cineNegSabe(const char *chave) {
+  int i, r = 0;
+  pthread_mutex_lock(&cineNegTrava);
+  for (i = 0; i < TK_CINE_NEG_MAX && !r; i++)
+    if (cineNeg[i].chave[0] && !strcmp(cineNeg[i].chave, chave) &&
+        time(NULL) - cineNeg[i].quando < TK_CINE_NEG_S)
+      r = 1;
+  pthread_mutex_unlock(&cineNegTrava);
+  return r;
+}
+
+static void cineNegMarcar(const char *chave) {
+  int i;
+  pthread_mutex_lock(&cineNegTrava);
+  for (i = 0; i < TK_CINE_NEG_MAX; i++)
+    if (!strcmp(cineNeg[i].chave, chave)) break;
+  if (i == TK_CINE_NEG_MAX) {
+    for (i = 0; i < TK_CINE_NEG_MAX; i++)
+      if (!cineNeg[i].chave[0]) break;
+    if (i == TK_CINE_NEG_MAX) { i = cineNegProx; cineNegProx = (cineNegProx + 1) % TK_CINE_NEG_MAX; }
+  }
+  snprintf(cineNeg[i].chave, sizeof cineNeg[i].chave, "%s", chave);
+  cineNeg[i].quando = time(NULL);
+  pthread_mutex_unlock(&cineNegTrava);
+}
+
 // Ficha do Cinemeta (so ele) em cache proprio, para conferir episodios que a
 // ficha do Nuvio nao lista. Devolve copia (free) ou NULL.
 static char *cinemetaDaSerie(const char *tipo, const char *serie) {
   char *c = fichaBuscar("cinemeta-series", serie);
   if (c) return c;
+  if (cineNegSabe(serie)) return NULL;   // ja nao tinha: nao pergunta de novo
   c = metaprov_meta_cinemeta_com(tipo, serie, 8, NULL, NULL);
-  if (c) fichaGuardar("cinemeta-series", serie, c);
+  if (c) { fichaGuardar("cinemeta-series", serie, c); cineNegMarcar(serie); }
   return c;
 }
 
@@ -672,9 +716,17 @@ static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
         epc = corpoCine;
       }
     }
-    if (epc == corpo)
-      printf("[trakt] episodio ausente na ficha Nuvio; Cinemeta tambem nao tem: %s S%dE%d\n",
-             serie, d->temporada, d->episodio);
+    if (epc == corpo) {
+      char chave[32];
+      snprintf(chave, sizeof chave, "%s:%d:%d", serie, d->temporada, d->episodio);
+      // A LINHA nao reimprime dentro de 24 h: era o ruido do mapa (155 vezes o
+      // mesmo tt SxEy num registro). Outro episodio da mesma serie ainda sai.
+      if (!cineNegSabe(chave)) {
+        printf("[trakt] episodio ausente na ficha Nuvio; Cinemeta tambem nao tem: %s S%dE%d\n",
+               serie, d->temporada, d->episodio);
+        cineNegMarcar(chave);
+      }
+    }
   }
   if (proximo) {
     MetaEpInfo prox;
