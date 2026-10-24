@@ -18,7 +18,7 @@ void marco(const char *m) { (void)m; }
 // estatico nao a resolve; o produtor forte (simkl.c) nao vem aqui.
 int simkl_e_a_seguir(const char *id) { (void)id; return 0; }
 
-static int nuvioGets, cineGets, cineMissing;
+static int nuvioGets, cineGets, cineMissing, cineFailOnce;
 static long long estreiaMs;
 static char estreiaId[48];
 
@@ -36,7 +36,9 @@ char *rede_baixar(const char *url, int s) {
     nuvioGets++; return ler("nuvio_the_rookie.json");
   }
   if (strstr(url, "cinemeta") && strstr(url, "tt7587890")) {
-    cineGets++; return cineMissing ? NULL : ler("cinemeta_the_rookie.json");
+    cineGets++;
+    if (cineFailOnce && cineGets == 1) return NULL; // Timeout/offline/HTTP error.
+    return cineMissing ? strdup("{\"meta\":{}}") : ler("cinemeta_the_rookie.json");
   }
   return NULL;
 }
@@ -87,6 +89,20 @@ static int um(const char *id, int t, int e, CatItem *o) {
 
 int main(int argc, char **argv) {
   CatItem r;
+  if (argc > 1 && !strcmp(argv[1], "transient-retry")) {
+    cineFailOnce = 1;
+    assert(um("tt7587890", 9, 2, &r) == 0);
+    assert(cineGets == 1);
+    agora += 60;
+    if (um("tt7587890", 9, 2, &r) != 1 || cineGets != 2) {
+      fprintf(stderr, "trakt_cine_neg: FAIL transient-retry on next sync\n");
+      return 1;
+    }
+    assert(!strcmp(r.imdb, "tt7587890:9:2"));
+    assert(r.nomeEpisodio[0]);
+    fprintf(stderr, "trakt_cine_neg: PASS transient-retry\n");
+    return 0;
+  }
   if (argc > 1) {
     cineMissing = !strcmp(argv[1], "missing-expiry");
     int expected = cineMissing ? 0 : 1;

@@ -617,12 +617,13 @@ static void cineNegMarcar(const char *chave) {
 // Ficha do Cinemeta (so ele) em cache proprio, para conferir episodios que a
 // ficha do Nuvio nao lista. Devolve copia (free) ou NULL.
 static char *cinemetaDaSerie(const char *tipo, const char *serie) {
+  int ausente = 0;
   char *c = fichaBuscar("cinemeta-series", serie);
   if (c) return c;
   if (cineNegSabe(serie)) return NULL;   // ja nao tinha: nao pergunta de novo
-  c = metaprov_meta_cinemeta_com(tipo, serie, 8, NULL, NULL);
+  c = metaprov_meta_cinemeta_com(tipo, serie, 8, NULL, NULL, &ausente);
   if (c) fichaGuardar("cinemeta-series", serie, c);
-  else cineNegMarcar(serie);
+  else if (ausente) cineNegMarcar(serie);
   return c;
 }
 
@@ -717,7 +718,7 @@ static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
         epc = corpoCine;
       }
     }
-    if (epc == corpo) {
+    if (epc == corpo && (corpoCine || cineNegSabe(serie))) {
       char chave[32];
       snprintf(chave, sizeof chave, "%s:%d:%d", serie, d->temporada, d->episodio);
       // A LINHA nao reimprime dentro de 24 h: era o ruido do mapa (155 vezes o

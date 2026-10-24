@@ -198,14 +198,20 @@ char *metaprov_meta_com(const char *tipo, const char *id, int seg_cine,
 }
 
 char *metaprov_meta_cinemeta_com(const char *tipo, const char *id, int seg,
-                                 MetaprovGet get, void *ctx) {
+                                 MetaprovGet get, void *ctx, int *ausente) {
   char url[400], *c;
   int st = 0;
+  if (ausente) *ausente = 0;
   if (!get) get = metaprov_get_rede;
   if (!tipo || !id || !id[0]) return NULL;
   metaprov_url_meta(url, sizeof url, METAPROV_CINEMETA, tipo, id, NULL);
   c = get(url, seg, &st, ctx);
-  if (c && !metaprov_meta_valido(c)) { free(c); c = NULL; }
+  if (c && st >= 200 && st < 300) {
+    if (!metaprov_meta_valido(c)) {
+      if (ausente) *ausente = 1;
+      free(c); c = NULL;
+    }
+  } else { free(c); c = NULL; }
   return c;
 }
 
