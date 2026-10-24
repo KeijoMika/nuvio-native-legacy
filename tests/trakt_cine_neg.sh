@@ -12,7 +12,7 @@ cc src/trakt.c src/metaep.c tests/stub_fichameta.c src/js.c src/metaprov.c tests
   -Isrc -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   -o "$dir/teste" -O1 -g -Wall -Wextra -Wl,-dead_strip -lpthread
 rc=0
-for scenario in '' positive-expiry missing-expiry transient-retry; do
+for scenario in '' positive-expiry missing-expiry transient-retry html-retry malformed-retry truncated-retry; do
   "$dir/teste" ${scenario:+"$scenario"} 2>&1 | grep -E 'trakt_cine_neg|FAIL' || rc=1
 done
 exit "$rc"

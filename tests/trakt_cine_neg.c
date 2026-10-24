@@ -19,6 +19,7 @@ void marco(const char *m) { (void)m; }
 int simkl_e_a_seguir(const char *id) { (void)id; return 0; }
 
 static int nuvioGets, cineGets, cineMissing, cineFailOnce;
+static const char *cineBadOnce;
 static long long estreiaMs;
 static char estreiaId[48];
 
@@ -38,6 +39,7 @@ char *rede_baixar(const char *url, int s) {
   if (strstr(url, "cinemeta") && strstr(url, "tt7587890")) {
     cineGets++;
     if (cineFailOnce && cineGets == 1) return NULL; // Timeout/offline/HTTP error.
+    if (cineBadOnce && cineGets == 1) return strdup(cineBadOnce);
     return cineMissing ? strdup("{\"meta\":{}}") : ler("cinemeta_the_rookie.json");
   }
   return NULL;
@@ -89,18 +91,24 @@ static int um(const char *id, int t, int e, CatItem *o) {
 
 int main(int argc, char **argv) {
   CatItem r;
-  if (argc > 1 && !strcmp(argv[1], "transient-retry")) {
-    cineFailOnce = 1;
+  if (argc > 1 && strstr(argv[1], "-retry")) {
+    cineFailOnce = !strcmp(argv[1], "transient-retry");
+    if (!strcmp(argv[1], "html-retry"))
+      cineBadOnce = "<html><body>Temporary error</body></html>";
+    if (!strcmp(argv[1], "malformed-retry"))
+      cineBadOnce = "{\"meta\":{}, broken}";
+    if (!strcmp(argv[1], "truncated-retry"))
+      cineBadOnce = "{\"meta\":{\"name\":\"The Rookie\",\"videos\":[";
     assert(um("tt7587890", 9, 2, &r) == 0);
     assert(cineGets == 1);
     agora += 60;
     if (um("tt7587890", 9, 2, &r) != 1 || cineGets != 2) {
-      fprintf(stderr, "trakt_cine_neg: FAIL transient-retry on next sync\n");
+      fprintf(stderr, "trakt_cine_neg: FAIL %s on next sync\n", argv[1]);
       return 1;
     }
     assert(!strcmp(r.imdb, "tt7587890:9:2"));
     assert(r.nomeEpisodio[0]);
-    fprintf(stderr, "trakt_cine_neg: PASS transient-retry\n");
+    fprintf(stderr, "trakt_cine_neg: PASS %s\n", argv[1]);
     return 0;
   }
   if (argc > 1) {
