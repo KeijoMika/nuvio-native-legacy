@@ -34,6 +34,10 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 ## Fixes
 
+- **Buffered live TV recovery**: Retry buffered webOS live sources through the transport-stream proxy when native playback fails. Platforms: webOS. Refs: #625, `1b84d0a2f`, merge `9a7d40f3e`.
+
+- **Fewer false offline states**: Require failures on different hosts before Android declares the connection unavailable. Platforms: Android. Refs: owner request, `a0efe5bee`, merge `3a1dbb575`.
+
 - **Episode progress survives source changes**: Switch playback sources without losing episode identity or watched state. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #570, `ee42d28cc`, `63ff7c56f`, merge `37fdc3ea0`.
 
 - **Older Samsung package compatibility**: Rebuild the rate-limited artwork sources correctly so the Tizen 4/5 package can link. Platforms: Samsung .tpk. Refs: PR #688, `00192c3fd`.
@@ -149,7 +153,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Samsung graphics and packaging regression checks**: Check active-context texture uploads and Tizen 4 rate-limit object selection. Platforms: Samsung .tpk. Refs: `1b805d013`, `7790e8b4f`.
 
-- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
