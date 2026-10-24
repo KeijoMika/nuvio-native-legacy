@@ -2,7 +2,7 @@
 
 Changes since `v2.0.8`, from local commit and branch snapshots. Integration does not confirm installation on a TV. English follows the owner’s current language override.
 
-Tracking refreshed against the supplied snapshot through `7417183a8`; all listed non-merge commits remain covered. Android installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
+Tracking refreshed against the supplied snapshot through `4104272dd`; all listed non-merge commits remain covered. Android installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
 
 
 ## Highlights
@@ -35,6 +35,8 @@ Tracking refreshed against the supplied snapshot through `7417183a8`; all listed
 - **See all in the Library row**: Open the full Library from a See all card at the end of the Home row. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #672, `d316b4dbd`.
 
 ## Fixes
+
+- **Retryable episode metadata**: Missing or invalid Cinemeta metadata remains retryable, while confirmed absence is cached for 24 hours to avoid repeated requests. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #356, `5058b9870`, `aab25a275`, `a6b791713`, `a4fec2800`, `19ef559f3`.
 
 - **Samsung startup pause recovery**: Recover from an unexpected pause during startup after the firmware finishes hiding the windows, with one bounded retry before interaction. Platforms: Samsung .tpk. Refs: #684, `3f27a741a`, `133cbf6c2`, merge `7102f722e`; physical TV confirmation pending.
 
@@ -155,9 +157,11 @@ Tracking refreshed against the supplied snapshot through `7417183a8`; all listed
 
 ## Internal
 
+- **Accurate playback diagnostics**: Exclude suspended time from frame measurements and record each VOD stall once so diagnostic reports retain useful evidence. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #681, `97314076a`, `3ce9e80d2`.
+
 - **Samsung graphics and packaging regression checks**: Check active-context texture uploads and Tizen 4 rate-limit object selection. Platforms: Samsung .tpk. Refs: `1b805d013`, `7790e8b4f`.
 
-- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `7417183a8`, `21693a20c`. Additional refs: `83f87edfb`, `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `683dc0b0c`. Additional refs: `7417183a8`, `21693a20c`. Additional refs: `83f87edfb`, `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
