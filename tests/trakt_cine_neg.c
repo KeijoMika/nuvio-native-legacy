@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+static time_t agora = 1800000000;
+time_t time(time_t *out) { if (out) *out = agora; return agora; }
 
 unsigned int SDL_GetTicks(void) { return 0; }
 void marco(const char *m) { (void)m; }
@@ -14,7 +18,7 @@ void marco(const char *m) { (void)m; }
 // estatico nao a resolve; o produtor forte (simkl.c) nao vem aqui.
 int simkl_e_a_seguir(const char *id) { (void)id; return 0; }
 
-static int nuvioGets, cineGets;
+static int nuvioGets, cineGets, cineMissing;
 static long long estreiaMs;
 static char estreiaId[48];
 
@@ -32,7 +36,7 @@ char *rede_baixar(const char *url, int s) {
     nuvioGets++; return ler("nuvio_the_rookie.json");
   }
   if (strstr(url, "cinemeta") && strstr(url, "tt7587890")) {
-    cineGets++; return ler("cinemeta_the_rookie.json");
+    cineGets++; return cineMissing ? NULL : ler("cinemeta_the_rookie.json");
   }
   return NULL;
 }
@@ -67,7 +71,7 @@ static int contarPadrao(const char *cam, const char *padrao) {
   return n;
 }
 
-// tt7587890 = The Rookie: o Nuvio E o Cinemeta listam so S9E1..E3.
+// tt7587890 = The Rookie: Nuvio lists S9E1; Cinemeta lists S9E1..E3.
 // O item testado, S9E19, nao existe em nenhum dos dois.
 static int um(const char *id, int t, int e, CatItem *o) {
   static CatItem v[1];
@@ -81,8 +85,33 @@ static int um(const char *id, int t, int e, CatItem *o) {
   return n;
 }
 
-int main(void) {
+int main(int argc, char **argv) {
   CatItem r;
+  if (argc > 1) {
+    cineMissing = !strcmp(argv[1], "missing-expiry");
+    int expected = cineMissing ? 0 : 1;
+    assert(um("tt7587890", 9, 2, &r) == expected);
+    assert(cineGets == 1);
+    agora += 901; // Expire the production positive cache (15 minutes).
+    if (um("tt7587890", 9, 2, &r) != expected ||
+        cineGets != (cineMissing ? 1 : 2)) {
+      fprintf(stderr, "trakt_cine_neg: FAIL %s after positive-cache expiry\n", argv[1]);
+      return 1;
+    }
+    if (!cineMissing) {
+      assert(!strcmp(r.imdb, "tt7587890:9:2"));
+      assert(r.nomeEpisodio[0]);
+    } else {
+      agora += 24 * 3600 - 902; // Negative entry is still valid at 23:59:59.
+      assert(um("tt7587890", 9, 2, &r) == 0);
+      assert(cineGets == 1);
+      agora++;
+      assert(um("tt7587890", 9, 2, &r) == 0);
+      assert(cineGets == 2); // Retry at the 24-hour boundary.
+    }
+    fprintf(stderr, "trakt_cine_neg: PASS %s\n", argv[1]);
+    return 0;
+  }
   FILE *out = freopen("/tmp/trakt-cine-neg.log", "w", stdout);
   int linhas;
   assert(out);

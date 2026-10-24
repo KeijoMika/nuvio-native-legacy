@@ -621,7 +621,8 @@ static char *cinemetaDaSerie(const char *tipo, const char *serie) {
   if (c) return c;
   if (cineNegSabe(serie)) return NULL;   // ja nao tinha: nao pergunta de novo
   c = metaprov_meta_cinemeta_com(tipo, serie, 8, NULL, NULL);
-  if (c) { fichaGuardar("cinemeta-series", serie, c); cineNegMarcar(serie); }
+  if (c) fichaGuardar("cinemeta-series", serie, c);
+  else cineNegMarcar(serie);
   return c;
 }
 
