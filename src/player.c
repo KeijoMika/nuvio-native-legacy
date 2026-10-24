@@ -4635,13 +4635,20 @@ void player_atualizar(float dt, Uint32 agora) {
   if (scrubbing && agora - scrubUltimo > salto_fim_ms(ajustes_seekr_ligado())) terminarSalto();
 
   medirAssistido();
-    { static Uint32 vodPosEm; static double vodPos; static int vodBuf;
+    { static Uint32 vodPosEm; static double vodPos; static int vodLogado;
       unsigned agora = SDL_GetTicks(), buf = video_bufferando_ms();
       double pos = video_pos();
-      if (!comVideo || !video_pronto() || ehCanal()) { vodPos = pos; vodPosEm = agora; vodBuf = 0; }
-      else if (pos > vodPos + 0.05) { vodPos = pos; vodPosEm = agora; vodBuf = buf > 0; }
-      else if (vodPosEm && (unsigned)(agora - vodPosEm) >= 8000u && (!vodBuf || buf == 0)) {
-        vodBuf = 1;
+      if (!comVideo || !video_pronto() || ehCanal()) { vodPos = pos; vodPosEm = agora; vodLogado = 0; }
+      else if (pos > vodPos + 0.05) { vodPos = pos; vodPosEm = agora; vodLogado = 0; }
+      // UMA linha por PARADA, nao por quadro: a condicao antiga tinha
+      // `|| buf == 0`, e `buf` e o buffering AGORA — que continua 0 enquanto o
+      // pipeline nao entrega nada. A propria linha reincidia no frame seguinte
+      // (1362 linhas num registro, 1300 em 30 s no harness) e a evidencia do
+      // #681 era cortada do log. Agora `vodLogado` e a unica garantia, e ele so
+      // volta a zero quando a posicao anda de novo. Pausa DA PESSOA nao e
+      // parada: nao conta.
+      else if (vodPosEm && (unsigned)(agora - vodPosEm) >= 8000u && !vodLogado && !pausaPessoa) {
+        vodLogado = 1;
         { int itens = 0; long bytes = 0; char mem[96] = "";
           tex_estatisticas(&itens, NULL, &bytes, NULL, NULL);
           memlog_amostra(mem, sizeof mem);
