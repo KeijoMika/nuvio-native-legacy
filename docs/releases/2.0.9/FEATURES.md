@@ -2,7 +2,7 @@
 
 Changes since `v2.0.8`, from local commit and branch snapshots. Integration does not confirm installation on a TV. English follows the owner’s current language override.
 
-Tracking refreshed against the supplied snapshot through `40f0a2ecb`; all listed non-merge commits remain covered. Android installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
+Tracking refreshed against the supplied snapshot through `618e7114c`; all listed non-merge commits remain covered. Android installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
 
 
 ## Highlights
@@ -165,7 +165,7 @@ Tracking refreshed against the supplied snapshot through `40f0a2ecb`; all listed
 
 - **Scoped review validation**: Record collection and scraper review validation without expanding the approved fix scope. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b1cb55c2`, `969b0614f`.
 
-- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `40f0a2ecb`. Additional refs: `518e4afe2`, `676873f5e`, `68cce52fe`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`, `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`, `65a3fa795`, `25189dea6`, `795af84b4`, `0e3b2c9b6`, `4fc14fb74`.
+- **Release tracking**: Keep issue states, review follow-ups and release coverage aligned with the local integration snapshot. Additional refs: `618e7114c`. Additional refs: `40f0a2ecb`. Additional refs: `518e4afe2`, `676873f5e`, `68cce52fe`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `edd72dff1`, `05d582211`, `1137c9f39`, `9cc5a41aa`, `103c96e62`, `e06c70bc8`, `8a9dd2dc0`, `27c5d4e19`, `65a3fa795`, `25189dea6`, `795af84b4`, `0e3b2c9b6`, `4fc14fb74`.
 
 - **Soundtrack regression coverage**: Verify soundtrack panel sizing and paging through remote keys, and record the Portuguese mockup and native preview proof with device validation limits. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `dd8c54a6a`, `2eb4fecc0`, `4654bdb0f`, `8fb90ad5f`.
 
