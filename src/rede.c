@@ -2081,8 +2081,8 @@ static int abrir(void) { return abrirAte(20000); }
 // cabecalhos) que a libcurl nao pode atender — nao ficou pronta, ou caiu no
 // transporte — vai por NuvioActivity.httpPedir (HttpURLConnection). A conta, o
 // login e o Supabase passam por aqui (nuvem.c: rede_*_st), e assim o login
-// nunca depende so da nossa libcurl. `curlRuim` gruda na sessao: se a libcurl
-// falhou onde o Android respondeu, os proximos pedidos simples vao direto.
+// nunca depende so da nossa libcurl. The session latch requires transport
+// failures recovered by Android on three distinct hostnames.
 static int curlRuim;
 static char *viaAndroid(const char *verbo, const char *url, int segundos,
                         const char *const *cab, const char *corpo, int *status,
@@ -2146,13 +2146,35 @@ static int androidPrimeiro(void) {
 // Falha de TRANSPORTE da libcurl num pedido simples: tenta o Android uma vez.
 static char *androidDepois(const char *verbo, const char *url, int segundos,
                            const char *const *cab, const char *corpo, int *status, int *retryAfter) {
-  char *r;
+  static pthread_mutex_t trava = PTHREAD_MUTEX_INITIALIZER;
+  static char hosts[3][256];
+  static unsigned nHosts;
+  char *r, origem[320], *host, *fim;
+  int codigo = redeCurlLocal;
+  unsigned i;
   if (redeCancelouLocal || (redeCancelLocal && *redeCancelLocal)) return NULL;
   r = viaAndroid(verbo, url, segundos, cab, corpo, status, NULL, retryAfter, "curl falhou");
-  if (r && !__atomic_exchange_n(&curlRuim, 1, __ATOMIC_ACQ_REL)) {
-    printf("[rede] libcurl falhou onde o Android respondeu: pedidos simples ficam pelo Android nesta sessao\n");
-    fflush(stdout);
+  // Only transport errors count; malformed URLs, unsupported protocols,
+  // allocation failures and deliberate aborts say nothing about curl health.
+  if (!r || !(codigo == 5 || codigo == 6 || codigo == 7 || codigo == 28 ||
+              codigo == 35 || codigo == 52 || codigo == 55 || codigo == 56)) return r;
+  hostDaUrl(url, origem, sizeof origem);
+  host = strstr(origem, "://");
+  if (!host) return r;
+  host += 3;
+  fim = *host == '[' ? strchr(host, ']') : strchr(host, ':');
+  if (fim) { if (*fim == ']') fim++; *fim = 0; }
+  if (!*host || strlen(host) >= sizeof hosts[0]) return r;
+  pthread_mutex_lock(&trava);
+  for (i = 0; i < nHosts; i++) if (!strcasecmp(hosts[i], host)) break;
+  if (i == nHosts && nHosts < 3) {
+    snprintf(hosts[nHosts++], sizeof hosts[0], "%s", host);
+    if (nHosts == 3 && !__atomic_exchange_n(&curlRuim, 1, __ATOMIC_ACQ_REL)) {
+      printf("[rede] libcurl failed on three distinct hosts recovered by Android; simple requests use Android this session\n");
+      fflush(stdout);
+    }
   }
+  pthread_mutex_unlock(&trava);
   return r;
 }
 void rede_preparar(void) { iniciarFioCurl(); }
@@ -2234,6 +2256,7 @@ char *rede_baixar_st(const char *url, int segundos, const char *const *cab,
     if (status) *status = st;
     return r;
   }
+  redeCurlLocal = 0;
   r = rede_baixar_interno2(url, segundos, NULL, cab, &st, NULL, 0);
   if (status) *status = st;
   if (!r && st == 0) {
@@ -2737,6 +2760,7 @@ static char *postarNativo(const char *url, int segundos, const char *const *cab,
   void *c, *lista = NULL;
   int r;
   if (status) *status = 0;
+  redeCurlLocal = 0;
   anotarErro(0);
   if (!url || !*url) { anotarErro(3); return NULL; }
   if (!abrir()) { anotarErro(2); return NULL; }
@@ -2771,6 +2795,7 @@ static char *postarNativo(const char *url, int segundos, const char *const *cab,
     if (lista) curl_setopt(c, OPT_HTTPHEADER, lista);
   }
   r = performTmdb(c, url);
+  redeCurlLocal = r;
   anotarErro(r);
   if (r != 0) { char seg[120];
     printf("[rede] POST falhou em %s: %s\n", rede_url_publica(url, seg, sizeof seg), redeErroTxt);
