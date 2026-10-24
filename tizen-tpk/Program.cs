@@ -1022,11 +1022,21 @@ namespace NuvioTpk
             base.OnPause();
             if (recuperar)
             {
-                Etapa("note recovering startup pause" + Contagem());
-                try { NuiWindow.Instance.Show(); NuiWindow.Instance.Raise(); }
-                catch (Exception e) { Etapa("note startup raise failed " + e.GetType().Name + ": " + e.Message); }
-                SobeGl("startup pause");
-                OnResume();
+                // Firmware hides the main window and then GL after OnPause.
+                // Wait for both events; an immediate raise is undone by that hide.
+                var t = new NuiTimer(100);
+                t.Tick += (s, e) => {
+                    if (saindo || soltou || fim || erroNaTela || primeiraTecla ||
+                        !pausado || relogio.ElapsedMilliseconds >= 8000) return false;
+                    if (principalVisivel || (!JanelaUnica && glVisivel)) return true;
+                    Etapa("note recovering startup pause" + Contagem());
+                    try { NuiWindow.Instance.Show(); NuiWindow.Instance.Raise(); }
+                    catch (Exception x) { Etapa("note startup raise failed " + x.GetType().Name + ": " + x.Message); }
+                    SobeGl("startup pause");
+                    OnResume();
+                    return false;
+                };
+                t.Start();
             }
         }
 
