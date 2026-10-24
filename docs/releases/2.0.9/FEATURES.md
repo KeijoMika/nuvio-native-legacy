@@ -28,7 +28,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **Guest stars in this episode**: Open the player episode panel to see guest stars supplied by TMDB. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `26f616d6d`, `5f0913815`.
 
 
-- **Quick episode chips and saved polish**: Jump episodes with quick chips on a 3x2 paged grid, see a compact rating on saved cards and sweep fill, remote-style keycaps on hints, localized island copy, a Remove action on the panel card, and glass-outline focus accents. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `e4d901a1f`, `f933eaa3d`, `22c77e099`.
+- **Quick episode chips and saved polish**: Jump episodes with quick chips on a 3x2 paged grid, see a compact rating on saved cards and sweep fill, remote-style keycaps on hints, localized island copy, a Remove action on the panel card, and glass-outline focus accents. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-avaliar-ilha`, `agente/205-porta-perdidos`, `755a4aaf0`, `dc2f11f32`, `601ceec5b`, `f933eaa3d`, `22c77e099`.
 
 - **See all in the Library row**: Open the full Library from a See all card at the end of the Home row. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #672, `d316b4dbd`.
 
@@ -153,7 +153,7 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 
 - **Samsung graphics and packaging regression checks**: Check active-context texture uploads and Tizen 4 rate-limit object selection. Platforms: Samsung .tpk. Refs: `1b805d013`, `7790e8b4f`.
 
-- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Keep issue states and release coverage aligned with integration. Additional refs: `83f87edfb`, `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
@@ -170,6 +170,8 @@ Changes since `v2.0.8`, from local commit and branch snapshots. Integration does
 - **Regression tracing helpers**: Trace issue regressions from development tools without changing release behavior. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `234ed9374`.
 
 ## Pending (not integrated yet)
+
+- **Glass focus on hero buttons**: Focused Home hero buttons use a glass pill when Glass is enabled. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-heroglassfoco`, `e4d901a1f`.
 
 - **Hero size setting**: Choose how large the Home hero appears, and the reserved layout scales with your choice. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `agente/205-herotamanho`, `agente/205-porta-perdidos`, `4bada8211`.
 
