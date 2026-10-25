@@ -246,7 +246,7 @@ static void aplicarEstilo(void);
 // aqui porque o parse do sourceInfo, bem acima, e quem dispara o fio.
 // Mesmo limite de Stream.url: o pipeline recebe a URL original, e cortar a
 // copia faria somente a sonda MKV/ASS falhar (inclusive apos tentar de novo).
-static char  urlAtual[4096];
+static char  urlAtual[NV_MEDIA_URL_MAX];
 #if !defined(NV_TPK) && !defined(NV_ANDROID)   // .tpk e Android: video_url_atual vem do video_*.c do alvo
 const char *video_url_atual(void) { return urlAtual; }
 #endif
@@ -292,7 +292,7 @@ static NvDvSonda mkvRetry;
 static Uint32 mkvRetryEm;
 static unsigned mkvFioSessao;   // sessao em que o fio lerMkv atual nasceu
 static unsigned mkvRetrySessao;
-static char   mkvRetryUrl[4096];   // do tamanho de urlAtual: o strcmp nao pode falhar por corte
+static char   mkvRetryUrl[NV_MEDIA_URL_MAX];   // do tamanho de urlAtual: o strcmp nao pode falhar por corte
 static Uint32 seekRetryEm;   // != 0: reenviar seekAlvo quando o relogio passar disto
 static int    seekEnvAlvo, seekEnvAviso;
 static int    srcSeekable = -1, srcTrickable = -1;
@@ -1597,7 +1597,7 @@ static void chamarEm(const char *servico, const char *metodo,
 
 static void protegerScreensaver(void);
 static int modoLoad;   // video_modo_live_consumir do load em curso
-static char cargaBufferPadrao[8192];
+static char cargaBufferPadrao[NV_MEDIA_URL_MAX + 4096];
 static int bufferCustom;
 static int aoCarregar(LSHandle *h, LSMessage *m, void *u);
 static void repetirBufferPadrao(void *u) {
@@ -2645,13 +2645,8 @@ static void montarCarga(char *dst, size_t tam, const char *url, int modo,
 }
 
 static int tocarInterno(const char *url, int comDV) {
-  // 8 KB E NAO 2: a URL de fonte vai ate 4096 (Stream.url) e a do Pluto TV
-  // leva ~1,7 KB de query com JWT. Com 2048 o snprintf CORTAVA o JSON no meio
-  // e o uMS respondia `Method "load" for category "/" was not handled` — que
-  // se le como "o servico sumiu", nao como "mandei JSON pela metade". MEDIDO
-  // na C9 em 18/09 com dois canais do Pluto. A conferencia de tamanho logo
-  // abaixo transforma o proximo estouro em erro com nome.
-  char carga[8192];
+  // Complete supported URL plus load options/headers; reject overflow below.
+  char carga[NV_MEDIA_URL_MAX + 4096];
   unsigned minhaSessao;
   if (!ligado && !video_iniciar()) return 0;
   pararSessao();

@@ -361,7 +361,7 @@ static int confEstado;
 
 void fontevolta_definir_sonda(int (*s)(const char *, const char *)) { sonda = s; }
 
-typedef struct { unsigned geracao; char url[4096]; char cab[512]; } Pedido;
+typedef struct { unsigned geracao; char url[NV_MEDIA_URL_MAX]; char cab[512]; } Pedido;
 
 static void *conferir(void *u) {
   Pedido *p = u;

@@ -88,7 +88,7 @@ static Uint32 legSemCueMs, legBombeouEm;
 #define LEG_SEM_CUE_MS 60000u   // o teste encurta
 #endif
 
-static char urlAtual[4096];
+static char urlAtual[NV_MEDIA_URL_MAX];
 static char cabecalhos[2048];
 static volatile int ativo, pronto, falhou, terminou, tocando, largura, altura;
 // video_parar ate o proximo video_tocar: nada abre o conversor (convIniciar).
@@ -559,9 +559,9 @@ static struct {
 } cdn;
 static atomic_uint cdnGer, cdnFeitoGer;
 static pthread_mutex_t cdnTrava = PTHREAD_MUTEX_INITIALIZER;
-static char cdnFinal[4096];
+static char cdnFinal[NV_MEDIA_URL_MAX];
 static int cdnOk;
-typedef struct { char orig[4096]; char cab[2048]; unsigned ger; int arquivo, usenet, item, file; } CdnPedido;
+typedef struct { char orig[NV_MEDIA_URL_MAX]; char cab[2048]; unsigned ger; int arquivo, usenet, item, file; } CdnPedido;
 
 void video_tpk_cdn_arquivo(const char *url, int usenet, int item, int file) {
   if (!ativo || !url || strcmp(url, urlAtual) || item <= 0 || file < 0) return;

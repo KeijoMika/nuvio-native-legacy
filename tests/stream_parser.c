@@ -7,7 +7,43 @@
 #include <string.h>
 #include <time.h>
 static unsigned long agoraMs(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return t.tv_sec*1000ul+t.tv_nsec/1000000ul;}
-int main(void) {
+static void regression(int fresh) {
+  size_t len = fresh ? 5001 : (8u << 20);
+  char *url = malloc(len + 1), *json = malloc(len + 256), saved[9000];
+  assert(url && json);
+  Stream *v = NULL;
+  for (int i = 0; i < (fresh ? 2000 : 1); i++) {
+    memset(url, 'a', len + 1);
+    int head = snprintf(url, 64, "https://example.invalid/%08d/", i);
+    url[head] = 'a'; url[len] = 0;
+    snprintf(json, len + 256, "{\"streams\":[{\"url\":\"https://example.invalid/before\"},{\"url\":\"%s\"},{\"url\":\"https://example.invalid/after\"}]}", url);
+    int count = stream_extrair(json, "fixture", &v);
+    if (count != (fresh ? 3 : 2)) {
+      fprintf(stderr, "FAIL: %s iteration %d count=%d\n", fresh ? "discarded lists exhaust storage" : "rejected source drops alternatives", i, count);
+      exit(1);
+    }
+    assert(strstr(v[0].url, "/before") && strstr(v[count-1].url, "/after"));
+    if (fresh) {
+      assert(!strcmp(nv_media_url(v[1].url), url));
+      if (!i) snprintf(saved, sizeof saved, "%s", v[1].url);
+    }
+    free(v);
+  }
+  free(url); free(json);
+  if (fresh) assert(strlen(nv_media_url(saved)) == 5001);
+  puts(fresh ? "PASS: discarded lists and retained copy" : "PASS: rejected source preserves alternatives");
+}
+int main(int argc, char **argv) {
+  if (argc > 1) { regression(!strcmp(argv[1], "fresh")); return 0; }
+  regression(0); regression(1);
+  // The documented per-source bound is exact, with no truncation on rejection.
+  { char url[NV_MEDIA_URL_MAX + 1], copy[NV_MEDIA_URL_MAX];
+    memset(url, 'x', sizeof url); url[NV_MEDIA_URL_MAX - 1] = 0;
+    assert(nv_media_url_guardar(url, copy, sizeof copy));
+    assert(!strcmp(url, copy));
+    url[NV_MEDIA_URL_MAX - 1] = 'x'; url[NV_MEDIA_URL_MAX] = 0;
+    assert(!nv_media_url_guardar(url, copy, sizeof copy));
+  }
   char json[32000];size_t n=0;
   n+=snprintf(json+n,sizeof json-n,"{\"streams\":[");
   for(int i=0;i<100;i++) n+=snprintf(json+n,sizeof json-n,
@@ -18,7 +54,7 @@ int main(void) {
   assert(count==100 && v[99].mp4 && v[99].dolbyVision && v[99].altura==2160);
   assert(!v[0].dolbyVision);free(v);
   // Signed media URLs must survive parsing, value copies and transport expansion.
-  { char url[6000], copied[4096], probe[4096];
+  { char url[6000], copied[NV_MEDIA_URL_MAX], probe[NV_MEDIA_URL_MAX];
     const size_t lengths[] = {4094, 4095, 4096, 5001, 5999};
     for (size_t i = 0; i < sizeof lengths / sizeof *lengths; i++) {
       memset(url, 'a', sizeof url);
@@ -34,13 +70,8 @@ int main(void) {
       assert(nv_media_url_guardar(nv_media_url(copied), probe, sizeof probe));
       assert(!strcmp(nv_media_url(probe), url));
     }
-    size_t bytes = nv_media_bytes;
     assert(nv_media_url_guardar(url, copied, sizeof copied));
-    assert(nv_media_bytes == bytes); // repeated URLs share the immutable entry
-    nv_media_bytes = 8u << 20;
-    url[30] = 'b';
-    assert(!nv_media_url_guardar(url, copied, sizeof copied));
-    nv_media_bytes = bytes;
+    assert(!nv_media_url_guardar(url, probe, 4096));
     // Escaped JSON slashes decode before the URL is registered.
     snprintf(json, sizeof json, "{\"streams\":[{\"url\":\"https:\\/\\/example.invalid/%s\"}]}", url + 24);
     count=stream_extrair(json,"fixture",&v);

@@ -200,10 +200,10 @@ static int garantirPonte(JNIEnv *env) {
 // em tudo fora do BMP; cabecalhos e URLs raramente passam disso, mas o custo e
 // pequeno.
 static jstring paraJString(JNIEnv *env, const char *s) {
-  jchar buf[4096];
+  jchar buf[NV_MEDIA_URL_MAX];
   int n = 0;
   const unsigned char *p = (const unsigned char *)(s ? s : "");
-  while (*p && n < 4094) {
+  while (*p && n < NV_MEDIA_URL_MAX - 2) {
     unsigned c = *p++, extra = 0;
     if (c >= 0xF0) { c &= 0x07; extra = 3; }
     else if (c >= 0xE0) { c &= 0x0F; extra = 2; }
@@ -339,7 +339,7 @@ static SDL_mutex *travaLeg;
 static char legTexto[1024];
 static Uint32 legAte;
 
-static char urlAtual[4096];
+static char urlAtual[NV_MEDIA_URL_MAX];
 static char cabecalhos[2048];
 // ULTIMA JANELA ENTREGUE ao Kotlin (dedupe de reenvio; ver janelaSeMudou, la
 // embaixo, onde a regra vive junto das funcoes que enviam).

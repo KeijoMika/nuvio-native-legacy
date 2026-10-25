@@ -24,6 +24,7 @@
 //   3. Parado alguns segundos, eles somem sozinhos — mas nao enquanto o video
 //      esta pausado. Pausado sem controles o usuario fica olhando um quadro
 //      congelado sem saber o que houve.
+#include "mediaurl.h"
 #include "horafmt.h"
 #include "player.h"
 #include "legfontes.h"
@@ -322,7 +323,7 @@ static int quadroCapturado;
 // teto, segue sem reter (fechamento normal).
 #define PLR_SAIDA_ILHA_TETO_MS 220u
 static Uint32 saidaIlhaDesde;
-static char retidoConta[96], retidoUrl[4096];
+static char retidoConta[96], retidoUrl[NV_MEDIA_URL_MAX];
 // Botao em foco na fileira de transporte. Comeca no PLAY porque e a resposta
 // que nove de cada dez aberturas quer: o dedo para no centro e o OK decide.
 static int   botao = PLR_PLAY;
@@ -394,7 +395,7 @@ static struct {
   MkvassPreparo *mkv;
   Uint32 desde;
   double segundos, pct;
-  char url[4096], cab[2048], idioma[16], audio[16];
+  char url[NV_MEDIA_URL_MAX], cab[2048], idioma[16], audio[16];
 } preTitulo;
 static _Atomic unsigned preTituloTokens;
 #endif
@@ -412,7 +413,7 @@ static double monoSeg(void) {
   return (double)ts.tv_sec + ts.tv_nsec / 1e9;
 }
 // Prova de reproducao da fonte principal, independente de posicao/seek.
-static char fonteSessao[4096];
+static char fonteSessao[NV_MEDIA_URL_MAX];
 static double assistidoSeg, assistidoMono, assistidoPos;
 static double eofDesde = -1.0;
 static int assistidoAmostra;

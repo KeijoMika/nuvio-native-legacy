@@ -1063,7 +1063,7 @@ int rede_medir_vazao(const char *url, const char *const *cab, int segundos,
                      int *kbps, int nMax, RedeVazao *res,
                      char *final, unsigned tamFinal) {
   char *cabs;
-  char atual[4096];
+  char atual[NV_MEDIA_URL_MAX];
   unsigned long t0, janela, gasto = 0;
   long long pos = inicio > 0 ? inicio : 0, total = 0, pedaco = 1024LL * 1024LL;
   int nSeg = 0, primeiro = 1;
@@ -1078,7 +1078,7 @@ int rede_medir_vazao(const char *url, const char *const *cab, int segundos,
   while (gasto < janela && (maxBytes <= 0 || total < maxBytes)) {
     unsigned long a = redeAgoraMs(), dt;
     int st = 0, n, k, reps;
-    char fin[4096];
+    char fin[NV_MEDIA_URL_MAX];
     if (cancelado && *cancelado) { if (res) res->cancelado = 1; break; }
     fin[0] = 0;
     n = nv_http_contar(atual, cabs, (double)pos, (double)(pos + pedaco - 1), &st,
@@ -3856,7 +3856,7 @@ char *rede_baixar_trecho_st(const char *url, int segundos, long long ini, long l
   int st = 0, e = 0, pedacos = 0, cortes = 0;
   // `atual`: o endereco dos pedacos seguintes (o final, depois do primeiro:
   // sem pagar o redirecionamento de novo). `fin`: o final de cada resposta.
-  char atual[4096], fin[4096];
+  char atual[NV_MEDIA_URL_MAX], fin[NV_MEDIA_URL_MAX];
   if (tam) *tam = 0;
   if (status) *status = 0;
   if (erro) *erro = 0;

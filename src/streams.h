@@ -14,6 +14,7 @@
 #include <SDL2/SDL.h>
 #include <stdint.h>
 #include "streamfit.h"
+#include "mediaurl.h"
 #include "fontefalha.h"
 #include "fontefiltro.h"
 
@@ -33,8 +34,8 @@ typedef struct Stream {
   // silencio. O servidor entao respondia com um MP4 de aviso de 120s que TOCA
   // NORMALMENTE — o app parecia funcionar e mostrava o cartao de erro. Nao ha
   // erro para detectar nesse caminho, so o tamanho do campo.
-  // Long media URLs use process-local aliases (mediaurl.h), keeping value copies small.
-  char url[4096];
+  // Complete signed URL; storage follows the lifetime of each list/value copy.
+  char url[NV_MEDIA_URL_MAX];
   int  altura;          // 2160, 1080, 720...
   int  dolbyVision;
   int  dolbyAtmos;

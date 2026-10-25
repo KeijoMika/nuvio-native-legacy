@@ -1065,11 +1065,11 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
     if (strlen(s.url) == sizeof s.url - 1) {
       size_t tam = (size_t)(fim - p) + 1;
       char *url = malloc(tam);
-      if (!url) { free(v); return -1; }
+      if (!url) { p = js_prox(fim); continue; }
       js_texto_raiz_em(p, fim, "url", url, tam);
       int ok = !strncmp(url, "http", 4) && nv_media_url_guardar(url, s.url, sizeof s.url);
       free(url);
-      if (!ok) { free(v); return -1; }
+      if (!ok) { p = js_prox(fim); continue; }
     }
     { const char *bh = valorRaiz(p, fim, "behaviorHints");
       const char *hint = bh ? valorRaiz(bh, fim, "notWebReady") : NULL;
@@ -1095,7 +1095,7 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
       if (!js_texto(p, fim, "infoHash", s.hashTorrent, sizeof s.hashTorrent) && cr)
         js_texto(cr, fim, "infoHash", s.hashTorrent, sizeof s.hashTorrent);
     }
-    // URL is complete or an alias; without URL/hash there is nothing to play.
+    // Without a complete URL/hash there is nothing to play.
     if (s.infoHash[0] || !strncmp(s.url, "http", 4)) {
       js_texto_raiz_em(p, fim, "name", s.rotulo, sizeof s.rotulo);
       // So o name da PROPRIA fonte, inteiro, conta para o FHD (#402): o
