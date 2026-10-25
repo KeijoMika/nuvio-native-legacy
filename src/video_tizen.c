@@ -82,6 +82,7 @@
 #if defined(__EMSCRIPTEN__) && !defined(NV_VIDAA)
 
 #include "video.h"
+#include "mediaurl.h"
 #include "avroi.h"
 #include "video_reconexao.h"
 #include "linguas.h"
@@ -800,6 +801,7 @@ static void logarErro(const char *onde);
 static double avChamar(const char *cmd, const char *txt,
                        double a, double b, double c, double d,
                        char *dst, int dstTam) {
+  if (!strcmp(cmd, "abrir")) txt = nv_media_url(txt);
   Pedido p;
   p.cmd = cmd; p.txt = txt;
   p.a = a; p.b = b; p.c = c; p.d = d;

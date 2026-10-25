@@ -1,5 +1,6 @@
 #include "app_id.h"
 #include "video.h"
+#include "mediaurl.h"
 #include "webosver.h"
 #include "audioinfo.h"
 #include "esmaecer.h"
@@ -2754,12 +2755,12 @@ static int tocarInterno(const char *url, int comDV) {
   if(ownBuffer)loadUrl=bufferedUrl;
   { char hh[768];
     montarHttpHeader(hh, sizeof hh);
-    montarCarga(carga, sizeof carga, loadUrl, modoLoad, dolby, hh,
+    montarCarga(carga, sizeof carga, nv_media_url(loadUrl), modoLoad, dolby, hh,
                 expWin[0] ? expWin : "window_id_dummy",
                 ownBuffer ? 0 : ajustes_buffer_preset(), memlog_livre_mb());
     bufferCustom = strstr(carga, "\"userBufferCtrl\":true") != NULL;
     if (bufferCustom)
-      montarCarga(cargaBufferPadrao, sizeof cargaBufferPadrao, loadUrl, modoLoad,
+      montarCarga(cargaBufferPadrao, sizeof cargaBufferPadrao, nv_media_url(loadUrl), modoLoad,
                   dolby, hh, expWin[0] ? expWin : "window_id_dummy", 0, 0);
     if (strlen(carga) >= sizeof carga - 1) {
       printf("[video] carga do load nao coube em %zu bytes (URL de %zu): recusando\n",

@@ -20,6 +20,7 @@
 // "[video] tpk: first subtitle cue ..." ou "... no subtitle cue in 60 s ...".
 #ifdef NV_TPK
 #include "video.h"
+#include "mediaurl.h"
 #include "video_reconexao.h"
 #include "idioma.h"
 #include "linguas.h"
@@ -435,7 +436,7 @@ static void abrirHost(const char *url, const char *cab) {
     snprintf(hostCab, sizeof hostCab, "%s", cab ? cab : "");
   }
   if (mfEsperarAntes(url, cab)) return;   // mfBombear abre quando a sonda responder
-  hAbrir(url, cab);
+  hAbrir(nv_media_url(url), cab);
 }
 
 __attribute__((visibility("default")))

@@ -1,5 +1,6 @@
 // Parser isolado: permite ASan sem carregar o inicializador de SDL do macOS.
 #include "streams.h"
+#include "mediaurl.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,36 @@ int main(void) {
   Stream *v=NULL;int count=stream_extrair(json,"fixture",&v);
   assert(count==100 && v[99].mp4 && v[99].dolbyVision && v[99].altura==2160);
   assert(!v[0].dolbyVision);free(v);
+  // Signed media URLs must survive parsing, value copies and transport expansion.
+  { char url[6000], copied[4096], probe[4096];
+    const size_t lengths[] = {4094, 4095, 4096, 5001, 5999};
+    for (size_t i = 0; i < sizeof lengths / sizeof *lengths; i++) {
+      memset(url, 'a', sizeof url);
+      memcpy(url, "https://example.invalid/", 24);
+      const char *tail = "/manifest.json/?token=exact%2F";
+      strcpy(url + lengths[i] - strlen(tail), tail);
+      snprintf(json, sizeof json, "{\"streams\":[{\"url\":\"%s\",\"name\":\"4K\"}]}", url);
+      count=stream_extrair(json,"fixture",&v);
+      assert(count==1 && v[0].altura==2160);
+      snprintf(copied, sizeof copied, "%s", v[0].url);
+      free(v);
+      assert(!strcmp(nv_media_url(copied), url));
+      assert(nv_media_url_guardar(nv_media_url(copied), probe, sizeof probe));
+      assert(!strcmp(nv_media_url(probe), url));
+    }
+    size_t bytes = nv_media_bytes;
+    assert(nv_media_url_guardar(url, copied, sizeof copied));
+    assert(nv_media_bytes == bytes); // repeated URLs share the immutable entry
+    nv_media_bytes = 8u << 20;
+    url[30] = 'b';
+    assert(!nv_media_url_guardar(url, copied, sizeof copied));
+    nv_media_bytes = bytes;
+    // Escaped JSON slashes decode before the URL is registered.
+    snprintf(json, sizeof json, "{\"streams\":[{\"url\":\"https:\\/\\/example.invalid/%s\"}]}", url + 24);
+    count=stream_extrair(json,"fixture",&v);
+    assert(count==1 && !strcmp(nv_media_url(v[0].url), url));
+    free(v);
+  }
   count=stream_extrair("{\"streams\":[]}","fixture",&v);assert(count==0);free(v);
   count=stream_extrair("{\"streams\":["
     "{\"infoHash\":\"abc\",\"fileIdx\":1e99},"

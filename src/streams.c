@@ -1,4 +1,5 @@
 #include "streams.h"
+#include "mediaurl.h"
 #include "plrui.h"
 #include "ondever.h"
 #include "naovideo.h"
@@ -1507,6 +1508,7 @@ int  stream_addon_no_escopo(const char *nome) {
 // arquivo ainda nao esta em cache no Real-Debrid. Os dois sao MP4 validos de
 // ~120s que TOCAM NORMALMENTE — nao ha erro para detectar, so o endereco.
 static int enderecoDeAviso(const char *u) {
+  u = nv_media_url(u);
   return strstr(u, "downloading.mp4") || strstr(u, "/slate") ||
          strstr(u, "slate.mp4") || strstr(u, "slate.m3u8") ? 1 : 0;
 }
@@ -1555,6 +1557,7 @@ static int playlistVazia(const char *url, const char *cabecalhos) {
   char copia[512];
   long n = 0;
   int vazia, status = 0, nc = 0;
+  url = nv_media_url(url);
   if (!strstr(url, ".m3u8") && !strstr(url, "m3u8")) return 0;
   // Os cabecalhos que o addon exigiu (behaviorHints.proxyHeaders). Sem eles um
   // CDN que confere Referer devolve 403 — medido: 403 sem, 200 com.

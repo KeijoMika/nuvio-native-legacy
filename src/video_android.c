@@ -29,6 +29,7 @@
 #include "marco.h"
 #include "streams.h"
 #include "video.h"
+#include "mediaurl.h"
 #include "ajustes.h"
 #include "xtream.h"
 #include "capmkv.h"
@@ -279,7 +280,7 @@ static int precarregarVideo(const char *url, const char *cab, double segundos,
                ? (int)(segundos * 1000.0) : 0;
   fracao = !inicioMs && isfinite(pct) && pct > 0.0 && pct < 100.0
                ? (int)(pct * 100.0 + 0.5) : 0;
-  u = paraJString(env, url);
+  u = paraJString(env, nv_media_url(url));
   c = u && !(*env)->ExceptionCheck(env) ? paraJString(env, cab ? cab : "") : NULL;
   a = c && !(*env)->ExceptionCheck(env) ? paraJString(env, idiomaAudio ? idiomaAudio : "") : NULL;
   if (!u || !c || !a) {
@@ -836,7 +837,7 @@ static int abrirSessao(int inicioMs, int fracao) {
     }
   }
   {
-    jstring u = paraJString(env, urlAtual);
+    jstring u = paraJString(env, nv_media_url(urlAtual));
     jstring c = u && !(*env)->ExceptionCheck(env) ? paraJString(env, cabecalhos) : NULL;
     if (!u || !c) {
       if (u) (*env)->DeleteLocalRef(env, u);
