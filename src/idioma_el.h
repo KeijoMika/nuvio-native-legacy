@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Χωρίς ενεργές τις Προσαρμοσμένες αφίσες, η αφίσα είναι ήδη αυτή που στέλνει το πρόσθετο. Διάλεξε υπηρεσία για να αποφασίσεις ποια υπερισχύει."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Χωρίς τη σειρά χρωμάτων; Ρυθμίσεις › About and help ›"),
   T("Sem agrupar", "Χωρίς ομαδοποίηση"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Δεν υπάρχει ενεργή αναβάθμιση ανάλυσης σε αυτή τη συνεδρία. Επιλέξτε 720p ή 1080p κάτω από την έξοδο της TV και επανεκκινήστε την εφαρμογή. Το βίντεο δεν αλλάζει."),
   T("Sem arte", "Χωρίς εικαστικά"),
   T("Sem artes para comparar: nada foi aplicado", "Δεν υπάρχουν εικαστικά για σύγκριση: δεν εφαρμόστηκε τίποτα"),
   T("Sem atividade neste período", "Καμία δραστηριότητα σε αυτή την περίοδο"),

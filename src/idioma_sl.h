@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Ko so Lastni plakati izklopljeni, je plakat že tisti iz dodatka. Izberite storitev, da odločite, kateri ima prednost."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Ni vrstice barv? Nastavitve › About and help ›"),
   T("Sem agrupar", "Brez združevanja"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "V tej seji ni aktivnega povečanja. Izberite 720p ali 1080p pod izhodno ločljivostjo TV in znova zaženite aplikacijo. Video ostane nespremenjen."),
   T("Sem arte", "Brez ilustracij"),
   T("Sem artes para comparar: nada foi aplicado", "Ni ilustracij za primerjavo: nič ni bilo uporabljeno"),
   T("Sem atividade neste período", "V tem obdobju ni dejavnosti"),

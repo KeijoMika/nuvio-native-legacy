@@ -2249,6 +2249,8 @@ int main(int argc, char **argv) {
     video_tpk_zoom_roi_definir(ajustes_trailer_zoom_tpk());   // #241: Ajustes > Trailers
 #endif
     texto_sistema_mic_modo(ajustes_mic_busca());              // Ajustes > Tela inicial > Barra lateral
+    gpun_ampliar_app(resolucaoDaTv() && ajustes_ampliar_app() &&
+                     (ajustes_720p() || ajustes_1080p()));
     gpun_quadro_inicio();
     glClearColor(NV_COR_FUNDO_R, NV_COR_FUNDO_G, NV_COR_FUNDO_B, 1.0f);
     if (!nvPrimeiroQuadroFeito) arranque_etapa("primeiro glClear");

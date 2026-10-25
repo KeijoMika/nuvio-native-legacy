@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Jika Poster kustom tidak aktif, posternya sudah yang dikirim addon. Pilih layanan untuk menentukan mana yang dipakai."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Tidak ada baris warna? Pengaturan › About and help ›"),
   T("Sem agrupar", "Tanpa pengelompokan"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Tidak ada peningkatan resolusi aktif dalam sesi ini. Pilih 720p atau 1080p di bawah keluaran TV dan mulai ulang aplikasi. Video tidak berubah."),
   T("Sem arte", "Tanpa gambar"),
   T("Sem artes para comparar: nada foi aplicado", "Tidak ada gambar untuk dibandingkan: tidak ada yang diterapkan"),
   T("Sem atividade neste período", "Tidak ada aktivitas pada periode ini"),

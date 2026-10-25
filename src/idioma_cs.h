@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Když jsou Vlastní plakáty vypnuté, plakát je už ten z doplňku. Vyberte službu a rozhodněte, který má přednost."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Bez řady barev? Nastavení › About and help ›"),
   T("Sem agrupar", "Bez seskupení"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "V této relaci není aktivní zvětšování. Vyberte 720p nebo 1080p pod výstupním rozlišením TV a restartujte aplikaci. Video se nemění."),
   T("Sem arte", "Bez artworku"),
   T("Sem artes para comparar: nada foi aplicado", "Žádný artwork k porovnání: nic nebylo použito"),
   T("Sem atividade neste período", "V tomto období žádná aktivita"),
