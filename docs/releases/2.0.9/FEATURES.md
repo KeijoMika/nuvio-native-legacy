@@ -2,7 +2,7 @@
 
 Changes since `v2.0.8`, from local commit and branch snapshots. Integration does not confirm installation on a TV. English follows the owner’s current language override.
 
-Tracking refreshed against the supplied snapshot through `8fa52c05e` (previous tracking commit `8ae0dc15f`); all listed non-merge commits remain covered. Android build and installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
+Tracking refreshed against the supplied snapshot through `2f7c7928c` (previous tracking commit `8fa52c05e`); all listed non-merge commits remain covered. Android build and installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
 
 
 ## Highlights
@@ -161,7 +161,7 @@ Tracking refreshed against the supplied snapshot through `8fa52c05e` (previous t
 
 - **Samsung graphics and packaging regression checks**: Check active-context texture uploads and Tizen 4 rate-limit object selection. Platforms: Samsung .tpk. Refs: `1b805d013`, `7790e8b4f`.
 
-- **Tracking refresh**: Additional refs: `f755a7aab`. Keep issue states and release coverage aligned with integration. Additional refs: `8fa52c05e`, `8ae0dc15f`. Additional ref: `95328a039`. Additional ref: `4465c41ed`. Additional ref: `43df4cdc9`. Additional ref: `f02196028`. Additional ref: `56dfcfdf6`. Additional ref: `19b0bf6b7`. Additional ref: `9780dd357`. Additional refs: `f07f0e64a`, `bf7c14f3b`, `bf890d535`. Additional refs: `683dc0b0c`. Additional refs: `7417183a8`, `21693a20c`. Additional refs: `83f87edfb`, `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
+- **Tracking refresh**: Additional refs: `2f7c7928c`, `f755a7aab`. Keep issue states and release coverage aligned with integration. Additional refs: `8fa52c05e`, `8ae0dc15f`. Additional ref: `95328a039`. Additional ref: `4465c41ed`. Additional ref: `43df4cdc9`. Additional ref: `f02196028`. Additional ref: `56dfcfdf6`. Additional ref: `19b0bf6b7`. Additional ref: `9780dd357`. Additional refs: `f07f0e64a`, `bf7c14f3b`, `bf890d535`. Additional refs: `683dc0b0c`. Additional refs: `7417183a8`, `21693a20c`. Additional refs: `83f87edfb`, `a99d9c0c9`. Additional refs: `dc8592948`, `31c4e71a3`, `76f31a538`, `5d9c3422e`, `fb80ad4e3`, `55cd43a20`. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `a4412a42a`, `c3ff78fe5`, `5eac48ad4`, `23121f28b`, `72cf607d6`, `0ce56918b`, `094b8f842`, `03932481c`, `6d0dee52d`, `584747b9b`.
 
 - **Stream prefix regression snapshots**: Preserve integration stream-prefix fixtures for subsequent validation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `1b5766690`.
 
