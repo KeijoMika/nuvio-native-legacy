@@ -6143,7 +6143,8 @@ static void desenhaElenco(float x, float y, int c, float f, float a) {
   if (!ajustes_vidro() && epApple() && f > .005f) {
     float top = y + NV_DETP_EL_AVATAR + NV_DETP_EL_NOME_DY - 8;
     GfxRect info = { x - 12, top, NV_DETP_EL_W + 24, 76 };
-    gfx_cor(info, 18.0f / info.h, .19f, .21f, .23f, .6f * f * a);
+    if (!gfx_foco_placa(info, 18.0f / info.h, f, a))
+      gfx_cor(info, 18.0f / info.h, .19f, .21f, .23f, .6f * f * a);
   }
   // B2: the tile edge sits on the side margin, flush with the row header.
   cartaoVidro(elencoCartao(x, y), f, a);
@@ -6473,7 +6474,8 @@ static void desenhaRelacionados(float x, float y, float a, int primeiro, int lim
       if (!ajustes_vidro()) {
         float h = 12.0f + 22.0f + (ano[0] ? 6.0f + 18.0f : 0.0f) + 16.0f;
         GfxRect legend = { cx - 10, y + REL_CARD_H + 4, REL_CARD_W + 20, h };
-        gfx_cor(legend, 16.0f / legend.h, .19f, .21f, .23f, .64f * a);
+        if (!gfx_foco_placa(legend, 16.0f / legend.h, 1, a))
+          gfx_cor(legend, 16.0f / legend.h, .19f, .21f, .23f, .64f * a);
       }
       if (ajustes_borda_foco()) gfx_anel(r,raio,1.5f,1,1,1,.18f*a);
     }

@@ -1419,6 +1419,12 @@ static int pilula(GfxRect r, float raio, float f, int escolhida) {
 // a tinta principal do texto (clara nos dois estados).
 static int superficieLinha(GfxRect r, float raio, float f, float a) {
   float v = anim_clamp(f, 0.0f, 1.0f);
+  if (ajustes_foco_acento()) {
+    if (ajustes_vidro()) gfx_cor(r, raio, 1, 1, 1, .05f * a);
+    else gfx_cor(r, raio, .10f, .11f, .13f, a);
+    gfx_foco_placa(r, raio, v, a);
+    return v > .5f ? bibTinta() : 235;
+  }
   if (ajustes_vidro()) gfx_cor(r, raio, 1, 1, 1, (.05f + .07f * v) * a);
   else {
     gfx_cor(r, raio, 0.10f, 0.11f, 0.13f, a);
