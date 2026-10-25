@@ -2,7 +2,7 @@
 
 Changes since `v2.0.8`, from local commit and branch snapshots. Integration does not confirm installation on a TV. English follows the owner’s current language override.
 
-Tracking refreshed against the supplied snapshot through `6b86b60fe` (previous tracking commit `cf141198f`); all listed non-merge commits remain covered. Android build and installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
+Tracking refreshed against the supplied snapshot through `940288b03`; all listed non-merge commits remain covered. Android build and installation succeeded at `cb7ece972`; C9 installation failed, leaving the installed TV revision unconfirmed. See the keeper state report for subsequent merges.
 
 
 ## Highlights
@@ -35,6 +35,16 @@ Tracking refreshed against the supplied snapshot through `6b86b60fe` (previous t
 - **See all in the Library row**: Open the full Library from a See all card at the end of the Home row. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #672, `d316b4dbd`.
 
 ## Fixes
+
+- **Reach the clock with Up**: Navigate from Home rows to the clock and resume island using Up. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #547, @ghbarker, merge `f895747c5`.
+
+- **Consistent alternate episode numbering**: Keep watched state, playback and scrobbling tied to the canonical episode while preserving the chosen episode order and retry identity. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: PR #576, `e2d98f5f0`, `aa4095866`, merge `940288b03`.
+
+- **Subtitle filename fallbacks**: Recover subtitle requests when an add-on supplies an alternative filename. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #606, `c9ae2eb50`, merge `610487f8a`.
+
+- **Library navigation to the top menu**: Press Up to reach the Library top menu without losing navigation. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `add7912d2`.
+
+- **Accurate upscaling availability**: See whether upscaling is available in the current session and why it is disabled. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: owner request, `85b0ac386`, merge `4355ba714`.
 
 - **Retryable episode metadata**: Missing or invalid Cinemeta metadata remains retryable, while confirmed absence is cached for 24 hours to avoid repeated requests. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #356, `5058b9870`, `aab25a275`, `a6b791713`, `a4fec2800`, `19ef559f3`.
 
@@ -145,6 +155,8 @@ Tracking refreshed against the supplied snapshot through `6b86b60fe` (previous t
 
 ## Community
 
+- **Navigation contribution from @ghbarker**: Reach the clock and resume island through the contributed remote navigation changes. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: @ghbarker, PR #547, merge `f895747c5`.
+
 - **Samsung playback and artwork contributions**: Keep subtitle selection across seeks and restore artwork and older-TV package compatibility with contributions from @KeijoMika. Platforms: Samsung .tpk. Refs: @KeijoMika, PR #685, PR #686, PR #688, `089f694b9`, `fa3c6a936`, `00192c3fd`.
 
 - **Series identity contribution**: Enjoy corrected series metadata from @Vidhin05, with integration follow-up limiting repairs to episode evidence. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: @Vidhin05, PR #654, `42b9719c7`, `63ff7c56f`.
@@ -156,6 +168,10 @@ Tracking refreshed against the supplied snapshot through `6b86b60fe` (previous t
 - **Player-format contribution**: Customize player format and audio-language presentation with the contribution from @I0-oX. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: @I0-oX, PR #669, `e76811f15`.
 
 ## Internal
+
+- **Latest tracking snapshot**: Keep issue tracking aligned with the integration snapshot. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `5404c634b`.
+
+- **Episode and playback regression coverage**: Validate alternate numbering, topology replacement, retries, canonical scrobbles and isolated Home refresh fixtures. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: `6537b2a36`, `be51fbfd0`, `587b8774b`, `f3ccc5b23`.
 
 - **Accurate playback diagnostics**: Exclude suspended time from frame measurements and record each VOD stall once so diagnostic reports retain useful evidence. Platforms: webOS, Android, Samsung .tpk, WASM. Refs: #681, `97314076a`, `3ce9e80d2`.
 
