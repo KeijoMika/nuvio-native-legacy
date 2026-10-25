@@ -3,6 +3,9 @@
 #include "../src/streams.c"
 #include "stub_player_source_actions.h"
 
+int ajustes_fonte_prioridade(void) { return 0; }
+int fontefalha_addon_ao_vivo(const char *key) { (void)key; return 0; }
+int xtream_url_limitada(const char *url) { (void)url; return 0; }
 static int modo;
 static int negativa, consultas;
 int debrid_resolver_cache(const char *h, int f, char *u, unsigned t, int *fora) {
@@ -30,6 +33,14 @@ int ajustes_fonte_ordem_addon(void) { return modo; }
 int ajustes_fonte_texto_addon(void) { return 0; }
 int debrid_ativo(void) { return 1; }
 int p2p_ativo(void) { return 0; }
+const char *ajustes_p2p_url(void) { return ""; }
+float gfx_escala_ui(void) { return 1; }
+float txt_bloco(TxtEstilo e, const char *s, int r, int g, int b,
+                float x, float y, float w, float leading, float alpha, int max) {
+  (void)e; (void)s; (void)r; (void)g; (void)b;
+  (void)x; (void)y; (void)w; (void)leading; (void)alpha; (void)max;
+  abort(); // This ordering fixture has no discarded-torrent footer to measure.
+}
 int selospacote_ativo(void) { return -1; }
 unsigned selospacote_versao(void) { return 1; }
 int selospacote_casar(const char *const *p, int q, unsigned short *o, int m) {

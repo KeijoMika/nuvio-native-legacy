@@ -4,6 +4,7 @@
 // from the public response with provenance in fixtures/episode_identity_512/.
 #include "trakt.h"
 #include "proximo.h"
+#include "rede.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,12 +62,23 @@ char *rede_baixar(const char *url, int s) {
 char *rede_baixar_st(const char *u, int s, const char *const *c, int *st) {
   (void)u; (void)s; (void)c; if (st) *st = 200; return strdup("[]");
 }
+char *rede_baixar_st_retry(const char *url, int s, const char *const *cab, int *st, int *retry) {
+  char *body = rede_baixar_com(url, s, cab);
+  *st = body ? 200 : 0; *retry = 0; return body;
+}
+int rede_pedir(const RedePedido *pedido, RedeResposta *resposta) {
+  (void)pedido; resposta->erro = REDE_INDISPONIVEL; return 0;
+}
+void rede_resposta_limpar(RedeResposta *resposta) {
+  free(resposta->corpo); free(resposta->cabecalhos);
+}
 char *rede_apagar(const char *u, int s, const char *const *c, int *st) {
   (void)s; (void)c;
   assert(strstr(u, "/sync/playback/477001"));
   apagados++; if (st) *st = 204; return strdup("");
 }
 void rede_avisar_401(void (*cb)(const char *)) { (void)cb; }
+int simkl_e_a_seguir(const char *id) { (void)id; return 0; }
 int cwo_conta_a_seguir(const char *id) { (void)id; return 0; }
 void cwo_conta_trocar(const char *a, const char *b) { (void)a; (void)b; }
 void cwo_marcar_estreia(const char *id, long long ms) { (void)id; (void)ms; }

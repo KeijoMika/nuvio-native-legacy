@@ -59,7 +59,7 @@ static int arqDiscoTem(const char *dst);
 #define NV_TEX_STALE_FRAMES 8
 #define NV_TEX_STALE_MS 200
 #ifndef NV_TEX_UPLOAD_BUDGET_MS
-#define NV_TEX_UPLOAD_BUDGET_MS 5.0
+#define NV_TEX_UPLOAD_BUDGET_MS (cachePerfil().uploadMs)
 #endif
 // Telemetria curta de uma sessao: so registra esperas que ja sao visiveis para
 // quem navega. O identificador e FNV do caminho; nenhuma URL entra no trace.
@@ -74,12 +74,17 @@ typedef struct {
 } TexFetchTrace;
 // Teto de decodificacao das artes de CARD; a nota que justifica o 640 esta
 // mais abaixo, junto do teto do heroi.
+#ifdef NV_TIZEN3_LITE
+#define NV_TEX_LARG_MAX 320
+#define NV_TEX_HERO_LARG_MAX 640
+#else
 #define NV_TEX_LARG_MAX 640
 // Teto do heroi; a nota com as medidas (LG 1920, Tizen 1280) esta mais abaixo.
 #ifdef __EMSCRIPTEN__
 #define NV_TEX_HERO_LARG_MAX 1280
 #else
 #define NV_TEX_HERO_LARG_MAX 1920
+#endif
 #endif
 
 // FALHOU e um estado de verdade, nao a ausencia de um. Sem ele, um caminho que
@@ -101,6 +106,14 @@ typedef struct {
   // hero era decodificado com metade da resolucao e esticado para 1920 na tela,
   // que e o borrao que o dono viu.
   int limite;
+  // Ja foi pedido abaixo de NV_TEX_MIP_LARG, isto e, desenhado como CARD. A
+  // promocao a heroi refaz a textura a 1280/1920; sem piramide, o card que
+  // divide o arquivo com o heroi trocava de cara ao foco (o "pisca nas artes"
+  // da C9, tests/pisca3_shot.sh arte-promo).
+  int card;
+  // A piramide da textura ATUAL, decidida no envio: a devolucao dos bytes usa
+  // ela, e nao uma decisao refeita depois que `card` mudou.
+  int mip;
   // O teto com que a TEXTURA ATUAL foi de fato decodificada, e a largura da
   // FONTE que a produziu.
   //
@@ -141,6 +154,7 @@ typedef struct {
   // 1 = TODO pixel tem alfa 255 (conferido inteiro na thread de decode); 0 =
   // ha transparencia ou nao se sabe. Ver tex_opaca.
   int opaca;
+  unsigned char cores[16*16*4]; // Spatial cover samples, 1 KiB per cache slot.
   CorvivaPaleta paleta; // Ja extraida no decode; retratos publicam sob demanda.
   // Quando tentar de novo (ticks) e quantas vezes ja falhou. Ver o enum Estado.
   Uint32 tentarEm;
@@ -187,6 +201,8 @@ typedef struct {
   // mais. Ver tex_obter_passageira e a nota em despejar().
   int passageiro;
   int lookahead; // pedido especulativo limitado; nao expira antes do decode
+  int fileiraDistancia;
+  unsigned long fileiraQuadro;
   // OS BYTES BAIXADOS, no lugar do arquivo de cache (20/09/2026, #72). No
   // Emscripten toda chamada de arquivo feita por um pthread e PROXIADA ao fio
   // principal — fopen/fwrite/rename/fread/remove de cada arte eram viagens
@@ -282,6 +298,22 @@ static int rodando = 0;
 // corruption" dentro do SDL: era falta de memoria, nao bug de ponteiro.
 static long bytesUsados = 0;
 static long orcamento = 0;
+static long decodeReservado;
+static SDL_threadID uploadThread;
+static SDL_GLContext uploadContext;
+static long orcMemTotal;
+static PtvCache cachePerfil(void) { return ptv_cache(ptv_plataforma(), orcMemTotal); }
+
+/* Reserve before decode, including codec output, conversion and CPU mips.
+ * Completed surfaces remain charged until the frame pump releases them. */
+static int decodeCabe(void) {
+  long bytes = decodeReservado;
+  for (int i = 0; i < nMax; i++)
+    for (SDL_Surface *s = itens[i].sup; s; s = s->userdata)
+      bytes += (long)s->pitch * s->h;
+  PtvCache c = cachePerfil();
+  return bytes + (long)c.reservaDecodeMb * 1048576 <= (long)c.decodeMb * 1048576;
+}
 // Pasta do cache de download. Declarada aqui e nao mais abaixo porque
 // noCache() precisa dela.
 static char dirCache[512];
@@ -335,10 +367,8 @@ __attribute__((unused)) static void publicarCacheDisco(void) {
 // que demora. Mas o numero segue sem medicao, e por isso o que foi consertado
 // aqui foi a POLITICA, que estava errada independente do numero: ver a nota em
 // podarCacheDisco.
-#ifdef __EMSCRIPTEN__
-#define NV_CACHE_DISCO_MAX (48L * 1024L * 1024L)
-#else
-#define NV_CACHE_DISCO_MAX (512L * 1024L * 1024L)
+#define NV_CACHE_DISCO_MAX ((long)cachePerfil().discoMb * 1048576)
+#ifndef __EMSCRIPTEN__
 #define NV_CACHE_DISCO_RESERVA (128UL * 1024UL * 1024UL)
 // TETO PROPORCIONAL AO ESPACO, no LG (22/09/2026). 512 MB fixos era mais da
 // metade do que a C9 tinha: 497 MB de arte em 3309 arquivos numa particao de
@@ -413,8 +443,9 @@ static long bytesTexturaMip(int w, int h, int comPiramide) {
 }
 
 // Mesma decisao que o envio toma, para a conta e a cobranca nao divergirem.
-static int temPiramide(int w, int h) {
-  if (w >= 1024) return 0;
+#define NV_TEX_MIP_LARG 1024
+static int temPiramide(int w, int h, int card) {
+  if (w >= NV_TEX_MIP_LARG && !card) return 0;
 #ifdef __EMSCRIPTEN__
   { int lp = (w > 0) && ((w & (w - 1)) == 0);
     int ap = (h > 0) && ((h & (h - 1)) == 0);
@@ -423,8 +454,8 @@ static int temPiramide(int w, int h) {
   return 1;
 }
 
-static long bytesTextura(int w, int h) {
-  return bytesTexturaMip(w, h, temPiramide(w, h));
+static long bytesTextura(const Item *it) {
+  return bytesTexturaMip(it->w, it->h, it->mip);
 }
 
 // DUAS FILAS, e a separacao e o conserto.
@@ -456,12 +487,14 @@ static SDL_cond *condLivre;
 // vez por item retirado, nao por quadro. Reordenar a fila inteira custaria o
 // mesmo e perderia a ordem de chegada dos demais, que e o que faz a fileira
 // aparecer da esquerda para a direita em vez de embaralhada.
+static int quente(const Item *it);
 static int tirarFila(int *f, int *ini, int fim) {
-  int p = *ini, achou = -1, idx, nivel = 0;
+  int p = *ini, achou = -1, idx, nivel = -1;
   // NIVEL 2 = LOGO DE TITULO, 1 = tela cheia, 0 = o resto. O primeiro de maior
   // nivel vence; empate fica na ordem de chegada.
   while (p != fim) {
-    if (itens[f[p]].urgente > nivel) { achou = p; nivel = itens[f[p]].urgente; }
+    int prioridade = quente(&itens[f[p]]) * 3 + itens[f[p]].urgente;
+    if (prioridade > nivel) { achou = p; nivel = prioridade; }
     p = (p + 1) % MAX_FILA;
   }
   if (achou < 0) {
@@ -618,17 +651,26 @@ static void amostrar(void);
 // no cache, e o LRU sabe despejar; jogar fora custa o decode inteiro outra vez.
 static int pedidoObsoleto(const Item *it) {
   Uint32 agora;
-  if (!it->ultimoPedido || !it->ultimoQuadro) return 0;
+  // Only ultimoQuadro is sentinel: SDL_GetTicks may return 0 at startup, and a
+  // real request at tick zero was treated as never requested (flaky abandon).
+  if (!it->ultimoQuadro) return 0;
   if (it->sup || it->lookahead) return 0;   /* ja decodificado: nao se joga fora o que custou */
   agora = SDL_GetTicks();
   return quadroAtual > it->ultimoQuadro + NV_TEX_STALE_FRAMES &&
-         agora - it->ultimoPedido >= NV_TEX_STALE_MS;
+         (it->ultimoPedido > agora ||
+          agora - it->ultimoPedido >= NV_TEX_STALE_MS);
 }
 
 static void podar(void);
+static void soltarCpu(int falhas);
 static int pressaoAtiva(void);
+static int pressaoSevera(void);
 static volatile int pressaoPlay = 100;   // tex_pressao_reproducao (abaixo)
-static long orcMemTotal;                 // RAM medida (definida perto de orcamentoMB)
+static int pressaoPlayLigada;
+// webOS/.tpk: faixa do piso de reproducao, alimentada pelo relatorio de 3 s
+// (tex_memoria_livre). 100 = memoria de sobra, sem piso. O Android nao a usa:
+// la o piso e fixo por MemTotal (tex_pressao_play_pct).
+static volatile int pressaoPlayMin = 100;
 
 void tex_novo_quadro(void) {
   tex_n_busca = 0;
@@ -653,6 +695,14 @@ void tex_novo_quadro(void) {
   }
   // PRESSAO DE MEMORIA (tex_pressao_memoria): o aviso chega de outro fio, que
   // nao tem contexto GL e nao pode despejar textura. Quem despeja e este quadro.
+  // soltarCpu so no patamar DURO (<=25%%, <150 MB livres): na faixa de 50%%
+  // (150-300 MB, onde a G4 fica por minutos) matar todo DECODIFICADO por
+  // quadro punha a arte do OSD/posplay num laco decode->mata->decode pela
+  // janela inteira — a poda a 50%% ja basta ali (rev #415).
+  if (pressaoSevera()) soltarCpu(0);
+  // O piso de reproducao (pressaoPlay) so despeja via poda: soltarCpu aqui
+  // mataria todo DECODIFICADO que a bomba ainda nao pegou — arte do OSD/posplay
+  // entraria em decode->mata->decode durante TODA a sessao (rev #415).
   if (pressaoAtiva() || pressaoPlay < 100) podar();
   SDL_UnlockMutex(mtx);
 }
@@ -720,9 +770,32 @@ static int emVoo(void) {
   return n;
 }
 
+static int fileiraFoco;
+void tex_residencia_inicio(int foco) { fileiraFoco = foco; }
+int tex_residencia_fileiras(void) { return cachePerfil().fileiras; }
+void tex_residencia_marcar(const char *url, int fileira) {
+  if (!mtx || !url || !*url) return;
+  SDL_LockMutex(mtx);
+  int i = acharIndice(url, hashCaminho(url));
+  if (i >= 0) {
+    int d = abs(fileira - fileiraFoco);
+    if (itens[i].fileiraQuadro != quadroAtual || d < itens[i].fileiraDistancia)
+      itens[i].fileiraDistancia = d;
+    itens[i].fileiraQuadro = quadroAtual;
+  }
+  SDL_UnlockMutex(mtx);
+}
+static int distancia(const Item *it) {
+  if (!it->fileiraQuadro || quadroAtual - it->fileiraQuadro > 1) return 1000000;
+  return it->fileiraDistancia;
+}
+static int residente(const Item *it) {
+  return !pressaoAtiva() && pressaoPlay == 100 &&
+         distancia(it) <= cachePerfil().fileiras;
+}
 static int despejar(int forcar);
 static int slotLivre(void) {
-  if (emVoo() >= nMax / 3) return -1;   // pede de novo no proximo quadro
+  if (emVoo() >= (ptv_plataforma() == PTV_ANDROID && nMax / 3 > 8 ? 8 : nMax / 3)) return -1;   // pede de novo no proximo quadro
   for (int i = 0; i < nMax; i++) if (itens[i].estado == VAZIO) return i;
   // Slot que ja desistiu vale mais como vaga que um PRONTO em uso: reaproveita
   // antes de despejar arte que esta na tela.
@@ -733,7 +806,9 @@ static int slotLivre(void) {
       itens[i].lum = -1; itens[i].corR = -1;
       return i;
     }
-  return despejar(1);
+  // The picker keeps GLuints from update until draw. A new request must
+  // wait for a cold slot rather than invalidate artwork still in use.
+  return despejar(0);
 }
 
 // VITIMA LRU ENTRE OS PRONTOS, FRIOS PRIMEIRO. Devolve o slot ja limpo, ou -1.
@@ -744,9 +819,9 @@ static int slotLivre(void) {
 // (log de 16/09): texturas=152 a 95.9 MB de 96 em quase toda amostra de 3 s —
 // o cache VIVE no teto, e cada arte que entra despeja uma que esta la.
 //
-// `forcar` e so do slotLivre: sem vaga nenhuma, despejar um quente e menos
-// ruim que nunca carregar o card novo. podar() nunca forca — estourar o
-// orcamento por um quadro custa nada; despejar a tela custa o pisca.
+// Both slotLivre() and podar() preserve hot artwork. Requests retry when
+// a slot becomes cold; evicting a hot texture can invalidate a GLuint
+// already returned to the picker for the current draw.
 //
 // HEROIS FRIOS ALEM DESTES SAEM ANTES DE QUALQUER CARTAZ.
 //
@@ -794,24 +869,28 @@ static int despejar(int forcar) {
   int frio = 0;
   { int nPf = 0, lru = -1; unsigned long m = ~0UL;
     for (int i = 0; i < nMax; i++) {
-      if (itens[i].estado != PRONTO || quente(&itens[i]) || !dePassagem(&itens[i])) continue;
+      if (itens[i].estado != PRONTO || quente(&itens[i]) || residente(&itens[i]) || !dePassagem(&itens[i])) continue;
       nPf++;
       if (itens[i].uso < m) { m = itens[i].uso; lru = i; }
     }
     if (nPf > NV_TEX_PASSAGEIROS_FRIOS) { melhor = lru; frio = 1; goto sai; } }
   for (int i = 0; i < nMax; i++) {
-    if (itens[i].estado != PRONTO) continue;
+    if (itens[i].estado != PRONTO || residente(&itens[i])) continue;
     if (quente(&itens[i])) { if (frio) continue; }
     else if (!frio) { frio = 1; melhor = -1; menor = ~0UL; }
-    if (itens[i].uso < menor) { menor = itens[i].uso; melhor = i; }
+    if (melhor < 0 || distancia(&itens[i]) > distancia(&itens[melhor]) ||
+        (distancia(&itens[i]) == distancia(&itens[melhor]) && itens[i].uso < menor)) {
+      menor = itens[i].uso; melhor = i;
+    }
   }
 sai:
   if (melhor < 0) return -1;
-  if (!frio && !forcar) return -1;
+  (void)forcar;
+  if (!frio) return -1;
   tex_despejos++; tex_despejos_total++;
   if (!frio) { tex_despejos_quentes++; tex_despejos_quentes_total++; }
   if (itens[melhor].tex) { gfx_tex_esquecer(itens[melhor].tex); glDeleteTextures(1, &itens[melhor].tex); }
-  bytesUsados -= bytesTextura(itens[melhor].w, itens[melhor].h);
+  bytesUsados -= bytesTextura(&itens[melhor]);
   if (bytesUsados < 0) bytesUsados = 0;
   soltarBruto(&itens[melhor]);
   memset(&itens[melhor], 0, sizeof(Item));
@@ -832,29 +911,43 @@ sai:
 // Escrito pelo fio da JNI, lido pelo fio de desenho; int de 32 bits, sem trava.
 #define NV_TEX_PRESSAO_MS 30000u
 static volatile int pressaoPct = 100;
+static int pressaoLivrePct = 100; // Sampled MemAvailable pressure lasts until recovery.
 static volatile Uint32 pressaoAte;
 // REPRODUCAO NO ANDROID: o trim (abaixo) expira em 30 s porque onTrimMemory
 // avisa na transicao; o video toca por horas e a arte da home fica residente
 // o tempo todo. Com um teto persistente de tela-cheia, gpu-cache + player
 // buffer + pedacos paralelos + preload do proximo titulo estouraram uma TV
 // de 2,4 GB (PSS ~575 MB, lmkd matou o app). Durante a reproducao o teto
-// efetivo fica nesta fracao, ate a sessao de video fechar. So o Android
-// acorda isto; webOS/Tizen nunca chamam tex_pressao_reproducao.
+// efetivo fica nesta fracao, ate a sessao de video fechar. No Android liga
+// com o video; no webOS/.tpk so com a TV sem memoria (tex_memoria_livre).
 // `pressaoPlay` foi declarado junto das forward declarations (a poda a le).
 static int pressaoAtiva(void) {
-  if (pressaoPct >= 100) return 0;
+  if (pressaoPct >= 100) return pressaoLivrePct < 100;
   if ((int)(SDL_GetTicks() - pressaoAte) >= 0) {
-    pressaoPct = 100;
-    printf("[tex] pressao de memoria passou: teto de volta a %ld MB\n", orcamento / (1024L * 1024L));
+    pressaoPct = pressaoPct <= 25 ? 50 : pressaoPct <= 50 ? 75 : 100;
+    pressaoAte = SDL_GetTicks() + 5000u;
+    printf("[tex] timed memory trim recovering: %d%%\n", pressaoPct);
     fflush(stdout);
-    return 0;
+    return pressaoPct < 100 || pressaoLivrePct < 100;
   }
   return 1;
 }
+static int pressaoSevera(void) {
+  return pressaoAtiva() && (pressaoPct <= 25 || pressaoLivrePct <= 25);
+}
 static long limiteBytes(void) {
-  long lim = pressaoAtiva() ? orcamento / 100 * pressaoPct : orcamento;
+  (void)pressaoAtiva(); // Expire timed trims before combining the caps.
+  int pct = pressaoPct < pressaoLivrePct ? pressaoPct : pressaoLivrePct;
+  long lim = pct < 100 ? orcamento / 100 * pct : orcamento;
   if (pressaoPlay < 100 && orcamento / 100 * pressaoPlay < lim)
     lim = orcamento / 100 * pressaoPlay;
+  // Pressure must never make the current screen exceed its own cap.
+  if (lim < orcamento) {
+    long tela = 0;
+    for (int i = 0; i < nMax; i++)
+      if (quente(&itens[i])) tela += bytesTextura(&itens[i]);
+    if (tela > lim) lim = tela < orcamento ? tela : orcamento;
+  }
   return lim;
 }
 // % do teto que fica enquanto um video esta aberto (reproduzindo ou nao:
@@ -868,10 +961,15 @@ int tex_pressao_play_pct(void) {
   if (orcMemTotal < 3000) return 40;
   return 75;
 #else
-  return 100;
+  // webOS/.tpk: o piso NAO e incondicional — a regra e "caps menores so com
+  // memoria baixa". A faixa vem do relatorio de 3 s (pressaoPlayMin, em
+  // tex_memoria_livre): TV com folga (C9 com GBs livres) fica com o cache
+  // inteiro durante a reproducao; a G4 apertada cai no piso medido no #415.
+  return pressaoPlayMin;
 #endif
 }
 void tex_pressao_reproducao(int ligada) {
+  pressaoPlayLigada = ligada;
   int pct = ligada ? tex_pressao_play_pct() : 100;
   if (pct == pressaoPlay) return;
   pressaoPlay = pct;
@@ -910,10 +1008,78 @@ Java_space_nuvio_nativelegacy_NuvioActivity_nativeTrimMemoria(JNIEnv *env, jobje
 }
 #endif
 
+// SOB PRESSAO: a memoria de CPU que podar() nao alcanca. A superficie ja
+// decodificada (`sup`) e os bytes baixados (`bruto`) ficam fora de
+// bytesUsados; sem este passe um aviso no meio do decode derruba so a GPU e os
+// buffers vivos seguem segurando o heap — e malloc_trim nao solta o que esta
+// alocado. O pedido morre junto (desistir): com a TV no piso, guardar decode
+// pronto para "talvez desenhar" e o que encheu a G4 no #415.
+// `falhas` = tambem limpa os slots FALHOU (tex_aliviar, antes de reabrir o
+// pipeline); na varredura do quadro o slot falho fica, guardando o recuo.
+static void soltarCpu(int falhas) {
+  for (int i = 0; i < nMax; i++) {
+    if (!falhas && quente(&itens[i])) continue;
+    if (itens[i].estado == DECODIFICADO && itens[i].sup) {
+      if (uplSup == itens[i].sup) uplSup = NULL;   // envio em curso revalida pelo idx
+      liberarSup(itens[i].sup);
+      itens[i].sup = NULL;
+      desistir(i);
+    } else if ((itens[i].estado == PENDENTE && !itens[i].naFilaDec &&
+                !itens[i].filaRedeEm) ||
+               (falhas && itens[i].estado == FALHOU)) {
+      // O idx de um PENDENTE JA NUMA FILA (rede ou decode) nao pode virar
+      // VAZIO aqui: a fila e um anel de indices e devolveria o numero para o
+      // proximo slot a ocupa-lo. Ele desiste sozinho ao ser tirado; o `bruto`
+      // sai mesmo assim.
+      desistir(i);
+    } else if (itens[i].estado == FALHOU || itens[i].bruto) {
+      soltarBruto(&itens[i]);
+    }
+  }
+}
+
 static void podar(void) {
   long lim = limiteBytes();
   while (bytesUsados > lim)
     if (despejar(0) < 0) break;
+}
+
+// webOS/.tpk nao tem onTrimMemory: o relatorio de 3 s (main.c) passa o
+// MemAvailable. #415 (LG G4, webOS 9, MemTotal 1965 MB): 127 MB de arte
+// residente com o video 4K em tela cheia (tela=0), e o webOS fechou o app com
+// 92 MB livres.
+// The 150/300 MiB thresholds scale down below 1965 MiB RAM; recovery needs
+// another 60 MiB (also scaled). Sampled pressure does not use the trim timer.
+// MESMO relatorio arma a faixa do piso de reproducao (pressaoPlayMin): abrir
+// video com a TV apertada ja comeca com o cache no piso — o pico de alocacao
+// do pipeline acontece ANTES de a memoria cair de vez, e esperar era deixar
+// o cache inteiro vivo durante o arranque. A faixa tambem aperta um piso ja
+// ligado; afrouxar so no fechar (video aberto nao recupera arte sob pressao
+// intermitente). A home redecodifica do disco ao voltar.
+void tex_memoria_livre(long livreMb) {
+  if (livreMb < 0) return;
+  long ram = orcMemTotal > 0 && orcMemTotal < 1965 ? orcMemTotal : 1965;
+  long duro = 150 * ram / 1965, baixo = 300 * ram / 1965;
+  long folga = 60 * ram / 1965;
+  int pct = livreMb < duro ? 25 : livreMb < baixo ? 50 : 100;
+  // Stay in each band until available memory clears its recovery margin.
+  if (pressaoLivrePct == 25 && livreMb < duro + folga) pct = 25;
+  else if (pressaoLivrePct < 100 && pct == 100 && livreMb < baixo + folga) pct = 50;
+  if (pct != pressaoLivrePct) {
+    pressaoLivrePct = pct;
+    printf("[tex] MemAvailable=%ld MB: texture cap at %d%%\n", livreMb, pct);
+    fflush(stdout);
+  }
+  pressaoPlayMin = pct == 25 ? 20 : pct == 50 ? (orcMemTotal >= 3500 ? 35 : 20) : 100;
+  if (pressaoPlayLigada && pressaoPlayMin < pressaoPlay) pressaoPlay = pressaoPlayMin;
+}
+void tex_aliviar(void) {
+  tex_pressao_memoria(80);
+  if (!mtx) return;
+  SDL_LockMutex(mtx);
+  soltarCpu(1);
+  podar();
+  SDL_UnlockMutex(mtx);
 }
 
 // Diretorio onde as imagens baixadas ficam. Uma vez baixada, a imagem vale
@@ -1025,7 +1191,10 @@ static int tetoDoHeroi(void) {
   return tetoHeroiPerfil >= 640 && tetoHeroiPerfil < t ? tetoHeroiPerfil : t;
 }
 static int tetoDoHeroiQualidade(void) {
-  if (qualidadeImg == 0) return 1280;
+#ifdef NV_TIZEN3_LITE
+  return NV_TEX_HERO_LARG_MAX;
+#endif
+  if (qualidadeImg == 0 || (orcMemTotal > 0 && orcMemTotal <= 1300)) return 1280;
 #ifdef __EMSCRIPTEN__
   // SAMSUNG: 1280 e o teto de fabrica (heap fixo de 256 MiB, ver a nota das
   // medidas), e numa TV 4K isso e um fundo esticado 1,5x — "o artwork parece
@@ -1038,6 +1207,16 @@ static int tetoDoHeroiQualidade(void) {
   return NV_TEX_HERO_LARG_MAX;
 }
 static float escalaBuf = 1.0f;
+// Budget scale. On a TV the MB are physical RAM: a 4K drawable (escala 2) must
+// not multiply them by 4 (128 MB became 512 and the TCL hit the LMK at 720 MB).
+// Only the desktop preview (Mac retina) scales, so it mirrors the TV scene.
+static float escalaOrc(void) {
+#if defined(NV_ANDROID) || defined(NV_TPK) || defined(NV_WEBOS)
+  return 1.0f;
+#else
+  return escalaBuf > 0.1f ? escalaBuf : 1.0f;
+#endif
+}
 
 __attribute__((unused)) static int arquivoCacheImagem(const char *nome) {
   const char *p = nome;
@@ -1667,6 +1846,8 @@ static char *baixarImagem(const char *url, long *n, TexFetchTrace *trace) {
   // Ja se sabe que esta URL nao tem arte (ver negTem): falha na hora, sem
   // ocupar o fio — quem desenha cai na proxima fonte como num 404.
   if (negTem(url)) return NULL;
+  long tetoAnterior = rede_teto;
+  rede_teto = (long)cachePerfil().corpoMb * 1048576;
   // 8 s e nao 25: isto e uma IMAGEM. Com 25 s, duas URLs mortas seguravam os
   // dois fios de decode por quase um minuto e a tela inteira parava de receber
   // arte — repetidamente, porque nada guarda a falha.
@@ -1722,6 +1903,7 @@ static char *baixarImagem(const char *url, long *n, TexFetchTrace *trace) {
       trace->netMs += SDL_GetTicks() - t;
       trace->netCalls++;
     } }
+  rede_teto = tetoAnterior;
   // ESTE RAMO ERA MUDO. Medido numa navegacao da home: 93 "decode falhou" com
   // ZERO "[rede] falha" no log — todas as falhas passavam por aqui, com o curl
   // dizendo sucesso e um corpo curto demais para ser imagem. Sem a linha nao
@@ -1961,6 +2143,23 @@ static int mesmoPedido(int idx, const char *pedido) {
          !strcmp(itens[idx].caminho, pedido);
 }
 
+// Under mtx: transfer ownership only to an idle consumer of the exact URL.
+static int salvarPedidoMovido(const char *pedido, const char *url, int limite,
+                              unsigned char *corpo, long n, int variante) {
+  for (int i = 0; i < nMax; i++) {
+    Item *it = &itens[i];
+    if (!mesmoPedido(i, pedido) || it->naFilaDec || !it->filaRedeEm ||
+        it->bruto || limiteDaVariante(it) != limite) continue;
+    if (!enfileirarDecodeSemEspera(i)) return 0;
+    it->bruto = corpo; it->nBruto = n;
+    it->limiteTamanho = strcmp(url, pedido) ? limite : 0;
+    it->varianteCache = variante;
+    snprintf(it->urlCache, sizeof it->urlCache, "%s", url);
+    return 1;
+  }
+  return 0;
+}
+
 static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *foiRede,
                           TexFetchTrace *trace) {
   const char *pedido = url;   // o caminho do item; `url` pode virar a variante
@@ -2039,9 +2238,9 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
     if (foiRede && *foiRede) cachearte_salvar(url, variante, corpo, n, 0);
     SDL_LockMutex(mtx);
     if (!mesmoPedido(idx, pedido)) {
-      SDL_UnlockMutex(mtx); free(corpo);
-      { char lb[160]; printf("[tex] bytes descartados: o slot virou outro pedido durante o download (%s)\n", urlLog(pedido, lb, sizeof lb)); }
-      fflush(stdout);
+      int salvo = salvarPedidoMovido(pedido, url, limitePedido, corpo, n, variante);
+      SDL_UnlockMutex(mtx);
+      if (!salvo) free(corpo);
       return -1;
     }
     free(itens[idx].bruto);
@@ -2098,10 +2297,19 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
         if (trace) trace->persistMs += SDL_GetTicks() - persistEm; }
     }
     SDL_LockMutex(mtx);
+    // Backpressure compressed responses too; at most the network workers keep
+    // one bounded response each while waiting for the decode queue to drain.
+    while (rodando && mesmoPedido(idx, pedido)) {
+      long pending = n;
+      for (int i = 0; i < nMax; i++) pending += itens[i].nBruto;
+      if (pending <= orcamento / 4) break;
+      SDL_CondWaitTimeout(condLivre, mtx, 20);
+    }
+    if (!rodando) { SDL_UnlockMutex(mtx); free(corpo); return 0; }
     if (!mesmoPedido(idx, pedido)) {
-      SDL_UnlockMutex(mtx); free(corpo);
-      { char lb[160]; printf("[tex] bytes descartados: o slot virou outro pedido durante o download (%s)\n", urlLog(pedido, lb, sizeof lb)); }
-      fflush(stdout);
+      int salvo = salvarPedidoMovido(pedido, url, limitePedido, corpo, n, NV_CACHE_ARTE_MEDIUM);
+      SDL_UnlockMutex(mtx);
+      if (!salvo) free(corpo);
       return -1;
     }
     free(itens[idx].bruto);
@@ -2129,8 +2337,8 @@ static int threadRede(void *arg) {
     while (rodando && (filaIni == filaFim || meu >= fiosRedeAtivos)) SDL_CondWait(cond, mtx);
     if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
     idx = tirarFila(fila, &filaIni, filaFim);
-    if (itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
-      if (itens[idx].estado == PENDENTE) desistir(idx);
+    if (itens[idx].naFilaDec || itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
+      if (!itens[idx].naFilaDec && itens[idx].estado == PENDENTE) desistir(idx);
       SDL_UnlockMutex(mtx);
       continue;
     }
@@ -2169,8 +2377,8 @@ static int threadRede(void *arg) {
                (unsigned)redeMs, (unsigned)trace.netMs, (unsigned)trace.resolveMs,
                (unsigned)trace.cacheMs, (unsigned)trace.persistMs, trace.netCalls,
                baixou, urgente);
-      // -1: o slot deixou de ser deste pedido durante o download (mesmoPedido);
-      // os bytes ja foram descartados e o item novo nao e tocado.
+      // -1: the original slot changed; bytes were transferred or freed.
+      // The replacement slot is never touched.
       if (baixou < 0) continue;
       if (!baixou) {
       // Falhou o download. Marca como falha AQUI para o recuo valer — antes o
@@ -2527,6 +2735,51 @@ static SDL_Surface *gifFotoArquivo(const char *caminho, int limite, int *ow, int
 }
 #endif
 
+/* Android fallbacks allocate the full source before resizing. Only allow
+ * sources within the codec's pixel ceiling; unknown bounds fail closed.
+ * Both paths run under threadDecode's existing 48 MiB reservation. */
+static int fallbackCabe(int w, int h) {
+#ifdef NV_ANDROID
+  return w > 0 && h > 0 && (uint64_t)w * (uint64_t)h <= 2u * 1024 * 1024;
+#else
+  (void)w; (void)h;
+  return 1;
+#endif
+}
+
+static SDL_Surface *decodeArteMem(const unsigned char *b, size_t n, int limite,
+                                  int *ow, int *oh) {
+  SDL_Surface *s = jpeg_rapido_carregar_mem(b, n, limite, ow, oh);
+#ifndef __EMSCRIPTEN__
+  if (!s && fallbackCabe(*ow, *oh)) {
+    s = webp_carregar_larg_mem(b, n, limite, ow, oh);
+    if (!s) {
+      SDL_RWops *rw = n <= (size_t)SDL_MAX_SINT32 ? SDL_RWFromConstMem(b, (int)n) : NULL;
+      s = rw ? IMG_Load_RW(rw, 1) : NULL;
+      if (s) { *ow = s->w; *oh = s->h; }
+    }
+    if (!s) s = gifFotoMem(b, n, limite, ow, oh);
+  }
+#endif
+  return s;
+}
+
+static SDL_Surface *decodeArteArquivo(const char *caminho, int limite,
+                                      int *ow, int *oh) {
+  SDL_Surface *s = jpeg_rapido_carregar(caminho, limite, ow, oh);
+  if (!s && fallbackCabe(*ow, *oh)) {
+    s = webp_carregar_larg(caminho, limite, ow, oh);
+    if (!s) {
+      s = IMG_Load(caminho);
+      if (s) { *ow = s->w; *oh = s->h; }
+    }
+#ifndef __EMSCRIPTEN__
+    if (!s) s = gifFotoArquivo(caminho, limite, ow, oh);
+#endif
+  }
+  return s;
+}
+
 static int threadDecode(void *arg) {
   (void)arg;
   // PRIORIDADE BAIXA, e isto nao e detalhe.
@@ -2545,7 +2798,8 @@ static int threadDecode(void *arg) {
   SDL_SetThreadPriority(SDL_THREAD_PRIORITY_NORMAL);
   for (;;) {
     SDL_LockMutex(mtx);
-    while (rodando && decIni == decFim) SDL_CondWait(condDec, mtx);
+    while (rodando && (decIni == decFim || !decodeCabe()))
+      SDL_CondWaitTimeout(condDec, mtx, 20);
     if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
     int idx = tirarFila(filaDec, &decIni, decFim);
     // O marcador cobre tambem o decode em andamento. Limpa-lo aqui abre uma
@@ -2558,8 +2812,10 @@ static int threadDecode(void *arg) {
       SDL_UnlockMutex(mtx);
       continue;
     }
+    long reserva = (long)cachePerfil().reservaDecodeMb * 1048576;
+    decodeReservado += reserva;
     char caminho[NV_TEX_URL_MAX];
-    int limite;
+    int limite, card;
     Uint32 filaEm = 0, filaWait = 0;
     int localDireto = 0;
     strncpy(caminho, itens[idx].caminho, sizeof caminho - 1);
@@ -2570,6 +2826,7 @@ static int threadDecode(void *arg) {
     // Copiado SOB O MUTEX: o item pode ser promovido a hero enquanto este fio
     // decodifica, e ler o campo depois daria uma leitura sem trava.
     limite = itens[idx].limite > 0 ? itens[idx].limite : NV_TEX_LARG_MAX;
+    card = itens[idx].card;
     // Cor viva (corviva.h) so para a arte de TELA CHEIA: e o que destaque,
     // detalhe e player pedem (tex_obter_hero), e so ela decide a cor. Cartaz
     // de fileira passaria por aqui as centenas e empurraria do anel de 256 as
@@ -2610,18 +2867,7 @@ static int threadDecode(void *arg) {
     SDL_Surface *bruta = NULL;
     SDL_Surface *conv = NULL;
     if (bruto) {
-      bruta = jpeg_rapido_carregar_mem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-#ifndef __EMSCRIPTEN__
-      // No LG o _mem so faz JPEG; PNG pelo SDL_image e WebP pela libwebp do
-      // sistema, na mesma ordem do caminho por arquivo abaixo.
-      if (!bruta) {
-        SDL_RWops *rw = SDL_RWFromConstMem(bruto, (int)nBruto);
-        srcW = srcH = 0;
-        bruta = rw ? IMG_Load_RW(rw, 1) : NULL;
-      }
-      if (!bruta) bruta = webp_carregar_larg_mem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-      if (!bruta) bruta = gifFotoMem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
-#endif
+      bruta = decodeArteMem(bruto, (size_t)nBruto, limite, &srcW, &srcH);
       free(bruto);
     } else
     {
@@ -2643,15 +2889,8 @@ static int threadDecode(void *arg) {
     // JPEG SAI DO DECODIFICADOR JA REDUZIDO (jpegrapido.h): 1/2, 1/4 ou 1/8
     // dentro da DCT, o que cobre o pedido. srcW/srcH ficam com o tamanho do
     // ARQUIVO — e o que `fonteW` guarda para decidir promocao — e nao com o
-    // do que saiu. NULL cai no IMG_Load de sempre.
-    bruta = jpeg_rapido_carregar(caminho, limite, &srcW, &srcH);
-    if (!bruta) { srcW = srcH = 0; bruta = IMG_Load(caminho); }
-    // O SDL2_image desta TV nao le WebP; a libwebp do sistema le (webp.c),
-    // e ja reduz ao limite — os fundos do Xperience sao 3840x2160.
-    if (!bruta) bruta = webp_carregar_larg(caminho, limite, &srcW, &srcH);
-#ifndef __EMSCRIPTEN__
-    if (!bruta) bruta = gifFotoArquivo(caminho, limite, &srcW, &srcH);
-#endif
+    // do que saiu. Fallbacks preserve the Android allocation ceiling.
+    bruta = decodeArteArquivo(caminho, limite, &srcW, &srcH);
     }
     tLoad = SDL_GetTicks();
     if (bruta && !srcW) { srcW = bruta->w; srcH = bruta->h; }
@@ -2882,11 +3121,12 @@ static int threadDecode(void *arg) {
     // PIRAMIDE NA CPU, aqui e nao no envio: este fio e de prioridade baixa e
     // ja tem os pixels. Mesma decisao (temPiramide) da contabilidade de bytes.
     // Ver tex_piramide_cpu.
-    if (conv && mipCpuAtivo() && temPiramide(conv->w, conv->h))
+    if (conv && mipCpuAtivo() && temPiramide(conv->w, conv->h, card))
       tex_piramide_cpu(conv);
 
     int falhou = 0;
     SDL_LockMutex(mtx);
+    decodeReservado -= reserva;
     // O SLOT AINDA E DESTE PEDIDO? (23/09/2026, cards com a arte de OUTRO
     // titulo.) O decode roda sem a trava; se o slot foi despejado e
     // reaproveitado por outro caminho nesse meio tempo, ele esta PENDENTE de
@@ -2924,6 +3164,16 @@ static int threadDecode(void *arg) {
       itens[idx].lum = lumMedia;
       itens[idx].opaca = opaca;
       itens[idx].paleta = pal;
+      if (conv && conv->format->BytesPerPixel == 4)
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+          unsigned sum[4] = {0};
+          for (int dy = 0; dy < 4; dy++) for (int dx = 0; dx < 4; dx++) {
+            int sx = (x * 4 + dx) * conv->w / 64, sy = (y * 4 + dy) * conv->h / 64;
+            const unsigned char *q = (unsigned char *)conv->pixels + sy * conv->pitch + sx * 4;
+            for (int c = 0; c < 4; c++) sum[c] += q[c];
+          }
+          for (int c = 0; c < 4; c++) itens[idx].cores[(y*16+x)*4+c] = sum[c] / 16;
+        }
       itens[idx].croma = cromaMedia;
       itens[idx].desvio1 = desvio1;
       itens[idx].corR = corR; itens[idx].corG = corG; itens[idx].corB = corB;
@@ -2931,7 +3181,6 @@ static int threadDecode(void *arg) {
       if (conv) {
         itens[idx].estado = DECODIFICADO;
         itens[idx].filaUploadEm = SDL_GetTicks();
-        itens[idx].falhas = 0;
         // O QUE SAIU, e nao o que foi pedido: e este par que a promocao le.
         itens[idx].tetoUsado = limite;
         itens[idx].fonteW = srcW;
@@ -3171,6 +3420,10 @@ static int orcamentoMB(void) {
       int v = atoi(env);
       if (v >= 16 && v <= 1024) { mb = v; porque = "NUVIO_TEX_MB"; orcFixo = 2; }
     } }
+#ifdef NV_ANDROID
+  { int cap = ptv_tex_teto_mb(PTV_ANDROID, mem);
+    if (mb > cap) mb = cap; }
+#endif
   printf("[tex] orcamento de texturas: %d MB (%s; MemTotal=%ld MB)\n", mb, porque, mem);
   fflush(stdout);
   orcMB = mb; orcMemTotal = mem; orcAuto = mb;
@@ -3188,6 +3441,9 @@ static int orcamentoMB(void) {
 // RAM, sem aparelho aqui — o `rss=` do relatorio de FPS e quem confirma). No
 // Tizen o teto e o proprio automatico (medido: mais e mais lento, ver acima).
 static int tetoPermitidoMB(void) {
+#ifdef NV_TIZEN3_LITE
+  return 32;
+#endif
   return ptv_tex_teto_mb(ptv_plataforma(), orcMemTotal);
 }
 int tex_teto_ram_mb(void) { return tetoPermitidoMB(); }
@@ -3201,7 +3457,7 @@ void tex_definir_orcamento_mb(int mb) {
       printf("[tex] teto de %d MB pedido em Ajustes; esta TV suporta %d MB (RAM %ld MB)\n", mb, teto, orcMemTotal);
   }
   SDL_LockMutex(mtx);
-  { float e = escalaBuf > 0.1f ? escalaBuf : 1.0f;
+  { float e = escalaOrc();
     orcamento = (long)(aplicado * e * e) * 1024L * 1024L; }
   // Slots so CRESCEM ao vivo: encolher com itens alem do novo nMax deixaria
   // texturas vivas fora do alcance do LRU. O teto absoluto continua valendo.
@@ -3276,7 +3532,7 @@ int tex_esquecer(const char *caminho) {
     if (itens[i].tex) {
       gfx_tex_esquecer(itens[i].tex);
       glDeleteTextures(1, &itens[i].tex);
-      bytesUsados -= bytesTextura(itens[i].w, itens[i].h);
+      bytesUsados -= bytesTextura(&itens[i]);
       if (bytesUsados < 0) bytesUsados = 0;
     }
     soltarBruto(&itens[i]);
@@ -3346,6 +3602,8 @@ static int estadoPoster(const char *url) {
 }
 
 int tex_iniciar(int max_itens) {
+  uploadThread = SDL_ThreadID();
+  uploadContext = SDL_GL_GetCurrentContext();
   int mb = orcamentoMB();
   mipCpuAtivo();  // decide antes dos fios de decode (NUVIO_TEX_MIP)
   posterprov_hook_estado(estadoPoster);
@@ -3378,7 +3636,7 @@ int tex_iniciar(int max_itens) {
   //
   // Na TV o fator e 1 e nada muda; e exatamente por isso que a conta pode ser
   // esta e nao um numero maior cravado.
-  { float e = escalaBuf > 0.1f ? escalaBuf : 1.0f;
+  { float e = escalaOrc();
     orcamento = (long)(mb * e * e) * 1024L * 1024L; }
 #ifndef __EMSCRIPTEN__
   pthread_mutex_lock(&vidaMtx);
@@ -3460,6 +3718,7 @@ static int aceitaMenor;
 // Pedido de LOGO DE TITULO em curso (ver tex_obter_logo_larg): sobe o item para
 // o nivel 2 da fila, a frente ate do fundo de tela cheia.
 static int pedidoLogo;
+static int pedidoPalco;
 // Pedido de ARQUIVO em curso (tex_arquivo): o teto da variante a baixar. Ver
 // Item.limiteArquivo.
 static int pedidoArquivo;
@@ -3557,6 +3816,9 @@ static const char *artePacoteOuRemota(const char *caminho, char *buf, size_t tam
 
 static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
                                int passageiro) {
+#ifdef NV_TIZEN3_LITE
+  if (limite > NV_TEX_HERO_LARG_MAX) limite = NV_TEX_HERO_LARG_MAX;
+#endif
   if (!caminho || !*caminho || strlen(caminho) >= NV_TEX_URL_MAX) return 0;
 #ifdef NV_TPK
   char arteRemota[NV_TEX_URL_MAX];
@@ -3681,7 +3943,8 @@ static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
     // hero (1920). Se o teto novo e maior e a textura pronta ficou menor que
     // ele, refaz — senao o hero herda para sempre a versao pequena que o card
     // pediu primeiro, e o borrao volta sem explicacao aparente.
-    if (limite > itens[i].limite) itens[i].limite = limite;
+    if (pedidoPalco || limite > itens[i].limite) itens[i].limite = limite;
+    if (limite < NV_TEX_MIP_LARG && !pedidoArquivo) itens[i].card = 1;
     // PROMOCAO PELO TETO REALMENTE USADO, e nao pelo pedido.
     //
     // `w < limite` NAO basta: um poster da Cinemeta tem 250px de origem, e
@@ -3714,9 +3977,11 @@ static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
     // duas ou tres vezes (o cinza entre uma versao e outra). Promover so
     // quando o pedido e ao menos um quarto maior: o card (928) que vira hero
     // (1920) continua promovendo; o foco e a animacao, nao.
-    if (itens[i].estado == PRONTO && itens[i].tetoUsado < limite &&
-        limite >= itens[i].tetoUsado + itens[i].tetoUsado / 4 &&
-        (itens[i].fonteW <= 0 || itens[i].fonteW > itens[i].w)) {
+    if (itens[i].estado == PRONTO &&
+        ((pedidoPalco && itens[i].w > limite) ||
+         (itens[i].tetoUsado < limite &&
+          limite >= itens[i].tetoUsado + itens[i].tetoUsado / 4 &&
+          (itens[i].fonteW <= 0 || itens[i].fonteW > itens[i].w)))) {
       if (itens[i].localDireto) {
         itens[i].estado = PENDENTE;
         (void)enfileirarDecodeSemEspera(i);
@@ -3748,6 +4013,8 @@ static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
     // crossfade dele ja sabe fazer.
     saida = (itens[i].estado == PRONTO || itens[i].w * 2 >= limite || aceitaMenor)
               ? itens[i].tex : 0;
+    // A larger Current/Detail cache entry must finish resizing before Stage uses it.
+    if (pedidoPalco && itens[i].w > limite) saida = 0;
   } else {
     int novo = slotLivre();
     if (novo >= 0) {
@@ -3757,6 +4024,7 @@ static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
       strncpy(itens[novo].caminho, caminho, sizeof itens[novo].caminho - 1);
       itens[novo].hash = h;
       itens[novo].limite = limite;
+      itens[novo].card = limite < NV_TEX_MIP_LARG && !pedidoArquivo;
       itens[novo].limiteTamanho = 0;
       itens[novo].limiteArquivo = pedidoArquivo;
       itens[novo].estado = PENDENTE;
@@ -3800,7 +4068,9 @@ GLuint tex_obter(const char *caminho) {
 // dois caminhos caia no mesmo teto e nao seja promovido a toa.
 static int capDeLargura(float largLayout) {
   int cap;
-  cap = (int)(largLayout * escalaBuf * folgaDaQualidade() + 0.5f);
+  // Convert layer coordinates to output pixels before choosing URL/decode size.
+  // Keep layer scale out of escalaBuf: it must not inflate the byte budget.
+  cap = (int)(largLayout * gfx_escala() * escalaBuf * folgaDaQualidade() + 0.5f);
   // Arredonda para multiplo de 32: sem isso cada largura de desenho vira um
   // teto proprio, e a mesma arte pedida por dois lugares com poucos pixels de
   // diferenca era promovida e RE-DECODIFICADA sem ganho visivel.
@@ -3951,6 +4221,14 @@ GLuint tex_obter_hero(const char *caminho) {
   return tex_obter_limite(caminho, tetoDoHeroi(), 1, 0);
 }
 
+GLuint tex_obter_palco(const char *caminho) {
+  int cap = tetoDoHeroi();
+  pedidoPalco = 1;
+  GLuint t = tex_obter_limite(caminho, cap < 1280 ? cap : 1280, 1, 0);
+  pedidoPalco = 0;
+  return t;
+}
+
 // O MESMO HERO, SEM FURAR A FILA: o vizinho do carrossel que ainda nao esta em
 // cena. Mesmo teto e mesmo item de tex_obter_hero (a chegada promove o pedido
 // a urgente, e tirarFila o puxa para a frente); so nao toma o lugar de quem
@@ -4020,6 +4298,18 @@ const char *tex_arquivo(const char *url) {
   tex_obter_limite(url, 128, 0, 0);
   pedidoArquivo = 0;
   return NULL;
+}
+
+int tex_cores(const char *caminho, unsigned char out[16*16*4]) {
+  int tem = 0;
+  if (!mtx || !caminho) return 0;
+  SDL_LockMutex(mtx);
+  for (int i = 0; i < nMax; i++) if (!strcmp(itens[i].caminho, caminho) &&
+      (itens[i].estado == PRONTO || itens[i].estado == DECODIFICADO)) {
+    memcpy(out, itens[i].cores, sizeof itens[i].cores); tem = 1; break;
+  }
+  SDL_UnlockMutex(mtx);
+  return tem;
 }
 
 void tex_publicar_paleta(const char *caminho) {
@@ -4172,14 +4462,43 @@ long   tex_upl_bytes;
 // mesmo quadro, enquanto o orcamento deixar, e nada muda. A superficie fica
 // no item (`sup`) durante o envio, entao tex_novo_quadro nao a trata como
 // pedido velho e nenhum outro caminho mexe num item DECODIFICADO.
-#define NV_TEX_FAIXA_BYTES (2L * 1024L * 1024L)
+#define NV_TEX_FAIXA_BYTES ((long)cachePerfil().uploadKiB * 1024)
 // Rastro do envio em faixas: os mesmos numeros do upload-total.
 static Uint32 uplEm, uplGlMs, uplFila;
 static char uplPath[512];
 
+// A failed allocation/stripe/mipmap is not publishable. Keep the old artwork
+// on promotion; first uploads use the existing failure backoff.
+static int envioFalhou(int alvo, GLuint t, SDL_Surface *sup) {
+  GLenum erro = glGetError();
+  if (erro == GL_NO_ERROR) return 0;
+  printf("[tex] upload failed hash=%08lx GL=%#x; keeping previous artwork\n",
+         hashCaminho(itens[alvo].caminho), (unsigned)erro);
+  while (glGetError() != GL_NO_ERROR) { }
+  gfx_tex_esquecer(t);
+  gfx_tex_esquecer(0);  // upload binds bypass gfx_rect, including failed uploads
+  glDeleteTextures(1, &t);
+  if (uplIdx == alvo) {
+    uplTex = 0; uplIdx = -1; uplSup = NULL; uplY = 0; uplNiveis = 0;
+  }
+  SDL_LockMutex(mtx);
+  if (itens[alvo].sup == sup) itens[alvo].sup = NULL;
+  if (itens[alvo].tex) desistir(alvo);
+  else {
+    itens[alvo].estado = FALHOU;
+    itens[alvo].urgente = 0;
+    itens[alvo].falhas++;
+    itens[alvo].tentarEm = SDL_GetTicks() +
+        (itens[alvo].falhas == 1 ? 2000 : (itens[alvo].falhas == 2 ? 10000 : 60000));
+  }
+  SDL_UnlockMutex(mtx);
+  liberarSup(sup);
+  return 1;
+}
+
 // Publica a textura `t` (ja com todos os pixels) no item `alvo`. Chamada sem
 // a trava; `sup` ja saiu do item.
-static void publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
+static int publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
                           Uint32 glMs, Uint32 filaWait, const char *uploadPath) {
     // Mipmaps servem a duas coisas: reduzir o serrilhado quando a arte aparece
   // menor que o original, e — a razao de terem entrado agora — permitir o fundo
@@ -4197,7 +4516,7 @@ static void publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
   // sem piramide a amostragem e indefinida e a textura sai PRETA.
   // temPiramide() e a fonte unica desta decisao: a contabilidade de bytes usa a
   // mesma funcao, entao cobranca e geracao nunca divergem.
-  int comMip = temPiramide(sup->w, sup->h);
+  int comMip = temPiramide(sup->w, sup->h, itens[alvo].card);
 #ifdef __EMSCRIPTEN__
   // WEBGL 1 RECUSA MIPMAP EM TEXTURA NAO-POTENCIA-DE-DOIS, e o preco e o card
   // PRETO. glGenerateMipmap numa NPOT devolve GL_INVALID_OPERATION e nao gera
@@ -4220,6 +4539,10 @@ static void publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
     int ap = (sup->h > 0) && ((sup->h & (sup->h - 1)) == 0);
     if (!lp || !ap) comMip = 0; }
 #endif
+  // CPU mip allocation failure must not schedule GPU generation on the
+  // render thread. A linear base texture remains complete and usable.
+  if (comMip && mipCpuAtivo() && !sup->userdata) comMip = 0;
+  if (envioFalhou(alvo, t, sup)) return 0;
   Uint32 mipEm = SDL_GetTicks();
   glBindTexture(GL_TEXTURE_2D, t);
   // Niveis montados na CPU (tex_piramide_cpu) ja subiram em tex_bombear: o
@@ -4235,7 +4558,16 @@ static void publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   gfx_tex_esquecer(0);  // o bind do upload passou por fora do gfx_rect
+  if (envioFalhou(alvo, t, sup)) return 0;
+  Uint32 mipMs = SDL_GetTicks() - mipEm;
+  Uint32 warmEm = SDL_GetTicks();
   gfx_tex_aquecer(t);
+  if (envioFalhou(alvo, t, sup)) return 0;
+  Uint32 warmMs = SDL_GetTicks() - warmEm;
+  if (glMs >= NV_TEX_TRACE_UPLOAD_MS || mipMs >= NV_TEX_TRACE_UPLOAD_MS ||
+      warmMs >= NV_TEX_TRACE_UPLOAD_MS)
+    printf("[tex-trace] upload-stages hash=%08lx pixels_ms=%u mip_ms=%u warm_ms=%u\n",
+           hashCaminho(uploadPath), (unsigned)glMs, (unsigned)mipMs, (unsigned)warmMs);
   glMs += SDL_GetTicks() - mipEm;
 
   SDL_LockMutex(mtx);
@@ -4252,14 +4584,16 @@ static void publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
   if (itens[alvo].tex) {
     gfx_tex_esquecer(itens[alvo].tex);
     glDeleteTextures(1, &itens[alvo].tex);
-    bytesUsados -= bytesTextura(itens[alvo].w, itens[alvo].h);
+    bytesUsados -= bytesTextura(&itens[alvo]);
     if (bytesUsados < 0) bytesUsados = 0;
   }
   int logoPedido = itens[alvo].urgente == 2;
   itens[alvo].tex = t; itens[alvo].w = sup->w; itens[alvo].h = sup->h;
+  itens[alvo].mip = comMip;
   itens[alvo].estado = PRONTO;
   itens[alvo].urgente = 0;
-  bytesUsados += bytesTextura(sup->w, sup->h);
+  itens[alvo].falhas = 0;
+  bytesUsados += bytesTextura(&itens[alvo]);
   podar();
   SDL_UnlockMutex(mtx);
   { long uploadBytes = (long)sup->w * sup->h * 4;
@@ -4269,6 +4603,7 @@ static void publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
       printf("[tex-trace] upload-total hash=%08lx total_ms=%u gl_ms=%u bytes=%ld mip=%d queue=%u\n",
              hashCaminho(uploadPath), (unsigned)uploadMs, (unsigned)glMs,
              uploadBytes, comMip, (unsigned)filaWait); }
+  return 1;
 }
 
 // Custos iniciais conservadores da pesquisa plx (ms); o pior observado neste
@@ -4286,7 +4621,14 @@ static void uplAbortar(void) {
 }
 
 int tex_bombear(int max_por_quadro) {
+  // Bind once for standalone cache users too; never create a shared GL worker.
+  if (!uploadThread) {
+    uploadThread = SDL_ThreadID(); uploadContext = SDL_GL_GetCurrentContext();
+  }
+  if (SDL_ThreadID() != uploadThread || !uploadContext ||
+      SDL_GL_GetCurrentContext() != uploadContext) return 0;
   int subiu = 0, trabalhou = 0, porClasse[3] = {0};
+  unsigned char blocked[MAX_ITENS_ABS] = {0};
   // UMA LINHA POR SESSAO com o caminho da piramide e a GPU: e o que separa,
   // num log de usuario, "lixo com mip=gpu" de "lixo com mip=cpu".
   { static int logado;
@@ -4300,7 +4642,7 @@ int tex_bombear(int max_por_quadro) {
     } }
   Uint64 inicio = SDL_GetPerformanceCounter();
   double freq = (double)SDL_GetPerformanceFrequency();
-  for (int passo = 0; passo < max_por_quadro + 16; passo++) {
+  for (int passo = 0; passo < max_por_quadro + nMax + 16; passo++) {
     if (trabalhou &&
         (double)(SDL_GetPerformanceCounter() - inicio) * 1000.0 / freq >=
             NV_TEX_UPLOAD_BUDGET_MS)
@@ -4312,7 +4654,7 @@ int tex_bombear(int max_por_quadro) {
       if (trabalhou) break;  // residencia ocupa o quadro sozinha
       Uint64 passoEm = SDL_GetPerformanceCounter();
       int ok, alvo = uplIdx;
-      SDL_LockMutex(mtx);
+      if (SDL_TryLockMutex(mtx) != 0) break;
       ok = itens[alvo].estado == DECODIFICADO && itens[alvo].sup == uplSup &&
            !strcmp(itens[alvo].caminho, uplPath);
       SDL_UnlockMutex(mtx);
@@ -4321,8 +4663,9 @@ int tex_bombear(int max_por_quadro) {
         int linhas = (int)(NV_TEX_FAIXA_BYTES / ((long)sup->w * 4));
         Uint32 em = SDL_GetTicks();
         if (linhas < 16) linhas = 16;
+        // Attribute errors to this upload, not the preceding render frame.
+        while (glGetError() != GL_NO_ERROR) { }
         glBindTexture(GL_TEXTURE_2D, uplTex);
-        gfx_vidro_sujar();   // a textura muda no lugar: o hash do vidro nao ve
         if (uplY < sup->h) {
           if (uplY + linhas > sup->h) linhas = sup->h - uplY;
           glTexSubImage2D(GL_TEXTURE_2D, 0, 0, uplY, sup->w, linhas, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -4336,6 +4679,7 @@ int tex_bombear(int max_por_quadro) {
           tex_upl_bytes += subirNiveis(sup);
         }
         gfx_tex_esquecer(0);
+        if (envioFalhou(alvo, uplTex, sup)) { trabalhou = 1; break; }
         uplGlMs += SDL_GetTicks() - em;
         trabalhou = 1;
         if (uplY < sup->h) { medirEnvio(2, passoEm); break; }
@@ -4347,8 +4691,7 @@ int tex_bombear(int max_por_quadro) {
           SDL_UnlockMutex(mtx);
           uplTex = 0; uplIdx = -1; uplSup = NULL; uplY = 0; uplNiveis = 0;
           tex_upl_n++;
-          publicarEnvio(alvo, t, sup, uplEm, uplGlMs, uplFila, uplPath);
-          subiu++; }
+          subiu += publicarEnvio(alvo, t, sup, uplEm, uplGlMs, uplFila, uplPath); }
       }
       medirEnvio(2, passoEm);
       break;
@@ -4360,9 +4703,10 @@ int tex_bombear(int max_por_quadro) {
     SDL_Surface *sup = NULL; int alvo = -1, nivel = -1, classe = 0;
     Uint32 filaEm = 0, filaWait = 0;
     char uploadPath[512] = "";
-    SDL_LockMutex(mtx);
+    // Defer queued work if a network/decode worker holds the cache lock.
+    if (SDL_TryLockMutex(mtx) != 0) break;
     for (int i = 0; i < nMax; i++)
-      if (itens[i].estado == DECODIFICADO && itens[i].sup && itens[i].urgente > nivel) {
+      if (!blocked[i] && itens[i].estado == DECODIFICADO && itens[i].sup && itens[i].urgente > nivel) {
         alvo = i; nivel = itens[i].urgente;
         if (nivel >= 2) break;
       }
@@ -4376,6 +4720,22 @@ int tex_bombear(int max_por_quadro) {
           (trabalhou && (classe == 2 || gasto + uplPiorMs[classe] > NV_TEX_UPLOAD_BUDGET_MS))) {
         SDL_UnlockMutex(mtx);
         break;
+      }
+      // Pruning cannot free current/last-frame artwork. Reserve room before
+      // allocating on the GPU; keep the decoded result queued if only hot
+      // textures remain, so drawing never triggers another download/decode.
+      long extra = bytesTexturaMip(s->w, s->h,
+                                  temPiramide(s->w, s->h, itens[alvo].card));
+      // The previous texture remains live until publication; charge both.
+      // Publication releases the old texture only after allocating the new one.
+      // Charge both on every platform, including promotions.
+      long lim = limiteBytes();
+      while (bytesUsados + extra > lim)
+        if (despejar(0) < 0) break;
+      if (bytesUsados + extra > lim) {
+        blocked[alvo] = 1;  // Retry next frame; smaller uploads may still fit.
+        SDL_UnlockMutex(mtx);
+        continue;
       }
       sup = s;
       filaEm = itens[alvo].filaUploadEm; itens[alvo].filaUploadEm = 0;
@@ -4395,12 +4755,14 @@ int tex_bombear(int max_por_quadro) {
 
     Uint64 passoEm = SDL_GetPerformanceCounter();
     Uint32 uploadEm = SDL_GetTicks();
-    GLuint t; glGenTextures(1, &t); glBindTexture(GL_TEXTURE_2D, t);
+    while (glGetError() != GL_NO_ERROR) { }
+    GLuint t = 0; glGenTextures(1, &t); glBindTexture(GL_TEXTURE_2D, t);
     if ((long)sup->w * sup->h * 4 > NV_TEX_FAIXA_BYTES) {
       // So reserva; as faixas vem no passo 1 (deste quadro, se sobrar
       // orcamento, ou dos seguintes).
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sup->w, sup->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
       gfx_tex_esquecer(0);
+      if (envioFalhou(alvo, t, sup)) { trabalhou = 1; break; }
       uplIdx = alvo; uplTex = t; uplSup = sup; uplY = 0; uplNiveis = 0;
       uplEm = uploadEm; uplGlMs = SDL_GetTicks() - uploadEm; uplFila = filaWait;
       snprintf(uplPath, sizeof uplPath, "%s", uploadPath);
@@ -4413,8 +4775,7 @@ int tex_bombear(int max_por_quadro) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sup->w, sup->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, sup->pixels);
     if (sup->userdata) tex_upl_bytes += subirNiveis(sup);
     trabalhou = 1;
-    publicarEnvio(alvo, t, sup, uploadEm, SDL_GetTicks() - uploadEm, filaWait, uploadPath);
-    subiu++;
+    subiu += publicarEnvio(alvo, t, sup, uploadEm, SDL_GetTicks() - uploadEm, filaWait, uploadPath);
     medirEnvio(classe, passoEm);
     porClasse[classe]++;
     if (classe == 2) break;
@@ -4428,7 +4789,7 @@ void tex_estatisticas(int *nItens, int *nPend, long *bytes,
   SDL_LockMutex(mtx);
   for (int i = 0; i < nMax; i++) {
     if (itens[i].tex) {
-      long t = bytesTextura(itens[i].w, itens[i].h);
+      long t = bytesTextura(&itens[i]);
       a++; b += t;
       if (quente(&itens[i])) { q++; bq += t; }
     }

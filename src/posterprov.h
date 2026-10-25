@@ -80,6 +80,12 @@ int posterprov_extra_normalizar(const char *entrada, char *out, size_t n);
 
 // Modelo livre: http(s)://, marcadores {imdb} {tmdb} {type} {tipo_tmdb},
 // aliases {imdb_id} {tmdb_id} e {id} (IMDb se houver, senao TMDB).
+// {shape} = poster/landscape; its presence opts landscape cards into overrides.
+// Nuvio alternatives {tmdb_id|imdb_id}: first non-empty value wins.
+// {id_type} = imdb/tmdb; {typed_id} = tt... or movie-N/series-N.
+// Percent-encoded braces/pipes are accepted; other URL escapes stay unchanged.
+// {id} retains Legacy's IMDb-or-numeric-TMDB meaning for saved templates.
+// Identity markers may end in ? to emit an empty value when unavailable.
 // Pelo menos um deles. 1 se valido.
 int posterprov_modelo_valido(const char *modelo);
 // Para o que a pessoa DIGITA agora: valido e, no pior caso de cada marcador,
@@ -128,6 +134,9 @@ void posterprov_preferir_addon(int sim);
 int  posterprov_addon_vence(const char *origem, const char *orig);
 const char *posterprov_card_addon(const char *origem, const char *imdb, long tmdb,
                                   const char *tipo, const char *orig);
+
+const char *posterprov_card_formato(const char *origem, const char *imdb, long tmdb,
+                                    const char *tipo, const char *orig, int landscape);
 
 // 1 quando `url` e uma URL montada pelo provedor ativo (para o portao de
 // concorrencia e para redigir o log).

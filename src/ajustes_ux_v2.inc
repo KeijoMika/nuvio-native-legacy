@@ -103,7 +103,7 @@ static float aj2Ln = 58.0f, aj2Gap = 3.0f, aj2GtEx = 18.0f, aj2Fade = 70.0f;
 // Ambar, Violeta): o `fill` tinge o fundo e a `marca` (a versao clara do
 // matiz, feita para o escuro) pinta o icone. Nao dependem do acento escolhido.
 #define AJ2_CHIP_ICO 28.0f
-static const unsigned char AJ2_CHIP_TEMA[3] = { 2, 5, 3 };   // Oceano, Ambar, Violeta
+static const unsigned char AJ2_CHIP_TEMA[4] = { 2, 5, 3, 4 };   // Oceano, Ambar, Violeta, e o do perfil (2.1)
 static struct {
   float x[3], w[3];        // posicao (relativa ao miolo da ilha) e largura abertas
   int lin[3], linhas;      // a fileira de cada uma
@@ -243,10 +243,11 @@ static void aj2MenuValor(int sec, char *b, size_t n) {
       snprintf(a, sizeof a, i18n("Áudio: %s"), i18n(textoValor(AJ_AUD_LINGUA)));
       snprintf(b, n, "%s · %s", i18n(textoValor(AJ_IDIOMA)), a);
       return; }
-    case AJS_TVAOVIVO:
-      snprintf(b, n, "%s", xtream_configurado() ? textoLeitura(AJ_XTREAM_SERVIDOR)
-                         : stalker_configurado() ? textoLeitura(AJ_STALKER_PORTAL) : i18n("Não configurado"));
-      return;
+    case AJS_TVAOVIVO: {
+      int contas = iptv_contas(NULL, 0);
+      if (contas) snprintf(b, n, "%s: %d", i18n("Contas de TV ao vivo"), contas);
+      else snprintf(b, n, "%s", i18n("Não configurado"));
+      return; }
     case AJS_CONTAS: {   // "Henrique · Trakt"
       size_t u = (size_t)snprintf(b, n, "%s", textoLeitura(AJ_PERFIL_ATIVO));
       if (u < n && traktauth_estado() == TRA_LIGADO) u += (size_t)snprintf(b + u, n - u, " · Trakt");
@@ -698,7 +699,7 @@ static void aj2TopoTexto(int t, char *b, size_t n, char *det, size_t nd) {
   } else if (t == AJ2_T_DIF) {
     snprintf(b, n, "%s", i18n("Diferentes do padrão"));
     if (uxNDifs) snprintf(det, nd, " · %d", uxNDifs);
-  } else snprintf(b, n, i18n("Perfil: %s"), textoLeitura(AJ_PERFIL_ATIVO));
+  } else pfRotuloChip(b, n);
 }
 static const char *aj2TopoIcone(int t) {
   return t == AJ2_T_BUSCA ? "aj_search" : t == AJ2_T_AV ? (lig(AJ_AVANCADAS) ? "aj_eye" : "aj_eye-off")
@@ -733,8 +734,10 @@ static GfxRect aj2TopoR(int t) {
   float wb = cw + (cw + AJ2_G_VAO) / 3.0f, wa = aj2TopoLargura(AJ2_T_AV), wp = aj2TopoLargura(AJ2_T_PERFIL);
   float wl = ajLayoutSelecionavel() ? aj2TopoLargura(AJ2_T_LAYOUT) : 0.0f, wd = aj2TopoLargura(AJ2_T_DIF);
   float gap = ajLayoutSelecionavel() ? 80.0f : 60.0f;
-  // Search yields first when localized labels do not fit; layout may be hidden.
-  if (wb + gap + wa + wp + wd + wl > fim - x) { wb = fim - x - gap - wa - wp - wd - wl; if (wb < 300) wb = 300; }
+  // Drop the optional Advanced state before shortening Search or the profile name.
+  if (wb + gap + wa + wp + wd + wl > fim - x)
+    wa = 30 + 34 + 16 + (float)txt_largura(TXT_V3_CHIP, i18n("Avançadas")) + 32;
+  if (wb + gap + wa + wp + wd + wl > fim - x) { wb = fim - x - gap - wa - wp - wd - wl; if (wb < 240) wb = 240; }
   if (wb + gap + wa + wp + wd + wl > fim - x) { float k = (fim - x - gap - wb) / (wa + wp + wd + wl); wa *= k; wp *= k; wd *= k; wl *= k; }
   if (t == AJ2_T_BUSCA) return (GfxRect){ x, y, wb, AJ2_G_CHIP };
   if (t == AJ2_T_AV) return (GfxRect){ x + wb + 20, y, wa, AJ2_G_CHIP };
@@ -878,12 +881,13 @@ static void aj2GradeCartaoDesenhar(int s, float f) {
   aj2MenuValor(s, vb, sizeof vb);
   // O nome inteiro, sempre: numa linha; em duas (alemao, russo) no mesmo corpo.
   { int linhas = (float)txt_largura(en, nome) > tw ? 2 : 1, ti = ajTinta();
-    float nomeH = linhas == 1 ? 50.0f : 88.0f, valH = vb[0] && linhas == 1 ? 40.0f : 0.0f;
+    float lineH = fmaxf(44.0f, (float)ajTxt(en, nome).h + 2.0f);
+    float nomeH = linhas == 1 ? 50.0f : lineH * 2.0f, valH = vb[0] && linhas == 1 ? 40.0f : 0.0f;
     y = r.y + (r.h - nomeH - (valH > 0 ? 4.0f + valH : 0)) * 0.5f;
     if (linhas == 1) aj2GradeTexto(en, nome, tx, y + 25.0f, tw, 1.0f, k);
     else {
-      if (k < 0.99f) txt_bloco(en, nome, 243, 242, 239, tx, y, tw, 44.0f, 1.0f - k, 2);
-      if (k > 0.01f) txt_bloco(en, nome, ti, ti, ti, tx, y, tw, 44.0f, k, 2);
+      if (k < 0.99f) txt_bloco(en, nome, 243, 242, 239, tx, y, tw, lineH, 1.0f - k, 2);
+      if (k > 0.01f) txt_bloco(en, nome, ti, ti, ti, tx, y, tw, lineH, k, 2);
     }
     if (valH > 0) aj2GradeTexto(TXT_V3_VALOR, vb, tx, y + nomeH + 4.0f + valH * 0.5f, tw, 0.62f, k); }
 }
@@ -1143,7 +1147,9 @@ static void aj2DesenharGrade(float a) {
         int sec = uxIndice - 2;
         desc = sec < (int)(sizeof SECAO_AJUDA / sizeof *SECAO_AJUDA) ? SECAO_AJUDA[sec] : TELA[secIni[sec]].sub;
       }
-      if (desc) ajBloco(TXT_V3_SUB, desc, c.x, topo, c.w, 39.0f, 0.70f, (int)((fim - 64.0f - topo) / 39.0f));
+      float lineH = fmaxf(39.0f, (float)ajTxt(TXT_V3_SUB, desc ? desc : "").h + 2.0f);
+      int maxLines = (int)floorf((fim - 64.0f - topo) / lineH);
+      if (desc && maxLines > 0) ajBloco(TXT_V3_SUB, desc, c.x, topo, c.w, lineH, 0.70f, maxLines);
       // as duas teclas; so o OK quando a coluna nao comporta as duas (alemao a 100%)
       { int nd = aj2DicasLinha(d, 2, 0, 0, TXT_V2_KBD20, 40, 44, 9, TXT_V2_26, 10, 28, 0, 1) > c.w ? 1 : 2;
         float wd = aj2DicasLinha(d, nd, 0, 0, TXT_V2_KBD20, 40, 44, 9, TXT_V2_26, 10, 28, 0, 1);
@@ -1217,6 +1223,10 @@ static void aj2DesenharPagina(float t) {
   } else {
     nome = aj2ChipRotulo(1); ic = "aj_rotate-ccw-clock"; kick = "Ajustes";
     snprintf(vb, sizeof vb, "%d", uxNDifs); q[0] = 0;
+  }
+  if(iptvForm.tipo && sec==AJS_TVAOVIVO) {
+    nome=iptvForm.nova?ajIptvAdicionarNome(iptvForm.tipo):iptvAlvo.nome;
+    vb[0]=q[0]=0;
   }
   x = h.x + 28.0f;
   float meio = h.y + (ajRetrato() ? 57.0f : h.h * 0.5f);

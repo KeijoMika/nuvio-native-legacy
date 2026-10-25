@@ -74,6 +74,11 @@ const char *i18n(const char *s)         { return s; }
 const char *idioma_mes_data(int mes, const char *nomePt) { (void)mes; return nomePt; }
 static const char *fakeDados = "";
 const char *dados_dir(void)             { return fakeDados; }
+char *dados_caminho(char *dst, unsigned size, const char *name) {
+  snprintf(dst, size, "%s/%s", fakeDados, name); return dst;
+}
+int ajustes_nota_episodio(int source) { (void)source; return 1; }
+int ajustes_fonte_biblioteca(void) { return 0; }
 const char *sessao_usuario(void)        { return ""; }
 static int fakePerfil = 1;
 int         perfis_ativo(void)          { return fakePerfil; }
@@ -103,7 +108,8 @@ int prog_gravar_local(const char *imdb, int t, int e, double p, double d, int to
 
 void  SDL_Delay(Uint32 ms)                 { usleep(ms * 1000); }
 int   ajustes_cw_fonte(void)               { return 0; }
-int   ajustes_tmdb_ligado(void)            { return 1; }
+static int fakeTmdbLigado = 1;
+int   ajustes_tmdb_ligado(void)            { return fakeTmdbLigado; }
 static int fakeMetaExterno, fakeTmdbBasico;
 int   ajustes_meta_externo(void)           { return fakeMetaExterno; }
 static int fakeSoCinemeta;
@@ -113,7 +119,8 @@ int   ajustes_logo_addon(void)             { return 0; }
 int   ajustes_tmdb_basico(void)            { return fakeTmdbBasico; }
 static int fakeTmdbArte;
 int   ajustes_tmdb_arte(void)              { return fakeTmdbArte; }
-int   ajustes_tmdb_elenco(void)            { return 0; }
+static int fakeTmdbElenco;
+int   ajustes_tmdb_elenco(void)            { return fakeTmdbElenco; }
 int   ajustes_tmdb_cw(void)                { return 0; }
 static const char *fakeIdioma = "pt-BR";
 const char *ajustes_tmdb_idioma(void)      { return fakeIdioma; }
@@ -316,6 +323,11 @@ char *rede_baixar(const char *u, int t) {
 }
 char *rede_baixar_com(const char *u, int t, const char *const *c) {
   (void)c; return rede_baixar(u, t); }
+char *rede_baixar_st(const char *u, int t, const char *const *c, int *status) {
+  char *r = rede_baixar_com(u, t, c);
+  if (status) *status = r ? 200 : 0;
+  return r;
+}
 int arte_reserva_registrar(const char *url, const char *imdb, int poster) {
   (void)url; (void)imdb; (void)poster; return 1; }
 
@@ -330,6 +342,7 @@ static void limparCacheMeta(void) {
   int i;
   for (i = 0; i < META_CACHE_N; i++) { free(metaCache[i].corpo); metaCache[i].corpo = NULL; }
   metaNegLimpar();
+  arm_cache_limpar();
 }
 
 // /meta de serie com `nt` temporadas de cont[t] episodios (ids "<tt>:T:E"),
@@ -1079,6 +1092,33 @@ int main(void) {
       assert(n1 == 1); }
     puts("ok  um pedido so a fonte por abertura");
 
+    // 29b) Addon de metadados que so atende "mal:" e item "kitsu:" sem origem: o
+    //      ARM diz o mal do mesmo titulo e o addon e perguntado por ele; o item
+    //      continua com o proprio id.
+    nFake = 1;
+    fake[0] = (FakeAddon){ "Anime MAL", "https://mal.test/SEGREDO", "org.mal", "mal:", 0 };
+    limparCacheMeta(); nRotas = 0;
+    rota("arm.haglund.dev/api/v2/ids?source=kitsu&id=41370",
+         "{\"kitsu\":41370,\"myanimelist\":38000,\"anilist\":null,\"imdb\":null}");
+    rota("mal.test/SEGREDO/meta/series/mal:38000.json",
+         "{\"meta\":{\"id\":\"mal:38000\",\"type\":\"series\",\"name\":\"Mushoku Tensei\","
+         "\"description\":\"Sinopse do MAL.\",\"videos\":["
+         "{\"id\":\"mal:38000:1\",\"title\":\"Um\",\"season\":1,\"episode\":1},"
+         "{\"id\":\"mal:38000:2\",\"title\":\"Dois\",\"season\":1,\"episode\":2},"
+         "{\"id\":\"mal:38000:3\",\"title\":\"Tres\",\"season\":1,\"episode\":3}]}}");
+    catalogoDe("kitsu:41370", "series", "Mushoku Tensei", "");
+    abrir();
+    assert(pediu("arm.haglund.dev/api/v2/ids?source=kitsu&id=41370"));
+    assert(pediu("mal.test/SEGREDO/meta/series/mal:38000.json"));
+    assert(!pediu("meta/series/kitsu:41370.json"));
+    assert(!strcmp(cat_item(0)->imdb, "kitsu:41370"));
+    assert(cat_n_episodios(0) == 3);
+    // As fontes continuam no id do item: o id de video do addon de metadados
+    // ("mal:38000:2") nunca chega aos addons de fonte.
+    { char sid[64];
+      assert(cat_id_stream(0, 1, 2, sid, sizeof sid) && !strcmp(sid, "kitsu:41370:2")); }
+    puts("ok  ARM: addon so de mal: recebe o mal do mesmo titulo do kitsu; fontes no id do item");
+
     // 30) ISSUE #209 (LG 50NANO75SPA, 1.6.5): app e TMDB em portugues, titulo e
     //     sinopse da SERIE em ingles. "Prefere a ficha do addon de metadados" e
     //     LIGADO de fabrica (e preferExternalMetaAddonDetail=true no web, que a
@@ -1313,6 +1353,71 @@ int main(void) {
     assert(cat_item(0)->temporadas[2] == 3);
     puts("ok  #372: cauda do fio velho nao repoe as abas que o fio novo trocou");
     nRotas = 0; limparCacheMeta(); }
+
+  // #205: filme com elenco so em memoria (nomes do catalogo, sem id de pessoa)
+  // ainda pede o casamento /credits do TMDB ao abrir.
+  { static const char *CREDITS =
+      "{\"cast\":[{\"id\":9001,\"name\":\"Rory Kinnear\",\"character\":\"X\"},"
+      "{\"id\":9002,\"name\":\"Jason Flemyng\",\"character\":\"Y\"}]}";
+    CatItem it;
+    limparCacheMeta(); nRotas = 0; nFake = 0; metaprov_zerar_pausa();
+    addonMeta = 0; fakeTmdbElenco = 1; fakeTmdbBasico = 0; fakeTmdbArte = 0;
+    snprintf(tmdbChave, sizeof tmdbChave, "%s", "01234567890123456789012345678901");
+    tmdbFind = "{\"movie_results\":[{\"id\":424242}]}";
+    rota("/meta/movie/tt28498219.json",
+         "{\"meta\":{\"id\":\"tt28498219\",\"type\":\"movie\",\"name\":\"Matchbox\",\"videos\":[]}}");
+    rota("themoviedb.org/3/movie/424242/credits", CREDITS);
+    rota("themoviedb.org/3/movie/424242/watch/providers", "{}");
+    memset(&it, 0, sizeof it);
+    snprintf(it.imdb, sizeof it.imdb, "%s", "tt28498219");
+    snprintf(it.tipo, sizeof it.tipo, "%s", "movie");
+    snprintf(it.titulo, sizeof it.titulo, "%s", "Matchbox the Movie");
+    it.nElenco = 2;
+    snprintf(it.elenco[0].nome, sizeof it.elenco[0].nome, "%s", "Rory Kinnear");
+    snprintf(it.elenco[1].nome, sizeof it.elenco[1].nome, "%s", "Jason Flemyng");
+    cat_definir_tudo(&it, 1, NULL, 0);
+    assert(desc_elenco_precisa_pessoas(cat_item(0)));
+    desc_episodios_garantir(0);
+    while (fioEpVivo) SDL_Delay(1);
+    assert(cat_item(0)->elenco[0].tmdb == 9001);
+    assert(cat_item(0)->elenco[1].tmdb == 9002);
+    assert(!desc_elenco_precisa_pessoas(cat_item(0)));
+    // Reopening can replace localized metadata while preserving every person ID.
+    it = *cat_item(0);
+    assert(desc_meta_elenco("{\"cast\":[{\"name\":\"Rory Kinnear\","
+                           "\"character\":\"Addon role\",\"photo\":\"https://addon.test/rory.jpg\"},"
+                           "{\"name\":\"Jason Flemyng\"}]}", &it, 0) == 2);
+    assert(it.elenco[0].tmdb == 9001 && it.elenco[1].tmdb == 9002);
+    assert(!strcmp(it.elenco[0].papel, "Addon role"));
+    nRotas = 0; nPedidos = 0;
+    rota("themoviedb.org/3/movie/424242/credits",
+         "{\"cast\":[{\"id\":9001,\"name\":\"Rory Kinnear\","
+         "\"character\":\"Papel localizado\",\"profile_path\":\"/rory.jpg\"},"
+         "{\"id\":9002,\"name\":\"Jason Flemyng\"},"
+         "{\"id\":9003,\"name\":\"Additional actor\"}]}");
+    fotosDoElenco(&it, it.imdb, 0, 0);
+    assert(pediu("/credits?"));
+    assert(!strcmp(it.elenco[0].papel, "Papel localizado"));
+    assert(!strcmp(it.elenco[0].foto, "https://image.tmdb.org/t/p/w185/rory.jpg"));
+    assert(it.nElenco == 3 && it.elenco[2].tmdb == 9003);
+
+    // Missing IDs alone must not schedule work when enrichment cannot run.
+    it.elenco[0].tmdb = it.elenco[1].tmdb = it.elenco[2].tmdb = 0;
+    for (int disabled = 0; disabled < 3; disabled++) {
+      fakeTmdbElenco = disabled != 0;
+      fakeTmdbLigado = disabled != 1;
+      tmdbChave[0] = disabled == 2 ? 0 : '0';
+      cat_definir_tudo(&it, 1, NULL, 0);
+      nPedidos = 0;
+      assert(!desc_elenco_precisa_pessoas(cat_item(0)));
+      desc_episodios_garantir(0);
+      assert(desc_episodios_precarregar(0) == 0);
+      assert(!fioEpVivo && nPedidos == 0);
+    }
+    fakeTmdbLigado = 1;
+    fakeTmdbElenco = 0; tmdbFind = NULL; tmdbChave[0] = 0; nRotas = 0;
+    limparCacheMeta();
+    puts("ok  #205: cast IDs, refresh after addon metadata, and integration scheduling gates"); }
 
   puts("detalheanime: tudo ok");
   return 0;

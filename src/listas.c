@@ -1,5 +1,6 @@
 // Ver listas.h para o que cada fonte entrega de verdade. Aqui fica o COMO.
 #include "listas.h"
+#include "musica.h"
 #include "trakt.h"
 #include "simklauth.h"
 #include "nuvem.h"
@@ -406,29 +407,44 @@ int lst_ler_trakt(const char *json, int envelope) {
 // Cinemeta sem credencial nenhuma, que e o mesmo caminho da fileira "Continuar
 // assistindo".
 int lst_ler_simkl_itens(const char *json, int serie, CatItem *dst, int max) {
-  // Anime e um TERCEIRO tipo no Simkl (raiz "anime", objeto interno "anime")
-  // e vem do endpoint /sync/all-items/anime/<estado>: vai para o lado das
-  // series, junto com o que ja veio de shows.
+  // Anime is a separate Simkl endpoint; anime_type selects Movies or TV.
   static const char *vetores[] = { "movies", "shows", "anime" };
   static const char *chaves[]  = { "movie", "show", "anime" };
   const char *p;
   int n = 0, k;
   if (!json || !dst) return 0;
-  for (k = serie ? 1 : 0; k < (serie ? 3 : 1) && n < max; k++)
+  for (k = 0; k < 3 && n < max; k++)
   for (p = js_array(json, NULL, vetores[k]); p && *p == '{' && n < max;
        p = js_prox(js_fim(p))) {
     const char *f = js_fim(p);
+    if (k != 2 && k != (serie ? 1 : 0)) continue;
     char obj[900] = "";
     const char *oi = p, *of = f;
     CatItem *d = &dst[n];
     char imdb[32] = "";
-    if (brutoRaiz(p, f, chaves[k], obj, sizeof obj)) { oi = obj; of = obj + strlen(obj); }
+    if (brutoRaiz(p, f, chaves[k], obj, sizeof obj) ||
+        (k == 2 && brutoRaiz(p, f, "show", obj, sizeof obj))) {
+      oi = obj; of = obj + strlen(obj);
+    }
+    if (k == 2) {
+      char animeTipo[24] = "";
+      js_texto_raiz_em(oi, of, "anime_type", animeTipo, sizeof animeTipo);
+      if ((!strcmp(animeTipo, "movie")) == !!serie) continue;
+    }
     memset(d, 0, sizeof *d);
     js_texto_raiz_em(oi, of, "title", d->titulo, sizeof d->titulo);
     { char ids[300] = "";
-      if (brutoRaiz(oi, of, "ids", ids, sizeof ids))
-        js_texto(ids, ids + strlen(ids), "imdb", imdb, sizeof imdb); }
-    if (!d->titulo[0] || !imdb[0]) continue;
+      if (brutoRaiz(oi, of, "ids", ids, sizeof ids)) {
+        js_texto(ids, ids + strlen(ids), "imdb", imdb, sizeof imdb);
+        d->tmdb = (long)js_num(ids, NULL, "tmdb", 0);
+        if (!imdb[0] && d->tmdb > 0)
+          snprintf(imdb, sizeof imdb, "tmdb:%ld", d->tmdb);
+        if (!imdb[0]) {
+          long id = (long)js_num(ids, NULL, "simkl", 0);
+          if (id > 0) snprintf(imdb, sizeof imdb, "simkl:%ld", id);
+        }
+      } }
+    if (!d->titulo[0]) continue;
     snprintf(d->imdb, sizeof d->imdb, "%s", imdb);
     snprintf(d->tipo, sizeof d->tipo, "%s", serie ? "series" : "movie");
     { int ano = (int)js_num(oi, of, "year", 0.0);
@@ -461,6 +477,16 @@ static int montarNuvio(void) {
     snprintf(d->autor, sizeof d->autor, "%s", f->group);
     snprintf(d->colId, sizeof d->colId, "%s", f->id);
     n++;
+  }
+  if (n < LST_MAX) {
+    LstLista *d = &tabela[n++];
+    memset(d, 0, sizeof *d);
+    d->fonte = LST_NUVIO;
+    snprintf(d->titulo, sizeof d->titulo, "Músicas");
+    snprintf(d->colId, sizeof d->colId, "musicas");
+    d->curtidas = -1;
+    MusSalva saved[MUS_GUARDADAS_MAX];
+    d->itens = mus_listar(saved, MUS_GUARDADAS_MAX);
   }
   nTabela = n;
   if (!n) snprintf(aviso, sizeof aviso,
@@ -670,7 +696,7 @@ const char *lst_aviso(void) {
 // ------------------------------------------------------------ itens da lista
 
 static pthread_mutex_t itTrava = PTHREAD_MUTEX_INITIALIZER;
-static CatItem  itens[LST_ITENS_MAX];
+static CatItem *itens;
 static int      nItens, itFioVivo, itSimkl;
 static unsigned itGeracao;
 static int      itInjetado;   // so os testes (lst_teste_itens)
@@ -697,35 +723,45 @@ static void *fioSimkl(void *u) {
   SimklTarefa *t = u;
   char url[40], aut[430];
   const char *cab[3];
-  CatItem *lote = malloc(sizeof *lote * LST_ITENS_MAX);
-  int n = 0, nA, i, j, serie = !strcasecmp(t->midia, "TV");
+  CatItem *lote = NULL;
+  int n = 0, serie = !strcasecmp(t->midia, "TV");
   snprintf(url, sizeof url, "/sync/all-items/%s/%s", serie ? "shows" : "movies",
            t->estado);
   snprintf(aut, sizeof aut, "Authorization: Bearer %s", t->token);
   cab[0] = aut; cab[1] = "Accept: application/json"; cab[2] = NULL;
-  char *corpo = lote && perfis_sessao_atual(t->sessao) ? fioSimklBaixar(url, t, cab) : NULL;
-  if (corpo) { n = lst_ler_simkl_itens(corpo, serie, lote, LST_ITENS_MAX); free(corpo); }
-  // ANIME: terceiro tipo do Simkl. Na lista de TV, o mesmo estado pede o
-  // endpoint /anime/ e o leitor ja aceita a raiz "anime". Dedup por imdb.
-  if (serie && n < LST_ITENS_MAX && perfis_sessao_atual(t->sessao)) {
-    snprintf(url, sizeof url, "/sync/all-items/anime/%s", t->estado);
-    corpo = fioSimklBaixar(url, t, cab);
-    if (corpo) {
-      nA = lst_ler_simkl_itens(corpo, 1, lote + n, LST_ITENS_MAX - n);
-      free(corpo);
-      for (i = n; i < n + nA; i++) {
-        for (j = 0; j < n; j++) if (!strcmp(lote[j].imdb, lote[i].imdb)) break;
-        if (j < n) memmove(lote + i, lote + i + 1, sizeof lote[0] * (size_t)(n + nA - i - 1)), nA--, i--;
-      }
-      n += nA;
-    }
+  // All-items returns a complete snapshot. Size storage from the response,
+  // including anime's usual "show" envelope, rather than truncating at 120.
+  for (int part = 0; part < 2; part++) {
+    if (part) snprintf(url, sizeof url, "/sync/all-items/anime/%s", t->estado);
+    char *corpo = perfis_sessao_atual(t->sessao) ? fioSimklBaixar(url, t, cab) : NULL;
+    if (!corpo) { free(lote); lote = NULL; n = 0; break; }
+    int count = 0;
+    static const char *keys[] = {"movies", "shows", "anime"};
+    for (int k = 0; k < 3; k++)
+      for (const char *p = js_array(corpo, NULL, keys[k]); p && *p == '{'; p = js_prox(js_fim(p))) count++;
+    CatItem *grown = count ? realloc(lote, sizeof *lote * (size_t)(n + count)) : lote;
+    if (count && !grown) { free(corpo); free(lote); lote = NULL; n = 0; break; }
+    lote = grown;
+    if (count) n += lst_ler_simkl_itens(corpo, serie, lote + n, count);
+    free(corpo);
   }
-  if (n && perfis_sessao_atual(t->sessao))
-    n = trakt_enfeitar_lote_sessao(lote, n, t->sessao);
+  // Enrichment may compact unsupported IDs. Enrich copies so metadata failure
+  // cannot remove account entries or merge distinct Simkl titles by IMDb.
+  CatItem *enriched = malloc(sizeof *enriched * 32);
+  for (int i = 0; enriched && i < n && perfis_sessao_atual(t->sessao); i += 32) {
+    int end = n - i < 32 ? n - i : 32, count = 0;
+    for (int j = 0; j < end; j++)
+      if (!strncmp(lote[i + j].imdb, "tt", 2)) enriched[count++] = lote[i + j];
+    if (count) count = trakt_enfeitar_lote_sessao(enriched, count, t->sessao);
+    for (int j = 0; j < end; j++)
+      for (int k = 0; k < count; k++)
+        if (!strcmp(lote[i + j].imdb, enriched[k].imdb)) { lote[i + j] = enriched[k]; break; }
+  }
+  free(enriched);
   if (perfis_sessao_travar(t->sessao)) {
     pthread_mutex_lock(&itTrava);
     if (t->geracao == itGeracao) {
-      if (n) memcpy(itens, lote, sizeof(CatItem) * (size_t)n);
+      free(itens); itens = lote; lote = NULL;
       nItens = n; itFioVivo = 0;
     }
     pthread_mutex_unlock(&itTrava);
@@ -746,6 +782,21 @@ void lst_abrir(const LstLista *l, const char *midia) {
   snprintf(itMidia, sizeof itMidia, "%s", midia && midia[0] ? midia : l->midia);
   pthread_mutex_unlock(&itTrava);
 
+  if (l->fonte == LST_NUVIO && !strcmp(l->colId, "musicas")) {
+    MusSalva saved[MUS_GUARDADAS_MAX];
+    int n = mus_listar(saved, MUS_GUARDADAS_MAX);
+    CatItem *copy = n ? calloc((size_t)n, sizeof *copy) : NULL;
+    if (n && !copy) return;
+    for (int i = 0; i < n; i++) {
+      snprintf(copy[i].imdb, sizeof copy[i].imdb, "%s", saved[i].imdb);
+      snprintf(copy[i].titulo, sizeof copy[i].titulo, "%s", saved[i].titulo);
+      snprintf(copy[i].tipo, sizeof copy[i].tipo, "%s", saved[i].temp ? "series" : "movie");
+    }
+    pthread_mutex_lock(&itTrava);
+    free(itens); itens = copy; nItens = n; itSimkl = 1;
+    pthread_mutex_unlock(&itTrava);
+    return;
+  }
   if (l->fonte == LST_SIMKL) {
 #ifndef LST_SO_ITENS
     pthread_t fio;
@@ -802,9 +853,11 @@ void lst_abrir(const LstLista *l, const char *midia) {
 // baixado, e faz lst_abrir deixa-los em paz. Sem rede nenhuma lista tem item, e
 // o resumo do menu de contexto (ctxmenu.c) so se julga com eles na tela.
 void lst_teste_itens(const CatItem *v, int n) {
-  if (n > LST_ITENS_MAX) n = LST_ITENS_MAX;
+  CatItem *copy = n > 0 ? malloc(sizeof *copy * (size_t)n) : NULL;
+  if (n > 0 && !copy) return;
+  if (n > 0) memcpy(copy, v, sizeof *copy * (size_t)n);
   pthread_mutex_lock(&itTrava);
-  for (int i = 0; i < n; i++) itens[i] = v[i];
+  free(itens); itens = copy;
   nItens = n; itSimkl = 1; itInjetado = n > 0; itGeracao++;
   pthread_mutex_unlock(&itTrava);
 }
@@ -851,6 +904,7 @@ void lst_abrir_sessao(void) {
   termoBusca[0] = 0; fioVivo = 0;
   pthread_mutex_unlock(&trava);
   pthread_mutex_lock(&itTrava);
+  free(itens); itens = NULL;
   itGeracao++; nItens = itFioVivo = itSimkl = itInjetado = 0;
   itEstado[0] = itMidia[0] = 0;
   pthread_mutex_unlock(&itTrava);

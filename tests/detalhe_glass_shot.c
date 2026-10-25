@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #define extras_pedir            fx_pedir
 #define extras_carregando       fx_carregando
@@ -75,6 +76,7 @@
 #define extras_agenda_status    fx_agenda_status
 #define extras_ficha_status       fx_ficha_status
 #define extras_ficha_lancamento   fx_ficha_lancamento
+#define extras_ficha_digital      fx_ficha_digital
 #define extras_ficha_duracao      fx_ficha_duracao
 #define extras_ficha_paises       fx_ficha_paises
 #define extras_ficha_classificacao fx_ficha_classificacao
@@ -87,10 +89,30 @@ size_t trakt_token_tam(const char *);
 #define txt_bloco trakt_bloco
 #define txt_largura trakt_largura
 #define txt_token_tam trakt_token_tam
+#include "gfx.h"
+static int cardMaterial, cardFrost, captionSolid, commentMaterial;
+static void card_material(GfxRect r, float radius, float density, float alpha) {
+  int before = gfx_vidro_com_fonte;
+  gfx_vidro_material(r, radius, density, alpha);
+  cardMaterial++;
+  if (r.w == 600.0f && r.h == 340.0f) commentMaterial++;
+  cardFrost += gfx_vidro_com_fonte > before;
+}
+static void card_color(GfxRect r, float radius, float cr, float cg, float cb, float a) {
+  if (cr == .19f && cg == .21f && cb == .23f && a > .5f) captionSolid++;
+  gfx_cor(r, radius, cr, cg, cb, a);
+}
+void b2_panel(GfxRect r, float radius, float density, float a);
+#define gfx_vidro_painel b2_panel
+#define gfx_vidro_material card_material
+#define gfx_cor card_color
 #ifndef NV_DETAIL_SOURCE
 #define NV_DETAIL_SOURCE "../src/detail.c"
 #endif
 #include NV_DETAIL_SOURCE
+#undef gfx_vidro_material
+#undef gfx_vidro_painel
+#undef gfx_cor
 #undef txt_bloco
 #undef txt_largura
 #undef txt_token_tam
@@ -110,6 +132,10 @@ size_t trakt_token_tam(const char *s) {
 }
 
 #include "dados.h"
+#include "perfis.h"
+#include "agendaviso.h"
+#include "fontepref.h"
+#include "streams.h"
 #include "ilha.h"
 #include "menu.h"
 #include "salvospainel.h"
@@ -136,7 +162,7 @@ static const char *const COM_TXT[] = {
   "as cenas em que aparece.",
   "Perfeito para uma tarde de chuva." };
 static const int COM_NOTA[] = { 8, 6, 7 }, COM_CUR[] = { 6, 3, 1 };
-int fx_n_comentarios(void)    { return getenv("NUVIO_TRAKT_CHECK") && !strcmp(getenv("NUVIO_TRAKT_CHECK"), "perf") ? 8 : 3; }
+int fx_n_comentarios(void)    { return (getenv("NUVIO_DETAIL_CHECK") && !strcmp(getenv("NUVIO_DETAIL_CHECK"), "comments")) || (getenv("NUVIO_TRAKT_CHECK") && (!strcmp(getenv("NUVIO_TRAKT_CHECK"), "perf") || !strcmp(getenv("NUVIO_TRAKT_CHECK"), "vidro"))) ? 8 : 3; }
 int fx_n_comentarios_ep(void) { return 0; }
 const char *fx_com_usuario(int i)  { return COM_USU[i % 3]; }
 const char *fx_com_texto(int i)    {
@@ -153,7 +179,8 @@ int fx_com_nota(int i)             { return COM_NOTA[i % 3]; }
 const char *fx_com_lingua(int i)   { (void)i; return ""; }
 
 const char *fx_ficha_status(void)        { return "Released"; }
-const char *fx_ficha_lancamento(void)    { return "2026-05-01"; }
+const char *fx_ficha_lancamento(void)    { return getenv("NUVIO_SHOT_AVISOFONTE") ? "2027-07-17" : "2026-05-01"; }
+const char *fx_ficha_digital(void)       { return ""; }
 int         fx_ficha_duracao(void)       { return 124; }
 const char *fx_ficha_paises(void)        { return "United States of America"; }
 const char *fx_ficha_classificacao(void) { return "12"; }
@@ -411,6 +438,12 @@ static void abrir(int i, int nv, int sec, int col) {
 }
 
 #include "traktcoment_checks.h"
+#include "detalheglass_checks.h"
+#include "detalhe_espaco_checks.h"
+#include "detalhe_b2_checks.h"
+#ifdef NV_SHOT_HOOKS
+#include "vidro_c9_cache.h"
+#endif
 
 static int quer(int argc, char **argv, const char *id) {
   if (argc <= 2) return 1;
@@ -421,19 +454,26 @@ static int quer(int argc, char **argv, const char *id) {
 int main(int argc, char **argv) {
   SDL_GLContext gl;
   const char *dd;
+  const char *config = getenv("NUVIO_DETAIL_CONFIG");
+  int width = 1920, height = 1080;
+  if (config) {
+    if (!strcmp(config, "720-frost")) { width = 1280; height = 720; }
+    else if (!strcmp(config, "2160-frost")) { width = 3840; height = 2160; }
+    else if (strcmp(config, "1080-frost") && strcmp(config, "1080-clear") && strcmp(config, "1080-minimal")) return 2;
+  }
   saida = argc > 1 ? argv[1] : nvt("/nuvio-detglass");
   assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == 0);
   IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
   janela = SDL_CreateWindow("Nuvio: detalhe glass", SDL_WINDOWPOS_CENTERED,
-                            SDL_WINDOWPOS_CENTERED, 1920, 1080,
+                            SDL_WINDOWPOS_CENTERED, width, height,
                             SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
   assert(janela);
   gl = SDL_GL_CreateContext(janela);
   SDL_GL_SetSwapInterval(0);
-  glViewport(0, 0, 1920, 1080);
-  gfx_tamanho_alvo(1920, 1080);
+  glViewport(0, 0, width, height);
+  gfx_tamanho_alvo(width, height);
   assert(gfx_iniciar());
   { char ic[1024]; if (realpath("deploy/app/art", ic)) gfx_icones_dir(ic); }
   assert(txt_iniciar("deploy/app", 1));
@@ -452,6 +492,7 @@ int main(int argc, char **argv) {
     if (lg && *lg) fprintf(f, "idioma %d\n", atoi(lg));
     // Acento azul do mockup (#5aa2ff/#42a5f5): o tema Oceano.
     fputs("selected_theme 2\n", f);
+    if (getenv("NUVIO_SHOT_LAYOUT")) fprintf(f, "homeLayoutLocal %d\n", atoi(getenv("NUVIO_SHOT_LAYOUT")));
     if (getenv("NUVIO_SHOT_VIDRO") && atoi(getenv("NUVIO_SHOT_VIDRO")))
       fputs("vidroLocal 0\n", f);
     else fputs("vidroLocal 1\n", f);
@@ -459,20 +500,44 @@ int main(int argc, char **argv) {
     // NUVIO_SHOT_FONTE=3: Montserrat, the interface font of the owner's TV.
     if (getenv("NUVIO_SHOT_FONTE")) fprintf(f, "fonteInterface %d\n", atoi(getenv("NUVIO_SHOT_FONTE")));
     if (getenv("NUVIO_SHOT_FUNDO")) fprintf(f, "fundoLocal %d\n", atoi(getenv("NUVIO_SHOT_FUNDO")));
+    // NUVIO_SHOT_BORDA=1: "Borda no cartaz em foco" off (focus grows instead of a ring).
+    if (getenv("NUVIO_SHOT_BORDA")) fprintf(f, "bordaFocoCartaz %d\n", atoi(getenv("NUVIO_SHOT_BORDA")));
     fclose(f);
     ajustes_dir(dd); }
   ajustes_teste_vidro_env();   // NUVIO_SHOT_VIDRO_FOSCO / _OPAC
   // First-run appearance migration overrides the file; apply shot settings after it.
-  if (getenv("NUVIO_TRAKT_SHOT") || getenv("NUVIO_TRAKT_CHECK")) {
+  if (getenv("NUVIO_TRAKT_SHOT") || getenv("NUVIO_TRAKT_CHECK") || getenv("NUVIO_DETAIL_CHECK") || getenv("NUVIO_DETAIL_SHOT")) {
     ajustes_definir_vidro(getenv("NUVIO_SHOT_VIDRO") && atoi(getenv("NUVIO_SHOT_VIDRO")));
     assert(ajustes_vidro() == (getenv("NUVIO_SHOT_VIDRO") && atoi(getenv("NUVIO_SHOT_VIDRO"))));
+  }
+  if (config) {
+    setenv("NUVIO_SHOT_VIDRO_FOSCO", !strcmp(config, "1080-clear") ? "0" : "1", 1);
+    ajustes_teste_vidro_env();
+    gfx_definir_efeitos_minimos(!strcmp(config, "1080-minimal"));
+    int w, h;
+    gfx_tamanho_tela(&w, &h);
+    assert(w == width && h == height);
+    printf("PASS: renderer config=%s drawable=%dx%d frost=%d minimal=%d GL=%s (host only)\n",
+           config, w, h, ajustes_vidro_fosco(), gfx_efeitos_minimos(), glGetString(GL_VERSION));
   }
   if (vt_ligado()) vt_vidro();
   // As marcas das notas (IMDb, Rotten Tomatoes, Trakt) vem da pasta de arte.
   { char ar[1024]; if (realpath("deploy/app/art", ar)) extras_carregar(ar); }
   montarCatalogo();
   cacheFrases();
+#ifdef NV_SHOT_HOOKS
+  if (getenv("NUVIO_C9_CACHE")) return vc_run();
+#endif
   if (getenv("NUVIO_TRAKT_CHECK")) return trakt_checks();
+  if (getenv("NUVIO_DETAIL_CHECK")) {
+    const char *m = getenv("NUVIO_DETAIL_CHECK");
+    if (!strcmp(m, "comments")) return comments_checks();
+    if (!strcmp(m, "cards")) return card_checks();
+    if (!strcmp(m, "eps")) return eps_checks();
+    if (!strcmp(m, "espaco")) return espaco_checks();
+    if (!strcmp(m, "b2")) return b2_checks();
+    return strcmp(m, "mais") == 0 ? mais_checks() : rows_checks();
+  }
   // NUVIO_SHOT_AMIGOS=1: amigos falsos (feed externo) no filme e na serie —
   // o que a ilha e a lista "O que os amigos acharam" mostram (06/10/2026):
   // quem recomendou, reacao, nota de tracker, progresso, "parou" e "terminou".
@@ -529,6 +594,49 @@ int main(int argc, char **argv) {
     return vtFalhas ? 1 : 0;
   }
 
+  if (getenv("NUVIO_SHOT_AVISOFONTE")) {
+    agenda_iniciar();
+    snprintf(itens[1].titulo, sizeof itens[1].titulo, "The Odyssey");
+    itens[1].logo[0] = 0;
+    snprintf(itens[1].sinopse, sizeof itens[1].sinopse, "A journey home after the Trojan War. Coming soon.");
+    CatFileira movieFil = {0}; movieFil.ini = 0; movieFil.n = 2;
+    snprintf(movieFil.titulo, sizeof movieFil.titulo, "Movies");
+    snprintf(movieFil.tipo, sizeof movieFil.tipo, "movie");
+    cat_definir_tudo(itens, 2, &movieFil, 1);
+    abrir(1, 0, 0, 0);
+    assert(temLembrar());
+    maisAcoes = 1; botao = 1 + (temInicio() ? 1 : 0);
+    SDL_Delay(450); quadros(40); gravar("movie-alert-rest");
+    int lemb = -1;
+    for (int i = 0; i < nBotoes(); i++) if (acaoEm(i) == ACAO_LEMBRAR) lemb = i;
+    assert(lemb >= 0); botao = lemb; quadros(40); gravar("movie-alert-focus");
+    agenda_filme_alternar(IMDB_FILME, itens[1].titulo, itens[1].poster);
+    quadros(40); gravar("movie-alert-active");
+    // Feed the real persisted available state, as the worker publishes it.
+    char registro[2600], nome[64];
+    snprintf(nome, sizeof nome, "lembretes-p%d.txt", perfis_ativo());
+    snprintf(registro, sizeof registro, "%s\t\t0\t\t1\t1\t100000\t%s\t%s\n",
+             IMDB_FILME, itens[1].titulo, itens[1].poster);
+    dados_gravar(nome, registro);
+    perfis_definir_ativo(2); agenda_iniciar(); perfis_definir_ativo(1); agenda_iniciar();
+    agendaviso_abrir_sessao(); agendaviso_mostrar_se_houver();
+    assert(agendaviso_aberto());
+    home_iniciar("deploy/app/art");
+    cat_definir_tudo(itens, 2, &movieFil, 1);
+    for (int i = 0; i < 90; i++) {
+      txt_novo_quadro(); tex_novo_quadro(); tex_bombear(32); gfx_novo_quadro();
+      glClear(GL_COLOR_BUFFER_BIT);
+      home_atualizar(1.0f / 60.0f, SDL_GetTicks()); home_desenhar(SDL_GetTicks());
+      agendaviso_atualizar(1.0f / 60.0f, SDL_GetTicks()); agendaviso_desenhar(SDL_GetTicks());
+      if (i < 89) SDL_GL_SwapWindow(janela);
+    }
+    gravar("home-movie-available");
+    SDL_Event e = {0}; e.type = SDL_KEYDOWN; e.key.keysym.sym = SDLK_RETURN;
+    agendaviso_evento(&e);
+    AgItem aviso; assert(agendaviso_tomar_filme(&aviso));
+    assert(!strcmp(aviso.imdb, IMDB_FILME)); assert(!agenda_lembrete(IMDB_FILME));
+    return 0;
+  }
   if (quer(argc, argv, "filme-topo")) { abrir(1, 0, 0, 0); gravar("filme-topo"); }
   // O ULTIMO circular da linha aberta em foco: hoje o "..." (Mais opcoes).
   if (quer(argc, argv, "filme-explorar")) {
@@ -600,6 +708,26 @@ int main(int argc, char **argv) {
     glClear(GL_COLOR_BUFFER_BIT); detail_desenhar(SDL_GetTicks());
     gravar(id);
   }
+  // Cast / recommendations / trailers / collection on the shared glass card,
+  // movie and series, focused (col 0) and without row focus.
+  { static const struct { const char *nome; int sec; } fl[] = {
+      { "elenco", SEC_ELENCO }, { "relacionados", SEC_RELACIONADOS },
+      { "trailers", SEC_TRAILERS }, { "colecao", SEC_COLECAO } };
+    for (int series = 0; series < 2; series++)
+      for (int l = 0; l < 4; l++) {
+        char id[64];
+        snprintf(id, sizeof id, "%s-%s", series ? "serie" : "filme", fl[l].nome);
+        // The movie focused ids already have their own handlers above.
+        if (series && argc > 2 && quer(argc, argv, id)) { abrir(0, 1, fl[l].sec, 0); gravar(id); }
+        snprintf(id, sizeof id, "%s-%s-sem-foco", series ? "serie" : "filme", fl[l].nome);
+        if (argc > 2 && quer(argc, argv, id)) {
+          abrir(series ? 0 : 1, 1, fl[l].sec, 0);
+          nivel = 0; memset(animFoco, 0, sizeof animFoco);
+          txt_novo_quadro(); gfx_novo_quadro();
+          glClear(GL_COLOR_BUFFER_BIT); detail_desenhar(SDL_GetTicks());
+          gravar(id);
+        }
+      } }
   if (quer(argc, argv, "filme-relacionados")) { abrir(1, 1, SEC_RELACIONADOS, 0); gravar("filme-relacionados"); }
   if (quer(argc, argv, "filme-colecao")) { abrir(1, 1, SEC_COLECAO, 0); gravar("filme-colecao"); }
   if (quer(argc, argv, "filme-fim")) { abrir(1, 1, SEC_DETALHES, 0); gravar("filme-fim"); }
