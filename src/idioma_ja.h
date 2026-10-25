@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "「カスタムポスター」がオフのときは、ポスターはもともとアドオンが提供するものです。どちらを優先するか決めるには、サービスを選んでください。"),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "カラーボタンの列がない場合は 設定 › About and help ›"),
   T("Sem agrupar", "グループ化なし"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "このセッションでは拡大処理が無効です。テレビの出力より低い720pまたは1080pを選び、アプリを再起動してください。動画は変わりません。"),
   T("Sem arte", "アートワークなし"),
   T("Sem artes para comparar: nada foi aplicado", "比較するアートワークがありません: 何も適用されませんでした"),
   T("Sem atividade neste período", "この期間のアクティビティはありません"),

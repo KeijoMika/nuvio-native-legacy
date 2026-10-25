@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Özel afişler açık değilken afiş zaten eklentinin gönderdiğidir. Hangisinin öncelikli olacağına karar vermek için bir hizmet seç."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Renk sırası yok mu? Ayarlar › About and help ›"),
   T("Sem agrupar", "Gruplama yok"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Bu oturumda etkin yükseltme yok. TV çıkışından düşük 720p veya 1080p seçip uygulamayı yeniden başlatın. Video değişmez."),
   T("Sem arte", "Görsel yok"),
   T("Sem artes para comparar: nada foi aplicado", "Karşılaştırılacak görsel yok: hiçbir şey uygulanmadı"),
   T("Sem atividade neste período", "Bu dönemde etkinlik yok"),

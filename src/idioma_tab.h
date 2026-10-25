@@ -4856,6 +4856,7 @@
   { "Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "With Custom posters off, the poster is already the one the addon sends. Choose a service to decide which one wins." },
   { "Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "No color row? Settings › About and help ›" },
   { "Sem agrupar", "No grouping" },
+  { "Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "No active upscaling this session. Choose 720p or 1080p below the TV output and restart the app. Video is unchanged." },
   { "Sem arte", "No artwork" },
   { "Sem artes para comparar: nada foi aplicado", "No artwork to compare: nothing was applied" },
   { "Sem atividade neste período", "No activity in this period" },

@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "未開啟「自訂海報」時，海報本來就是附加元件提供的。選擇一個服務來決定以哪個為準。"),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "沒有彩色按鈕列？設定 › About and help ›"),
   T("Sem agrupar", "不分組"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "本次工作階段未啟用放大。請選擇低於電視輸出的720p或1080p，然後重新啟動應用程式。影片不受影響。"),
   T("Sem arte", "無圖片"),
   T("Sem artes para comparar: nada foi aplicado", "沒有可比較的圖片：未套用任何變更"),
   T("Sem atividade neste período", "這段期間沒有活動"),

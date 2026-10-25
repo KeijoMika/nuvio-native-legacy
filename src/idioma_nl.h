@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Zonder Eigen posters aan is de poster al die van de add-on. Kies een dienst om te bepalen welke voorgaat."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Geen rij gekleurde knoppen? Instellingen › About and help ›"),
   T("Sem agrupar", "Niet gegroepeerd"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Geen actieve opschaling in deze sessie. Kies 720p of 1080p onder de tv-uitvoer en herstart de app. Video blijft ongewijzigd."),
   T("Sem arte", "Geen artwork"),
   T("Sem artes para comparar: nada foi aplicado", "Geen artwork om te vergelijken: er is niets toegepast"),
   T("Sem atividade neste período", "Geen activiteit in deze periode"),

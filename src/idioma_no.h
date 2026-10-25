@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Uten Egne plakater slått på er plakaten allerede den add-onen sender. Velg en tjeneste for å bestemme hvilken som vinner."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Ingen fargerad? Innstillinger › About and help ›"),
   T("Sem agrupar", "Ingen gruppering"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Ingen aktiv oppskalering i denne økten. Velg 720p eller 1080p under TV-utgangen og start appen på nytt. Videoen endres ikke."),
   T("Sem arte", "Ingen bilde"),
   T("Sem artes para comparar: nada foi aplicado", "Ingen bilder å sammenligne: ingenting ble brukt"),
   T("Sem atividade neste período", "Ingen aktivitet i denne perioden"),

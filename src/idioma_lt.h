@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Kai Pasirinkti plakatai išjungti, plakatas ir taip yra papildinio. Pasirinkite paslaugą, kad nuspręstumėte, kuris turi pirmenybę."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Nėra spalvų eilės? Nustatymai › About and help ›"),
   T("Sem agrupar", "Negrupuoti"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Šiame seanse didinimas neaktyvus. Pasirinkite 720p arba 1080p žemiau TV išvesties raiškos ir paleiskite programėlę iš naujo. Vaizdo įrašas nesikeičia."),
   T("Sem arte", "Be vaizdų"),
   T("Sem artes para comparar: nada foi aplicado", "Nėra vaizdų palyginimui: nieko nepritaikyta"),
   T("Sem atividade neste período", "Šiuo laikotarpiu veiklos nėra"),

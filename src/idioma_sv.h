@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Utan Egna affischer påslaget är affischen redan den som add-onen skickar. Välj en tjänst för att bestämma vilken som vinner."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Ingen färgrad? Inställningar › About and help ›"),
   T("Sem agrupar", "Ingen gruppering"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Ingen aktiv uppskalning i denna session. Välj 720p eller 1080p under TV:ns utgångsupplösning och starta om appen. Videon ändras inte."),
   T("Sem arte", "Inget omslag"),
   T("Sem artes para comparar: nada foi aplicado", "Inga omslag att jämföra: inget tillämpades"),
   T("Sem atividade neste período", "Ingen aktivitet under den här perioden"),
