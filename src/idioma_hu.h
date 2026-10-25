@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Kikapcsolt Egyéni plakátok mellett a poszter eleve az, amit a bővítmény küld. Válassz szolgáltatást, hogy eldöntsd, melyik nyerjen."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Nincs színes gombsor? Beállítások › About and help ›"),
   T("Sem agrupar", "Csoportosítás nélkül"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Ebben a munkamenetben nincs aktív felskálázás. Válasszon a TV kimeneténél kisebb 720p vagy 1080p felbontást, és indítsa újra az alkalmazást. A videó nem változik."),
   T("Sem arte", "Grafika nélkül"),
   T("Sem artes para comparar: nada foi aplicado", "Nincs összehasonlítható grafika: semmi sem lett alkalmazva"),
   T("Sem atividade neste período", "Ebben az időszakban nincs aktivitás"),

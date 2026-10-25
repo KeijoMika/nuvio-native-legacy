@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Когато „Собствени плакати“ е изключено, плакатът и без това е този от добавката. Изберете услуга, за да решите кой има предимство."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Няма ред с цветове? Настройки › About and help ›"),
   T("Sem agrupar", "Без групиране"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Няма активно мащабиране в тази сесия. Изберете 720p или 1080p под изходната резолюция на телевизора и рестартирайте приложението. Видеото не се променя."),
   T("Sem arte", "Без изображения"),
   T("Sem artes para comparar: nada foi aplicado", "Няма изображения за сравнение: нищо не беше приложено"),
   T("Sem atividade neste período", "През този период няма активност"),

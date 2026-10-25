@@ -4856,6 +4856,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Sans Affiches personnalisées activé, l'affiche est déjà celle fournie par l'addon. Choisissez un service pour décider laquelle l'emporte."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Pas de rangée de couleurs ? Réglages › About and help ›"),
   T("Sem agrupar", "Sans groupement"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Aucun agrandissement actif pour cette session. Choisissez 720p ou 1080p sous la résolution de sortie du téléviseur et redémarrez l’application. La vidéo ne change pas."),
   T("Sem arte", "Sans image"),
   T("Sem artes para comparar: nada foi aplicado", "Aucune image à comparer: rien n'a été appliqué"),
   T("Sem atividade neste período", "Aucune activité sur cette période"),

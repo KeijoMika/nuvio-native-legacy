@@ -4856,6 +4856,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "Коли «Власні постери» вимкнено, постер і так той, що надсилає аддон. Виберіть сервіс, щоб вирішити, який має перевагу."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "Немає ряду кольорових кнопок? Налаштування › About and help ›"),
   T("Sem agrupar", "Без групування"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "Масштабування в цьому сеансі неактивне. Виберіть 720p або 1080p нижче вихідної роздільності телевізора та перезапустіть застосунок. Відео не змінюється."),
   T("Sem arte", "Без зображення"),
   T("Sem artes para comparar: nada foi aplicado", "Немає зображень для порівняння: нічого не застосовано"),
   T("Sem atividade neste período", "Активності за цей період немає"),

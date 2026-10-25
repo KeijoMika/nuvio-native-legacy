@@ -4857,6 +4857,7 @@
   T("Sem Pôsteres personalizados ligado o pôster já é o que o addon manda. Escolha um serviço para decidir quem vence.", "مع إيقاف الملصقات المخصصة، يكون الملصق هو الذي ترسله الإضافة أصلًا. اختر خدمة لتقرر أيهما يفوز."),
   T("Sem a fileira de cores? Ajustes › Sobre e ajuda ›", "لا يوجد صف ألوان؟ الإعدادات › حول ومساعدة ›"),
   T("Sem agrupar", "بلا تجميع"),
+  T("Sem ampliação ativa nesta sessão. Escolha 720p ou 1080p abaixo da saída da TV e reinicie o app. O vídeo não muda.", "لا يوجد تكبير نشط في هذه الجلسة. اختر 720p أو 1080p أقل من دقة خرج التلفاز وأعد تشغيل التطبيق. لا يتغير الفيديو."),
   T("Sem arte", "بلا صورة فنية"),
   T("Sem artes para comparar: nada foi aplicado", "لا صور فنية للمقارنة: لم يُطبَّق شيء"),
   T("Sem atividade neste período", "لا نشاط في هذه الفترة"),
