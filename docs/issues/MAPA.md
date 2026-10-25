@@ -1,6 +1,6 @@
 # Mapa vivo das issues
 
-Base: `be73960db` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-25T13:02:43-03:00. 573 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
+Base: `cf141198f` (v2.0.5 já publicada; pendências pós-release em TRIAGEM-2.0.5.md). Atualizado em 2026-10-25T13:56:37-03:00. 573 issues (abertas e fechadas) de iqui27/nuvio-native-legacy.
 
 ## Como atualizar
 
@@ -38813,6 +38813,8 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-p323: merged; No mapped review ve
 Snapshot 2026-10-25T13:02:43-03:00: agente/203-318-play: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/203-323: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-p323: merged; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/203-323: done-awaiting-review; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-p323: merged; No mapped review verdict.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -39076,6 +39078,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/203-perfilsel: done-awaiting-review; 
 Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/203-perfilsel: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas, branch agente/205-triagem-velhas (docs only). Fix the review findings below in the triage doc, keep it docs-only.
 
@@ -39606,6 +39609,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/204-arabe370: done-awaiting-review; N
 Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/204-arabe370: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -39870,6 +39874,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/204-pr381: done-awaiting-review; No m
 Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/204-pr381: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -40133,6 +40138,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/204-webos-versao: done-awaiting-revie
 Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/204-webos-versao: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-abastopo, branch agente/205-abastopo (from integracao/2.0.5).
 
@@ -64118,6 +64124,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-25T12:56:46-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/biblioteca-ilimitada-plano: done-awaiting-review; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -64380,6 +64387,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-25T12:56:46-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/codex-contexto: done-awaiting-review; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -64908,6 +64916,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-25T12:56:46-03:00: agente/icones: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/icones: done-awaiting-review; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -65169,6 +65178,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-25T12:56:46-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/p2p: needs review; j-rev3-205-p2p486.log: OK. Newer fix log requires review.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -65431,6 +65441,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-25T12:56:46-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/pr259-merge: done-awaiting-review; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Worktree /Volumes/ExternalSSD/nv-205-triagem-velhas (branch agente/205-triagem-velhas). Read-only triage: do NOT merge or cherry-pick anything, do not edit src. No network.
 
@@ -65959,6 +65970,7 @@ Snapshot 2026-10-25T12:56:46-03:00: agente/205-triagem-velhas: merged; j-revg-tr
 Snapshot 2026-10-25T12:56:46-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 Snapshot 2026-10-25T13:02:43-03:00: agente/refatoracao-plano: done-awaiting-review; No mapped review verdict.
+Snapshot 2026-10-25T13:56:37-03:00: agente/205-triagem-velhas: merged; j-revg-triagem-velhas-w.log: OK.
 
 ### Review only, do not edit. Worktree /Volumes/ExternalSSD/nv-205-pr526-v3, branch pr/526-v3 = external PR #526 head plus our fix commits. Diff vs master: /Volumes/ExternalSSD/tmp/rev/prs/526-v3.diff. Previous blocking review: /Volumes/Externa
 
@@ -87249,6 +87261,7 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-21-j0: BLOQUEIA; j-rev-rd-j6.log: 
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-21-j0: BLOQUEIA; j-rev-rd-j4-r2.log: BLOQUEIA.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j0: BLOQUEIA; j-rev-rd-j4-r2.log: BLOQUEIA.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j0: BLOQUEIA; j-rev-rd-j4-r2.log: BLOQUEIA.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j0: needs review; j-rev-rd2-j3.log: BLOQUEIA. Newer fix log requires review.
 
 ### Worktree /Volumes/ExternalSSD/nv-207-linguagem (branch agente/207-linguagem, at tag v2.0.7, the last release the owner considers the reference). Nuvio Legacy C TV app, 1920x1080, D-pad.
 
@@ -87280,7 +87293,7 @@ Snapshot 2026-10-25T13:02:43-03:00: agente/207-linguagem: done-awaiting-review; 
 ### Worktree /Volumes/ExternalSSD/nv-21-21-j1 (branch agente/21-21-j1, based on agente/21-21-j0 = integracao/2.1 + J0 foundation: src/tela21.h tokens/helpers, anim_atraso, motion no longer cut by the automatic GPU level). Nuvio Legacy C TV app,
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: em_job
 - Release: 2.1
 - Conserto: agente/21-21-j1
 - Próximo passo: Deferred to 2.1; retain tracking.
@@ -87303,6 +87316,7 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-21-j1: needs review; j-rev-rd-j1.l
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-21-j1: needs review; j-rev-rd-j1.log: OK. Newer fix log requires review.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j1: needs review; j-rev-rd-j1.log: OK. Newer fix log requires review.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j1: needs review; j-rev-rd-j1.log: OK. Newer fix log requires review.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j1: running; j-rev-rd-j1.log: OK. Newer fix log requires review.
 
 ### Worktree /Volumes/ExternalSSD/nv-21-21-j2 (branch agente/21-21-j2, based on agente/21-21-j0 = integracao/2.1 + J0 foundation: src/tela21.h tokens/helpers, anim_atraso, motion no longer cut by the automatic GPU level). Nuvio Legacy C TV app,
 
@@ -87334,7 +87348,7 @@ Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j2: needs review; j-rev-rd-j2.l
 ### Worktree /Volumes/ExternalSSD/nv-21-21-j3 (branch agente/21-21-j3, based on agente/21-21-j0 = integracao/2.1 + J0 foundation: src/tela21.h tokens/helpers, anim_atraso, motion no longer cut by the automatic GPU level). Nuvio Legacy C TV app,
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: em_job
 - Release: 2.1
 - Conserto: agente/21-21-j3
 - Próximo passo: Deferred to 2.1; retain tracking.
@@ -87357,11 +87371,12 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-21-j3: needs review; j-rev-rd-j3.l
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-21-j3: needs review; j-rev-rd-j3.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j3: needs review; j-rev-rd-j3.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j3: needs review; j-rev-rd-j3.log: BLOQUEIA. Newer fix log requires review.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j3: running; j-rev-rd2-j3.log: BLOQUEIA.
 
 ### Worktree /Volumes/ExternalSSD/nv-21-21-j4 (branch agente/21-21-j4, based on agente/21-21-j0 = integracao/2.1 + J0 foundation: src/tela21.h tokens/helpers, anim_atraso, motion no longer cut by the automatic GPU level). Nuvio Legacy C TV app,
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: em_job
 - Release: 2.1
 - Conserto: agente/21-21-j4
 - Próximo passo: Deferred to 2.1; retain tracking.
@@ -87384,11 +87399,12 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-21-j4: BLOQUEIA; j-rev-rd-conq.log
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-21-j4: BLOQUEIA; j-rev-rd-conq-r2.log: BLOQUEIA.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j4: needs review; j-rev-rd-conq-r2.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j4: needs review; j-rev-rd-conq-r2.log: BLOQUEIA. Newer fix log requires review.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j4: running; j-rev-rd2-j4.log: BLOQUEIA.
 
 ### Worktree /Volumes/ExternalSSD/nv-21-21-j5 (branch agente/21-21-j5, based on agente/21-21-j0 = integracao/2.1 + J0 foundation: src/tela21.h tokens/helpers, anim_atraso, motion no longer cut by the automatic GPU level). Nuvio Legacy C TV app,
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: em_job
 - Release: 2.1
 - Conserto: agente/21-21-j5
 - Próximo passo: Deferred to 2.1; retain tracking.
@@ -87411,6 +87427,7 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-21-j5: needs review; j-rev-rd-j5.l
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-21-j5: needs review; j-rev-rd-j5.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j5: needs review; j-rev-rd-j5.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j5: BLOQUEIA; j-rev-21-j5s.log: BLOQUEIA.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j5: running; j-rev-21-j5s.log: BLOQUEIA. Newer fix log requires review.
 
 ### Worktree /Volumes/ExternalSSD/nv-21-conquistas-3d (branch agente/21-conquistas-3d, based on agente/21-21-j4). Another job is fixing Filmography in nv-21-21-j4: do NOT touch src/filmo.c or that worktree.
 
@@ -87435,6 +87452,7 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-conquistas-3d: needs review; j-rev
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-conquistas-3d: BLOQUEIA; j-rev-rd-conq-r2.log: BLOQUEIA.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-conquistas-3d: BLOQUEIA; j-rev-rd-conq-r2.log: BLOQUEIA.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-conquistas-3d: BLOQUEIA; j-rev-rd-conq-r2.log: BLOQUEIA.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-conquistas-3d: needs review; j-rev-rd2-conq.log: OK. Newer fix log requires review.
 
 ### PROCESS FOR EVERY 2.1 SCREEN (owner, 24/10: "o tempo que ta demorando essas telas para sair cagado e diferente do mockup"):
 
@@ -87450,13 +87468,15 @@ Snapshot 2026-10-25T11:20:36-03:00: agente/21-21-j6: needs review; j-rev-rd-j6.l
 Snapshot 2026-10-25T11:56:35-03:00: agente/21-21-j6: needs review; j-rev-rd-j6.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j6: needs review; j-rev-rd-j6.log: BLOQUEIA. Newer fix log requires review.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j6: needs review; j-rev-rd-j6.log: BLOQUEIA. Newer fix log requires review.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j6: review-OK; j-rev-rd2-j6.log: OK.
 
 ### Review only, do not edit. Worktree /Volumes/ExternalSSD/nv-21-21-j5s (branch agente/21-21-j5-servidores). SCREEN: Servers overview and server detail. Diff /Volumes/ExternalSSD/tmp/rev/21-j5s.diff. Task /Volumes/ExternalSSD/tmp/rev/p-21-j5-s
 
 - Plataforma: See task prompt
-- Status: em_revisao
+- Status: em_job
 - Release: 2.1
 - Conserto: agente/21-21-j5-servidores
 - Próximo passo: Deferred to 2.1; retain tracking.
 - Notas: Snapshot 2026-10-25T12:56:46-03:00: agente/21-21-j5-servidores: done-awaiting-review; No mapped review verdict.
 Snapshot 2026-10-25T13:02:43-03:00: agente/21-21-j5-servidores: BLOQUEIA; j-rev-21-j5s.log: BLOQUEIA.
+Snapshot 2026-10-25T13:56:37-03:00: agente/21-21-j5-servidores: running; j-rev-21-j5s.log: BLOQUEIA. Newer fix log requires review.
