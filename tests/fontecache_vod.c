@@ -46,6 +46,11 @@ const char *rede_url_publica(const char *url, char *d, unsigned tam) {
   snprintf(d, tam, "%s", url); return d;
 }
 const char *rede_ultimo_erro(void) { return ""; }
+char *rede_baixar(const char *url, int timeout);
+char *rede_baixar_st(const char *url, int seconds, const char *const *headers, int *status) {
+  (void)headers; char *body = rede_baixar(url, seconds);
+  if (status) *status = body ? 200 : 0; return body;
+}
 char *rede_baixar(const char *url, int timeout) {
   (void)timeout;
   assert(strstr(url, "/stream/") && strstr(url, ".json"));
@@ -68,6 +73,8 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
   return fontesRede;
 }
 void stream_definir_alvo(const char *id) { snprintf(pedidoAlvo, sizeof pedidoAlvo, "%s", id); }
+void stream_folha_canal(int sim) { (void)sim; }
+void stream_filtro_tipo(const char *tipo) { (void)tipo; }
 // F11: Jellyfin targets are routed away from addons; not exercised here.
 #include "jellyfin.h"
 int servidores_fontes_pedir(const char *alvo) { (void)alvo; return 0; }
@@ -232,3 +239,6 @@ int main(void) {
   puts("fontecache VOD: PASS (HTTP, TTL, conta/perfil/episodio/config, respostas tardias, memoria)");
   return 0;
 }
+
+// This fixture simulates account sync; the new owner marks add-on toggles dirty.
+void sync_sujar_addons(const char *url) { (void)url; }

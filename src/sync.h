@@ -85,10 +85,9 @@ const char *sync_resumo(void);   // uma linha para a tela de ajustes
 // Marca uma superficie como suja: o proximo ciclo empurra. Chamar quando o
 // usuario mexe em algo local.
 void sync_sujar_progresso(void);
-// No-op desde a mao unica dos addons (#360): a edicao local nao sobe mais.
-// Resta no cabecalho porque os pontos que mexem na lista (addonsui, guia) o
-// chamavam no mesmo gesto; apagar o simbolo nao muda comportamento nenhum.
-void sync_sujar_addons(void);
+// The user toggled the addon at `url`: queue that flag for a row-level write
+// and keep it across restart. Membership and order remain the account's.
+void sync_sujar_addons(const char *url);
 
 // Ultimo instante em que um ciclo terminou bem (SDL_GetTicks); 0 se nunca.
 unsigned sync_ultimo_ok(void);
@@ -161,6 +160,9 @@ void sync_trocar_perfil(int antes);
 // 1 quando o ultimo ciclo terminado e aplicado e do perfil ativo e nao ha
 // ciclo no ar. E a metade "conta" de "a home do perfil novo esta pronta".
 int  sync_perfil_pronto(void);
+// Addons, colecoes e ordem deste perfil ja podem alimentar a descoberta;
+// progresso e pushes podem continuar sem prender a Home.
+int  sync_home_fontes_prontas(void);
 
 // A pessoa mudou um ajuste NESTA TV. Faz duas coisas, e as duas de proposito:
 //
@@ -181,6 +183,9 @@ int  sync_perfil_pronto(void);
 // Limpa-se em sync_reaplicar_ajustes (login / troca de perfil / "Atualizar"),
 // que tambem descarta a pendencia de subida — ela e do perfil anterior.
 void sync_proteger_ajustes_locais(void);
+// 2.1: marca ajustes pendentes de OUTRO perfil (copia/edicao do administrador).
+// So escreve a marca local; o push acontece quando aquele perfil for o ativo.
+void sync_marcar_ajustes_pendentes_perfil(int perfil);
 
 // Manda uma credencial de servico para a CONTA, para os outros aparelhos da
 // pessoa herdarem o vinculo. `credJson` e o objeto pronto (o servidor guarda o

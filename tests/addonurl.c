@@ -33,6 +33,13 @@ void wsenvio_podar_addon(const char *base) { (void)base; }
 // ---------------------------------------------------------------- duble
 static char pedido[16384];      // a ultima URL que chegou a rede
 static int  nPedidos, nPedidosGrande;
+char *rede_baixar(const char *url, int seconds);
+char *rede_baixar_st(const char *url, int seconds, const char *const *headers, int *status) {
+  (void)headers;
+  char *body = rede_baixar(url, seconds);
+  if (status) *status = body ? 200 : 0;
+  return body;
+}
 const char *rede_ultimo_erro(void) { return ""; }
 int dados_gravar_leve(const char *n, const char *c) { (void)n; (void)c; return 1; }
 char *rede_baixar(const char *url, int s) {
@@ -58,6 +65,8 @@ int servidores_fontes_pedir(const char *alvo) { (void)alvo; return 0; }
 int servidores_fontes_colher(const char *alvo, Stream **l, int *n) {
   (void)alvo; if (l) *l = NULL; if (n) *n = 0; return JF_FONTES_FALHOU; }
 uint64_t badges_detectar(const char *m) { (void)m; return 0; }
+void stream_folha_canal(int sim) { (void)sim; }
+void stream_filtro_tipo(const char *tipo) { (void)tipo; }
 void stream_definir_lista(const Stream *l, int n) { (void)l; (void)n; }
 void stream_preparar_dica_p2p(const Stream *l, int n) { (void)l; (void)n; }
 void stream_definir_lista_idade(const Stream *l, int n, Uint32 idade) {

@@ -13,7 +13,18 @@
 #define NV_ADDONS_H
 #include "watchstate.h"
 #include "addonurl.h"
+#include "fontefalha.h"
 #include <stdint.h>
+
+// Um teto so para a lista e para os consumidores que precisam de TODOS os donos.
+#define ADDONS_MAX 128
+typedef struct { char id[96], base[NV_ADDON_URL_MAX]; int ativo; } AddonIdentidade;
+// Copia sob a trava; -1 se a lista mudou, e de outro perfil ou nao cabe inteira.
+int addons_copiar_identidades(AddonIdentidade *saida, int max, unsigned versao, int perfil);
+// Publicar a limpeza so enquanto a MESMA lista da conta continua protegida.
+// Ordem das travas: sessao de perfil, lista de addons, fileiras/colecoes.
+int addons_travar_lista(unsigned versao, int perfil);
+void addons_destravar_lista(void);
 
 typedef enum { ADD_PARADO = 0, ADD_BUSCANDO, ADD_PRONTO, ADD_VAZIO } AddEstado;
 
@@ -81,8 +92,13 @@ int addons_consulta_atual(const AddonsConsulta *consulta);
 // Uma consulta cancelada/incompleta devolve -1 e deixa *saida NULL.
 int addons_consulta_consultar(const AddonsConsulta *consulta, const char *id, const char *tipo,
                               int fios, int (*cancelado)(void *), void *ctx, void *saida /* Stream ** */);
+// Serial installed add-on availability probe; no plugins, retries, cache, or list publication.
+int addons_consulta_filme(const AddonsConsulta *consulta, const char *id,
+                          int (*cancelado)(void *), void *ctx);
 void addons_consulta_liberar(AddonsConsulta *consulta);
 const char *addons_base(int i);   // URL base, sem /manifest.json
+void addons_catalogo_chave(const char *id, const char *base, const char *tipo,
+                           const char *catalogo, char *dst, unsigned tam);
 const char *addons_id_manifesto(int i);   // "id" do manifesto; "" ate a sonda ler
 const char *addons_nome_por_id(const char *id);   // nome de exibicao; "" se nao ha
 const char *addons_base_por_id(const char *idManifesto);   // "" ate a sonda conhecer o id
@@ -119,8 +135,10 @@ void addons_definir_origem(const char *base);
 // CADA PARTE DA ORIGEM EXTRA E MAIS UMA ORIGEM NA FOLHA (#221): `aviso` (pode
 // ser NULL) e chamado do fio da origem para a parte `k` (o scraper, na ordem do
 // manifesto) com estado 1 = vai rodar, 2 = terminou (com `n` fontes em
-// `fontes`, um Stream *; copiadas na hora), 3 = desistiu.
-typedef void (*OrigemAviso)(void *u, int k, const char *nome, int estado,
+// `fontes`, um Stream *; copiadas na hora), 3 = desistiu. `id` e o id estavel
+// da parte (o do scraper no manifesto; pode ser NULL quando nao existe).
+typedef void (*OrigemAviso)(void *u, int k, const char *nome, const char *id,
+                            int estado,
                             const void *fontes /* const Stream * */, int n);
 typedef int (*OrigemExtra)(const char *id, const char *tipo, int (*cancelado)(void *),
                            void *ctx, OrigemAviso aviso, void *avisoU,
@@ -152,6 +170,11 @@ void addons_buscar_renovar(const char *imdb, const char *tipo);
 void addons_drenar(void);
 // 1 enquanto a busca real de VOD esta no ar publicando por addon.
 int  addons_busca_parcial(void);
+// Sobe a cada mudanca de estado de addon/plugin (anuncio, fim, desistencia):
+// a folha inclui na chave do cache para a aba sair de "buscando" mesmo sem
+// fontes novas.
+unsigned addons_parcial_rev(void);
+int  addons_busca_incompleta(void); // Finished search still missing responses.
 // Milissegundos desde o disparo dessa busca; 0 fora dela.
 unsigned addons_busca_ms(void);
 // Quantos addons ainda nao responderam (contando quem espera a segunda chance)
@@ -178,6 +201,18 @@ int  addons_pendente_nome(const char *nome);
 // O menor grupo de auto-play (fonteregra.h, #202) que um pendente pode trazer;
 // `f` recebe o nome e se e plugin e devolve o grupo (-1 = nunca). 99 = nenhum.
 int  addons_pendente_grupo_min(int (*f)(const char *nome, int plugin, void *u), void *u);
+
+// Estado de um addon/plugin na busca parcial, para a folha de Fontes.
+enum { ADDON_ABA_PRONTO = 0, ADDON_ABA_BUSCANDO = 1, ADDON_ABA_FALHOU = 2 };
+typedef struct {
+  char nome[96];
+  char chave[FONTEFALHA_CHAVE];
+  int ordem;   // ordem de instalacao (addons) ou ADD_MAX + k (plugins)
+  int estado;  // ADDON_ABA_*
+} AddonAba;
+// Lista os addons/plugins desta busca, na ordem de exibicao, com quem ainda
+// nao respondeu ou falhou. Devolve quantos cabem em `out`.
+int addons_parcial_abas(AddonAba *out, int max);
 
 // A mesma consulta, SINCRONA E REENTRANTE, e addons_consultar — declarada em
 // fontecache.h, e nao aqui, porque a assinatura precisa de Stream (streams.h,
@@ -242,11 +277,11 @@ int  addons_n_legendas(void);
 // memoria pode ser de outro titulo. Quem liga legenda sozinho (faixas.c, #129)
 // precisa dessa distincao; a folha nao, ela so mostra o que ha.
 int  addons_legendas_prontas(void);
+// Thread-local copy, valid until this thread calls addons_legenda() again.
 const Legenda *addons_legenda(int i);
 // ATOMIC SNAPSHOT of the subtitle list: copies up to `max` entries while the
-// list mutex is held, so a reader never sees a list being replaced (the
-// pointer from addons_legenda() is read after the unlock and can race the
-// worker). `geracao` (optional) receives the list generation; `prontas`
+// list mutex is held, so a reader never sees a list being replaced.
+// `geracao` (optional) receives the list generation; `prontas`
 // (optional) the same answer as addons_legendas_prontas(), from the same lock.
 // Returns how many entries were copied.
 int  addons_legendas_copiar(Legenda *dst, int max, unsigned *geracao, int *prontas);

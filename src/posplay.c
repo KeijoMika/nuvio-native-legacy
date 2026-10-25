@@ -7,6 +7,7 @@
 #include "idioma.h"
 #include "catalogo.h"
 #include "extras.h"
+#include "posterprov.h"
 #include "gfx.h"
 #include "text.h"
 #include "sinopse.h"
@@ -99,6 +100,9 @@ static int    pedT, pedE, pedTitulo = -1;
 static int    pedAutomatico, automaticoEntregue, recuou, aguardaBusca;
 static int    proxT, proxE;          // proximo episodio, quando ha
 static char   proxNome[120];
+// Temporada0 e especial; quem distingue ausencia e o numero do episodio.
+static int temProximo(void) { return serie && proxT >= 0 && proxE > 0; }
+static int temPedidoEpisodio(void) { return pedT >= 0 && pedE > 0; }
 static char   preEpisodio[64], preAlvo[64];
 static int    preTentou;
 static int    preVideoTentou, preVideoRenovou;
@@ -116,6 +120,10 @@ static void cancelarPreparo(int apagar) {
 // seguem no limiar de creditos (player.c, concluiuAgora).
 static int    cenaPendente, cenaNoFim, aguardaCena;
 int posplay_visivel(void) { return visivel; }
+// Preserve a pending card/Next; a dismissed card leaves no choice at EOF.
+int posplay_aguarda_escolha(void) {
+  return !dispensado || visivel || temPedidoEpisodio() || automaticoEntregue;
+}
 // Cartao do proximo episodio: SOBRE o video em tela cheia (o video nao recua).
 // Os relacionados do filme, bem mais altos, continuam recuando o video.
 int posplay_sobre_video(void) { return visivel && (serie || aguardaCena); }
@@ -138,10 +146,10 @@ int posplay_sobre_video(void) { return visivel && (serie || aguardaCena); }
 // segundo defeito somado ao primeiro.
 static void esconder(void) {
   automaticoEntregue = 0;
-  cancelarPreparo(!pedT);
+  cancelarPreparo(!temPedidoEpisodio());
   // O pedido Next consome no roteador antes de encerrar o player. Back/Down
   // descartam; uma escolha explicita de Next conserva o mesmo worker/token.
-  if (!pedT) proximopreparo_cancelar();
+  if (!temPedidoEpisodio()) proximopreparo_cancelar();
   visivel = 0; fecharEm = 0; foco = 0; dispensado = 1;
 }
 
@@ -168,7 +176,7 @@ static void cancelarAutomatico(void) {
   if (pedAutomatico) {
     pedT = pedE = 0;
     pedAutomatico = 0;
-    if (serie && proxT > 0 && proxE > 0) {
+    if (temProximo()) {
       visivel = 1;
       dispensado = 0;
     }
@@ -179,7 +187,7 @@ static void cancelarAutomatico(void) {
 // O pulo automatico de creditos usa so aguardar_busca e conserva o buffer.
 void posplay_busca_usuario(void) {
   cancelarAutomatico();
-  if (automaticoEntregue && serie && proxT > 0 && proxE > 0) {
+  if (automaticoEntregue && temProximo()) {
     visivel = 1;
     dispensado = 0;
   }
@@ -215,7 +223,7 @@ void posplay_aguardar_busca(int aguardar) {
 }
 
 int posplay_pediu_episodio(int *t, int *e) {
-  if (!pedT) return 0;
+  if (!temPedidoEpisodio()) return 0;
   if (t) *t = pedT;
   if (e) *e = pedE;
   pedT = pedE = 0;
@@ -299,7 +307,7 @@ static void prepararProximo(int ehSerie, double resta) {
       dispensado || recuou || aguardaBusca || durEstavel < PP_DUR_ESTAVEL_S ||
       !player_janela_proximo(video ? 60.0 : 10.0)) return;
   player_episodio_atual(&t, &e);
-  if (t <= 0 || e <= 0) return;
+  if (t < 0 || e <= 0) return;
   proximo = prox_indice_seguinte(n ? cat_episodio(idx, 0) : NULL, n, t, e);
   px = proximo >= 0 ? cat_episodio(idx, proximo) : NULL;
   if (!px) return;
@@ -421,7 +429,7 @@ void posplay_atualizar(float dt, Uint32 agora, double posSeg, double durSeg,
   { char episodio[64] = "";
     int t = 0, e = 0;
     player_episodio_atual(&t, &e);
-    if (ehSerie && t > 0 && e > 0)
+    if (ehSerie && t >= 0 && e > 0)
       cat_id_stream(idxCatalogo, t, e, episodio, sizeof episodio);
     if (preEpisodio[0] && strcmp(preEpisodio, episodio)) {
       cancelarPreparo(1);
@@ -498,8 +506,8 @@ void posplay_atualizar(float dt, Uint32 agora, double posSeg, double durSeg,
       // um episodio. O item continua valendo de reserva para o caso de o
       // player nao ter episodio nenhum (idx trocado, dado incompleto).
       player_episodio_atual(&t, &e);
-      if (!(t > 0 && e > 0) && ci) { t = ci->temporada; e = ci->episodio; }
-      if (t > 0 && e > 0 && acharProximo(idx, t, e)) {
+      if (!(t >= 0 && e > 0) && ci) { t = ci->temporada; e = ci->episodio; }
+      if (t >= 0 && e > 0 && acharProximo(idx, t, e)) {
         fecharEm = 0;            // arma neste quadro, depois de abrir o cartao
         visivel = 1;
       }
@@ -556,7 +564,7 @@ int posplay_evento(const SDL_Event *e) {
   // de titulo. O cartao inteiro volta no fim real do arquivo.
   // Serie com proximo: um segundo botao leva ao proximo episodio na mao.
   if (aguardaCena) {
-    int temProx = serie && proxT;
+    int temProx = temProximo();
     if (temProx && k == SDLK_RIGHT && foco == 0) { foco = 1; return 1; }
     if (temProx && k == SDLK_LEFT && foco == 1)  { foco = 0; return 1; }
     if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
@@ -639,7 +647,7 @@ static void anelContagem(float cx, float cy, float frac, float a) {
 // contagem automatica nao e tocada. No filme o foco segue a variavel das
 // setas (o cartaz); o OK abre o titulo, nao toca nada.
 static void ponteiroComecar(int a, int b) { (void)a; (void)b; }
-static void ponteiroCena(int i, int b) { (void)b; if (visivel && aguardaCena && proxT) foco = i; }
+static void ponteiroCena(int i, int b) { (void)b; if (visivel && aguardaCena && temProximo()) foco = i; }
 static void ponteiroCartaz(int i, int b) {
   int n = extras_n_relacionados();
   (void)b;
@@ -651,6 +659,20 @@ static void ponteiroCartaz(int i, int b) {
 #endif
 }
 int posplay_teste_foco(void) { return foco; }
+
+static const char *const dicasTeclas[2] = { "\xe2\x86\x93", "Voltar" };
+static const char *const dicasRotulos[2] = { "Voltar ao player", "Ficar nos créditos" };
+
+// Keep the approved row until it needs more room; cap at the existing 40px margin.
+static int ilhaDicas(GfxRect *ilha, float buttonX, const char *button) {
+  float hints = plrui_dicas_video(dicasTeclas, dicasRotulos, 2, -1, 0, 0, 0);
+  float needed = buttonX + plrui_botao_largura(button, "pl_play-f") + 22 + hints + 28;
+  ilha->w = fminf(fmaxf(ilha->w, needed), NV_TELA_W - 80);
+  if (ilha->x + ilha->w > NV_TELA_W - 40) ilha->x = (NV_TELA_W - ilha->w) * .5f;
+  if (needed <= ilha->w) return 0;
+  ilha->h += 52;
+  return 1;
+}
 
 static void posplay_desenharCorpo_(Uint32 agora, float baseY);
 // Camada ampliada (escala.h): o corpo desenha na tela virtual.
@@ -674,16 +696,16 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
     float sobe = (1.0f - a) * 20.0f;
     GfxRect ilha = { x, NV_TELA_H - 252.0f + sobe, 1180.0f, 140.0f };
     float by, bw;
-    const char *k[2] = { "\xe2\x86\x93", "Voltar" }, *r[2] = { "Voltar ao player", "Ficar nos créditos" };
-    if (ilha.x + ilha.w > NV_TELA_W - 40.0f) ilha.x = (NV_TELA_W - ilha.w) * 0.5f;
-    by = ilha.y + (ilha.h - 60.0f) * 0.5f;
+    int wrap = ilhaDicas(&ilha, 28, "Cena pós-créditos — continuar assistindo");
+    by = ilha.y + 40.0f;
     gfx_rect((GfxRect){ 0.0f, NV_TELA_H - 400.0f, NV_TELA_W, 400.0f }, 0, GFX_VEU_BAIXO,
              0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.62f * a);
-    plrui_material(ilha, 36.0f, 0, a);
-    bw = plrui_botao(ilha.x + 28.0f, by, "Cena pós-créditos — continuar assistindo", "pl_play-f", 1.0f, a);
+    plrui_material_video(ilha, 36.0f, a);
+    bw = plrui_botao_video(ilha.x + 28.0f, by, "Cena pós-créditos — continuar assistindo", "pl_play-f", 1.0f, a);
     if (visivel && a > 0.99f && a < 1.01f)
       ponteiro_alvo(ilha.x + 28.0f, by, bw, 60.0f, ponteiroComecar, NULL, 0, 0);
-    plrui_dicas(k, r, 2, ilha.x + 28.0f + bw + 22.0f, by + 30.0f, 0, a);
+    plrui_dicas_video(dicasTeclas, dicasRotulos, 2,
+                      ilha.x + 28 + (wrap ? 0 : bw + 22), by + (wrap ? 82 : 30), 0, a);
     return;
   }
 
@@ -696,8 +718,10 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
     GfxRect ilha = { x, NV_TELA_H - 420.0f + sobe, 1180.0f, 308.0f }, tr;
     int resta = fecharEm > agora ? (int)((fecharEm - agora + 999) / 1000) : 0;
     char cab[64], num[64], dur[32];
-    // Na tela virtual estreita (150%: 1280) a margem de 96 nao deixa os 1180
-    // da ilha: ela centra, com a largura inteira (as dicas vao ate a borda).
+    int wrap = 0;
+    if (!aguardaCena || !temProximo())
+      wrap = ilhaDicas(&ilha, 28 + 448 + 30,
+                      aguardaCena ? "Cena pós-créditos — continuar assistindo" : "Começar agora");
     if (ilha.x + ilha.w > NV_TELA_W - 40.0f) ilha.x = (NV_TELA_W - ilha.w) * 0.5f;
     for (i = 0; i < n; i++) {
       const CatEp *e = cat_episodio(idx, i);
@@ -707,7 +731,7 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
     // garante a leitura sobre qualquer cena, sem escurecer o video todo.
     gfx_rect((GfxRect){ 0.0f, NV_TELA_H - 560.0f, NV_TELA_W, 560.0f }, 0, GFX_VEU_BAIXO,
              0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.62f * a);
-    plrui_material(ilha, 36.0f, 0, a);
+    plrui_material_video(ilha, 36.0f, a);
     tr = (GfxRect){ ilha.x + 28.0f, ilha.y + 28.0f, 448.0f, 252.0f };
     { const char *arte = (px && px->thumb[0]) ? px->thumb : (ci ? ci->backdrop : "");
       GLuint t = arte[0] ? tex_obter_larg(arte, tr.w) : 0;
@@ -747,21 +771,21 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
           txt_desenhar_alpha(l, tx, ty, a); ty += (float)l.h + 10.0f; } }
       if (px && px->sinopse[0])
         sinopse_bloco_corta(TXT_ILHA_SUB, px->sinopse, 243, 242, 239, tx, ty, tw, 28.5f, a * 0.68f, 2);
-      { float by = ilha.y + ilha.h - 28.0f - 60.0f;
-        if (aguardaCena && proxT) {   // continuar | proximo episodio, foco no OK
-          float b0 = plrui_botao(tx, by, "Continuar assistindo", "pl_play-f", foco == 0 ? 1.0f : 0.0f, a);
-          float b1 = plrui_botao(tx + b0 + 16.0f, by, "Próximo episódio", NULL, foco == 1 ? 1.0f : 0.0f, a);
+      { float by = ilha.y + ilha.h - 28.0f - 60.0f - (wrap ? 52 : 0);
+        if (aguardaCena && temProximo()) {   // continuar | proximo episodio, foco no OK
+          float b0 = plrui_botao_video(tx, by, "Continuar assistindo", "pl_play-f", foco == 0 ? 1.0f : 0.0f, a);
+          float b1 = plrui_botao_video(tx + b0 + 16.0f, by, "Próximo episódio", NULL, foco == 1 ? 1.0f : 0.0f, a);
           if (visivel && a > 0.99f && a < 1.01f) {
             ponteiro_alvo(tx, by, b0, 60.0f, ponteiroCena, NULL, 0, 0);
             ponteiro_alvo(tx + b0 + 16.0f, by, b1, 60.0f, ponteiroCena, NULL, 1, 0);
           }
           return;
         }
-        float bw = plrui_botao(tx, by, aguardaCena ? "Cena pós-créditos — continuar assistindo" : "Começar agora", "pl_play-f", 1.0f, a);
+        float bw = plrui_botao_video(tx, by, aguardaCena ? "Cena pós-créditos — continuar assistindo" : "Começar agora", "pl_play-f", 1.0f, a);
         if (visivel && a > 0.99f && a < 1.01f)   // so assentado (sem a subida)
           ponteiro_alvo(tx, by, bw, 60.0f, ponteiroComecar, NULL, 0, 0);
-        const char *k[2] = { "\xe2\x86\x93", "Voltar" }, *r[2] = { "Voltar ao player", "Ficar nos créditos" };
-        plrui_dicas(k, r, 2, tx + bw + 22.0f, by + 30.0f, 0, a); } }
+        plrui_dicas_video(dicasTeclas, dicasRotulos, 2,
+                          wrap ? ilha.x + 28 : tx + bw + 22, by + (wrap ? 82 : 30), 0, a); } }
     return;
   }
 
@@ -772,7 +796,7 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
     GfxRect ilha = { x, NV_TELA_H - 444.0f - extra + sobe, NV_TELA_W - 2.0f * x, 444.0f + extra - 40.0f };
     float y = ilha.y + 26.0f, cx;
     if (n > PP_MAX) n = PP_MAX;
-    plrui_material(ilha, 36.0f, 0, a);
+    plrui_material_video(ilha, 36.0f, a);
     { float kx = ilha.x + 34.0f, yc = y + 15.0f;
       float kickerW = plrui_kicker("Mais como este", kx, yc - 9.0f, 243, 242, 239, a * 0.45f);
       if (telefoneui_ativo()) yc += 34;
@@ -789,14 +813,14 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
         }
       }
       { const char *k[3] = { "OK", "\xe2\x86\x93", "Voltar" }, *r[3] = { "Abrir", "Voltar ao player", "Dispensar" };
-        if (!telefoneui_ativo()) plrui_dicas(k, r, 3, ilha.x + ilha.w - 34.0f, yc, 1, a); } }
+        if (!telefoneui_ativo()) plrui_dicas_video(k, r, 3, ilha.x + ilha.w - 34.0f, yc, 1, a); } }
     y += 30.0f + 22.0f + extra;
     cx = ilha.x + 34.0f;
 #ifdef NV_TOUCH_UI
     if (telefoneui_ativo()) {
       float vista = ilha.w - 54.0f, max = fmaxf(0, n * 212.0f - 22.0f - vista);
       toquerol_vincular(&toquePP, (GfxRect){cx, y - 20, vista, 313}, gfx_escala(), 0, max, 0, &scrollPP);
-      if (!toquePP.livre) {
+      if (!toquerol_livre(&toquePP)) {
         float esq = foco * 212.0f, dir = esq + 190;
         if (esq < scrollPP) scrollPP = esq;
         if (dir > scrollPP + vista) scrollPP = dir - vista;
@@ -808,7 +832,8 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
 #endif
     gfx_recorte(ilha.x, ilha.y - 40.0f, ilha.w, ilha.h + 40.0f);
     for (i = 0; i < n; i++) {
-      const char *po = extras_relacionado_poster(i);
+      const char *po = posterprov_card(extras_relacionado_imdb(i), 0, "movie",
+                                      extras_relacionado_poster(i));
       GLuint t = po[0] ? tex_obter_larg(po, 200.0f) : 0;
       int sel = (i == foco);
       float k = sel ? 1.08f : 1.0f, w = 182.0f * k, h = 273.0f * k;

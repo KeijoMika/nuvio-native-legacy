@@ -4,6 +4,7 @@
 #include "logotitulo.h"
 #include "descoberta.h"
 #include "syncprog.h"
+#include "sync.h"
 #include "tirarremoto.h"
 #include "visto.h"
 #include "trakt.h"
@@ -90,12 +91,19 @@ enum { CTX_PENDENTE = 1, CTX_CONFIRMADA = 2, CTX_FALHA = 3 };
 // copia do CatItem nao tem a marca — so a da watchlist tem. Pergunta a todas as
 // fontes que sabem: a copia do cartao, a lista local, qualquer outra copia do
 // catalogo (watchlist do Trakt) e o Plan to Watch do Simkl.
+static int doPainel, doSocial;
 static int tituloSalvo(const CatItem *ci) {
   if (!ci) return 0;
-  if (ci->naLista) return 1;
+  // Owner 21/10: a title opened from the Saved panel IS saved, so its card
+  // offers "Remover" (never "Salvar"), whatever source the card copy knows.
+  if (doPainel && !doSocial) return 1;
+  int fonte = ajustes_fonte_biblioteca();
+  if (ci->naLista && (ci->listaFontes & (1u << fonte))) return 1;
   if (!ci->imdb[0]) return 0;
-  return salvos_tem(ci->imdb) || cat_imdb_na_lista(ci->imdb) ||
-         (simkl_ativo() && simkl_na_plantowatch(ci->imdb));
+  if (cat_imdb_na_lista_na_fonte(ci->imdb, fonte)) return 1;
+  if (fonte == AJ_SALVOS_LOCAL) return salvos_tem(ci->imdb);
+  if (fonte == AJ_SALVOS_SIMKL) return simkl_ativo() && simkl_na_plantowatch(ci->imdb);
+  return 0;
 }
 
 static int   aberto, idx = -1, foco;
@@ -369,7 +377,7 @@ static const CatItem *itemAtual(void) {
 // A extensao existe para TITULO: nao para a linha de um amigo (sem IMDb) nem
 // para o menu de lista ou de estilo.
 static int infoPossivel(const CatItem *ci) {
-  return ci && !doLista && !soFileira && ci->imdb[0] && ci->titulo[0] &&
+  return !ajustes_menu_cartaz_simples() && ci && !doLista && !soFileira && ci->imdb[0] && ci->titulo[0] &&
          strcmp(ci->tipo, "channel") && strcmp(ci->tipo, "tv");
 }
 
@@ -572,24 +580,16 @@ static float ctxXCartaz(GfxRect r) {
   return esquerda;
 }
 
-// A fileira em edicao: o cartao que a Home pintou em foco (inclusive pasta e
-// pilha), senao o cartaz de onde o menu saiu. A fileira remonta a cada passo e
-// o cartao muda de largura, entao o menu o segue — suave (`dt` > 0), para nao
-// pular; `dt` = 0 crava (abertura). Quadro sem cartao: fica onde estava.
+// Capture the opening card once. Live style previews resize/move the row;
+// following them moves the whole option list and can flip the menu's side.
 static void estAncorar(float dt) {
   GfxRect r, alvo;
+  if (temAncora && dt > 0.0f) return;
   int tem = 0;
   if (home_ancora_foco(&r) && r.w > 8.0f && r.h > 8.0f) { alvo = ctxDaHome(r); tem = 1; }
   else if (!temAncora && temCartaz) { alvo = cartazRect; tem = 1; }
   if (!tem) return;
-  if (!temAncora || dt <= 0.0f || ajustes_animacoes_reduzidas()) estAncora = alvo;
-  else {
-    float k = 1.0f - expf(-14.0f * dt);
-    estAncora.x += (alvo.x - estAncora.x) * k;
-    estAncora.y += (alvo.y - estAncora.y) * k;
-    estAncora.w += (alvo.w - estAncora.w) * k;
-    estAncora.h += (alvo.h - estAncora.h) * k;
-  }
+  estAncora = alvo;
   temAncora = 1;
 }
 
@@ -699,7 +699,7 @@ static void abrirComum(int indice) {
   // Sem "Ver detalhes", um titulo sem id nenhum nao tem acao: um menu vazio
   // seria pior que nenhum (o toque continua abrindo o titulo).
   if (!doLista && pagina == 0 && nOps == 0) { aberto = 0; return; }
-  if (!doLista && !soFileira) ctxinfo_abrir(itemAtual());
+  if (infoPossivel(itemAtual())) ctxinfo_abrir(itemAtual());
 }
 
 void ctx_abrir_salvo(const CatItem *titulo) {
@@ -783,7 +783,6 @@ static void desfazerAssistido(const void *p) {
   int volta = !c->intencao;
   if (volta) { printf("[visto] marcado por desfazer-menu-manual pos=0 dur=0 assistido=0s id=%s\n", c->ci.imdb); fflush(stdout); }
   visto_titulo(c->ci.imdb, c->ci.tipo, c->ci.temporadas, c->ci.nTemporadas, volta, visto_destinos());
-  if (trakt_ativo()) trakt_assistido_tipo(c->ci.imdb, c->ci.tipo, volta);
   cat_historico_definir_id(c->ci.imdb, c->ci.tipo, volta);
   desc_remontar_fileiras();
 }
@@ -858,6 +857,7 @@ static int estTipo(int i) {
 // revisao de fileiras.c e a fileira mostra o resultado); o setter nao faz nada
 // quando o valor nao mudou.
 static void estAoVivo(void) {
+  sync_proteger_ajustes_locais();
   if (estSel >= 0 && estSel < nEstilos) fil_definir_tipo(filChave, estTipo(estSel));
   if (ordemLinha && ordemSel != fil_ordem(filChave)) fil_definir_ordem(filChave, ordemSel);
   estVivo = 1;
@@ -895,12 +895,7 @@ static void iniciarAssistido(int atual, const CatItem *ci, int soMarcar) {
       // elas apagaria a serie da biblioteca de la (ver simkl.c).
       visto_titulo(ci->imdb, ci->tipo, ci->temporadas, ci->nTemporadas, intencao,
                    visto_destinos());
-      if (trakt_ativo()) {
-        // O caminho do Trakt NAO MUDOU: mesmo pedido, mesma espera, espelho so
-        // depois do 2xx em ctx_atualizar.
-        if (!trakt_assistido_tipo(ci->imdb, ci->tipo, intencao))
-          estadoOperacao = CTX_FALHA;
-      } else {
+      { // Local intent is durable; failed destinations retry in sync.
         // SEM TRAKT NAO HA RESPOSTA A ESPERAR (o mesmo raciocinio do "+" na
         // Lista do Nuvio, acima): o local e a verdade desta TV, aplicado agora,
         // e a conta o devolve no proximo pull (sync.c aplica os vistos da
@@ -1334,9 +1329,9 @@ static void ilhaCtx(GfxRect p, float raioPx, float a) {
   float raio = raioPx / p.h;
   gfx_sombra_sob((GfxRect){ p.x - 18.0f, p.y - 8.0f, p.w + 36.0f, p.h + 40.0f }, 1.0f, 0, 0.5f,
                  0, 0, 0, .42f * a, p, raioPx, vid ? 0.0f : .98f * a);
-  // O vidro le a textura assada e deixava o texto da fileira aparecer por
-  // tras; uma base quase solida por baixo (a cor do modo sem vidro) fecha.
-  if (vid) { gfx_cor(p, raio, .071f, .075f, .086f, .985f * a); gfx_vidro_folha(p, raio, a); } // vidro-ok: opaque base under the glass sheet
+  // Frost on: the shared glass material alone. The old .985 opaque base under it
+  // hid the blur, so the quick menu read flat.
+  if (vid) gfx_vidro_folha(p, raio, a);
   else gfx_cor(p, raio, .071f, .075f, .086f, .98f * a);
   if (!vid) gfx_luz_canto(p, raio, p.w * .25f, -p.h * .25f, p.w * .9f, 1, 1, 1, .04f * a);
 }
@@ -1370,7 +1365,7 @@ static void linhaCtxTinta(GfxRect r, const char *rot, const char *icone, float f
     lum = .80f + .20f * k;
     if (k > 0.01f) gfx_cor(r, 0.5f, tinta, tinta, tinta, .12f * k * a);
   } else if (k > 0.01f) {
-    if (ajustes_vidro()) gfx_cor(r, 0.5f, 1, 1, 1, .14f * k * a);
+    if (ajustes_vidro()) { if (!gfx_foco_placa(r, 0.5f, k, a)) gfx_cor(r, 0.5f, 1, 1, 1, .14f * k * a); }
     else gfx_cor(r, 0.5f, .19f, .195f, .215f, k * a);
   }
   if (icone && icone[0])
@@ -1478,7 +1473,8 @@ static void estGlifo(GfxRect q, int tipo, float tinta, float a) {
   switch (tipo) {
     case FIL_TIPO_CARTAZ: case FIL_TIPO_TOP10: case FIL_TIPO_RANKING:
     case FIL_TIPO_LINHA_TEMPO: case FIL_TIPO_FICHA: case FIL_TIPO_PALCO:
-    case FIL_TIPO_POSTER_GRANDE:
+    case FIL_TIPO_POSTER_GRANDE: case FIL_TIPO_POSTER_GRANDE_P:
+    case FIL_TIPO_POSTER_GRANDE_G:
       w = 14.0f; h = 20.0f; break;
     case FIL_TIPO_DESTAQUE_QUADRADO: case FIL_TIPO_DESTAQUE_QUADRADO_M:
     case FIL_TIPO_DESTAQUE_QUADRADO_G: case FIL_TIPO_AUTO:
@@ -1740,7 +1736,7 @@ static void desenhaLista(float a) {
   TxtLinha n, m, q;
   float x, y, alt, hx, hy, hw, cy;
   int i, temQuem, carregando = lst_itens_carregando() > 0;
-  const float pad = CTX_ILHA_PAD, esc = gfx_escala_ui();
+  const float pad = CTX_ILHA_PAD;
   const float capaW = (CTXL_W - 2.0f * (pad + 20.0f) - (CTXL_CAPAS - 1) * CTXL_CAPA_GAP) / CTXL_CAPAS;
   const float capaH = capaW * 1.5f;
 
@@ -1785,7 +1781,7 @@ static void desenhaLista(float a) {
   cy = y + pad;
   if (arte) {
     GfxRect r = { x + pad, cy, CTXL_W - 2.0f * pad, CTXL_ARTE_H };
-    GLuint t = tex_obter_larg(arte, r.w * esc);
+    GLuint t = tex_obter_larg(arte, r.w);
     float raio = 22.0f / r.h;
     if (t) {
       gfx_tex_aspect_atual = tex_aspecto(arte);
@@ -1813,7 +1809,7 @@ static void desenhaLista(float a) {
     const char *u = NULL;
     GLuint t = 0;
     if (lst_item(i, &it)) u = it.poster[0] ? it.poster : it.backdrop[0] ? it.backdrop : NULL;
-    if (u) t = tex_obter_larg(u, capaW * esc);
+    if (u) t = tex_obter_larg(u, capaW);
     if (t) {
       gfx_tex_aspect_atual = tex_aspecto(u);
       gfx_rect(r, t, GFX_CARD, 0, 0, 0, raio, 0, 0, 0, a);
@@ -2041,10 +2037,11 @@ static void ctx_desenharCorpo_(Uint32 agora) {
       cartazRect = ctxDaHome(hi.rect);
   }
 
-  { GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
-    gfx_cor(tela, 0.0f, 0, 0, 0, 0.94f * a); }
-
   infoOn = infoPossivel(ci);
+  // The Home stays drawn underneath: one dim veil, and the glass panels frost
+  // what the rows show through it. No full-screen art or extra blur here.
+  gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f, 0, 0, 0, 0.5f * a);
+
   est.salvo = tituloSalvo(ci);
   est.visto = historicoDe(ci);
   comLogo = !infoOn && logotitulo_url(ci, CTX_LOGO_W) != NULL;
@@ -2132,7 +2129,7 @@ static void ctx_desenharCorpo_(Uint32 agora) {
     artA = grande ? 1.0f : 1.0f - anim_clamp((e - 0.15f) / 0.55f, 0.0f, 1.0f);
     ilhaCtx(r, raioPx, sa);
     if (artA > 0.01f && cartazArte[0]) {
-      GLuint t = tex_obter_larg(cartazArte, P.w * gfx_escala_ui());
+      GLuint t = tex_obter_larg(cartazArte, P.w);
       if (t) {
         gfx_tex_aspect_atual = tex_aspecto(cartazArte);
         gfx_card_forcar_cover_atual = 1.0f;
@@ -2156,7 +2153,7 @@ static void ctx_desenharCorpo_(Uint32 agora) {
     /* feito */
   } else
   if (temCartaz && !doPainel && cartazArte[0]) {
-    GLuint t = tex_obter_larg(cartazArte, cartazRect.w * gfx_escala_ui());
+    GLuint t = tex_obter_larg(cartazArte, cartazRect.w);
     if (t) {
       float raio = ajustes_raio_poster_px() / gfx_escala_ui() / cartazRect.h, teto = 0.5f * cartazRect.w / cartazRect.h;
       if (raio > teto) raio = teto;

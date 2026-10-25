@@ -48,6 +48,7 @@ int  trakt_cabecalhos(const char **cab, char *aut, size_t nAut,
 // pacote trazem chave — e ai quem chama esconde a secao em vez de tentar.
 int  trakt_cabecalhos_publicos(const char **cab, char *chave, size_t nChave);
 int  trakt_ativo(void);
+int  trakt_aguardando(void);
 // Outros workers (extras) capturam ambas as geracoes antes da rede. Troca do
 // Trakt no mesmo perfil invalida resposta sem limpar provas da conta/local.
 unsigned long long trakt_credencial_geracao(void);
@@ -93,6 +94,7 @@ int trakt_enfeitar_lote_sessao(CatItem *saida, int n, uint64_t sessao);
 // id conhecido — o item veio do progresso da conta, nao do Trakt.
 typedef struct { uint64_t sessao; unsigned long long mapa, credencial; char aut[200], chave[140]; } TraktDestino;
 int trakt_destino_capturar(TraktDestino *);
+int trakt_titulo_marcar_destino(const TraktDestino *, const char *, const char *, int);
 int trakt_episodios_marcar_destino(const TraktDestino *, const char *, const VistoPar *, int, int);
 #define TRAKT_REMOVER_MAX 64
 typedef struct {
@@ -176,4 +178,6 @@ int trakt_ler_filmes_vistos(const char *corpo);
 // Nota de 1 a 10 em /sync/ratings (a reacao dos creditos, reacao.c). Nao
 // bloqueia; 0 quando o Trakt esta desligado ou o id nao e IMDb.
 int trakt_avaliar(const char *imdb, const char *tipo, int nota);
+// Pure payload builder: title or series IMDb:season:episode; zero removes.
+int trakt_nota_corpo(char *dst, size_t tam, const char *imdb, const char *tipo, int nota);
 #endif

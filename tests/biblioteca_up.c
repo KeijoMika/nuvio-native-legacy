@@ -24,6 +24,8 @@ static void okNaCelula(int i) { (void)i; }
 static void fecharAberta(void) { temAberta = 0; }
 static void executarAcao(int i) { (void)i; }
 static void lst_itens_mais(void) {}
+static int colunas(void) { return 3; }
+static int nLinhas(void) { return (nCelulas + colunas() - 1) / colunas(); }
 static void descerDaFaixa(void) { foco.fileira = 2; }
 static void subirParaFaixa(void) { foco.fileira = 0; }
 static void pedirFonte(void) {}
@@ -72,6 +74,19 @@ int main(void) {
       assert(biblioteca_pediu_relogio() == !topMenu);
     }
   }
+  // Integration enters open lists directly, retaining the selected action.
+  modo = MODO_LISTAS;
+  temAberta = 1;
+  foco.fileira = 0;
+  foco.coluna = acaoSel = 2;
+  nCelulas = 0;
+  key(SDL_KEYDOWN, SDLK_DOWN);
+  assert(foco.fileira == 0 && foco.coluna == 2);
+  nCelulas = 7;
+  key(SDL_KEYDOWN, SDLK_DOWN);
+  assert(foco.fileira == 1 && foco.coluna == 0 && acaoSel == 2);
+  key(SDL_KEYDOWN, SDLK_UP);
+  assert(foco.fileira == 0 && foco.coluna == 2);
   puts("Library Up: PASS (tabs, selectors, list actions; top menu and sidebar)");
   return 0;
 }

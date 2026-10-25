@@ -14,6 +14,9 @@
 //   DEL  /sync/playback/{id}              apaga um pausado pelo id do registro
 //   GET  /sync/all-items/shows/watching   series em "watching", com o campo
 //                                         next_to_watch ("S01E05")
+//   GET  /sync/all-items/anime/<estado>   anime e um TERCEIRO tipo (raiz e
+//                                         objeto interno "anime"): os mesmos
+//                                         endpoints, o mesmo envelope
 //   GET  /sync/all-items/{movies|shows}/plantowatch
 //   POST /sync/add-to-list                {"movies":[{"to":"plantowatch",
 //                                          "ids":{"imdb":".."}}]}
@@ -38,14 +41,10 @@
 // mais e mais um nome que o CORS do servidor precisa aceitar. User-Agent sai
 // de rede.c.
 //
-// O QUE FICOU DE FORA, e por que:
-//   - anime em "watching": o next_to_watch de anime vem na numeracao do AniDB
-//     ("E12", sem temporada), e o resto do app (Cinemeta, addons) fala
-//     temporada/episodio do TVDB. Converter exigiria /anime/episodes por
-//     titulo. Anime PAUSADO entra, porque /sync/playback manda tvdb_season e
-//     tvdb_number junto.
-//   - nada: o scrobble (start/pause/stop do player, #459) e o historico estao
-//     la embaixo. Esta tela so le o playback que o proprio player escreve.
+// Anime next_to_watch 12, "12" or "E12" uses absolute numbering. Cached provider videos
+// map it to season/episode; missing mapping keeps a title-only CW entry.
+// Paused anime uses tvdb_season/tvdb_number from /sync/playback.
+// Scrobble (start/pause/stop) and history are declared below.
 //
 // MODELO DE FIOS: o de trakt.c. Leituras BLOQUEIAM e so sao chamadas do fio de
 // descoberta (montarContinuar, montar); escritas do "+" e do "tirar da
@@ -61,6 +60,7 @@
 
 // 1 quando ha token do Simkl nesta TV (vinculo feito em Ajustes).
 int simkl_ativo(void);
+int simkl_aguardando(void);
 
 // Snapshot mensal da tela Perfil e Stats. A leitura de JSON e separada da
 // rede para os testes cobrirem a forma oficial de /users/settings e
@@ -83,12 +83,13 @@ const char *simkl_aviso_sem_vinculo(int querSimkl);
 // Item sem ids.imdb nao entra: sem imdb nao ha arte, fonte nem retomada.
 int simkl_ler_playback(const char *json, CatItem *dst, long long *ids, int max);
 
-// GET /sync/all-items/shows/watching -> o PROXIMO episodio de cada serie
-// (next_to_watch "S02E05"), com progresso 0 e o last_watched_at como instante.
-// Serie sem next_to_watch (em dia com o que foi ao ar) nao entra.
+// GET /sync/all-items/<shows|anime>/watching -> o PROXIMO episodio de cada
+// serie ou anime (next_to_watch "S02E05"), com progresso 0 e o last_watched_at
+// como instante. Serie sem next_to_watch (em dia com o que foi ao ar) nao entra.
 int simkl_ler_assistindo(const char *json, CatItem *dst, int max);
 
-// GET /sync/all-items/<movies|shows>/plantowatch -> itens com naLista = 1.
+// GET /sync/all-items/<movies|shows|anime>/plantowatch -> itens com
+// naLista = 1. `serie` = 0 le "movies"; 1 le "shows" e "anime".
 int simkl_ler_plantowatch(const char *json, int serie, CatItem *dst, int max);
 
 // Corpo e rota do "+" (adicionar = 1) e do "-" (0). 1 quando montou; 0 para id
@@ -127,6 +128,9 @@ enum { SMK_OP_NENHUMA = 0, SMK_OP_PENDENTE, SMK_OP_CONFIRMADA, SMK_OP_FALHA };
 // em "completed", apagaria o que a pessoa assistiu.
 int simkl_lista_tipo(const char *imdb, const char *tipo, int adicionar);
 int simkl_lista_estado(void);
+
+// POST /sync/ratings (1 a 10), num fio. 0 sem vinculo ou imdb/nota invalidos.
+int simkl_avaliar(const char *imdb, const char *tipo, int nota);
 
 // DELETE /sync/playback/<id> do item da fileira, num fio. `imdb` e a chave
 // composta da fileira ("tt:S:E" ou "tt"). 0 quando nao ha id conhecido — o

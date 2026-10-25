@@ -29,6 +29,10 @@ static int recusaExtras, semRange, trechos;
 static _Atomic int requests;
 static int status[3] = {200, 200, 200};
 const char *rede_ultimo_erro(void) { return ""; }
+const char *rede_url_publica(const char *url, char *dst, unsigned tam) {
+  (void)url; snprintf(dst, tam, "redacted"); return dst;
+}
+int xtream_url_limitada(const char *url) { (void)url; return 0; }
 char *rede_baixar_medido_controle(const char *url, int seconds,
                                   const char *const *headers,
                                   const RedeControle *controle,
@@ -79,7 +83,7 @@ static void run(int n, const char *id, const char *tipo) {
   const char *nomes[] = {"OpenSubtitles", "Subs.ro", "Community Subtitles"};
   memset(addon, 0, sizeof addon); nAddon = n;
   for (int i = 0; i < n; i++) {
-    addon[i].ativo = addon[i].legenda = 1;
+    addon[i].ativo = addon[i].legenda = addon[i].sondado = 1;
     if (i == desligaIdx) addon[i].ativo = 0;   // desligado na conta
     snprintf(addon[i].base, sizeof addon[i].base, "https://fixture.invalid/provider%d", i);
     snprintf(addon[i].nome, sizeof addon[i].nome, "%s", nomes[i]);
@@ -98,7 +102,51 @@ static void dense(char *json, size_t size, int provider) {
   }
   strncat(json, "]}", size - strlen(json) - 1);
 }
+static char *fixture(const char *name) {
+  char path[160];
+  snprintf(path, sizeof path, "tests/fixtures/subsync/%s.json", name);
+  FILE *f = fopen(path, "rb"); assert(f);
+  assert(!fseek(f, 0, SEEK_END)); long n = ftell(f); assert(n > 0);
+  rewind(f); char *body = calloc((size_t)n + 1, 1); assert(body);
+  assert(fread(body, 1, (size_t)n, f) == (size_t)n); fclose(f);
+  return body;
+}
+
 int main(void) {
+  // Captured Subtitle Sync 2.1.0 responses; download URLs replaced with markers.
+  {
+    char *body = fixture("movie"), *manifest = fixture("manifest");
+    ling_local_legenda("pt-br"); ling_conta_legenda2("");
+    responses[0] = body; run(1, "tt0111161", "movie");
+    capacidadesDoManifesto(0, manifest);
+    assert(addon[0].legenda && !addon[0].fonte);
+    assert(nLegs == 3); // Informational SRT must not enter automatic selection.
+    assert(!strcmp(legs[0].idioma, "pob"));
+    assert(!strcmp(ling_selo(legs[0].idioma), "PT-BR"));
+    assert(strstr(legs[0].rotulo, "Not synced"));
+    assert(strcmp(legs[0].rotulo, legs[1].rotulo));
+    free(body); body = fixture("extras"); responses[0] = body;
+    snprintf(legExt.id, sizeof legExt.id, "tt0111161");
+    snprintf(legExt.arquivo, sizeof legExt.arquivo, "The.Shawshank.Redemption.1994.1080p.mkv");
+    legExt.tamanho = 1000000;
+    run(1, "tt0111161", "movie");
+    assert(nLegs == 3 && strstr(ultimaUrl[0], "videoSize=1000000&filename="));
+    assert(strstr(legs[0].rotulo, "Weak sync"));
+    assert(strstr(legs[1].rotulo, "Syncs when picked"));
+    assert(!legs[0].arquivo[0]); // A display label is not a release filename.
+    memset(&legExt, 0, sizeof legExt);
+    free(body); free(manifest);
+  }
+  {
+    int t, e;
+    episodioPedido("tt12409194:0:1", &t, &e); assert(t == 0 && e == 1);
+    assert(episodioCorreto("{\"season\":0,\"episode\":1}", NULL, t, e));
+    assert(!episodioCorreto("{\"season\":1,\"episode\":1}", NULL, t, e));
+    episodioPedido("kitsu:41370:5", &t, &e); assert(t == -1 && e == 5);
+    assert(episodioCorreto("{\"season\":1,\"episode\":5}", NULL, t, e));
+    episodioPedido("kitsu:41370:0:5", &t, &e); assert(t == 0 && e == 5);
+  }
+
   responses[0] = "{\"subtitles\":[{\"lang\":\"ron\",\"url\":\"https://fixture.invalid/ro.srt\"},{\"lang\":\"spa\",\"url\":\"https://fixture.invalid/es.srt\"},{\"lang\":\"eng\",\"url\":\"https://fixture.invalid/en.srt\"},{\"lang\":\"kor\",\"url\":\"https://fixture.invalid/ko.srt\"}]}";
   ling_conta_legenda("ro"); ling_conta_legenda2(""); ling_local_legenda("*"); run(1, "tt123", "movie");
   assert(nLegs == 4 && !strcmp(legs[0].idioma, "ron") && !strcmp(legs[3].idioma, "kor"));
@@ -221,6 +269,34 @@ int main(void) {
       assert(agoraTeste <= 28500 && tentativasCauda == (atrasoInicio ? 1 : 2));
       assert(!strstr(ultimaUrl[0], "videoHash="));
     } }
+  // #606: first nonempty filename field wins, then the URL path basename.
+  {
+    const char *fields[] = {"subtitleFileName", "movieReleaseName", "filename",
+                            "fileName", "name", "title", "release"};
+    char json[2048], expected[96];
+    memset(&legExt, 0, sizeof legExt);
+    status[0] = 200;
+    ling_local_legenda("*"); ling_conta_legenda(""); ling_conta_legenda2("");
+    for (int first = 0; first <= 7; first++) {
+      int used = snprintf(json, sizeof json,
+        "{\"subtitles\":[{\"lang\":\"eng\",\"url\":\"https://fixture.invalid/urlbasename.srt?token=PRIVATE_TOKEN/path#fragment\",\"label\":\"Sync status\"");
+      for (int k = 0; k < 7; k++)
+        used += snprintf(json + used, sizeof json - used, ",\"%s\":\"%s%s\"",
+                         fields[k], k < first ? "" : fields[k], k < first ? "" : ".srt");
+      snprintf(json + used, sizeof json - used, "}]}");
+      snprintf(expected, sizeof expected, "%s.srt", first < 7 ? fields[first] : "urlbasename");
+      responses[0] = json; run(1, "tt606", "movie");
+      assert(nLegs == 1 && !strcmp(legs[0].arquivo, expected));
+      assert(!strcmp(legs[0].rotulo, "Sync status"));
+    }
+    // No path or an empty final segment must not become a hostname or query.
+    const char *urls[] = {"https://fixture.invalid", "https://fixture.invalid/?token=PRIVATE_TOKEN/path"};
+    for (int k = 0; k < 2; k++) {
+      snprintf(json, sizeof json, "{\"subtitles\":[{\"lang\":\"eng\",\"url\":\"%s\"}]}", urls[k]);
+      responses[0] = json; run(1, "tt606", "movie");
+      assert(nLegs == 1 && !legs[0].arquivo[0]);
+    }
+  }
 
   puts("addon subtitles: provider fairness, real origin, ordered languages, empty/missing/HTTP and episode checks ok");
 }

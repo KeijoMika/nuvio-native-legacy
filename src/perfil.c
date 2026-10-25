@@ -268,7 +268,7 @@ static void cartao(GfxRect r, float a) {
 // cinza opaco da regra 2 no solido. Sem aro e sem realce: o foco e superficie.
 static void linhaFoco(GfxRect r, float raio, float f, float a) {
   if (f <= 0.01f) return;
-  if (ajustes_vidro()) gfx_cor(r, raio, 1, 1, 1, .12f * f * a);
+  if (ajustes_vidro()) { if (!gfx_foco_placa(r, raio, f, a)) gfx_cor(r, raio, 1, 1, 1, .12f * f * a); }
   else gfx_cor(r, raio, .169f, .176f, .204f, f * a);
 }
 static void numero(char *s, size_t n, int v) { snprintf(s, n, "%d", v < 0 ? 0 : v); }
@@ -673,7 +673,7 @@ static void pfToquePreparar(void) {
   float maximo = fmaxf(0, ultimo.y + ultimo.h + pfScroll - PF_CONTEUDO_H);
   toquerol_vincular(&pfToque, (GfxRect){PF_X, topo, PF_W, PF_CONTEUDO_H - topo},
                     gfx_escala(), 0, maximo, 1, &pfScroll);
-  if (!pfToque.livre) {
+  if (!toquerol_livre(&pfToque)) {
     GfxRect r = modo == PF_DUELO ? (dLinha ? rCartazes() : rDuelo(0)) : rCartao(secao);
     if (r.y < topo) pfScroll -= topo - r.y;
     else if (r.y + r.h > PF_CONTEUDO_H) pfScroll += r.y + r.h - PF_CONTEUDO_H;

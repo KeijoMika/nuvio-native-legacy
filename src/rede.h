@@ -118,10 +118,19 @@ RedeErro rede_job_estado(RedeJob *job);
  * are accepted; total is -1 when unknown. Caller frees the returned buffer.
  * Raw headers use one Name: value per line. Credentials are stripped when a
  * redirect changes origin. Cancelling also interrupts an idle transfer. */
+/* cross: 0 = same origin, 1 = public headers only, 2 = no caller headers
+ * after an HTTPS downgrade (including subsequent HTTPS hops). */
+char *rede_range_headers(const char *raw, int public_only); /* caller frees */
 char *rede_baixar_trecho64_final(const char *url, const char *headers,
                               int64_t start, int64_t end, long *size,
                               int64_t *total, int *status,
                               volatile int *cancelled, char *final, int *cross);
+/* Optional guard for an actively awaited range. Atomic urgent flag is owned
+ * by the caller for this synchronous call. Last retry can omit this guard. */
+char *rede_baixar_trecho64_vigiado(const char *url,const char *headers,
+    int64_t start,int64_t end,long *size,int64_t *total,int *status,
+    volatile int *cancelled,char *final,int *cross,volatile int *urgent,
+    unsigned idle_ms,int *stalled);
 /* One streaming read "bytes=start-" for the Samsung converter: the body goes to
  * sink(opaque, data, n) as it arrives (return 0 to stop; it may block). Same
  * redirect and header rules as rede_baixar_trecho64_final. No limit on the
@@ -158,6 +167,14 @@ char *rede_baixar(const char *url, int segundos);
 // Igual, mas para conteudo BINARIO: devolve o tamanho em *n. A versao acima
 // termina em NUL e serve para JSON; imagem tem zeros no meio e strlen mentiria.
 char *rede_baixar_bin(const char *url, int segundos, long *n);
+// GET EM FLUXO: o corpo vai em pedacos para `cb` (que devolve 0 para cortar a
+// transferencia de proposito, o que conta como sucesso) e nada fica na memoria.
+// `maxBytes` 0 = sem teto. 1 = terminou (2xx); 0 = falha (*status = HTTP, 0 sem
+// resposta). BLOQUEIA. Usado pelo XMLTV e pela M3U do guia de TV.
+int rede_baixar_fluxo(const char *url, int segundos, const char *const *cab,
+                      int (*cb)(const char *dados, size_t n, void *u), void *u,
+                      long long maxBytes, int *status, long long *bytes);
+
 
 #ifdef __EMSCRIPTEN__
 // POST de corpo text/plain com resposta BINARIA (tamanho em *n; 4xx/5xx viram
@@ -249,8 +266,8 @@ extern long rede_teto;
 
 // Segue os redirecionamentos com GET Range de 64 bytes e devolve o endereco
 // FINAL somente em HTTP2xx, sem truncar o destino. Nativo descarta o corpo e
-// aborta ao passar de 64 bytes; XHR sincrono do WGT recebe a resposta inteira,
-// mas nao a copia para o heap WASM (nao pode abortar durante o recebimento).
+// aborta ao passar de 64 bytes; WGT fetch aborts after response headers,
+// without reading or copying the media body.
 // Serve para saber se um link de debrid leva ao arquivo ou a um video de aviso
 // ("downloading.mp4", "slate.mp4") — que TOCA NORMALMENTE e por isso nao da
 // erro nenhum. 1 se conseguiu resolver.
@@ -305,6 +322,18 @@ char *rede_apagar(const char *url, int segundos, const char *const *cabecalhos,
                   int *status);
 char *rede_postar_st(const char *url, int segundos, const char *const *cabecalhos,
                      const char *corpo, int *status);
+// POST with the response Retry-After (same parsing as rede_baixar_st_retry).
+char *rede_postar_st_retry(const char *url, int segundos, const char *const *cabecalhos,
+                           const char *corpo, int *status, int *retryAfter);
+// PUT de JSON, mesmo contrato de rede_postar_st (NULL so em falha de transporte;
+// 4xx volta com corpo). Existe para o TorBox, que edita um item so por PUT.
+char *rede_colocar_st(const char *url, int segundos, const char *const *cabecalhos,
+                      const char *corpo, int *status);
+#ifdef __EMSCRIPTEN__
+// Authenticated JSON PATCH through the legacy WGT HTTP bridge.
+char *rede_patch_st(const char *url, int segundos, const char *const *cabecalhos,
+                    const char *corpo, int *status);
+#endif
 // POST que repete (espera 1 s, 2 s, ...) so quando nao houve resposta (status 0).
 char *rede_postar_repetindo(const char *url, int segundos, const char *const *cabecalhos,
                             const char *corpo, int *status, int tentativas);
@@ -368,10 +397,10 @@ char *rede_baixar_etag(const char *url, int segundos,
 // (opcional) recebe o endereco depois dos redirecionamentos. `cancelado` e
 // lido durante o recebimento.
 //
-// NO TIZEN nao ha como contar bytes enquanto chegam (XHR sincrono entrega o
-// corpo inteiro de uma vez): la sao pedidos de Range em pedacos crescentes,
-// cada um descartado no proprio JavaScript e cronometrado, e cada pedaco
-// vira tantas amostras quantos segundos ele levou. Um CDN sem CORS para a
+// Tizen uses growing Range chunks, discarded in JavaScript and timed.
+// Each chunk contributes samples for its elapsed seconds. Fetch stops at
+// the chunk limit/deadline even if Range is ignored; bytes/kbps count only
+// consumed bytes, not the complete file. A CDN without CORS for the
 // origem do app (debrid) aparece como status 0 e erro -1: quem chama diz
 // "nao deu para medir pelo navegador", sem inventar numero.
 typedef struct {

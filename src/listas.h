@@ -38,8 +38,7 @@
 // Fixadas na Biblioteca. Teto pequeno de proposito: e uma tela de atalhos, nao
 // um segundo catalogo, e cada fixada vira uma linha no arquivo do perfil.
 #define LST_FIX_MAX  24
-// Itens baixados de uma lista do Simkl. As outras duas fontes passam pelo
-// desc_vertudo_*, que tem o teto proprio dele (VT_MAX).
+// Context-menu batch size. Simkl list storage grows with its full response.
 #define LST_ITENS_MAX 120
 
 typedef enum { LST_TRAKT = 0, LST_SIMKL, LST_NUVIO, LST_FONTE_N } LstFonte;
@@ -144,8 +143,8 @@ enum { LST_JS_MINHAS = 0,   // /users/me/lists -> [ {lista} ]
        LST_JS_ENVELOPE };   // /search/list, /lists/trending -> [ {"list":{...}} ]
 // Substitui a tabela pelo que houver em `json`. Devolve quantas entraram.
 int lst_ler_trakt(const char *json, int envelope);
-// Itens de /sync/all-items/<tipo>/<estado> do Simkl para `dst`. `serie` escolhe
-// entre o vetor "shows" e o "movies". Devolve quantos.
+// Itens de /sync/all-items/<tipo>/<estado> do Simkl para `dst`. `serie` = 0 le
+// "movies" + anime movies; 1 reads "shows" + non-movie anime. Returns count.
 int lst_ler_simkl_itens(const char *json, int serie, CatItem *dst, int max);
 
 // Nome do arquivo de fixadas do perfil ativo. Exposto para o teste provar ONDE

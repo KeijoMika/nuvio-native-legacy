@@ -27,7 +27,8 @@ constants = re.findall(r'(?m)^#define BIB_FIL_\w+\s+\d+.*$', source)
 constants += re.findall(r'enum \{ (?:MODO_|TIPO_|ORD_|VIS_|FONTE_|EST_)[^}]+\};', source)
 handlers = ''.join(function(signature) for signature in (
     'static int estado(', 'static void eventoAberta(',
-    'void biblioteca_evento(', 'int biblioteca_quer_sair(', 'int biblioteca_pediu_relogio('))
+    'static void biblioteca_evento_(', 'int biblioteca_quer_sair(', 'int biblioteca_pediu_relogio('))
+handlers = handlers.replace('biblioteca_evento_', 'biblioteca_evento', 1)
 Path(sys.argv[1], 'biblioteca_eventos.inc').write_text('\n'.join(constants) + '\n' + handlers)
 PYTHON
 for platform in tv android; do

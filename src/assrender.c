@@ -1,4 +1,5 @@
 #include "assrender.h"
+#include "legfontes.h"
 
 #include <pthread.h>
 #include <limits.h>
@@ -263,7 +264,48 @@ typedef struct { char nome[96]; size_t tam; unsigned long long amostra; } AssFon
 static AssFonteVista assFontesVistas[ASS_FONTES_MAX];
 static int assNFontesVistas;
 static size_t assBytesFontesVistas;
-static char assFallbackFont[768];
+static char assFallbackFont[768], assFonteLocal[768];
+static int assFonteRegistrada;
+#define ASS_ATUAIS_MAX 32
+#define ASS_ATUAIS_BYTES (32u * 1024u * 1024u)
+typedef struct { char nome[256]; unsigned char *dados; size_t tam; } AssFonteAtual;
+static AssFonteAtual assFontesAtuais[ASS_ATUAIS_MAX];
+static int assNFontesAtuais, assAtuaisCompletas = 1;
+static size_t assBytesAtuais;
+static void ass_atuais_limpar_locked(void) {
+  for (int i = 0; i < assNFontesAtuais; i++) free(assFontesAtuais[i].dados);
+  memset(assFontesAtuais, 0, sizeof assFontesAtuais);
+  assNFontesAtuais = 0; assBytesAtuais = 0; assAtuaisCompletas = 1;
+}
+static void ass_atual_guardar_locked(const char *nome, const void *dados, size_t n) {
+  if (!assAtuaisCompletas) return;
+  for (int i = 0; i < assNFontesAtuais; i++) {
+    const AssFonteAtual *f = &assFontesAtuais[i];
+    if (f->tam == n && !strcmp(f->nome, nome) && !memcmp(f->dados, dados, n)) return;
+  }
+  unsigned char *copia = NULL;
+  if (strlen(nome) < sizeof assFontesAtuais[0].nome && assNFontesAtuais < ASS_ATUAIS_MAX &&
+      n <= ASS_ATUAIS_BYTES - assBytesAtuais) copia = malloc(n);
+  if (!copia) {
+    ass_atuais_limpar_locked(); assAtuaisCompletas = 0;
+    return; /* Keep the original renderer path; never replay a partial batch. */
+  }
+  AssFonteAtual *f = &assFontesAtuais[assNFontesAtuais++];
+  memcpy(copia, dados, n); f->dados = copia; f->tam = n;
+  snprintf(f->nome, sizeof f->nome, "%s", nome); assBytesAtuais += n;
+}
+static unsigned char *ass_fonte_local_ler(const char *path, size_t *n) {
+  struct stat st; *n = 0;
+  if (lstat(path, &st) || !S_ISREG(st.st_mode) || st.st_size < 12 ||
+      (unsigned long long)st.st_size > LEGFONTE_MAX_BYTES) return NULL;
+  FILE *f = fopen(path, "rb"); if (!f) return NULL;
+  unsigned char *b = malloc((size_t)st.st_size);
+  if (b && fread(b, 1, (size_t)st.st_size, f) == (size_t)st.st_size &&
+      fgetc(f) == EOF && !ferror(f) && assrender_bytes_sao_fonte(b, (size_t)st.st_size)) *n = (size_t)st.st_size;
+  fclose(f);
+  if (!*n) { free(b); b = NULL; }
+  return b;
+}
 
 static unsigned long long ass_amostra_fonte(const unsigned char *p, size_t n) {
   unsigned long long h = 1469598103934665603ULL;
@@ -329,6 +371,7 @@ static void ass_carregar_pasta_locked(void) {
   if (assPastaExtra[0]) assrender_ler_pasta_fontes(assPastaExtra, ass_fonte_da_pasta, NULL, NULL);
   if (!assVistoNaskh && assNaskhFalhou) ass_subset_naskh_locked();
 #endif
+  plainass_arabic_bold = assNaskhBold;
   fprintf(stderr, "[libass] pasta %s: %d fonte(s); %d arquivo(s) que nao sao fonte ignorado(s)\n",
           assPastaFontes, lidas, ignorados);
 }
@@ -337,6 +380,25 @@ static void ass_aplicar_fontes_locked(void) {
   if (!assRenderer) return;
   ass_set_fonts(assRenderer, assFallbackFont[0] ? assFallbackFont : NULL, "Arial",
                 ASS_FONTPROVIDER_AUTODETECT, NULL, 1);
+}
+
+// Explicit selection changes only. Routine packet delivery keeps the original
+// font cache path; a full current batch lets us restore attachment precedence.
+static void ass_fontes_reconstruir_locked(const unsigned char *selecionada, size_t n) {
+  ass_clear_fonts(assLib);
+  if (selecionada) ass_add_font(assLib, assFonteLocal, (const char *)selecionada, (int)n);
+  assFonteRegistrada = selecionada != NULL;
+  ass_carregar_pasta_locked();
+  assNFontesVistas = 0; assBytesFontesVistas = 0;
+  for (int i = 0; i < assNFontesAtuais; i++) {
+    const AssFonteAtual *f = &assFontesAtuais[i];
+    ass_add_font(assLib, f->nome, (const char *)f->dados, (int)f->tam);
+    AssFonteVista *v = &assFontesVistas[assNFontesVistas++];
+    snprintf(v->nome, sizeof v->nome, "%.95s", f->nome);
+    v->tam = f->tam; v->amostra = ass_amostra_fonte(f->dados, f->tam);
+    assBytesFontesVistas += f->tam;
+  }
+  ass_aplicar_fontes_locked();
 }
 
 static void ass_iniciar_locked(int sistema) {
@@ -435,6 +497,12 @@ static void ass_iniciar_locked(int sistema) {
 #endif
   }
   snprintf(assPastaFontes, sizeof assPastaFontes, "%s", fontDir);
+  if (assFonteLocal[0]) {
+    size_t n; unsigned char *b = ass_fonte_local_ler(assFonteLocal, &n);
+    if (b) { ass_add_font(assLib, assFonteLocal, (const char *)b, (int)n); assFonteRegistrada = 1; }
+    else assFonteRegistrada = 0;
+    free(b);
+  }
   ass_carregar_pasta_locked();
   snprintf(assFallbackFont, sizeof assFallbackFont, "%s", fallbackFont);
   ass_aplicar_fontes_locked();
@@ -501,21 +569,6 @@ static int ass_frame_copiar(ASS_Image *im, AssCpuFrame *out) {
   return 1;
 }
 
-/* #335: negrito sintetico do libass (FT_Outline_Embolden) sobre o Noto Naskh,
- * que so tem Regular, funde as letras ligadas e borra os pontos. Trilha com
- * texto arabe fica em peso Regular. Detecta por bytes UTF-8: U+0600-06FF
- * (D8-DB), U+0740-07BF (DD), U+FB50-FDFF e U+FE70-FEFF (EF AD-B7 / B9-BB). */
-static int assArabe;
-static void ass_trilha_arabe_sem_negrito(ASS_Track *t) {
-  int i, arabe = 0;
-  for (i = 0; i < t->n_events && !arabe; i++) arabe = bidi_tem_arabe(t->events[i].Text);
-  assArabe = arabe && !assNaskhBold;   /* com a face Bold real, Bold=1 e \b1 a usam */
-  if (!arabe || assNaskhBold) return;
-  for (i = 0; i < t->n_styles; i++) t->styles[i].Bold = 0;
-  ass_diag("libass: trilha com arabe: negrito sintetico desligado");
-}
-
-
 static void ass_trilha_tailandes(ASS_Track *t) {
   int i;
   if (!assVistoThai) return;
@@ -562,7 +615,7 @@ static void ass_plain_style_locked(const PlainAssStyle *p) {
       if ((p->overrides & PLAIN_ASS_OUTLINE) && s->BorderStyle == 1)
         s->BackColour = ((uint32_t)p->outlineRgb << 8) | (s->BackColour & 255u);
       if (p->overrides & PLAIN_ASS_POS) s->MarginV = p->marginV * assTrack->PlayResY / 1080;
-      if (p->overrides & PLAIN_ASS_BOLD) s->Bold = p->bold && !assArabe;
+      if (p->overrides & PLAIN_ASS_BOLD) s->Bold = p->bold;
     }
     /* Flush cached event layout after an explicit style change or reset. */
     ass_set_selective_style_override_enabled(assRenderer, ASS_OVERRIDE_BIT_MARGINS);
@@ -583,7 +636,7 @@ static void ass_plain_style_locked(const PlainAssStyle *p) {
   // Without that box, BackColour is the shadow, at its original opacity.
   s->BackColour = p->background ? (unsigned)(255 - (p->background * 255 * 16 / 100))
                    : (p->border == 2 ? (uint32_t)p->outlineRgb << 8 : 0u) | 46u;
-  s->Bold = (p->bold && !assArabe) ? 1 : 0;
+  s->Bold = p->bold ? 1 : 0;
   s->BorderStyle = p->background ? 4 : 1;
   s->Outline = p->border == 1 ? 2 : 0;
   s->Shadow = p->border == 2 ? 4 : 0;
@@ -840,7 +893,6 @@ static int ass_carregar(const char *corpo, size_t tamanho, unsigned geracao, int
   ass_authored_styles_free();
   if (assTrack) ass_free_track(assTrack);
   assTrack = track;
-  ass_trilha_arabe_sem_negrito(track);
   ass_trilha_tailandes(track);
   plainTimingValid = 0;
   /* Authored ASS retains its own margins after a converted plain track. */
@@ -911,7 +963,7 @@ static void ass_garantir_naskh(void) {
     if (access(caminho, R_OK) == 0) { pronto = 1; return; }
   }
   if (!dados_dir() || !dados_dir()[0]) return;
-  snprintf(pasta, sizeof pasta, "%s/fontes", dados_dir());
+  if (!dados_caminho(pasta, sizeof pasta, "fontes")) goto falhou;
   snprintf(caminho, sizeof caminho, "%s/NotoNaskhArabic-Regular.ttf", pasta);
   if (access(caminho, R_OK) != 0) {
     if (NV_VERSAO[0] < '0' || NV_VERSAO[0] > '9') { pronto = 1; return; }
@@ -961,6 +1013,41 @@ falhou:
   pthread_mutex_unlock(&assTrava);
 }
 #endif
+
+int assrender_fonte_local_transacao(const char *caminho, int (*confirmar)(void *), void *u) {
+  if (!caminho) caminho = "";
+  if (strlen(caminho) >= sizeof assFonteLocal) return 0;
+  pthread_mutex_lock(&assTrava);
+  int mudou = strcmp(assFonteLocal, caminho) != 0 || (assLib && caminho[0] && !assFonteRegistrada);
+  if (mudou && assLib && !assAtuaisCompletas) { pthread_mutex_unlock(&assTrava); return 0; }
+  size_t n = 0; unsigned char *b = NULL;
+  if (mudou && caminho[0]) {
+    b = ass_fonte_local_ler(caminho, &n);
+    if (!b) { pthread_mutex_unlock(&assTrava); return 0; }
+  }
+  if (confirmar && !confirmar(u)) { free(b); pthread_mutex_unlock(&assTrava); return 0; }
+  if (mudou) {
+    snprintf(assFonteLocal, sizeof assFonteLocal, "%s", caminho);
+    if (assLib) ass_fontes_reconstruir_locked(b, n);
+    else assFonteRegistrada = 0;
+  }
+  free(b);
+  pthread_mutex_unlock(&assTrava);
+  if (mudou) {
+    pthread_mutex_lock(&assFilaTrava);
+    assPedidoPendente = 0; ++assEpoch; assTemUltimoPedido = 0;
+    ass_frame_liberar(&assPronto); assProntoValido = 0;
+    ass_frame_liberar(&assAtual); assAtualValido = 0; assTexResetar = 1;
+    pthread_mutex_unlock(&assFilaTrava);
+  }
+  return 1;
+}
+int assrender_fonte_local_ativa(const char *caminho) {
+  pthread_mutex_lock(&assTrava);
+  int ativa = caminho && caminho[0] && assFonteRegistrada && !strcmp(assFonteLocal, caminho);
+  pthread_mutex_unlock(&assTrava);
+  return ativa;
+}
 
 int assrender_carregar_texto(const char *corpo, size_t tamanho, unsigned geracao) {
 #ifdef NV_TPK
@@ -1012,12 +1099,17 @@ void assrender_limpar(void) {
 
 void assrender_limpar_fontes(void) {
   pthread_mutex_lock(&assTrava);
+  ass_atuais_limpar_locked();
   ass_authored_styles_free();
   if (assTrack) { ass_free_track(assTrack); assTrack = NULL; }
   assEventos = 0; assFontes = 0; assResolucaoFonte = 0;
   assCoberturaIni = assCoberturaFim = 0;
   __atomic_store_n(&assTrackGeracao, 0, __ATOMIC_RELEASE);
   __atomic_store_n(&assTrackAtivo, 0, __ATOMIC_RELEASE);
+  if (assLib && assFonteLocal[0]) {
+    size_t n; unsigned char *b = ass_fonte_local_ler(assFonteLocal, &n);
+    ass_fontes_reconstruir_locked(b, n); free(b);
+  }
   /* SEM ass_clear_fonts: ver a nota de assFontesVistas. As fontes da faixa
    * anterior ficam na biblioteca; so sao usadas se a proxima pedir o mesmo
    * nome. assFontes (diagnostico) volta a contar as desta faixa. */
@@ -1031,11 +1123,26 @@ void assrender_limpar_fontes(void) {
   pthread_mutex_unlock(&assFilaTrava);
 }
 
+// #415: no aviso de memoria, esvazia os caches do libass — o loop
+// "Glyph not found -> selecting one more font" encheu ~190 MB na G4 sem
+// que gpu-cache ou texturas mostrassem. ass_set_cache_limits NAO serve:
+// 0 vira o default e o corte so acontece preguiçosamente no proximo
+// ass_render_frame. O que despeja na hora e o ass_reconfigure dentro de
+// ass_set_fonts (bitmap/composite/outline/font/metrics + fontselect
+// refeito, o que tambem encerra o loop de fallback). Custa uma releitura
+// da pasta de fontes; aceitavel porque so roda no aviso.
+void assrender_aliviar(void) {
+  pthread_mutex_lock(&assTrava);
+  if (assRenderer) ass_aplicar_fontes_locked();
+  pthread_mutex_unlock(&assTrava);
+}
+
 int assrender_adicionar_fonte(const char *nome, const void *dados, size_t tamanho) {
   if (!nome || !*nome || !dados || !tamanho || tamanho > (size_t)INT_MAX) return 0;
   pthread_mutex_lock(&assTrava);
   ass_iniciar_locked(1);
   if (assLib) {
+    ass_atual_guardar_locked(nome, dados, tamanho);
     unsigned long long am = ass_amostra_fonte((const unsigned char *)dados, tamanho);
     int i, visto = 0;
     for (i = 0; i < assNFontesVistas; i++)
@@ -1050,6 +1157,16 @@ int assrender_adicionar_fonte(const char *nome, const void *dados, size_t tamanh
       if (assNFontesVistas >= ASS_FONTES_MAX ||
           assBytesFontesVistas + tamanho > ASS_FONTES_TETO_BYTES) {
         ass_clear_fonts(assLib);
+        // ass_clear_fonts removes every memory face, including the imported
+        // device-local selection. Restore it before attachments and system
+        // fonts so the selection keeps the same precedence after rollover.
+        if (assFonteLocal[0]) {
+          size_t localN = 0;
+          unsigned char *local = ass_fonte_local_ler(assFonteLocal, &localN);
+          if (local) ass_add_font(assLib, assFonteLocal, (const char *)local, (int)localN);
+          assFonteRegistrada = local != NULL;
+          free(local);
+        } else assFonteRegistrada = 0;
         ass_carregar_pasta_locked();
         ass_aplicar_fontes_locked();
         assNFontesVistas = 0; assBytesFontesVistas = 0;
@@ -1320,11 +1437,16 @@ static unsigned assGeracao;
 
 int assrender_carregar_texto(const char *corpo, size_t tamanho, unsigned geracao) { (void)corpo; (void)tamanho; (void)geracao; return 0; }
 int assrender_texto_simples(void) { return 0; }
+int assrender_fonte_local_transacao(const char *caminho, int (*confirmar)(void *), void *u) {
+  (void)caminho; return confirmar ? confirmar(u) : 1;
+}
+int assrender_fonte_local_ativa(const char *caminho) { (void)caminho; return 0; }
 void assrender_definir_texto_estilo(const PlainAssStyle *style) { (void)style; }
 int assrender_carregar(const char *corpo, size_t tamanho, unsigned geracao) { (void)corpo; (void)tamanho; (void)geracao; return 0; }
 int assrender_atualizar(const char *corpo, size_t tamanho, unsigned geracao) { (void)corpo; (void)tamanho; (void)geracao; return 0; }
 void assrender_limpar(void) { assGeracao++; }
 void assrender_limpar_fontes(void) {}
+void assrender_aliviar(void) {}
 int assrender_adicionar_fonte(const char *nome, const void *dados, size_t tamanho) {
   (void)nome; (void)dados; (void)tamanho; return 0;
 }
