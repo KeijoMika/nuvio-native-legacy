@@ -1,4 +1,5 @@
 #include "streams.h"
+#include "mediaurl.h"
 #include "plrui.h"
 #include "ondever.h"
 #include "naovideo.h"
@@ -1507,6 +1508,7 @@ int  stream_addon_no_escopo(const char *nome) {
 // arquivo ainda nao esta em cache no Real-Debrid. Os dois sao MP4 validos de
 // ~120s que TOCAM NORMALMENTE — nao ha erro para detectar, so o endereco.
 static int enderecoDeAviso(const char *u) {
+  u = nv_media_url(u);
   return strstr(u, "downloading.mp4") || strstr(u, "/slate") ||
          strstr(u, "slate.mp4") || strstr(u, "slate.m3u8") ? 1 : 0;
 }
@@ -1555,6 +1557,7 @@ static int playlistVazia(const char *url, const char *cabecalhos) {
   char copia[512];
   long n = 0;
   int vazia, status = 0, nc = 0;
+  url = nv_media_url(url);
   if (!strstr(url, ".m3u8") && !strstr(url, "m3u8")) return 0;
   // Os cabecalhos que o addon exigiu (behaviorHints.proxyHeaders). Sem eles um
   // CDN que confere Referer devolve 403 — medido: 403 sem, 200 com.
@@ -1683,7 +1686,7 @@ static int resolverUrl(const char *url, const char *cabecalhos, int segundos,
 void (*stream_cdn_lembrar)(const char *orig, const char *final, const char *cabecalhos, uint64_t sessao);
 
 static int verificarUma(int i, Conferencia *c) {
-  char fim[4096], url[4096], cab[512], mime[96], addon[sizeof lista->provedor];
+  char fim[NV_MEDIA_URL_MAX], url[NV_MEDIA_URL_MAX], cab[512], mime[96], addon[sizeof lista->provedor];
   int fileIdx, ok = 0;
   long corpo = -1;
   char infoHash[48];
@@ -1783,7 +1786,7 @@ static int verificarUma(int i, Conferencia *c) {
 // tocando a URL em paralelo e so quer saber cedo se ela morreu.
 int stream_url_serve(const char *url, const char *cabecalhos) {
   uint64_t sessao = nv_perfil_sessao_ler();
-  char fim[4096], mime[96];
+  char fim[NV_MEDIA_URL_MAX], mime[96];
   long corpo = -1;
   if (!url || !*url) return 0;
   if (!resolverUrl(url, cabecalhos, 5, fim, sizeof fim, mime, sizeof mime, &corpo)) return 0;
@@ -2211,7 +2214,7 @@ int stream_falha_verificar(FonteFalhaSessao *sessao, unsigned geracao, int escol
                        &c, &fontes, &nc)) return FONTEFALHA_FIM;
   for (;;) {
     FonteFalhaRota r;
-    char resolvida[4096] = "", fim[4096], mime[96] = "";
+    char resolvida[NV_MEDIA_URL_MAX] = "", fim[NV_MEDIA_URL_MAX], mime[96] = "";
     long corpo = -1;
     int ok = 0, fora = 0;
     if (falhaCancelada(geracao, cancelado, ctx)) break;
@@ -2301,7 +2304,7 @@ int stream_vod_renovada_aplicar(int indice, unsigned geracao, const Stream *font
 int stream_falha_renovar(int indice, unsigned geracao, int servico,
                          int (*cancelado)(void *), void *ctx, char *url, unsigned tam) {
   Stream s;
-  char resolvida[4096] = "";
+  char resolvida[NV_MEDIA_URL_MAX] = "";
   int fora = 0, ok;
   if (!url || !tam || falhaCancelada(geracao, cancelado, ctx)) return 0;
   url[0] = 0;
@@ -2518,7 +2521,7 @@ int stream_preparo_resolver(StreamPreparo *p, int (*cancelado)(void *), void *ct
     FonteFalhaRota r;
     if (fontefalha_proxima(p->politica, p->candidatas, p->nc, 1, &r) != FONTEFALHA_PROXIMA) break;
     const Stream *s = &p->fontes[r.indice];
-    char url[4096] = "", fim[4096], mime[96] = "";
+    char url[NV_MEDIA_URL_MAX] = "", fim[NV_MEDIA_URL_MAX], mime[96] = "";
     long corpo = -1; int fora = 0, ok = 0;
     if (!fontefalha_tentar(p->politica, &p->candidatas[r.candidata], r.servico)) break;
     if (!nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
@@ -2551,7 +2554,7 @@ int stream_preparo_renovar(StreamPreparo *p, int indice, int (*cancelado)(void *
       !nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) return 0;
   const Stream *s = &p->fontes[indice];
   if (!fontefiltro_permite(&p->filtro, &s->filtro)) return 0;
-  char url[4096] = "", fim[4096], mime[96] = "";
+  char url[NV_MEDIA_URL_MAX] = "", fim[NV_MEDIA_URL_MAX], mime[96] = "";
   int ok = 0, fora = 0;
   long corpo = -1;
   debrid_contexto_entrar(&p->debrid);
@@ -2901,7 +2904,7 @@ int stream_n_candidatas(void) {
 // tempo que a pessoa fica olhando para a tela preta quando o canal esta fora.
 #define CANAL_PRAZO_S 3
 typedef struct {
-  char url[4096], cabecalhos[512];
+  char url[NV_MEDIA_URL_MAX], cabecalhos[512];
   int altura, cabe, preferida, tsContinuo;
 } CanalCandidata;
 typedef struct CanalConferencia {

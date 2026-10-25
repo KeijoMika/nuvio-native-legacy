@@ -11,6 +11,7 @@
 //   2. detalhe — camada sobre a tela corrente
 //   3. menu    — camada sobre a tela corrente
 //   4. a tela corrente (home, busca, biblioteca ou ajustes)
+#include "mediaurl.h"
 #include "arranque.h"
 #include "celbotao.h"
 #include "central.h"
@@ -393,7 +394,7 @@ typedef struct {
   FontePreparoContexto contexto;
   int lembrada, catalogo, temporada, episodio, renovar;
   char id[80];
-  char url[4096];
+  char url[NV_MEDIA_URL_MAX];
   AddonsConsulta *consulta;
   Stream renovada;
   char tipoVod[16];
@@ -694,7 +695,7 @@ static void *escolherFonteCanal(void *u) {
 }
 static void *escolherFonteStalker(void *u) {
   FonteJob *job = u;
-  char url[4096];
+  char url[NV_MEDIA_URL_MAX];
   int ok = perfis_sessao_atual(job->sessaoPerfil) && (m3u_e_id(job->id)
     ? m3u_resolver_sessao(job->id, url, sizeof url, job->sessaoPerfil, job->renovando)
     : stalker_resolver_sessao(job->id, url, sizeof url, job->sessaoPerfil));
@@ -1302,7 +1303,7 @@ static int retentarCanal(void) {
   if (!canalDiretoTentado && mesma && nv_webos_major() > 0 &&
       video_buffer_fim() > 0 && !video_decoder_anunciou() &&
       proxyts_disponivel() && proxyts_candidata(mesma->url, mesma->mp4)) {
-    static char url[4200];
+    static char url[NV_MEDIA_URL_MAX + 128];
     if (strlen(mesma->url) + strlen(PROXYTS_PREFIXO) >= sizeof url) return 0;
     canalDiretoTentado = canalViaProxy = 1;
     video_definir_cabecalhos(mesma->cabecalhos);
@@ -1494,7 +1495,7 @@ static int resolverCanalXtream(void) {
   for (j = 0; j < nv; j++) if (!nv_res_preferida(v[j].altura, alvo)) ord[no++] = v[j];
   for (j = 0; j < no; j++)
     for (i = 0; i < k && n < (int)(sizeof s / sizeof *s); i++) {
-      char url[4096];
+      char url[NV_MEDIA_URL_MAX];
       const char *f = !strcmp(ext[i], "ts") ? "TS" : "HLS";
       if (!xtream_url_formato(ord[j].id, ext[i], url, sizeof url)) continue;
       // PROXY DE TS (#158, proxyts.h): a primeira fonte de cada variante vai
@@ -1602,7 +1603,7 @@ static void erroCanalXtream(void) {
 // nada aqui decide reproducao. Uma vez por canal; o pipeline fecha antes porque
 // a conta tem 1 tela so (telas=0/1) e uma segunda conexao seria recusada.
 static void *sondarCanalXtreamFio(void *u) {
-  char *id = u, url[4096], fin[4096], r[600];
+  char *id = u, url[NV_MEDIA_URL_MAX], fin[NV_MEDIA_URL_MAX], r[600];
   long n = 0;
   int st = 0, er = 0;
   char *b;
@@ -1675,7 +1676,7 @@ static void processarFonteJob(void) {
   int tipo, renovando, resultado, estado, mesmoId = 1;
   Uint32 prazo;
   unsigned geracao;
-  char id[80], url[4096];
+  char id[80], url[NV_MEDIA_URL_MAX];
   int aplicar;
   if (!fioFonteVivo ||
       atomic_load_explicit(&job->estado, memory_order_acquire) != FJOB_DONE)
@@ -1919,7 +1920,7 @@ typedef struct {
   unsigned geracaoLista, sessao;
   uint64_t sessaoPerfil;
   DebridContexto debrid;
-  char url[4096], servico[32];
+  char url[NV_MEDIA_URL_MAX], servico[32];
 } TorrentJob;
 static TorrentJob torrentJob;
 static pthread_t fioTorrent;
@@ -2638,11 +2639,11 @@ static void registrarFonteVODTocando(void) {
 // recusou a URL no preparo (erro de conexao): repete o pedido pelo nosso
 // cliente, FORA do fio de quadro, e escreve uma linha so, sem caminho nem query.
 // Uma vez por URL.
-typedef struct { char url[4096]; char cab[512]; } SondaRecusa;
+typedef struct { char url[NV_MEDIA_URL_MAX]; char cab[512]; } SondaRecusa;
 static void *sondarRecusaFio(void *u) {
   SondaRecusa *p = u;
   const char *vetor[8];
-  char *l, *ctx = NULL, fim[4096], mime[96], linha[400];
+  char *l, *ctx = NULL, fim[NV_MEDIA_URL_MAX], mime[96], linha[400];
   int nc = 0, http = 0, ok;
   long corpo = -1;
   Uint32 t0 = SDL_GetTicks();
@@ -2662,7 +2663,7 @@ static void *sondarRecusaFio(void *u) {
 }
 static void sondarAposRecusa(void) {
 #ifndef __EMSCRIPTEN__
-  static char ultima[4096];
+  static char ultima[NV_MEDIA_URL_MAX];
   const char *url = video_url_atual();
   const Stream *s;
   SondaRecusa *p;
@@ -2696,7 +2697,7 @@ static int parteFase;
 static int parteRetomada;           // o arquivo aberto veio do ponto guardado
 static double partePos = -1;        // onde abrir dentro do arquivo (-1 = do inicio)
 static Uint32 parteDesde, parteGuardouEm;
-static char parteUrl[4096];
+static char parteUrl[NV_MEDIA_URL_MAX];
 static int parteMp4, parteRenovou;   // .mp4; links novos pedidos depois de tocar
 static PartesLista parteArqLista;    // o item do arquivo tocando (sessao ou nao)
 static int parteArqK = -1;
@@ -2704,11 +2705,11 @@ static int parteArqK = -1;
 // de duracao, player_parece_parte): pergunta ao TorBox pelos outros arquivos
 // do item, uma vez por link. Com 2 partes ou mais, a sessao liga sem reabrir
 // nada (o link do addon continua tocando) e a parte seguinte entra no fim.
-static char parteAutoUrl[4096];
+static char parteAutoUrl[NV_MEDIA_URL_MAX];
 static int parteAutoEsperando;
 static int parteProx = -1, parteProxFase;   // 0 nada, 1 pedido, 2 pronto, 3 falhou, 4 ultima tentativa
 static Uint32 parteProxDesde;
-static char parteProxUrl[4096];
+static char parteProxUrl[NV_MEDIA_URL_MAX];
 
 static void parteAviso(int k) {
   const PartesLista *l = partes_sessao_lista();
@@ -2859,7 +2860,7 @@ static void parteFalhou(const char *porque) {
 }
 static void vigiarPartes(void) {
   char alvo[64];
-  static char url[4096];
+  static char url[NV_MEDIA_URL_MAX];
   static PartesLista l;   // ~13 KB: fora da pilha, como as listas de partes.c
   int r;
   if (parteFase == PF_NADA) {
@@ -3045,7 +3046,7 @@ static void vigiarPartes(void) {
     printf("[partes] part %d ended: playing part %d of %d\n", partes_numero(sl, k),
            partes_numero(sl, prox), partes_principais(sl));
     fflush(stdout);
-    { char u[4096];
+    { char u[NV_MEDIA_URL_MAX];
       PartesPonto pt = { sl->usenet, sl->item, sl->arq[prox].id, 0 };
       snprintf(u, sizeof u, "%s", parteProxUrl);
       partes_sessao_ir(prox);
@@ -4763,7 +4764,7 @@ static void trocaDeTituloSeSolicitada(void) {
 // defeito de antes so naquele caminho. Esperar o video (player_com_video)
 // tambem poupa a busca das candidatas que o automatico testa e descarta.
 static void legendasDaFonte(void) {
-  static char ultimo[4096 + 64];
+  static char ultimo[NV_MEDIA_URL_MAX + 64];
   char chave[sizeof ultimo], alvo[64];
   const Stream *s;
   const CatItem *c;
@@ -6115,7 +6116,7 @@ void app_atualizar(float dt, Uint32 agora) {
       stream_definir_atual(fonteEscolhida);
       if (s) {
         if (player_id_canal()[0]) {
-          static char viaProxy[4200];
+          static char viaProxy[NV_MEDIA_URL_MAX + 128];
           player_definir_fonte(urlCanal(s, viaProxy, sizeof viaProxy));
         } else if (jaTocando) {
           printf("[fonte] conferencia confirmou a fonte que ja tocava (%u ms)\n",
@@ -6299,7 +6300,7 @@ void app_atualizar(float dt, Uint32 agora) {
       } else if (ls == NV_LS_REABRIR) {
         const Stream *mesma = stream_item(canalFonteIdx);
         if (mesma) {
-          static char viaProxy[4200];
+          static char viaProxy[NV_MEDIA_URL_MAX + 128];
 #ifdef NV_TPK
           if (video_terminou() && !liveStall.pendente)
             printf("[canal] tpk EOF de live: reabrindo a fonte %d imediatamente (sem tentativa)\n", canalFonteIdx);
@@ -6394,7 +6395,7 @@ void app_atualizar(float dt, Uint32 agora) {
         // com todas mudas o curto matava a 4K que abre em 11,8 s (25/09).
         canalFontePrazo = stream_canal_prazo_longo(prox)
                             ? CANAL_FONTE_PRAZO_MS : CANAL_FONTE_PRAZO_MUDA_MS;
-        { static char viaProxy[4200];
+        { static char viaProxy[NV_MEDIA_URL_MAX + 128];
           player_definir_fonte(urlCanal(s, viaProxy, sizeof viaProxy)); }
       } else {
         canalFonteIdx = -1;

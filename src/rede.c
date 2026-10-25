@@ -4,6 +4,7 @@
 #endif
 #include "negcache.h"
 #include "addonurl.h"
+#include "mediaurl.h"
 #include "negcache.inc"
 #include <pthread.h>
 #include <stdint.h>
@@ -224,7 +225,7 @@ static long redeLimiteAtual(void) {
 // mais codigo do que juntar e separar.
 //
 // One bounded reader serves worker threads and cooperative fibers.
-EM_JS(int, nv_http_iniciar_assinc, (const char *metodo, const char *url,
+EM_JS(int, nv_http_iniciar_bruto, (const char *metodo, const char *url,
                                     const char *cabs, const char *corpo, int prazo,
                                     int teto, int modo), {
   if (!Module.nvFioReqs) { Module.nvFioReqs = {}; Module.nvFioProxId = 1; }
@@ -287,12 +288,18 @@ EM_JS(int, nv_http_iniciar_assinc, (const char *metodo, const char *url,
   return id;
 });
 
+static int nv_http_iniciar_assinc(const char *metodo, const char *url,
+                                  const char *cabs, const char *corpo, int prazo,
+                                  int teto, int modo) {
+  return nv_http_iniciar_bruto(metodo, nv_media_url(url), cabs, corpo, prazo, teto, modo);
+}
+
 EM_JS(int, nv_http_pronto_assinc, (int id), {
   var reg = Module.nvFioReqs && Module.nvFioReqs[id];
   return reg && reg.pronto ? 1 : 0;
 });
 
-EM_JS(char *, nv_http_colher_assinc, (int id, int *tam, int *status,
+EM_JS(char *, nv_http_colher_bruto, (int id, int *tam, int *status,
                                       char *urlFinal, int urlFinalTam,
                                       char *etag, int etagTam, int *retryAfter,
                                       int *limitado, char *mime, int mimeTam,
@@ -322,6 +329,29 @@ EM_JS(char *, nv_http_colher_assinc, (int id, int *tam, int *status,
   if (tam) HEAP32[tam >> 2] = n;
   return p;
 });
+
+EM_JS(int, nv_http_url_tamanho, (int id), {
+  var reg = Module.nvFioReqs[id];
+  return reg && reg.url ? lengthBytesUTF8(reg.url) + 1 : 1;
+});
+static char *nv_http_colher_assinc(int id, int *tam, int *status,
+                                  char *urlFinal, int urlFinalTam,
+                                  char *etag, int etagTam, int *retryAfter,
+                                  int *limitado, char *mime, int mimeTam,
+                                  long *tamanho, int modo) {
+  int cap = urlFinal && urlFinalTam > 0 ? nv_http_url_tamanho(id) : 0;
+  char *url = cap > urlFinalTam && cap <= (8 << 20) ? malloc((size_t)cap) : NULL;
+  char *r = nv_http_colher_bruto(id, tam, status, url ? url : urlFinal,
+                                url ? cap : urlFinalTam, etag, etagTam,
+                                retryAfter, limitado, mime, mimeTam, tamanho, modo);
+  if (r && ((cap > urlFinalTam && !url) ||
+            (url && !nv_media_url_guardar(url, urlFinal, (size_t)urlFinalTam)))) {
+    if (!modo) free(r);
+    r = NULL; urlFinal[0] = 0;
+  }
+  free(url);
+  return r;
+}
 
 // Call-site audit: app sondarRecusaFio, streams probes, diagnostico
 // vazaoWorker and livetvdiag fioRede run in workers; descoberta also has
@@ -1033,7 +1063,7 @@ int rede_medir_vazao(const char *url, const char *const *cab, int segundos,
                      int *kbps, int nMax, RedeVazao *res,
                      char *final, unsigned tamFinal) {
   char *cabs;
-  char atual[4096];
+  char atual[NV_MEDIA_URL_MAX];
   unsigned long t0, janela, gasto = 0;
   long long pos = inicio > 0 ? inicio : 0, total = 0, pedaco = 1024LL * 1024LL;
   int nSeg = 0, primeiro = 1;
@@ -1048,7 +1078,7 @@ int rede_medir_vazao(const char *url, const char *const *cab, int segundos,
   while (gasto < janela && (maxBytes <= 0 || total < maxBytes)) {
     unsigned long a = redeAgoraMs(), dt;
     int st = 0, n, k, reps;
-    char fin[4096];
+    char fin[NV_MEDIA_URL_MAX];
     if (cancelado && *cancelado) { if (res) res->cancelado = 1; break; }
     fin[0] = 0;
     n = nv_http_contar(atual, cabs, (double)pos, (double)(pos + pedaco - 1), &st,
@@ -1234,6 +1264,7 @@ static void tmdbLigou(void) {
   }
 }
 static int urlSetopt(void *c, const char *url) {
+  url = nv_media_url(url);
   char *grande = nv_longa_expandir(url);
   char *alias = __atomic_load_n(&tmdbAlternativo, __ATOMIC_ACQUIRE) ?
                 tmdbUrl(grande ? grande : url) : NULL;
@@ -2549,8 +2580,8 @@ int rede_url_final_tipo(const char *url, int segundos, const char *const *cab,
   // Curl23 so vale quando NOS cortamos o corpo apos o teto. Um corpo cortado
   // pelo servidor (curl18/56) ou outro erro continua falha de transporte.
   ok = (!r || (r == 23 && s.limitado)) && !redeCancelouLocal &&
-       http >= 200 && http < 300 && fim && *fim && strlen(fim) < tam;
-  if (ok) memcpy(dst, fim, strlen(fim) + 1);
+       http >= 200 && http < 300 && fim && *fim;
+  if (ok) ok = nv_media_url_guardar(fim, dst, tam);
   // DIZER POR QUE FALHOU. Quem chama (streams.c) so imprimia "N nao resolveu",
   // e "nao resolveu" cobre coisas muito diferentes: host que nao existe (6),
   // recusa de conexao (7), estouro de tempo (28), TLS (35, 60) e HTTP 4xx/5xx
@@ -3825,7 +3856,7 @@ char *rede_baixar_trecho_st(const char *url, int segundos, long long ini, long l
   int st = 0, e = 0, pedacos = 0, cortes = 0;
   // `atual`: o endereco dos pedacos seguintes (o final, depois do primeiro:
   // sem pagar o redirecionamento de novo). `fin`: o final de cada resposta.
-  char atual[4096], fin[4096];
+  char atual[NV_MEDIA_URL_MAX], fin[NV_MEDIA_URL_MAX];
   if (tam) *tam = 0;
   if (status) *status = 0;
   if (erro) *erro = 0;
