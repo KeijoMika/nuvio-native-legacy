@@ -167,7 +167,7 @@ typedef struct {
 
 
 typedef struct {
-  int x, y, w, h, stride, type;
+  int x, y, w, h, stride, type, rgba;
   unsigned color;
   unsigned char *bitmap;
   unsigned long long chave;   // assperf: conteudo (bitmap + w + h); 0 = nao calculada
@@ -1028,6 +1028,137 @@ static long long ass_grade_desde(long long ms);
 // an implicit one (a warning on the SDK's compiler, an error on gcc 14).
 extern int pthread_getattr_np(pthread_t fio, pthread_attr_t *attr);
 #endif
+#if ASS_NOVO
+static void ass_cor_final(const AssCpuImage *im, int corAtiva, int cr, int cg, int cb,
+                          double gama, double contraste, float *r, float *g, float *b, float *op);
+
+/* Flatten high-overdraw or high-quad-count frames into one straight-RGBA image
+ * on the worker so the GL thread draws 1 quad instead of 17-60+ quads. */
+static void ass_frame_flatten(AssCpuFrame *f, int frameW, int frameH) {
+  static uint32_t invAlpha[256];
+  static int invInit;
+  int i, minX, minY, maxX, maxY, outW, outH;
+  size_t sumArea = 0, outBytes;
+  unsigned char *rgba;
+  double gama, contraste;
+  if (!f || f->count <= 16 || !f->images || frameW <= 0 || frameH <= 0) return;
+  minX = frameW; minY = frameH; maxX = 0; maxY = 0;
+  for (i = 0; i < f->count; i++) {
+    const AssCpuImage *im = &f->images[i];
+    int x0, y0, x1, y1;
+    if (im->rgba || !im->bitmap || im->w <= 0 || im->h <= 0) return;
+    if (im->esc > 0.01f && fabsf(im->esc - f->esc) >= 0.01f) return;
+    sumArea += (size_t)im->w * (size_t)im->h;
+    x0 = im->x < 0 ? 0 : im->x;
+    y0 = im->y < 0 ? 0 : im->y;
+    x1 = im->x + im->w > frameW ? frameW : im->x + im->w;
+    y1 = im->y + im->h > frameH ? frameH : im->y + im->h;
+    if (x0 < x1 && y0 < y1) {
+      if (x0 < minX) minX = x0;
+      if (y0 < minY) minY = y0;
+      if (x1 > maxX) maxX = x1;
+      if (y1 > maxY) maxY = y1;
+    }
+  }
+  outW = maxX - minX; outH = maxY - minY;
+  if (outW <= 0 || outH <= 0) return;
+  outBytes = (size_t)outW * (size_t)outH * 4u;
+  if (outBytes > 1920u * 1080u * 4u) return;
+  int highOverdraw = f->count > 24 && sumArea > (size_t)frameW * (size_t)frameH;
+  int smallBatch = f->count > 16 && outBytes <= 512u * 1024u;
+  if (!highOverdraw && !smallBatch) return;
+  if (!invInit) {
+    for (int a = 1; a < 255; a++)
+      invAlpha[a] = (255u * 65536u + (unsigned)a / 2u) / (unsigned)a;
+    invInit = 1;
+  }
+  rgba = (unsigned char *)calloc(outBytes, 1);
+  if (!rgba) return;
+  gama = assperf_gama(); contraste = assperf_contraste();
+  for (i = 0; i < f->count; i++) {
+    const AssCpuImage *im = &f->images[i];
+    float rf, gf, bf, opf;
+    unsigned lr, lg, lb, lop;
+    int x0 = im->x < minX ? minX : im->x;
+    int y0 = im->y < minY ? minY : im->y;
+    int x1 = im->x + im->w > maxX ? maxX : im->x + im->w;
+    int y1 = im->y + im->h > maxY ? maxY : im->y + im->h;
+    int y;
+    if (x0 >= x1 || y0 >= y1) continue;
+    ass_cor_final(im, 0, 0, 0, 0, gama, contraste, &rf, &gf, &bf, &opf);
+    lr = (unsigned)lroundf(rf * 255.0f);
+    lg = (unsigned)lroundf(gf * 255.0f);
+    lb = (unsigned)lroundf(bf * 255.0f);
+    lop = (unsigned)lroundf(opf * 255.0f);
+    if (lop == 0) continue;
+    for (y = y0; y < y1; y++) {
+      const unsigned char *src = im->bitmap + (size_t)(y - im->y) * (size_t)im->stride + (size_t)(x0 - im->x);
+      unsigned char *dst = rgba + ((size_t)(y - minY) * (size_t)outW + (size_t)(x0 - minX)) * 4u;
+      int w = x1 - x0, x;
+      if (lop == 255u) {
+        for (x = 0; x < w; x++, dst += 4) {
+          unsigned sa = src[x];
+          if (sa == 0u) continue;
+          if (sa == 255u) {
+            dst[0] = (unsigned char)lr; dst[1] = (unsigned char)lg;
+            dst[2] = (unsigned char)lb; dst[3] = 255u;
+          } else {
+            unsigned inv = 255u - sa;
+            unsigned r = lr * sa + (unsigned)dst[0] * inv + 128u;
+            unsigned g = lg * sa + (unsigned)dst[1] * inv + 128u;
+            unsigned b = lb * sa + (unsigned)dst[2] * inv + 128u;
+            unsigned a = (unsigned)dst[3] * inv + 128u;
+            dst[0] = (unsigned char)((r + (r >> 8)) >> 8);
+            dst[1] = (unsigned char)((g + (g >> 8)) >> 8);
+            dst[2] = (unsigned char)((b + (b >> 8)) >> 8);
+            dst[3] = (unsigned char)(sa + ((a + (a >> 8)) >> 8));
+          }
+        }
+      } else {
+        for (x = 0; x < w; x++, dst += 4) {
+          unsigned sv = src[x];
+          if (sv == 0u) continue;
+          unsigned st = sv * lop + 128u;
+          unsigned sa = (st + (st >> 8)) >> 8;
+          if (sa == 0u) continue;
+          unsigned inv = 255u - sa;
+          unsigned r = lr * sa + (unsigned)dst[0] * inv + 128u;
+          unsigned g = lg * sa + (unsigned)dst[1] * inv + 128u;
+          unsigned b = lb * sa + (unsigned)dst[2] * inv + 128u;
+          unsigned a = (unsigned)dst[3] * inv + 128u;
+          dst[0] = (unsigned char)((r + (r >> 8)) >> 8);
+          dst[1] = (unsigned char)((g + (g >> 8)) >> 8);
+          dst[2] = (unsigned char)((b + (b >> 8)) >> 8);
+          dst[3] = (unsigned char)(sa + ((a + (a >> 8)) >> 8));
+        }
+      }
+    }
+  }
+  /* Unpremultiply for straight-RGBA GFX_TEXTO blending via reciprocal table. */
+  { size_t p, nPx = (size_t)outW * (size_t)outH;
+    unsigned char *px = rgba;
+    for (p = 0; p < nPx; p++, px += 4) {
+      unsigned a = px[3];
+      if (a > 0u && a < 255u) {
+        uint32_t inv = invAlpha[a];
+        unsigned r = ((uint32_t)px[0] * inv + 32768u) >> 16;
+        unsigned g = ((uint32_t)px[1] * inv + 32768u) >> 16;
+        unsigned b = ((uint32_t)px[2] * inv + 32768u) >> 16;
+        px[0] = (unsigned char)(r > 255u ? 255u : r);
+        px[1] = (unsigned char)(g > 255u ? 255u : g);
+        px[2] = (unsigned char)(b > 255u ? 255u : b);
+      }
+    } }
+  for (i = 0; i < f->count; i++) free(f->images[i].bitmap);
+  { AssCpuImage *one = (AssCpuImage *)realloc(f->images, sizeof *one);
+    if (!one) one = f->images;
+    memset(one, 0, sizeof *one);
+    one->x = minX; one->y = minY; one->w = outW; one->h = outH;
+    one->stride = outW * 4; one->rgba = 1; one->bitmap = rgba;
+    f->images = one; f->count = 1; f->bytes = outBytes; }
+}
+#endif
+
 static void *ass_worker_loop(void *unused) {
   (void)unused;
   assfios_nomear("nv-assrender");
@@ -1321,6 +1452,9 @@ static void *ass_worker_loop(void *unused) {
       }
     }
     pthread_mutex_unlock(&assTrava);
+#if ASS_NOVO
+    if (pronto) ass_frame_flatten(&frame, lw, lh);
+#endif
     clock_gettime(CLOCK_MONOTONIC, &b);
     if (ASS_NOVO && pronto) assperf_escala_custo(ass_ms_entre(&c0, &b));
 
@@ -1580,6 +1714,17 @@ static GLuint *assMainTex;       // textura de cada imagem do assMain
 static int *assMainIdx;          // e o indice dela em assTc
 static int assMainTexCap, assMainEnviado;
 static int assMainResetar;       // assrender_aplicar_invalidacao consumiu um assTexResetar
+#define ASS_FLAT_RING 3
+static GLuint assFlatTex[ASS_FLAT_RING];
+static int assFlatW[ASS_FLAT_RING], assFlatH[ASS_FLAT_RING];
+static int assFlatCur;
+
+static int ass_flat_bucket(int v) {
+  if (v <= 16) return 16;
+  if (v <= 64) return (v + 15) & ~15;
+  if (v <= 256) return (v + 31) & ~31;
+  return (v + 63) & ~63;
+}
 
 static size_t ass_tc_tam(int w, int h) { return (size_t)w * (size_t)h; }
 
@@ -1588,6 +1733,11 @@ static void ass_tc_apagar(void) {
   for (i = 0; i < assTcN; i++)
     if (assTc[i].tex) { gfx_tex_esquecer(assTc[i].tex); glDeleteTextures(1, &assTc[i].tex); }
   free(assTc); assTc = NULL; assTcN = assTcCap = 0; assTcBytes = 0;
+  for (i = 0; i < ASS_FLAT_RING; i++) {
+    if (assFlatTex[i]) { gfx_tex_esquecer(assFlatTex[i]); glDeleteTextures(1, &assFlatTex[i]); assFlatTex[i] = 0; }
+    assFlatW[i] = assFlatH[i] = 0;
+  }
+  assFlatCur = 0;
   assMainEnviado = 0;
 }
 
@@ -1711,6 +1861,49 @@ static int ass_main_desenhar_corpo(float x, float y, float alpha, int corAtiva, 
   int i;
   float kk = assMain.k > 1 ? (float)assMain.k : 1.0f, esc = assMain.esc > 0.01f ? assMain.esc : kk;
   assGlQuadro++;
+  if (assMain.count == 1 && assMain.images[0].rgba) {
+    const AssCpuImage *im = &assMain.images[0];
+    if (quadroNovo || !assMainEnviado) {
+      struct timespec t0, t1;
+      clock_gettime(CLOCK_MONOTONIC, &t0);
+      if (quadroNovo) assFlatCur = (assFlatCur + 1) % ASS_FLAT_RING;
+      int s = assFlatCur;
+      if (!assFlatTex[s]) glGenTextures(1, &assFlatTex[s]);
+      if (assFlatTex[s]) {
+        int bw = ass_flat_bucket(im->w), bh = ass_flat_bucket(im->h);
+        if (bw < assFlatW[s]) bw = assFlatW[s];
+        if (bh < assFlatH[s]) bh = assFlatH[s];
+        glBindTexture(GL_TEXTURE_2D, assFlatTex[s]);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        if (bw != assFlatW[s] || bh != assFlatH[s]) {
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bw, bh, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+          assFlatW[s] = bw; assFlatH[s] = bh;
+        }
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, im->w, im->h, GL_RGBA, GL_UNSIGNED_BYTE, im->bitmap);
+        gfx_tex_esquecer(0);
+      }
+      clock_gettime(CLOCK_MONOTONIC, &t1);
+      assMainEnviado = 1;
+      if (quadroNovo) assperf_carga_gl(ass_ms_entre(&t0, &t1));
+    }
+    int s = assFlatCur;
+    if (assFlatTex[s] && assFlatW[s] > 0 && assFlatH[s] > 0) {
+      float dx = roundf((x + assMain.ox) * kk) / kk + (float)im->x / esc;
+      float dy = roundf((y + assMain.oy) * kk) / kk + (float)im->y / esc;
+      float parx = (float)im->w / (float)assFlatW[s];
+      float pary = (float)im->h / (float)assFlatH[s];
+      int minDim = assFlatW[s] < assFlatH[s] ? assFlatW[s] : assFlatH[s];
+      float inset = 0.5f / (float)minDim;
+      gfx_tex_aspect_atual = 0.0f;
+      gfx_rect((GfxRect){ dx, dy, (float)im->w / esc, (float)im->h / esc }, assFlatTex[s], GFX_TEXTO,
+               0, parx, pary, inset, 1, 1, 1, alpha);
+    }
+    return 1;
+  }
   if (quadroNovo || !assMainEnviado) {
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
