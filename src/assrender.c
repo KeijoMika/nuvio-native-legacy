@@ -986,7 +986,8 @@ static void ass_marcar_sinais_locked(unsigned g, long long t) {
  * karaoke (\k, \kf, \ko, \K) ou Effect (Banner/Scroll). */
 static int ass_evento_anima(const ASS_Event *e) {
   const char *p;
-  if (e->Effect && e->Effect[0]) return 1;
+  if (e->Effect && (!strncasecmp(e->Effect, "Banner", 6) || !strncasecmp(e->Effect, "Scroll", 6)))
+    return 1;
   if (!e->Text) return 0;
   for (p = strchr(e->Text, '\\'); p; p = strchr(p + 1, '\\'))
     if (!strncmp(p, "\\t(", 3) || !strncmp(p, "\\move", 5) || !strncmp(p, "\\fad", 4) || p[1] == 'k' || p[1] == 'K')
@@ -1094,7 +1095,8 @@ static void *ass_worker_loop(void *unused) {
     }
     serial = ++assSerial;   // cada quadro publicado e outro (as texturas sobem de novo)
     assPedidoForcado = 0;
-    ox = layPedX; oy = layPedY; lw = layPedW; lh = layPedH; k = layPedK;
+    int baseW = layPedW, baseH = layPedH;
+    ox = layPedX; oy = layPedY; lw = baseW; lh = baseH; k = layPedK;
     /* assperf: resolucao do render. O quadro sai `resol` do tamanho do alvo e
      * o desenho amplia (esc = k x resol pixels por unidade). 1 = como antes. */
     /* Auto 50 / Auto 75: the whole frame lower while busy. Custom auto (owner
@@ -1105,11 +1107,11 @@ static void *ass_worker_loop(void *unused) {
     dividir = 0; resolB = 0.0;
 #endif
     if (dividir) {
-      lwB = (int)lround((double)lw * k * resolB); lhB = (int)lround((double)lh * k * resolB);
+      lwB = (int)lround((double)baseW * k * resolB); lhB = (int)lround((double)baseH * k * resolB);
       if (lwB < 16) lwB = 16;
       if (lhB < 16) lhB = 16;
     }
-    lw = (int)lround((double)lw * k * resol); lh = (int)lround((double)lh * k * resol);   /* libass renderiza em pixels do alvo, nao em unidades de layout */
+    lw = (int)lround((double)baseW * k * resol); lh = (int)lround((double)baseH * k * resol);   /* libass renderiza em pixels do alvo, nao em unidades de layout */
     if (lw < 16) lw = 16;
     if (lh < 16) lh = 16;
     vw = layPedVW; vh = layPedVH; esc = layPedEscala;
@@ -1124,6 +1126,32 @@ static void *ass_worker_loop(void *unused) {
         generation == assTrackGeracao &&
         assTrack && assRenderer) {
       long long t = (long long)llround(ms);
+      if (ASS_NOVO && ass_estilo_autor_locked() && !assperf_pesado()) {
+        int nP = 0, nCP = 0;
+        long cP = 0, cCP = 0;
+        for (int pi = 0; pi < assTrack->n_events; pi++) {
+          const ASS_Event *pev = &assTrack->events[pi];
+          if (pev->Start < t || pev->Start >= t + 2200) continue;
+          long plen = pev->Text ? (long)strlen(pev->Text) : 0;
+          if (pev->Start < t + 1000) { nP++; cP += plen; }
+          if (pev->Start >= t + 500) { nCP++; cCP += plen; }
+        }
+        if (nP >= 300 || cP >= 400000L || nCP >= 300 || cCP >= 400000L) {
+          assperf_previsao(nP, cP, 25, nCP, cCP);
+          dividir = assperf_resolucao_quadro(&resol, &resolB);
+#if !ASS_DIVIDIR
+          dividir = 0; resolB = 0.0;
+#endif
+          if (dividir) {
+            lwB = (int)lround((double)baseW * k * resolB); lhB = (int)lround((double)baseH * k * resolB);
+            if (lwB < 16) lwB = 16;
+            if (lhB < 16) lhB = 16;
+          }
+          lw = (int)lround((double)baseW * k * resol); lh = (int)lround((double)baseH * k * resol);
+          if (lw < 16) lw = 16;
+          if (lh < 16) lh = 16;
+        }
+      }
       ass_aplicar_assperf_locked();
       if (lw != layAplW || lh != layAplH) {
         ass_set_frame_size(assRenderer, lw, lh);
@@ -1138,8 +1166,7 @@ static void *ass_worker_loop(void *unused) {
         layAplEscala = esc;
       }
       if (plainValid) {
-        PlainAssStyle ps = plain;
-        if (ass_estilo_autor_locked()) ps.overrides = 0;   // estilos do autor de volta
+        PlainAssStyle ps = ass_estilo_autor_locked() ? (PlainAssStyle){0} : plain;
         ass_plain_style_locked(&ps);
       }
       if (ass_estilo_autor_locked())
@@ -1169,14 +1196,15 @@ static void *ass_worker_loop(void *unused) {
        * track and per style change, flushed BEFORE the render. A crash right
        * after this line is inside libass on that frame. */
       { static unsigned gerLog = ~0u; static PlainAssStyle psLog; static int psLogOk;
-        int novo = generation != gerLog || (plainValid && (!psLogOk || memcmp(&plain, &psLog, sizeof plain)));
+        int simples = __atomic_load_n(&assTextoSimples, __ATOMIC_ACQUIRE);
+        int novo = generation != gerLog || (simples && plainValid && (!psLogOk || memcmp(&plain, &psLog, sizeof plain)));
         if (novo && assTrack->n_styles > 0) {
           const ASS_Style *st = &assTrack->styles[assTrack->default_style];
           gerLog = generation;
           if (plainValid) { psLog = plain; psLogOk = 1; }
           printf("[ass] render first frame: t=%lld ms, %s, events %d, frame %dx%d storage %dx%d scale %.3f | "
                  "style %s %.1f bold %d BorderStyle %d Outline %.2f Shadow %.2f Blur %.3f ScaleX %.0f | engine %d, %d blur thread(s)\n",
-                 t, __atomic_load_n(&assTextoSimples, __ATOMIC_ACQUIRE) ? "plain RTL text" : "authored ASS", assTrack->n_events,
+                 t, simples ? "plain RTL text" : "authored ASS", assTrack->n_events,
                  lw, lh, vw, vh, esc, st->FontName ? st->FontName : "-", st->FontSize, st->Bold, st->BorderStyle,
                  st->Outline, st->Shadow, st->Blur, st->ScaleX * 100.0,
 #ifdef ASS_NV_API
@@ -1224,7 +1252,7 @@ static void *ass_worker_loop(void *unused) {
         for (i = 0; i < assTrack->n_events; i++) {
           const ASS_Event *ev = &assTrack->events[i];
           long n;
-          if (ev->Start < t || ev->Start >= t + 1500) continue;   /* text length only inside the window */
+          if (ev->Start < t || ev->Start >= t + 2200) continue;   /* text length only inside the window */
           n = ev->Text ? (long)strlen(ev->Text) : 0;
           if (ev->Start < t + 1000) { nIni++; chars += n; }
           if (ev->Start >= t + 500) { nIniC++; charsC += n; }
@@ -1995,6 +2023,7 @@ static int ass_inc_lote(const char *corpo, size_t tamanho, unsigned geracao) {
     incPronto = 0;
     goto fim;
   }
+  long long minNewStart = LLONG_MAX;
   { int antes = assTrack->n_events, k;
     for (k = 0; k < nNovas; k++) {
       int n0 = assTrack->n_events;
@@ -2003,7 +2032,12 @@ static int ass_inc_lote(const char *corpo, size_t tamanho, unsigned geracao) {
         /* ReadOrder = ordem de chegada. Antes ficava 0 em todas e o libass
          * empatava pela posicao no vetor: igual, mas uma fala devolvida pela
          * poda ia para o fim e mudava quem sobe na colisao. */
-        while (incEvN < assTrack->n_events) { assTrack->events[incEvN].ReadOrder = ++assLeituraSeq; incEv[incEvN++] = novasH[k]; }
+        while (incEvN < assTrack->n_events) {
+          if (assTrack->events[incEvN].Start < minNewStart)
+            minNewStart = assTrack->events[incEvN].Start;
+          assTrack->events[incEvN].ReadOrder = ++assLeituraSeq;
+          incEv[incEvN++] = novasH[k];
+        }
         aceitas++;
       } else if (assTrack->n_events != incEvN) {
         /* Sem memoria para o hash: perde o alinhamento, refaz depois. */
@@ -2044,9 +2078,10 @@ static int ass_inc_lote(const char *corpo, size_t tamanho, unsigned geracao) {
     } }
   incPronto = !desalinhou && incEvN == assTrack->n_events;
   pthread_mutex_unlock(&assTrava);
-  if (aceitas || removidos || reconstruir) {
+  if (reconstruir || aceitas) {
     pthread_mutex_lock(&assFilaTrava);
-    assTemUltimoPedido = 0;   // o worker ve o documento novo mesmo pausado
+    if (reconstruir || minNewStart <= (long long)assPedidoMs + 100)
+      assTemUltimoPedido = 0;   // o worker ve o documento novo mesmo pausado
     pthread_mutex_unlock(&assFilaTrava);
   }
   ok = 1;
@@ -2283,7 +2318,9 @@ void assrender_definir_texto_estilo(const PlainAssStyle *style) {
   pthread_mutex_lock(&assFilaTrava);
   if (!plainPedValido || memcmp(style, &plainPed, sizeof *style)) {
     plainPed = *style; plainPedValido = 1;
-    ++assEpoch; assTemUltimoPedido = 0;
+    if (!ASS_NOVO || __atomic_load_n(&assTextoSimples, __ATOMIC_ACQUIRE)) {
+      ++assEpoch; assTemUltimoPedido = 0;
+    }
   }
   pthread_mutex_unlock(&assFilaTrava);
 }
