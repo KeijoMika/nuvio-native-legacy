@@ -141,6 +141,23 @@ char *assrender_marcar_tailandes(const char *txt) {
 #include <signal.h>
 #endif
 
+static int ass_usable_cpus(void) {
+#if defined(__linux__) && defined(SYS_sched_getaffinity)
+  unsigned long mask[16];
+  memset(mask, 0, sizeof mask);
+  long r = syscall(SYS_sched_getaffinity, 0, sizeof mask, mask);
+  if (r > 0) {
+    int n = 0;
+    size_t words = (size_t)r / sizeof mask[0];
+    if (words > sizeof mask / sizeof mask[0]) words = sizeof mask / sizeof mask[0];
+    for (size_t i = 0; i < words; i++) n += __builtin_popcountl(mask[i]);
+    if (n > 0) return n;
+  }
+#endif
+  long onln = sysconf(_SC_NPROCESSORS_ONLN);
+  return onln > 0 ? (int)onln : 1;
+}
+
 #define ASS_TEX_INICIAL 64
 
 typedef struct {
@@ -907,19 +924,20 @@ static void ass_aplicar_assperf_locked(void) {
       feito = 1;
       ass_nv_set_engine(assRenderer, 1);
       assfios_nome_trocar("nv-assblur", nomeAnt);
+      int usable = ass_usable_cpus();
 #ifdef NV_TPK40
-      ass_nv_set_threads(2);   /* Tizen 4/5: 2 blur threads, one core left to the TV (owner, 16/11) */
+      ass_nv_set_threads(usable <= 1 ? 1 : 2);
 #else
-      ass_nv_set_threads(ASSPERF_FIOS);
+      ass_nv_set_threads(usable <= 1 ? 1 : ASSPERF_FIOS);
 #endif
       assfios_nome_voltar(nomeAnt);
       /* WHAT THIS TV IS, once per session (libass on the Tizen 4/5 .tpk, 09/11):
        * the engine's values are the S95C's on every .tpk, so a 2018-2020 TV's
        * "[ass] 10s" lines are read against its cores and memory. */
-      printf("[ass] tv: cores=%ld online of %ld | RAM=%ldMB total, %ldMB free | "
+      printf("[ass] tv: cores=%ld online of %ld (usable=%d) | RAM=%ldMB total, %ldMB free | "
              "bitmap engine=%s, blur threads=%d | render ahead=%dms, lines dropped after=%lds, "
              "attached fonts up to=%luMB, relay park=%ldMB\n",
-             sysconf(_SC_NPROCESSORS_ONLN), sysconf(_SC_NPROCESSORS_CONF),
+             sysconf(_SC_NPROCESSORS_ONLN), sysconf(_SC_NPROCESSORS_CONF), usable,
              memlog_total_mb(), memlog_livre_mb(),
              ass_nv_get_engine(assRenderer) ? "NEON" : "C", ass_nv_get_threads(),
              (int)ASSPERF_ADIANTE_MS, (long)(ASSPERF_PODA_MS / 1000L),
@@ -1040,10 +1058,14 @@ static void *ass_worker_loop(void *unused) {
   /* TIZEN 4/5 (owner, 16/11/2026, after the UE55RU7170 log of 10/11: frames
    * of 65-107 ms in a sign-heavy scene): the TV's player comes first. This
    * worker and the blur helpers it starts (they inherit it) run at nice 10. */
-  if (setpriority(PRIO_PROCESS, 0, 10) == 0)
-    printf("[ass] tizen 4/5: subtitle worker and blur threads at low priority (nice 10)\n");
-  else
-    printf("[ass] tizen 4/5: could not lower the subtitle threads' priority\n");
+  if (ass_usable_cpus() > 1) {
+    if (setpriority(PRIO_PROCESS, 0, 10) == 0)
+      printf("[ass] tizen 4/5: subtitle worker and blur threads at low priority (nice 10)\n");
+    else
+      printf("[ass] tizen 4/5: could not lower the subtitle threads' priority\n");
+  } else {
+    printf("[ass] tizen 4/5: 1-core sandbox, subtitle worker at normal priority (nice 0)\n");
+  }
   fflush(stdout);
 #endif
   for (;;) {
